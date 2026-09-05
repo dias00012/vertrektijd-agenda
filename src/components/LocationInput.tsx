@@ -24,6 +24,11 @@ interface Props {
 
 const DEBOUNCE_MS = 400;
 
+/** Is dit dezelfde plek? Coordinaten vergelijken; het label kan verschillen. */
+function isSamePlace(a: GeoLocation | null, b: GeoLocation): boolean {
+  return !!a && Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lon - b.lon) < 1e-6;
+}
+
 /**
  * Vrij typen van een adres, plaatsnaam of locatie met suggesties uit
  * /api/geocode. Pas als er een suggestie gekozen is hebben we coordinaten en
@@ -166,28 +171,38 @@ export function LocationInput({
 
       {extraActions ? <div className="mt-2 flex flex-wrap gap-1.5">{extraActions}</div> : null}
 
-      {!value && places.length > 0 ? (
+      {/* De snelkeuzes blijven staan als er al een locatie is gekozen: je wilt
+          ook van thuis naar school kunnen wisselen zonder eerst te wissen. */}
+      {places.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {places.map((place) => (
-            <button
-              key={place.id}
-              type="button"
-              // Het adres in de tooltip: op de knop zelf telt waar je heen gaat.
-              title={place.address}
-              onClick={() => {
-                dirty.current = false;
-                onChange(place.location);
-                setQuery(place.location.label);
-                setResults([]);
-                setOpen(false);
-                setSearchError(null);
-              }}
-              className="max-w-full truncate rounded-full border px-2.5 py-1 text-xs transition-colors"
-              style={{ borderColor: "var(--line)", color: "var(--muted)" }}
-            >
-              {place.emoji} {place.name}
-            </button>
-          ))}
+          {places.map((place) => {
+            const active = isSamePlace(value, place.location);
+            return (
+              <button
+                key={place.id}
+                type="button"
+                aria-pressed={active}
+                // Het adres in de tooltip: op de knop zelf telt waar je heen gaat.
+                title={place.address}
+                onClick={() => {
+                  dirty.current = false;
+                  onChange(place.location);
+                  setQuery(place.location.label);
+                  setResults([]);
+                  setOpen(false);
+                  setSearchError(null);
+                }}
+                className="max-w-full truncate rounded-full border px-2.5 py-1 text-xs transition-colors"
+                style={{
+                  borderColor: active ? "var(--accent)" : "var(--line)",
+                  background: active ? "var(--surface-soft)" : "transparent",
+                  color: active ? "var(--ink)" : "var(--muted)",
+                }}
+              >
+                {place.emoji} {place.name}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 

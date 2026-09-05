@@ -142,27 +142,16 @@ export default function TravelPlannerPage() {
           places={places}
           placeholder="Station, halte of adres"
           extraActions={
-            <>
-              {settings.home ? (
-                <button
-                  type="button"
-                  onClick={() => setFrom(settings.home)}
-                  className="rounded-full border px-2.5 py-1 text-xs transition-colors"
-                  style={{ borderColor: "var(--line)", color: "var(--muted)" }}
-                >
-                  &#127968; Thuis
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={useMyLocation}
-                disabled={locating}
-                className="rounded-full border px-2.5 py-1 text-xs transition-colors"
-                style={{ borderColor: "var(--line)", color: "var(--muted)" }}
-              >
-                {locating ? "Zoeken…" : "\u{1F4CD} Mijn locatie"}
-              </button>
-            </>
+            // Thuis, gym en school staan al bij de snelkeuzes hieronder.
+            <button
+              type="button"
+              onClick={useMyLocation}
+              disabled={locating}
+              className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+              style={{ borderColor: "var(--line)", color: "var(--muted)" }}
+            >
+              {locating ? "Zoeken…" : "\u{1F4CD} Mijn locatie"}
+            </button>
           }
         />
 
