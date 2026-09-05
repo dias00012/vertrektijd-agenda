@@ -234,7 +234,7 @@ function DayList({
       <EmptyState
         icon="📅"
         title="Niets gepland"
-        description="Gebruik de knop onderaan om een activiteit toe te voegen."
+        description="Gebruik de knop “+ Activiteit toevoegen”."
       />
     );
   }
@@ -260,7 +260,7 @@ function WeekList({ weekStart, now }: { weekStart: string; now: Date }) {
       <EmptyState
         icon="📅"
         title="Geen activiteiten deze week"
-        description="Gebruik de knop onderaan om je eerste activiteit toe te voegen."
+        description="Gebruik de knop “+ Activiteit toevoegen” voor je eerste activiteit."
       />
     );
   }

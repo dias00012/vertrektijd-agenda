@@ -58,6 +58,18 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/*
+ * Zichtbare focus voor wie met Tab navigeert (toetsenbord, schermlezer,
+ * schakelbediening). `:focus-visible` laat hem weg bij een muisklik, zodat het
+ * niemand in de weg zit. Op een laptop is dit het verschil tussen wel en niet
+ * kunnen bedienen zonder muis.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
 /* --- Herbruikbare bouwstenen ------------------------------------------- */
 
 .card {
