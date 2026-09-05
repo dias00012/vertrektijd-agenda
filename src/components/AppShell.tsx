@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { IntroContext } from "@/hooks/useIntro";
 import { ActivityForm } from "./ActivityForm";
 import { Onboarding } from "./Onboarding";
+import { Tour } from "./Tour";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
 
@@ -29,12 +30,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [formOpen, setFormOpen] = useState(false);
   /** De kennismaking opnieuw bekijken, aangezet vanuit Instellingen. */
   const [introOpen, setIntroOpen] = useState(false);
+  /** De rondleiding langs de tabbladen. */
+  const [tourOpen, setTourOpen] = useState(false);
   const { settings, hydrated } = useAgenda();
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
   useReminders();
 
-  const introValue = useMemo(() => ({ open: () => setIntroOpen(true) }), []);
+  const introValue = useMemo(
+    () => ({ open: () => setIntroOpen(true), openTour: () => setTourOpen(true) }),
+    [],
+  );
 
   const showHomeHint = hydrated && !settings.home && pathname !== "/instellingen";
 
@@ -167,10 +173,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       <Onboarding
-        onAddActivity={() => setFormOpen(true)}
+        onStartTour={() => setTourOpen(true)}
         reopen={introOpen}
         onClose={() => setIntroOpen(false)}
       />
+      {tourOpen ? (
+        <Tour onClose={() => setTourOpen(false)} onAddActivity={() => setFormOpen(true)} />
+      ) : null}
       {formOpen ? <ActivityForm onClose={() => setFormOpen(false)} /> : null}
     </div>
   );

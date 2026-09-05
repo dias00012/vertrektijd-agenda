@@ -7,8 +7,15 @@ import { createContext, useContext } from "react";
  * app-frame, de knop die hem opnieuw opent staat op de instellingenpagina —
  * die twee zitten niet in elkaar, dus loopt het via de context.
  */
-export const IntroContext = createContext<{ open: () => void } | null>(null);
+interface IntroValue {
+  /** De instelwizard (thuislocatie, vervoermiddel, marge). */
+  open: () => void;
+  /** De rondleiding langs de tabbladen, zonder eerst de instelvragen. */
+  openTour: () => void;
+}
 
-export function useIntro(): { open: () => void } | null {
+export const IntroContext = createContext<IntroValue | null>(null);
+
+export function useIntro(): IntroValue | null {
   return useContext(IntroContext);
 }

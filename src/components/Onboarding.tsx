@@ -33,11 +33,12 @@ function markDone(): void {
  * woon je, en hoe reis je meestal.
  */
 export function Onboarding({
-  onAddActivity,
+  onStartTour,
   reopen = false,
   onClose,
 }: {
-  onAddActivity: () => void;
+  /** Na het instellen gaan we de app écht laten zien. */
+  onStartTour: () => void;
   /** Wordt true wanneer je de introductie zelf opnieuw opent vanuit Instellingen. */
   reopen?: boolean;
   onClose?: () => void;
@@ -75,7 +76,7 @@ export function Onboarding({
     onClose?.();
   }
 
-  function finish(startWithActivity: boolean) {
+  function finish(withTour: boolean) {
     updateSettings({
       home,
       travelMode: mode,
@@ -83,7 +84,7 @@ export function Onboarding({
     });
     markDone();
     close();
-    if (startWithActivity) onAddActivity();
+    if (withTour) onStartTour();
   }
 
   function skip() {
@@ -223,7 +224,7 @@ export function Onboarding({
               </button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={() => finish(true)}>
-                Klaar &mdash; eerste activiteit
+                Laat de app zien
               </button>
             )}
           </div>
@@ -241,7 +242,7 @@ export function Onboarding({
             style={{ color: "var(--muted)" }}
             onClick={() => finish(false)}
           >
-            Opslaan en zelf rondkijken
+            Opslaan en zelf rondkijken &mdash; sla de rondleiding over
           </button>
         ) : null}
       </div>

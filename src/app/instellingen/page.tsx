@@ -200,13 +200,18 @@ function IntroSection() {
     <section className="card mt-4 px-5 py-5">
       <h2 className="text-base font-semibold">&#128075; Uitleg &amp; rondleiding</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        De korte introductie die je bij de eerste keer openen kreeg: waar de app voor is, je
-        thuislocatie, je vervoermiddel en hoeveel speling je wilt. Je huidige instellingen staan
-        er al in ingevuld.
+        De rondleiding loopt met je langs elk tabblad en legt uit wat je daar ziet &mdash; je
+        blijft gewoon in de app, dus je kijkt naar het echte scherm. De introductie begint bij de
+        instelvragen; je huidige antwoorden staan er al in.
       </p>
-      <button type="button" className="btn btn-ghost mt-3" onClick={intro.open}>
-        Bekijk de introductie
-      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="btn btn-primary" onClick={intro.openTour}>
+          &#128506;&#65039; Start de rondleiding
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={intro.open}>
+          Introductie opnieuw
+        </button>
+      </div>
     </section>
   );
 }
