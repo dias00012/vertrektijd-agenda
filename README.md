@@ -244,6 +244,41 @@ De opslag draait op schemaversie 2: taken en toetsen staan naast de bestaande ac
 instellingen, die onder hun eigen sleutels blijven staan. Bestaande data gaat dus niet verloren
 en ontbrekende taken/toetsen worden een lege lijst.
 
+### Formaatafspraak (voor de planner)
+
+Dit formaat wordt **stabiel** gehouden: de planner (de andere Claude) baseert zijn bestanden
+hierop. `app` blijft `"vertrektijd-agenda"` en de structuur blijft
+`{ app, version, exportedAt, settings, activities, tasks, exams }`. `version` wordt alleen
+verhoogd bij een echte wijziging, en oudere versies blijven inleesbaar. Onbekende velden worden
+genegeerd; ontbrekende velden krijgen een veilige standaardwaarde.
+
+Een volledig, geldig voorbeeld staat in
+[`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json) — inclusief een leerblok dat
+aan een toets is gekoppeld en een werkblok dat aan een opdracht is gekoppeld.
+
+**`tasks[]` (opdrachten/huiswerk):**
+
+| Veld | Type | Verplicht | Toelichting |
+| --- | --- | --- | --- |
+| `id` | string | ja | Stabiele id; gebruikt voor upsert bij samenvoegen. |
+| `subject` | string | ja | Vak, bv. `"Wiskunde"`. |
+| `title` | string | ja | Wat er moet gebeuren. |
+| `description` | string | nee | Extra toelichting. |
+| `deadline` | string | ja | `YYYY-MM-DD`. |
+| `estimatedMinutes` | number | ja | Geschatte totale werktijd. |
+| `priority` | `"high"｜"medium"｜"low"｜"later"` | ja | 🔴 / 🟠 / 🟡 / 🟢. |
+| `status` | `"todo"｜"doing"｜"done"` | ja | Voortgang. |
+| `steps[]` | `{ id, title, estimatedMinutes?, done }` | nee | Afvinkbare deelstappen. |
+| `createdAt` / `updatedAt` | string (ISO) | ja | Tijdstempels. |
+
+**`exams[]` (toetsen):** zelfde `priority`/`status`/tijdstempels, met `id`, `subject`,
+`title?`, `date` (`YYYY-MM-DD`), `topics?` (string[]) en `prepMinutes?` (number).
+
+**`activities[]` (agenda):** het bestaande activiteitsmodel. Voor leer-/werkblokken uit het
+leerplan: zet `category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
+`linkedTaskId` of `linkedExamId` (de `id` van een taak of toets); de app toont dan bij die taak/
+toets hoeveel leertijd is ingepland en labelt het blok in de agenda.
+
 ## Klaar voor later
 
 Het model is bewust ruim opgezet, maar deze functies zijn nog **niet** gebouwd:

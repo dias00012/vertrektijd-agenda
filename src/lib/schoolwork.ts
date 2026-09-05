@@ -1,5 +1,5 @@
-import type { Exam, SchoolworkPriority, SchoolworkStatus, Task } from "./types";
-import { parseDateKey, todayKey } from "./time";
+import type { Activity, Exam, SchoolworkPriority, SchoolworkStatus, Task } from "./types";
+import { parseDateKey, timeToMinutes, todayKey } from "./time";
 
 /** Weergave-informatie per prioriteit. */
 export const PRIORITY_META: Record<
@@ -61,4 +61,41 @@ export function taskProgress(task: Task): { done: number; total: number } {
   const total = task.steps?.length ?? 0;
   const done = task.steps?.filter((step) => step.done).length ?? 0;
   return { done, total };
+}
+
+/* --- Koppeling agenda <-> schoolwerk ------------------------------------ */
+
+/** Duur van een activiteit in minuten (eindtijd minus starttijd). */
+export function activityMinutes(activity: Pick<Activity, "startTime" | "endTime">): number {
+  return Math.max(0, timeToMinutes(activity.endTime) - timeToMinutes(activity.startTime));
+}
+
+/** De activiteiten die aan een taak zijn gekoppeld. */
+export function activitiesForTask(activities: Activity[], taskId: string): Activity[] {
+  return activities.filter((a) => a.linkedTaskId === taskId);
+}
+
+/** De activiteiten die aan een toets zijn gekoppeld. */
+export function activitiesForExam(activities: Activity[], examId: string): Activity[] {
+  return activities.filter((a) => a.linkedExamId === examId);
+}
+
+/** Totaal aan ingeplande minuten voor een taak (som van gekoppelde blokken). */
+export function plannedMinutesForTask(activities: Activity[], taskId: string): number {
+  return activitiesForTask(activities, taskId).reduce((sum, a) => sum + activityMinutes(a), 0);
+}
+
+/** Totaal aan ingeplande minuten voor een toets. */
+export function plannedMinutesForExam(activities: Activity[], examId: string): number {
+  return activitiesForExam(activities, examId).reduce((sum, a) => sum + activityMinutes(a), 0);
+}
+
+/** Ingeplande tijd t.o.v. de schatting, met percentage voor een voortgangsbalk. */
+export function plannedProgress(
+  plannedMinutes: number,
+  estimateMinutes: number | undefined,
+): { planned: number; estimate: number; pct: number; enough: boolean } {
+  const estimate = estimateMinutes ?? 0;
+  const pct = estimate > 0 ? Math.min(100, Math.round((plannedMinutes / estimate) * 100)) : 0;
+  return { planned: plannedMinutes, estimate, pct, enough: estimate > 0 && plannedMinutes >= estimate };
 }

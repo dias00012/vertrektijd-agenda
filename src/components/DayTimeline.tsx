@@ -102,6 +102,13 @@ function TimelineRow({ entry, onSelect }: { entry: TimelineEntry; onSelect: () =
           <span className="flex items-baseline gap-2">
             <span aria-hidden>{category.emoji}</span>
             <span className="truncate text-sm font-semibold">{entry.activity.title}</span>
+            {entry.activity.source === "leerplan" ||
+            entry.activity.linkedTaskId ||
+            entry.activity.linkedExamId ? (
+              <span aria-hidden title="Leer-/werkblok uit je leerplan">
+                📚
+              </span>
+            ) : null}
           </span>
           <span className="mt-0.5 block text-xs tabular-nums" style={{ color: "var(--muted)" }}>
             {entry.activity.startTime} &ndash; {entry.activity.endTime}

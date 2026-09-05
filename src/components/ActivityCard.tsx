@@ -15,7 +15,7 @@ import type { ActivityOccurrence } from "@/lib/types";
  * Klikken opent hetzelfde formulier als bij toevoegen, in bewerkmodus.
  */
 export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
-  const { settings, calculatingIds, retryTravel } = useAgenda();
+  const { settings, calculatingIds, retryTravel, tasks, exams } = useAgenda();
   const [editing, setEditing] = useState(false);
 
   const category = getCategory(activity.category);
@@ -23,6 +23,8 @@ export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
   const departure = computeDeparture(activity, settings);
   const back = computeReturn(activity, settings);
   const calculating = calculatingIds.has(activity.id);
+  const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
+  const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
   return (
     <>
@@ -50,7 +52,23 @@ export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
                 >
                   {category.label}
                 </span>
-                {activity.source === "leerplan" ? (
+                {linkedTask ? (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
+                    style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
+                    title={`Leerblok voor: ${linkedTask.subject} — ${linkedTask.title}`}
+                  >
+                    📚 {linkedTask.subject}
+                  </span>
+                ) : linkedExam ? (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
+                    style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
+                    title={`Leren voor toets: ${linkedExam.subject}`}
+                  >
+                    📝 {linkedExam.subject}
+                  </span>
+                ) : activity.source === "leerplan" ? (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
@@ -67,6 +85,16 @@ export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
               {activity.recurrence ? (
                 <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
                   &#128257; {describeRecurrence(activity.recurrence)}
+                </p>
+              ) : null}
+
+              {linkedTask ? (
+                <p className="mt-1 truncate text-xs" style={{ color: "var(--muted)" }}>
+                  &#8618; Voor opdracht: {linkedTask.title}
+                </p>
+              ) : linkedExam ? (
+                <p className="mt-1 truncate text-xs" style={{ color: "var(--muted)" }}>
+                  &#8618; Leren voor: {linkedExam.title ?? linkedExam.subject}
                 </p>
               ) : null}
 

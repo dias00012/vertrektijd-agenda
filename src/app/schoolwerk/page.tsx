@@ -7,6 +7,9 @@ import {
   STATUS_META,
   STATUS_ORDER,
   describeDaysUntil,
+  plannedMinutesForExam,
+  plannedMinutesForTask,
+  plannedProgress,
   sortExams,
   sortTasks,
   taskProgress,
@@ -120,8 +123,38 @@ function StatusControl({
   );
 }
 
+/** Balkje: hoeveel leertijd al is ingepland t.o.v. de schatting. */
+function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: number; estimateMinutes?: number }) {
+  const { planned, estimate, pct, enough } = plannedProgress(plannedMinutes, estimateMinutes);
+  if (estimate === 0 && planned === 0) return null;
+
+  const barColor = enough ? "#22c55e" : "var(--accent)";
+  return (
+    <div className="mt-2">
+      <p className="text-xs" style={{ color: "var(--muted)" }}>
+        &#128203; Ingepland: {formatDuration(planned)}
+        {estimate > 0 ? ` van ${formatDuration(estimate)}` : " (geen schatting)"}
+        {enough ? " ✓" : ""}
+      </p>
+      {estimate > 0 ? (
+        <div
+          className="mt-1 h-1.5 w-full overflow-hidden rounded-full"
+          style={{ background: "var(--surface-soft)" }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: barColor }} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function TaskCard({ task, now }: { task: Task; now: Date }) {
-  const { setTaskStatus, toggleTaskStep } = useAgenda();
+  const { activities, setTaskStatus, toggleTaskStep } = useAgenda();
+  const plannedMinutes = plannedMinutesForTask(activities, task.id);
   const priority = PRIORITY_META[task.priority];
   const progress = taskProgress(task);
   const overdue = task.status !== "done" && new Date(task.deadline) < new Date(now.toDateString());
@@ -169,6 +202,8 @@ function TaskCard({ task, now }: { task: Task; now: Date }) {
             ) : null}
           </p>
 
+          <PlannedBar plannedMinutes={plannedMinutes} estimateMinutes={task.estimatedMinutes} />
+
           {task.steps && task.steps.length > 0 ? (
             <ul className="mt-2.5 space-y-1.5">
               {task.steps.map((step) => (
@@ -210,7 +245,8 @@ function TaskCard({ task, now }: { task: Task; now: Date }) {
 }
 
 function ExamCard({ exam, now }: { exam: Exam; now: Date }) {
-  const { setExamStatus } = useAgenda();
+  const { activities, setExamStatus } = useAgenda();
+  const plannedMinutes = plannedMinutesForExam(activities, exam.id);
   const priority = PRIORITY_META[exam.priority];
   const days = describeDaysUntil(exam.date, now);
   const soon = exam.status !== "done" && new Date(exam.date) < new Date(now.toDateString());
@@ -259,6 +295,8 @@ function ExamCard({ exam, now }: { exam: Exam; now: Date }) {
               ))}
             </p>
           ) : null}
+
+          <PlannedBar plannedMinutes={plannedMinutes} estimateMinutes={exam.prepMinutes} />
 
           <div className="mt-3">
             <StatusControl value={exam.status} onChange={(status) => setExamStatus(exam.id, status)} />

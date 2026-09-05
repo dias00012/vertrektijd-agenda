@@ -1,0 +1,89 @@
+{
+  "app": "vertrektijd-agenda",
+  "version": 2,
+  "exportedAt": "2026-09-05T08:00:00.000Z",
+  "settings": {
+    "home": { "label": "Almere Centrum", "lat": 52.3746, "lon": 5.2181 },
+    "savedPlaces": [],
+    "categoryPlaces": {},
+    "bufferMinutes": 10,
+    "travelMode": "car"
+  },
+  "activities": [
+    {
+      "id": "leer-wisk-1",
+      "category": "school",
+      "title": "Wiskunde leren",
+      "date": "2026-09-06",
+      "startTime": "13:00",
+      "endTime": "14:30",
+      "location": null,
+      "color": null,
+      "source": "leerplan",
+      "recurrence": null,
+      "exceptions": [],
+      "travel": null,
+      "returnTravel": null,
+      "travelError": null,
+      "bufferMinutes": null,
+      "linkedTaskId": null,
+      "linkedExamId": "ex-wisk-h3",
+      "createdAt": "2026-09-05T08:00:00.000Z",
+      "updatedAt": "2026-09-05T08:00:00.000Z"
+    },
+    {
+      "id": "werk-opdr-eng-1",
+      "category": "school",
+      "title": "Werken aan essay",
+      "date": "2026-09-07",
+      "startTime": "16:00",
+      "endTime": "17:00",
+      "location": null,
+      "color": null,
+      "source": "leerplan",
+      "recurrence": null,
+      "exceptions": [],
+      "travel": null,
+      "returnTravel": null,
+      "travelError": null,
+      "bufferMinutes": null,
+      "linkedTaskId": "t-eng-essay",
+      "linkedExamId": null,
+      "createdAt": "2026-09-05T08:00:00.000Z",
+      "updatedAt": "2026-09-05T08:00:00.000Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t-eng-essay",
+      "subject": "Engels",
+      "title": "Essay schrijven",
+      "description": "300 woorden over je favoriete boek",
+      "deadline": "2026-09-12",
+      "estimatedMinutes": 120,
+      "priority": "medium",
+      "status": "todo",
+      "steps": [
+        { "id": "s1", "title": "Onderwerp kiezen en outline", "estimatedMinutes": 20, "done": false },
+        { "id": "s2", "title": "Eerste versie schrijven", "estimatedMinutes": 60, "done": false },
+        { "id": "s3", "title": "Nakijken en inleveren", "estimatedMinutes": 40, "done": false }
+      ],
+      "createdAt": "2026-09-05T08:00:00.000Z",
+      "updatedAt": "2026-09-05T08:00:00.000Z"
+    }
+  ],
+  "exams": [
+    {
+      "id": "ex-wisk-h3",
+      "subject": "Wiskunde",
+      "title": "Toets hoofdstuk 3",
+      "date": "2026-09-10",
+      "topics": ["Kwadraten", "Ontbinden in factoren", "Wortels"],
+      "prepMinutes": 180,
+      "priority": "high",
+      "status": "todo",
+      "createdAt": "2026-09-05T08:00:00.000Z",
+      "updatedAt": "2026-09-05T08:00:00.000Z"
+    }
+  ]
+}

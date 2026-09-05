@@ -7,6 +7,7 @@ import { activitiesOnDate, findNextActivity } from "@/lib/agenda";
 import { formatDateShort, todayKey } from "@/lib/time";
 import { DayTimeline } from "@/components/DayTimeline";
 import { NextUpCard } from "@/components/NextUpCard";
+import { SchoolworkTodayCard } from "@/components/SchoolworkTodayCard";
 import { EmptyState, Spinner } from "@/components/ui";
 
 /** Dashboard: wat staat er vandaag te gebeuren en wanneer moet ik weg? */
@@ -35,6 +36,8 @@ export default function DashboardPage() {
       ) : (
         <>
           {next ? <NextUpCard activity={next} now={now} /> : null}
+
+          <SchoolworkTodayCard now={now} />
 
           {todayItems.length === 0 ? (
             <EmptyState
