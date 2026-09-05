@@ -225,6 +225,11 @@ export interface Settings {
   /** Veiligheidsmarge in minuten, standaard 10. */
   bufferMinutes: number;
   travelMode: TravelMode;
+  /**
+   * Hoeveel minuten vóór je vertrektijd je een melding wilt. `null` = uit.
+   * Zie `useReminders` voor wat er wel en niet kan zonder pushserver.
+   */
+  reminderMinutes?: number | null;
 }
 
 export interface GeocodeResult extends GeoLocation {

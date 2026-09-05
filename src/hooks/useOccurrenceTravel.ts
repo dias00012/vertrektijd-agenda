@@ -29,6 +29,8 @@ interface OccurrenceTravel {
 /** Zo ver vooruit publiceren vervoerders hun dienstregeling betrouwbaar. */
 const MAX_LOOKAHEAD_DAYS = 21;
 const CACHE_TTL_MS = 5 * 60 * 1000;
+/** Hoe vaak we een rit van vandaag opnieuw ophalen voor actuele vertragingen. */
+const REFRESH_MS = 2 * 60 * 1000;
 
 interface CacheEntry {
   at: number;
@@ -65,12 +67,38 @@ export function useOccurrenceTravel(activity: Activity, settings: Settings): Occ
     returnTravel: TravelInfo;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  /** Verandert zodra we opnieuw willen ophalen, bv. na een paar minuten. */
+  const [reloadAt, setReloadAt] = useState(0);
 
   const outboundKey = plan?.outboundKey ?? null;
 
+  /*
+   * Vertragingen veranderen. Voor een OV-rit van vandaag halen we daarom
+   * regelmatig opnieuw op, en meteen wanneer je de app weer voor je neus haalt
+   * — dat laatste is het moment waarop je écht wilt weten of je trein rijdt.
+   */
+  const isToday = offset === 0;
+  useEffect(() => {
+    if (!isTransit || !isToday) return;
+
+    const refresh = () => setReloadAt(Date.now());
+    const timer = setInterval(refresh, REFRESH_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isTransit, isToday]);
+
   useEffect(() => {
     if (!shouldFetch || !plan || !outboundKey || !settings.home || !activity.location) return;
-    if (fetched?.key === outboundKey) return;
+    if (fetched?.key === outboundKey && reloadAt === 0) return;
+    // Bij een verversing willen we juist geen cache: dat is het hele punt.
+    if (reloadAt > 0) cache.delete(outboundKey);
 
     const home = settings.home;
     const destination = activity.location;
@@ -114,7 +142,7 @@ export function useOccurrenceTravel(activity: Activity, settings: Settings): Occ
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldFetch, outboundKey]);
+  }, [shouldFetch, outboundKey, reloadAt]);
 
   if (!isTransit) return { ...stored, loading: false, exact: true };
   if (alreadyExact) return { ...stored, loading: false, exact: true };

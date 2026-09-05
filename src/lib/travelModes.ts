@@ -98,6 +98,29 @@ export function journeySteps(legs: TravelLeg[] | undefined): JourneyStep[] {
   });
 }
 
+/**
+ * De grootste vertraging binnen een reis, in minuten. Eén vertraagde trein
+ * bepaalt of je op tijd bent, dus we tonen de zwaarste — niet het gemiddelde.
+ */
+export function journeyDelay(legs: TravelLeg[] | undefined): number {
+  return (legs ?? []).reduce((worst, leg) => Math.max(worst, leg.delayMinutes ?? 0), 0);
+}
+
+/** Zit er live (actuele) informatie in deze reis, of is het puur dienstregeling? */
+export function hasRealTime(legs: TravelLeg[] | undefined): boolean {
+  return (legs ?? []).some((leg) => leg.realTime === true);
+}
+
+/** Is een onderdeel van deze reis uitgevallen? */
+export function isCancelled(legs: TravelLeg[] | undefined): boolean {
+  return (legs ?? []).some((leg) => leg.cancelled === true);
+}
+
+/** De geplande vertrektijd volgens de dienstregeling, vóór vertraging. */
+export function scheduledDeparture(legs: TravelLeg[] | undefined): string | undefined {
+  return (legs ?? []).find((leg) => leg.scheduledDeparture)?.scheduledDeparture;
+}
+
 /** Totale looptijd binnen een OV-reis, in minuten. */
 export function walkingMinutes(legs: TravelLeg[] | undefined): number {
   return (legs ?? [])

@@ -6,7 +6,14 @@ import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
 import { computeDeparture, computeReturn } from "@/lib/travel";
 import { formatDateLabel, formatDuration } from "@/lib/time";
-import { travelModeMeta } from "@/lib/travelModes";
+import {
+  hasRealTime,
+  isCancelled,
+  journeyDelay,
+  legTime,
+  scheduledDeparture,
+  travelModeMeta,
+} from "@/lib/travelModes";
 import { JourneyDetails } from "./JourneyDetails";
 import { Spinner } from "./ui";
 import type { Activity } from "@/lib/types";
@@ -31,6 +38,12 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
   const back = computeReturn(shown, settings);
   const untilDeparture = minutesUntilDeparture(shown, settings, now);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
+
+  const legs = shown.travel?.legs;
+  const delay = journeyDelay(legs);
+  const live = hasRealTime(legs);
+  const cancelled = isCancelled(legs);
+  const plannedTime = legTime(scheduledDeparture(legs));
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
@@ -106,9 +119,30 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                   <p className="text-[0.7rem] uppercase tracking-wide" style={{ color: "var(--muted)" }}>
                     Vertrek om
                   </p>
-                  <p className="text-3xl font-semibold tabular-nums leading-tight">
+                  <p
+                    className="text-3xl font-semibold tabular-nums leading-tight"
+                    style={delay > 0 ? { color: "#f97316" } : undefined}
+                  >
                     {departure.time}
                   </p>
+                  {cancelled ? (
+                    <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
+                      &#9888;&#65039; rit uitgevallen
+                    </p>
+                  ) : delay > 0 ? (
+                    <p className="text-xs font-semibold" style={{ color: "#f97316" }}>
+                      &#9200; {delay} min later
+                      {plannedTime ? (
+                        <span className="ml-1 font-normal line-through" style={{ color: "var(--muted)" }}>
+                          {plannedTime}
+                        </span>
+                      ) : null}
+                    </p>
+                  ) : live ? (
+                    <p className="text-xs" style={{ color: "#22c55e" }}>
+                      &#9679; op tijd &middot; live
+                    </p>
+                  ) : null}
                 </div>
                 <div className="pb-1">
                   <p className="text-sm" style={{ color: "var(--muted)" }}>

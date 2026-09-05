@@ -8,7 +8,14 @@ import { computeDeparture, computeReturn } from "@/lib/travel";
 import { timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
 import { describeRecurrence } from "@/lib/recurrence";
-import { travelModeMeta } from "@/lib/travelModes";
+import {
+  hasRealTime,
+  isCancelled,
+  journeyDelay,
+  legTime,
+  scheduledDeparture,
+  travelModeMeta,
+} from "@/lib/travelModes";
 import { ActivityForm } from "./ActivityForm";
 import { JourneyDetails } from "./JourneyDetails";
 import { ErrorNote, Spinner } from "./ui";
@@ -40,6 +47,13 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
+
+  // Live informatie over de heenreis: rijdt hij, en zo ja, op tijd?
+  const legs = shown.travel?.legs;
+  const delay = journeyDelay(legs);
+  const live = hasRealTime(legs);
+  const cancelled = isCancelled(legs);
+  const plannedTime = legTime(scheduledDeparture(legs));
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
@@ -176,13 +190,40 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                         </span>
                       </p>
                       <p className="text-sm font-semibold tabular-nums">
-                        &#127968; Vertrekken om {departure.time}
+                        &#127968; Vertrekken om{" "}
+                        <span style={delay > 0 ? { color: "#f97316" } : undefined}>
+                          {departure.time}
+                        </span>
+                        {/* Bij vertraging: de tijd uit de dienstregeling erbij,
+                            doorgestreept, zodat je ziet dat het is opgeschoven. */}
+                        {delay > 0 && plannedTime ? (
+                          <span
+                            className="ml-1.5 text-xs font-normal line-through"
+                            style={{ color: "var(--muted)" }}
+                          >
+                            {plannedTime}
+                          </span>
+                        ) : null}
                         {departure.previousDay ? (
                           <span className="ml-1 text-xs font-normal" style={{ color: "var(--muted)" }}>
                             (dag ervoor)
                           </span>
                         ) : null}
                       </p>
+
+                      {cancelled ? (
+                        <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
+                          &#9888;&#65039; Deze rit is uitgevallen &mdash; zoek een andere reis.
+                        </p>
+                      ) : delay > 0 ? (
+                        <p className="text-xs font-semibold" style={{ color: "#f97316" }}>
+                          &#9200; {delay} min vertraging &middot; live
+                        </p>
+                      ) : live ? (
+                        <p className="text-xs" style={{ color: "#22c55e" }}>
+                          &#9679; Op tijd &middot; live
+                        </p>
+                      ) : null}
                       {back ? (
                         <p className="text-xs tabular-nums" style={{ color: "var(--muted)" }}>
                           &#8617;&#65039; Terug: {formatDuration(back.travelMinutes)} &middot; thuis om{" "}

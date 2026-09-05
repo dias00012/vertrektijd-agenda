@@ -6,6 +6,7 @@ import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces } from
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
+import { RemindersSection } from "@/components/RemindersSection";
 import { Spinner } from "@/components/ui";
 import { TRAVEL_MODES } from "@/lib/travelModes";
 import type { GeoLocation, TravelMode } from "@/lib/types";
@@ -169,6 +170,7 @@ export default function SettingsPage() {
         </form>
       )}
 
+      {hydrated ? <RemindersSection /> : null}
       {hydrated ? <SavedPlaces /> : null}
       {hydrated ? <BackupSection /> : null}
 

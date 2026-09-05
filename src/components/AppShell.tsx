@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { ActivityForm } from "./ActivityForm";
+import { Onboarding } from "./Onboarding";
 import { useAgenda } from "@/hooks/useAgenda";
+import { useReminders } from "@/hooks/useReminders";
 
 const NAV = [
   { href: "/", label: "Vandaag", icon: "☀️" },
@@ -25,6 +27,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [formOpen, setFormOpen] = useState(false);
   const { settings, hydrated } = useAgenda();
+
+  // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
+  useReminders();
 
   const showHomeHint = hydrated && !settings.home && pathname !== "/instellingen";
 
@@ -154,6 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
+      <Onboarding onAddActivity={() => setFormOpen(true)} />
       {formOpen ? <ActivityForm onClose={() => setFormOpen(false)} /> : null}
     </div>
   );

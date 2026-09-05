@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   customCategories: [],
   bufferMinutes: 10,
   travelMode: "car",
+  reminderMinutes: null,
 };
 
 function read<T>(key: string, fallback: T): T {

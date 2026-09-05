@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AgendaProvider } from "@/hooks/useAgenda";
 import { AppShell } from "@/components/AppShell";
+import { ServiceWorker } from "@/components/ServiceWorker";
 
 export const metadata: Metadata = {
   title: "Vertrektijd \u2014 slimme agenda",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AppShell>{children}</AppShell>
           </AgendaProvider>
         </AuthProvider>
+        <ServiceWorker />
       </body>
     </html>
   );
