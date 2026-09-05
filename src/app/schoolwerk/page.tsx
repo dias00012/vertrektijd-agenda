@@ -16,9 +16,10 @@ import {
   sortTasks,
   taskProgress,
 } from "@/lib/schoolwork";
-import { formatDateLabel, formatDuration } from "@/lib/time";
+import { ActivityForm } from "@/components/ActivityForm";
+import { addDaysToKey, formatDateLabel, formatDuration, minutesToTime, todayKey } from "@/lib/time";
 import { EmptyState, Spinner } from "@/components/ui";
-import type { Exam, SchoolworkStatus, Task } from "@/lib/types";
+import type { ActivityDraft, Exam, SchoolworkStatus, Task } from "@/lib/types";
 
 /** Schoolwerk: opdrachten op deadline en toetsen op datum, met status en stappen. */
 export default function SchoolworkPage() {
@@ -29,6 +30,8 @@ export default function SchoolworkPage() {
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editExam, setEditExam] = useState<Exam | null>(null);
   const formOpen = adding || editTask !== null || editExam !== null;
+  /** Leertijd inplannen: opent het activiteitenformulier al ingevuld. */
+  const [planning, setPlanning] = useState<Task | Exam | null>(null);
 
   function closeForm() {
     setAdding(false);
@@ -85,7 +88,13 @@ export default function SchoolworkPage() {
             ) : (
               <div className="space-y-2.5">
                 {sortedTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} now={now} onEdit={() => setEditTask(task)} />
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    now={now}
+                    onEdit={() => setEditTask(task)}
+                    onPlan={() => setPlanning(task)}
+                  />
                 ))}
               </div>
             )}
@@ -102,7 +111,13 @@ export default function SchoolworkPage() {
             ) : (
               <div className="space-y-2.5">
                 {sortedExams.map((exam) => (
-                  <ExamCard key={exam.id} exam={exam} now={now} onEdit={() => setEditExam(exam)} />
+                  <ExamCard
+                    key={exam.id}
+                    exam={exam}
+                    now={now}
+                    onEdit={() => setEditExam(exam)}
+                    onPlan={() => setPlanning(exam)}
+                  />
                 ))}
               </div>
             )}
@@ -117,8 +132,49 @@ export default function SchoolworkPage() {
           onClose={closeForm}
         />
       ) : null}
+
+      {planning ? (
+        <ActivityForm
+          preset={studyPreset(planning)}
+          onClose={() => setPlanning(null)}
+        />
+      ) : null}
     </div>
   );
+}
+
+/** Is dit een toets? Alleen toetsen hebben een `date`. */
+function isExam(item: Task | Exam): item is Exam {
+  return "date" in item;
+}
+
+/**
+ * Het leerblok dat we voorstellen bij een opdracht of toets: op de dag ervoor,
+ * 's middags, met de geschatte tijd als lengte. Alles blijft aanpasbaar; dit is
+ * een startpunt, geen beslissing.
+ */
+function studyPreset(item: Task | Exam): Partial<ActivityDraft> {
+  const exam = isExam(item);
+  const deadline = exam ? item.date : item.deadline;
+  const minutes = (exam ? item.prepMinutes : item.estimatedMinutes) ?? 60;
+
+  // Kort voor de deadline, maar niet in het verleden.
+  const dayBefore = addDaysToKey(deadline, -1);
+  const date = dayBefore < todayKey() ? todayKey() : dayBefore;
+
+  const start = 15 * 60;
+  return {
+    category: "school",
+    title: exam ? `Leren voor ${item.subject}` : `Werken aan ${item.title}`,
+    date,
+    startTime: minutesToTime(start),
+    endTime: minutesToTime(start + Math.min(minutes, 8 * 60)),
+    // Leren doe je thuis; geen locatie betekent ook geen reistijd.
+    location: null,
+    source: "leerplan",
+    linkedTaskId: exam ? null : item.id,
+    linkedExamId: exam ? item.id : null,
+  };
 }
 
 function StatusControl({
@@ -187,7 +243,17 @@ function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: numbe
   );
 }
 
-function TaskCard({ task, now, onEdit }: { task: Task; now: Date; onEdit: () => void }) {
+function TaskCard({
+  task,
+  now,
+  onEdit,
+  onPlan,
+}: {
+  task: Task;
+  now: Date;
+  onEdit: () => void;
+  onPlan: () => void;
+}) {
   const { activities, setTaskStatus, toggleTaskStep } = useAgenda();
   const plannedMinutes = plannedMinutesForTask(activities, task.id);
   const priority = PRIORITY_META[task.priority];
@@ -279,8 +345,17 @@ function TaskCard({ task, now, onEdit }: { task: Task; now: Date; onEdit: () => 
             </ul>
           ) : null}
 
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusControl value={task.status} onChange={(status) => setTaskStatus(task.id, status)} />
+            {!done ? (
+              <button
+                type="button"
+                className="btn btn-ghost px-3 py-1.5 text-xs"
+                onClick={onPlan}
+              >
+                &#128197; Leertijd inplannen
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -288,7 +363,17 @@ function TaskCard({ task, now, onEdit }: { task: Task; now: Date; onEdit: () => 
   );
 }
 
-function ExamCard({ exam, now, onEdit }: { exam: Exam; now: Date; onEdit: () => void }) {
+function ExamCard({
+  exam,
+  now,
+  onEdit,
+  onPlan,
+}: {
+  exam: Exam;
+  now: Date;
+  onEdit: () => void;
+  onPlan: () => void;
+}) {
   const { activities, setExamStatus } = useAgenda();
   const plannedMinutes = plannedMinutesForExam(activities, exam.id);
   const priority = PRIORITY_META[exam.priority];
@@ -351,8 +436,17 @@ function ExamCard({ exam, now, onEdit }: { exam: Exam; now: Date; onEdit: () => 
 
           <PlannedBar plannedMinutes={plannedMinutes} estimateMinutes={exam.prepMinutes} />
 
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusControl value={exam.status} onChange={(status) => setExamStatus(exam.id, status)} />
+            {!done ? (
+              <button
+                type="button"
+                className="btn btn-ghost px-3 py-1.5 text-xs"
+                onClick={onPlan}
+              >
+                &#128197; Leertijd inplannen
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

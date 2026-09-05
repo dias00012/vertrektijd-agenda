@@ -1,4 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="44" fill="#2563eb"/>
-  <path d="M96 40a8 8 0 0 1 8 8v46l30 18a8 8 0 1 1-8 14l-34-20a8 8 0 0 1-4-7V48a8 8 0 0 1 8-8z" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44.160000000000004" fill="url(#bg)"/>
+  <circle cx="96" cy="96" r="48" fill="none" stroke="#fff" stroke-width="8.064"/>
+  <g stroke="#fff" stroke-width="5.6448" stroke-linecap="round" opacity="0.75"><line x1="96.0" y1="63.3" x2="96.0" y2="75.4"/><line x1="128.7" y1="96.0" x2="116.6" y2="96.0"/><line x1="96.0" y1="128.7" x2="96.0" y2="116.6"/><line x1="63.3" y1="96.0" x2="75.4" y2="96.0"/></g>
+  <g stroke="#fff" stroke-linecap="round">
+    <line x1="96" y1="96" x2="75.1" y2="103.0" stroke-width="10.08"/>
+    <line x1="96" y1="96" x2="119.8" y2="122.4" stroke-width="6.8544"/>
+  </g>
+  <circle cx="96" cy="96" r="6.048" fill="#1d4ed8" stroke="#fff" stroke-width="4.032"/>
 </svg>

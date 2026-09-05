@@ -25,6 +25,13 @@ interface Props {
    * welke dag "alleen deze dag verwijderen" overslaat.
    */
   occurrenceDate?: string;
+  /**
+   * Alvast ingevulde velden voor een nieuwe activiteit, bijvoorbeeld wanneer je
+   * vanuit een opdracht leertijd inplant. Wordt genegeerd bij bewerken.
+   */
+  preset?: Partial<ActivityDraft>;
+  /** Koppelt de nieuwe activiteit aan een opdracht of toets. */
+  link?: { taskId?: string; examId?: string };
   onClose: () => void;
 }
 
@@ -38,7 +45,11 @@ interface FormErrors {
 
 const DEFAULT_DURATION_MINUTES = 60;
 
-function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
+function initialDraft(
+  settings: Settings,
+  activity?: Activity,
+  preset?: Partial<ActivityDraft>,
+): ActivityDraft {
   if (activity) {
     return {
       category: activity.category,
@@ -57,7 +68,7 @@ function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
   const now = new Date();
   // Rond af op het volgende kwartier: prettiger startpunt dan 14:07.
   const start = Math.ceil((now.getHours() * 60 + now.getMinutes() + 5) / 15) * 15;
-  const category: CategoryId = "school";
+  const category: CategoryId = preset?.category ?? "school";
   return {
     category,
     title: "",
@@ -68,11 +79,12 @@ function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
     color: resolveCategory(category, settings.customCategories).color,
     travelMode: settings.travelMode,
     recurrence: null,
+    ...preset,
   };
 }
 
 /** Modale sheet voor het toevoegen en bewerken van een activiteit. */
-export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
+export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }: Props) {
   const {
     addActivity,
     updateActivity,
@@ -84,7 +96,9 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
     categoryFor,
     addCustomCategory,
   } = useAgenda();
-  const [draft, setDraft] = useState<ActivityDraft>(() => initialDraft(settings, activity));
+  const [draft, setDraft] = useState<ActivityDraft>(() =>
+    initialDraft(settings, activity, preset),
+  );
   const [submitted, setSubmitted] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"idle" | "choose" | "confirm">("idle");
 

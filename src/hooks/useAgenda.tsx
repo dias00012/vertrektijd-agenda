@@ -319,7 +319,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     const activity: Activity = {
       id: createId(),
       ...draft,
-      source: null,
+      source: draft.source ?? null,
       exceptions: [],
       travel: null,
       returnTravel: null,

@@ -186,6 +186,15 @@ export interface ActivityDraft {
   color: string | null;
   travelMode: TravelMode | null;
   recurrence: Recurrence | null;
+  /**
+   * Koppeling aan schoolwerk. Alleen gezet wanneer je vanuit een opdracht of
+   * toets leertijd inplant; bij bewerken blijft de bestaande koppeling staan
+   * omdat het formulier deze velden dan niet meestuurt.
+   */
+  linkedTaskId?: string | null;
+  linkedExamId?: string | null;
+  /** Herkomst, bv. "leerplan". Standaard leeg. */
+  source?: string | null;
 }
 
 /**
