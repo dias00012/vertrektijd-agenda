@@ -1,19 +1,19 @@
 import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
-import type { GeoLocation, TravelLeg, TravelLegMode, TravelMode, TravelResult } from "../types";
+import { motisPlan, toTravelLeg } from "./motis";
+import type { GeoLocation, TravelMode, TravelResult } from "../types";
 
 /**
- * Routering per vervoermiddel.
+ * Routering per vervoermiddel voor de agenda: één reis van A naar B.
  *
  * - auto  -> OSRM (snelle, betrouwbare autoroutes)
  * - fiets -> MOTIS (de publieke OSRM-demo kent alleen het autoprofiel en zou
  *            voor fiets en lopen dezelfde — dus foute — tijd teruggeven)
  * - lopen -> MOTIS
- * - OV    -> MOTIS reisplanner, met echte dienstregeling, lijnen en sporen
+ * - OV    -> MOTIS, met echte dienstregeling, lijnen en sporen
  *
- * MOTIS/transitous is gratis en zonder sleutel, maar vraagt wel om een
- * herkenbare User-Agent (zie https://transitous.org/api/).
+ * Meerdere reisopties naast elkaar (de reisplanner) staan in `journeys.ts`.
  */
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -66,7 +66,7 @@ function coord(point: GeoLocation): string {
   return `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
 }
 
-function place(point: GeoLocation): string {
+export function place(point: GeoLocation): string {
   return `${point.lat},${point.lon}`;
 }
 
@@ -103,60 +103,8 @@ async function routeCar(from: GeoLocation, to: GeoLocation): Promise<RouteResult
   };
 }
 
-/* --- MOTIS (fiets, lopen en OV) ----------------------------------------- */
+/* --- Fiets en lopen via MOTIS ------------------------------------------- */
 
-interface MotisPlace {
-  name?: string;
-  track?: string;
-  departure?: string;
-  arrival?: string;
-}
-
-interface MotisLeg {
-  mode?: string;
-  duration?: number;
-  distance?: number;
-  startTime?: string;
-  endTime?: string;
-  from?: MotisPlace;
-  to?: MotisPlace;
-  routeShortName?: string;
-  headsign?: string;
-  agencyName?: string;
-  tripShortName?: string;
-}
-
-interface MotisItinerary {
-  duration?: number;
-  startTime?: string;
-  endTime?: string;
-  transfers?: number;
-  legs?: MotisLeg[];
-}
-
-async function motisPlan(params: URLSearchParams): Promise<{
-  itineraries?: MotisItinerary[];
-  direct?: MotisItinerary[];
-}> {
-  const config = getProviderConfig();
-  const url = `${config.motisBaseUrl}/api/v1/plan?${params.toString()}`;
-
-  const response = await fetchWithTimeout(
-    url,
-    { headers: { "User-Agent": config.userAgent, Accept: "application/json" } },
-    12_000,
-  );
-
-  if (response.status === 429) {
-    throw new ProviderError("Te veel reisaanvragen achter elkaar. Probeer het zo nog eens.", 429);
-  }
-  if (!response.ok) {
-    throw new ProviderError("De reisplanner is niet bereikbaar. Probeer het later opnieuw.");
-  }
-  return (await response.json()) as { itineraries?: MotisItinerary[]; direct?: MotisItinerary[] };
-}
-
-/** Fiets- of looproute zonder dienstregeling. */
 async function planDirect(
   from: GeoLocation,
   to: GeoLocation,
@@ -192,7 +140,8 @@ async function planDirect(
   };
 }
 
-/** Volledige OV-reis met lijnen, overstappen en sporen. */
+/* --- OV via MOTIS ------------------------------------------------------- */
+
 async function planTransit(
   from: GeoLocation,
   to: GeoLocation,
@@ -234,63 +183,5 @@ async function planTransit(
     transfers: best.transfers ?? 0,
     plannedDeparture: best.startTime,
     plannedArrival: best.endTime,
-  };
-}
-
-/** Vertaalt een MOTIS-vervoerswijze naar onze eigen, compactere set. */
-function toLegMode(motisMode: string | undefined): TravelLegMode {
-  switch ((motisMode ?? "").toUpperCase()) {
-    case "WALK":
-      return "walk";
-    case "BIKE":
-      return "bike";
-    case "CAR":
-      return "car";
-    case "BUS":
-    case "COACH":
-      return "bus";
-    case "TRAM":
-      return "tram";
-    case "SUBWAY":
-    case "METRO":
-      return "subway";
-    case "FERRY":
-      return "ferry";
-    case "RAIL":
-    case "REGIONAL_RAIL":
-    case "REGIONAL_FAST_RAIL":
-    case "LONG_DISTANCE":
-    case "HIGHSPEED_RAIL":
-    case "NIGHT_RAIL":
-      return "rail";
-    default:
-      return "other";
-  }
-}
-
-/**
- * MOTIS noemt begin- en eindpunt "START" en "END". We vervangen die door de
- * namen die de gebruiker kent ("thuis", "Windesheim Almere").
- */
-function placeName(raw: string | undefined, fromLabel: string, toLabel: string): string {
-  if (!raw) return "";
-  if (raw === "START") return fromLabel;
-  if (raw === "END") return toLabel;
-  return raw;
-}
-
-function toTravelLeg(leg: MotisLeg, fromLabel: string, toLabel: string): TravelLeg {
-  return {
-    mode: toLegMode(leg.mode),
-    durationMinutes: Math.round((leg.duration ?? 0) / 60),
-    from: placeName(leg.from?.name, fromLabel, toLabel),
-    to: placeName(leg.to?.name, fromLabel, toLabel),
-    departure: leg.startTime,
-    arrival: leg.endTime,
-    line: leg.routeShortName,
-    headsign: leg.headsign,
-    agency: leg.agencyName,
-    trip: leg.tripShortName,
-    track: leg.from?.track,
   };
 }

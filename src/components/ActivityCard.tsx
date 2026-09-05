@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { activityColor, getCategory } from "@/lib/categories";
+import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { computeDeparture, computeReturn } from "@/lib/travel";
 import { timeStatusFor } from "@/lib/agenda";
@@ -21,11 +21,11 @@ import type { ActivityOccurrence } from "@/lib/types";
  * gedempt te tonen ("geweest") en de lopende activiteit te markeren ("bezig").
  */
 export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; now?: Date }) {
-  const { settings, calculatingIds, retryTravel, tasks, exams } = useAgenda();
+  const { settings, calculatingIds, retryTravel, tasks, exams, categoryFor } = useAgenda();
   const [editing, setEditing] = useState(false);
 
-  const category = getCategory(activity.category);
-  const color = activityColor(activity);
+  const category = categoryFor(activity.category);
+  const color = activityColor(activity, category);
   const departure = computeDeparture(activity, settings);
   const back = computeReturn(activity, settings);
   const calculating = calculatingIds.has(activity.id);

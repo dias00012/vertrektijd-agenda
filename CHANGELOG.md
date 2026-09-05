@@ -8,6 +8,22 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.7.0
+
+- **Reisplanner-tab (zoals 9292).** Nieuw tabblad **Reizen**: zoek van A naar B met trein, bus,
+  tram en metro. Meerdere reisopties onder elkaar, bladeren naar eerdere/latere ritten, en
+  **live vertragingen** (geplande tijd doorgestreept, werkelijke tijd in oranje). Uitklappen toont
+  de hele rit met lijn, richting, **spoor** en overstappen. Zoeken kan op halte/station, op adres,
+  vanaf **je huidige locatie** of met één tik vanaf **thuis**.
+- **Eigen activiteitstypes.** Naast de vijf standaardtypes maak je nu je eigen type met een
+  **zelfgekozen emoji van je toetsenbord** (Windows: Win + `.` · Mac: Ctrl + Cmd + spatie), een
+  eigen naam en kleur. Ze verschijnen overal in de app.
+- **Schoolwerk zelf toevoegen.** Opdrachten en toetsen kun je nu zelf aanmaken, bewerken en
+  verwijderen — inclusief stappen, prioriteit, status en geschatte tijd. Voorheen kon dat alleen
+  via een importbestand.
+- **"Standaard"-knoppen weg** bij Kleur en bij "Hoe reis je hierheen?". Je ziet nu meteen welke
+  kleur en welk vervoermiddel gelden; de kleur volgt je type tenzij je hem zelf kiest.
+
 ## 0.6.0
 
 - **OV-reisplanner.** Kies per activiteit **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV**. Bij OV zoekt de

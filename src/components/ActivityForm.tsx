@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ACTIVITY_COLORS, CATEGORIES, activityColor, getCategory } from "@/lib/categories";
+import { ACTIVITY_COLORS, activityColor, resolveCategory } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { WEEKDAYS, defaultRecurrence, sortWeekdays } from "@/lib/recurrence";
@@ -47,8 +47,10 @@ function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
       startTime: activity.startTime,
       endTime: activity.endTime,
       location: activity.location,
-      color: activity.color,
-      travelMode: activity.travelMode ?? null,
+      // Geen "standaard"-optie meer: toon meteen de kleur en het vervoermiddel
+      // die nu gelden, zodat wat je ziet ook is wat er gebeurt.
+      color: activity.color ?? resolveCategory(activity.category, settings.customCategories).color,
+      travelMode: activity.travelMode ?? settings.travelMode,
       recurrence: activity.recurrence,
     };
   }
@@ -63,19 +65,37 @@ function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
     startTime: minutesToTime(start),
     endTime: minutesToTime(start + DEFAULT_DURATION_MINUTES),
     location: placeForCategory(settings, category)?.location ?? null,
-    color: null,
-    travelMode: null,
+    color: resolveCategory(category, settings.customCategories).color,
+    travelMode: settings.travelMode,
     recurrence: null,
   };
 }
 
 /** Modale sheet voor het toevoegen en bewerken van een activiteit. */
 export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
-  const { addActivity, updateActivity, removeActivity, removeOccurrence, rememberPlace, settings } =
-    useAgenda();
+  const {
+    addActivity,
+    updateActivity,
+    removeActivity,
+    removeOccurrence,
+    rememberPlace,
+    settings,
+    categories,
+    categoryFor,
+    addCustomCategory,
+  } = useAgenda();
   const [draft, setDraft] = useState<ActivityDraft>(() => initialDraft(settings, activity));
   const [submitted, setSubmitted] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"idle" | "choose" | "confirm">("idle");
+
+  // Eigen activiteitstype maken (naam + emoji van je eigen toetsenbord).
+  const [creatingType, setCreatingType] = useState(false);
+  const [newTypeLabel, setNewTypeLabel] = useState("");
+  const [newTypeEmoji, setNewTypeEmoji] = useState("");
+  const [newTypeColor, setNewTypeColor] = useState(ACTIVITY_COLORS[0].value);
+  const [typeError, setTypeError] = useState<string | null>(null);
+  /** Heeft de gebruiker de kleur zelf gekozen? Zo niet, dan volgt hij het type. */
+  const colorTouched = useRef(Boolean(activity?.color));
   // Nieuwe activiteiten onthouden hun locatie standaard; bij het bewerken van
   // een bestaande activiteit veranderen we de vaste locatie niet ongevraagd.
   const [remember, setRemember] = useState(!activity);
@@ -94,8 +114,8 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
     categoryPlace.location.lat === draft.location.lat &&
     categoryPlace.location.lon === draft.location.lon;
 
-  const category = getCategory(draft.category);
-  const accent = activityColor(draft);
+  const category = categoryFor(draft.category);
+  const accent = activityColor(draft, category);
   const isEdit = Boolean(activity);
   const repeats = draft.recurrence !== null;
   // Alleen zinvol als de opgeslagen activiteit al een reeks is.
@@ -151,17 +171,44 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
    * Bij het kiezen van een categorie vullen we de vaste locatie van die
    * categorie in — maar nooit over een locatie heen die je zelf al koos.
    */
-  function selectCategory(category: CategoryId) {
-    const place = placeForCategory(settings, category);
+  function selectCategory(categoryId: CategoryId) {
+    const place = placeForCategory(settings, categoryId);
+    // Koos je de kleur niet zelf, dan volgt hij het type — dat voelt logisch.
+    const color = colorTouched.current
+      ? draft.color
+      : resolveCategory(categoryId, settings.customCategories).color;
 
     // Een locatie die je zelf koos blijft staan; een automatisch ingevulde
     // wisselt mee naar de vaste locatie van de nieuwe categorie.
     if (draft.location && !autoFilled.current) {
-      patch({ category });
+      patch({ category: categoryId, color });
       return;
     }
     autoFilled.current = Boolean(place);
-    patch({ category, location: place?.location ?? null });
+    patch({ category: categoryId, color, location: place?.location ?? null });
+  }
+
+  /** Maakt een eigen type aan en selecteert het meteen. */
+  function createType() {
+    const label = newTypeLabel.trim();
+    const emoji = newTypeEmoji.trim();
+    if (!label) {
+      setTypeError("Geef je type een naam.");
+      return;
+    }
+    if (!emoji) {
+      setTypeError("Kies een emoji als icoon.");
+      return;
+    }
+
+    const created = addCustomCategory({ label, emoji, color: newTypeColor });
+    colorTouched.current = false;
+    patch({ category: created.id, color: created.color });
+
+    setCreatingType(false);
+    setNewTypeLabel("");
+    setNewTypeEmoji("");
+    setTypeError(null);
   }
 
   function patchRecurrence(update: Partial<Recurrence>) {
@@ -258,7 +305,7 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
           <fieldset>
             <legend className="label">Type</legend>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {CATEGORIES.map((item) => {
+              {categories.map((item) => {
                 const active = item.id === draft.category;
                 return (
                   <button
@@ -278,11 +325,106 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
                     <span aria-hidden className="text-base leading-none">
                       {item.emoji}
                     </span>
-                    {item.label}
+                    <span className="w-full truncate">{item.label}</span>
                   </button>
                 );
               })}
+
+              <button
+                type="button"
+                onClick={() => setCreatingType((open) => !open)}
+                aria-expanded={creatingType}
+                className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-2 py-2.5 text-xs font-medium transition-colors"
+                style={{ borderColor: "var(--line)", color: "var(--muted)" }}
+              >
+                <span aria-hidden className="text-base leading-none">
+                  ➕
+                </span>
+                Eigen
+              </button>
             </div>
+
+            {creatingType ? (
+              <div
+                className="mt-2 space-y-3 rounded-xl border px-3 py-3"
+                style={{ borderColor: "var(--line)", background: "var(--surface-soft)" }}
+              >
+                <p className="text-xs" style={{ color: "var(--muted)" }}>
+                  Maak je eigen type. Kies een emoji met de emoji-toets van je toetsenbord
+                  (Windows: <strong>Win + .</strong> · Mac: <strong>Ctrl + Cmd + spatie</strong>).
+                </p>
+
+                <div className="flex gap-2">
+                  <div className="w-16 shrink-0">
+                    <label className="label" htmlFor="new-type-emoji">
+                      Icoon
+                    </label>
+                    <input
+                      id="new-type-emoji"
+                      className="field text-center text-lg"
+                      value={newTypeEmoji}
+                      onChange={(e) => setNewTypeEmoji(e.target.value.slice(0, 8))}
+                      placeholder="🎸"
+                      aria-label="Emoji voor je eigen type"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <label className="label" htmlFor="new-type-label">
+                      Naam
+                    </label>
+                    <input
+                      id="new-type-label"
+                      className="field"
+                      value={newTypeLabel}
+                      onChange={(e) => setNewTypeLabel(e.target.value)}
+                      placeholder="Bijv. Bijbaan"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <span className="label">Kleur</span>
+                  <div className="flex flex-wrap gap-2">
+                    {ACTIVITY_COLORS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setNewTypeColor(option.value)}
+                        aria-label={option.label}
+                        title={option.label}
+                        className="h-6 w-6 rounded-full"
+                        style={{
+                          background: option.value,
+                          boxShadow:
+                            newTypeColor === option.value
+                              ? `0 0 0 2px var(--surface-soft), 0 0 0 4px ${option.value}`
+                              : "none",
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {typeError ? (
+                  <p className="text-xs" style={{ color: "var(--danger)" }}>
+                    {typeError}
+                  </p>
+                ) : null}
+
+                <div className="flex gap-2">
+                  <button type="button" className="btn btn-primary px-3 py-1.5 text-xs" onClick={createType}>
+                    Type toevoegen
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost px-3 py-1.5 text-xs"
+                    onClick={() => setCreatingType(false)}
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </fieldset>
 
           <div>
@@ -307,31 +449,16 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
           <fieldset>
             <legend className="label">Kleur</legend>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => patch({ color: null })}
-                aria-pressed={draft.color === null}
-                className="flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors"
-                style={{
-                  borderColor: draft.color === null ? category.color : "var(--line)",
-                  color: draft.color === null ? "var(--ink)" : "var(--muted)",
-                }}
-              >
-                <span
-                  aria-hidden
-                  className="h-3 w-3 rounded-full"
-                  style={{ background: category.color }}
-                />
-                Standaard
-              </button>
-
               {ACTIVITY_COLORS.map((option) => {
                 const active = draft.color === option.value;
                 return (
                   <button
                     key={option.value}
                     type="button"
-                    onClick={() => patch({ color: option.value })}
+                    onClick={() => {
+                      colorTouched.current = true;
+                      patch({ color: option.value });
+                    }}
                     aria-pressed={active}
                     aria-label={option.label}
                     title={option.label}
@@ -531,28 +658,7 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
           {draft.location ? (
             <fieldset>
               <legend className="label">Hoe reis je hierheen?</legend>
-              <div className="grid grid-cols-5 gap-2">
-                <button
-                  type="button"
-                  onClick={() => patch({ travelMode: null })}
-                  aria-pressed={draft.travelMode === null}
-                  className="flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[0.7rem] font-medium transition-colors"
-                  style={{
-                    borderColor: draft.travelMode === null ? accent : "var(--line)",
-                    background:
-                      draft.travelMode === null
-                        ? `color-mix(in srgb, ${accent} 12%, transparent)`
-                        : "transparent",
-                    color: draft.travelMode === null ? accent : "var(--muted)",
-                  }}
-                  title={`Standaard: ${travelModeMeta(settings.travelMode).label}`}
-                >
-                  <span aria-hidden className="text-base leading-none">
-                    {travelModeMeta(settings.travelMode).emoji}
-                  </span>
-                  Standaard
-                </button>
-
+              <div className="grid grid-cols-4 gap-2">
                 {TRAVEL_MODES.map((item) => {
                   const active = draft.travelMode === item.id;
                   return (

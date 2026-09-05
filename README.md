@@ -114,6 +114,25 @@ een schatting van je thuiskomst op te rekken.
 Let op: de app gaat ervan uit dat je na elke activiteit naar huis gaat. Plan je twee dingen
 achter elkaar, dan zie je dus zowel de terugreis van de eerste als de heenreis van de tweede.
 
+### Reizen-tab: de reisplanner
+
+Het tabblad **Reizen** is een volwaardige OV-reisplanner: kies van/naar (halte, station, adres,
+je huidige locatie of thuis), kies "nu", "vertrek om" of "aankomst om", en je krijgt meerdere
+reisopties met **live vertragingen**. Bladeren naar eerdere of latere ritten kan met de knoppen
+boven en onder de lijst. Uitklappen toont de hele rit: lopen naar de halte, welke lijn, richting,
+spoor, overstappen en aankomsttijden.
+
+Vanuit de agenda kun je doorlinken met
+`/reizen?toLat=…&toLon=…&toLabel=…&arriveBy=<ISO>`.
+
+Wat er bewust **niet** in zit: ticketprijzen en storingsteksten — die zitten niet in de open data.
+
+### Eigen activiteitstypes
+
+Naast de vijf standaardtypes maak je in het activiteitenformulier je eigen type: klik op
+**➕ Eigen**, kies een emoji met de emoji-toets van je toetsenbord, geef het een naam en een kleur.
+Eigen types staan in `Settings.customCategories` en werken overal in de app.
+
 ### Vervoermiddel en OV-reisplanner
 
 Per activiteit kies je **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV** (of "Standaard", dan geldt de

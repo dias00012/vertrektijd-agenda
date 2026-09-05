@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { activityColor, getCategory } from "@/lib/categories";
+import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { layoutDay, timeRangeFor, type PositionedActivity } from "@/lib/agenda";
 import { calendarWeekKeys, minutesToTime, pad2, parseDateKey, toDateKey } from "@/lib/time";
@@ -154,8 +154,9 @@ function GridBlock({
   rangeStart: number;
   onSelect: () => void;
 }) {
-  const category = getCategory(item.occurrence.category);
-  const color = activityColor(item.occurrence);
+  const { categoryFor } = useAgenda();
+  const category = categoryFor(item.occurrence.category);
+  const color = activityColor(item.occurrence, category);
   const width = 100 / item.lanes;
   const left = item.lane * width;
 

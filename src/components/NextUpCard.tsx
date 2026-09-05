@@ -1,6 +1,6 @@
 "use client";
 
-import { activityColor, getCategory } from "@/lib/categories";
+import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { minutesUntilDeparture } from "@/lib/agenda";
 import { computeDeparture, computeReturn } from "@/lib/travel";
@@ -15,9 +15,9 @@ import type { Activity } from "@/lib/types";
  * reistijd, vertrektijd en een aftelling.
  */
 export function NextUpCard({ activity, now }: { activity: Activity; now: Date }) {
-  const { settings, calculatingIds, tasks, exams } = useAgenda();
-  const category = getCategory(activity.category);
-  const color = activityColor(activity);
+  const { settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
+  const category = categoryFor(activity.category);
+  const color = activityColor(activity, category);
   const departure = computeDeparture(activity, settings);
   const back = computeReturn(activity, settings);
   const untilDeparture = minutesUntilDeparture(activity, settings, now);

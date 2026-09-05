@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   home: null,
   savedPlaces: [],
   categoryPlaces: {},
+  customCategories: [],
   bufferMinutes: 10,
   travelMode: "car",
 };
@@ -111,6 +112,7 @@ export function loadSettings(): Settings {
     // Instellingen uit een oudere versie kennen deze velden nog niet.
     savedPlaces: Array.isArray(stored.savedPlaces) ? stored.savedPlaces : [],
     categoryPlaces: stored.categoryPlaces ?? {},
+    customCategories: Array.isArray(stored.customCategories) ? stored.customCategories : [],
     bufferMinutes:
       typeof stored.bufferMinutes === "number" && stored.bufferMinutes >= 0
         ? stored.bufferMinutes

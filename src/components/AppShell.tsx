@@ -9,6 +9,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 const NAV = [
   { href: "/", label: "Vandaag", icon: "\u2600\uFE0F" },
   { href: "/agenda", label: "Agenda", icon: "\u{1F5D3}\uFE0F" },
+  { href: "/reizen", label: "Reizen", icon: "\u{1F686}" },
   { href: "/schoolwerk", label: "Schoolwerk", icon: "\u{1F4DA}" },
   { href: "/instellingen", label: "Instellingen", icon: "\u2699\uFE0F" },
 ];
@@ -64,7 +65,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
 
           <nav
-            className="pointer-events-auto mb-[max(0.75rem,env(safe-area-inset-bottom))] grid grid-cols-4 gap-1 rounded-2xl border p-1.5"
+            className="pointer-events-auto mb-[max(0.75rem,env(safe-area-inset-bottom))] grid grid-cols-5 gap-0.5 rounded-2xl border p-1.5"
             style={{
               background: "color-mix(in srgb, var(--surface) 92%, transparent)",
               borderColor: "var(--line)",

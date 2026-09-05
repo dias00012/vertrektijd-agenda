@@ -1,6 +1,7 @@
 import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
+import { motisGeocode } from "./motis";
 import type { GeocodeResult } from "../types";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -34,23 +35,57 @@ interface OrsFeature {
 /**
  * Zet een vrij ingetypte locatie ("Basic-Fit Almere Buiten") om in coordinaten.
  * Resultaten zijn gefocust op Nederland maar niet gelimiteerd tot NL.
+ *
+ * `includeStops` zet er haltes en stations voor (voor de reisplanner): wie
+ * "Almere Centrum" typt bedoelt daar het station, niet de wijk.
  */
-export async function geocode(query: string, limit = 5): Promise<GeocodeResult[]> {
+export async function geocode(
+  query: string,
+  limit = 5,
+  includeStops = false,
+): Promise<GeocodeResult[]> {
   const trimmed = query.trim();
   if (trimmed.length < 3) return [];
 
   const config = getProviderConfig();
-  const cacheKey = `geocode:${config.provider}:${limit}:${trimmed.toLowerCase()}`;
+  const cacheKey = `geocode:${config.provider}:${limit}:${includeStops}:${trimmed.toLowerCase()}`;
   const cached = cacheGet<GeocodeResult[]>(cacheKey);
   if (cached) return cached;
 
-  const results =
+  const addresses =
     config.provider === "ors"
       ? await geocodeOrs(trimmed, limit)
       : await geocodeNominatim(trimmed, limit);
 
+  let results = addresses;
+  if (includeStops) {
+    const stops = await geocodeStops(trimmed, limit);
+    // Haltes eerst: in een reisplanner is dat vrijwel altijd de bedoeling.
+    results = [...stops, ...addresses].slice(0, limit * 2);
+  }
+
   cacheSet(cacheKey, results, CACHE_TTL_MS);
   return results;
+}
+
+/** Haltes en stations via MOTIS, in hetzelfde formaat als de adres-resultaten. */
+async function geocodeStops(query: string, limit: number): Promise<GeocodeResult[]> {
+  try {
+    const stops = await motisGeocode(query);
+    return stops
+      .filter((stop) => stop.type === "STOP")
+      .slice(0, limit)
+      .map((stop) => ({
+        label: stop.name,
+        name: stop.name,
+        context: "Halte of station",
+        lat: stop.lat,
+        lon: stop.lon,
+      }));
+  } catch {
+    // Haltezoeken is een extraatje: valt dit weg, dan blijven adressen werken.
+    return [];
+  }
 }
 
 async function geocodeNominatim(query: string, limit: number): Promise<GeocodeResult[]> {

@@ -6,7 +6,21 @@
  * verkeersinformatie zonder breaking change.
  */
 
-export type CategoryId = "school" | "werk" | "gym" | "koken" | "hobby";
+/**
+ * Id van een activiteitstype. De app levert er vijf ("school", "werk", "gym",
+ * "koken", "hobby"), maar je kunt er zelf onbeperkt bij maken — daarom een
+ * vrije string en geen vaste lijst.
+ */
+export type CategoryId = string;
+
+/** Een zelfgemaakt activiteitstype, met eigen naam, emoji en kleur. */
+export interface CustomCategory {
+  id: string;
+  label: string;
+  /** Eén emoji, door de gebruiker gekozen op het eigen toetsenbord. */
+  emoji: string;
+  color: string;
+}
 
 /** Vervoersmiddel. Alleen "car" is in de MVP geimplementeerd. */
 export type TravelMode = "car" | "bike" | "walk" | "transit";
@@ -53,6 +67,33 @@ export interface TravelLeg {
   trip?: string;
   /** Spoor of perron van vertrek. */
   track?: string;
+  /** Geplande tijden volgens de dienstregeling (ISO), als live tijden afwijken. */
+  scheduledDeparture?: string;
+  scheduledArrival?: string;
+  /** true wanneer er live (actuele) informatie voor dit onderdeel is. */
+  realTime?: boolean;
+  /** Vertraging in minuten t.o.v. de dienstregeling; negatief = te vroeg. */
+  delayMinutes?: number;
+  /** true wanneer deze rit is uitgevallen. */
+  cancelled?: boolean;
+}
+
+/** Eén complete reismogelijkheid in de reisplanner. */
+export interface Journey {
+  /** Stabiele sleutel voor React-lijsten. */
+  id: string;
+  /** ISO-tijden van vertrek en aankomst (actueel, dus inclusief vertraging). */
+  departure: string;
+  arrival: string;
+  durationMinutes: number;
+  transfers: number;
+  legs: TravelLeg[];
+  /** Grootste vertraging binnen deze reis, in minuten. */
+  delayMinutes: number;
+  /** true wanneer er live informatie in deze reis zit. */
+  realTime: boolean;
+  /** true wanneer een onderdeel van deze reis is uitgevallen. */
+  cancelled: boolean;
 }
 
 export interface TravelInfo {
@@ -174,6 +215,8 @@ export interface Settings {
   savedPlaces: SavedPlace[];
   /** Vaste locatie per categorie: categorie -> id uit `savedPlaces`. */
   categoryPlaces: Partial<Record<CategoryId, string>>;
+  /** Zelfgemaakte activiteitstypes, naast de vijf standaardtypes. */
+  customCategories: CustomCategory[];
   /** Veiligheidsmarge in minuten, standaard 10. */
   bufferMinutes: number;
   travelMode: TravelMode;

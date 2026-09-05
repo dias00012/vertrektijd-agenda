@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
-import { getCategory } from "@/lib/categories";
 import { categoriesUsingPlace, sortedPlaces } from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
@@ -186,7 +185,7 @@ export default function SettingsPage() {
 
 /** Overzicht van bewaarde locaties, met de categorieën die ze als vaste plek gebruiken. */
 function SavedPlaces() {
-  const { settings, forgetPlace } = useAgenda();
+  const { settings, forgetPlace, categoryFor } = useAgenda();
   const places = sortedPlaces(settings);
 
   return (
@@ -217,7 +216,7 @@ function SavedPlaces() {
                   {categories.length > 0 ? (
                     <p className="mt-1 flex flex-wrap gap-1.5">
                       {categories.map((id) => {
-                        const category = getCategory(id);
+                        const category = categoryFor(id);
                         return (
                           <span
                             key={id}

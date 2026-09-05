@@ -12,14 +12,17 @@ export const dynamic = "force-dynamic";
  * blijven op de server.
  */
 export async function GET(request: Request) {
-  const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
+  const params = new URL(request.url).searchParams;
+  const query = params.get("q")?.trim() ?? "";
+  // ?stops=1 zet haltes en stations vooraan (reisplanner).
+  const includeStops = params.get("stops") === "1";
 
   if (query.length < 3) {
     return NextResponse.json({ results: [] });
   }
 
   try {
-    const results = await geocode(query);
+    const results = await geocode(query, 5, includeStops);
     return NextResponse.json({ results });
   } catch (error) {
     if (error instanceof ProviderError) {

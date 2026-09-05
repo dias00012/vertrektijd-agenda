@@ -25,7 +25,7 @@ export function MonthGrid({
   onSelect: (dateKey: string) => void;
   now: Date;
 }) {
-  const { activities, settings } = useAgenda();
+  const { activities, settings, categoryFor } = useAgenda();
   const dateKeys = monthGridKeys(month);
   const today = toDateKey(now);
 
@@ -80,7 +80,7 @@ export function MonthGrid({
                     key={activity.occurrenceId}
                     aria-hidden
                     className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: activityColor(activity) }}
+                    style={{ background: activityColor(activity, categoryFor(activity.category)) }}
                   />
                 ))}
                 {items.length > MAX_DOTS ? (

@@ -15,6 +15,10 @@ interface Props {
   error?: string | null;
   /** Bewaarde locaties als snelkeuze, zodat je niet opnieuw hoeft te zoeken. */
   places?: SavedPlace[];
+  /** Haltes en stations meenemen in de suggesties (voor de reisplanner). */
+  includeStops?: boolean;
+  /** Extra knoppen naast de snelkeuzes, bv. "Mijn locatie". */
+  extraActions?: React.ReactNode;
 }
 
 const DEBOUNCE_MS = 400;
@@ -33,6 +37,8 @@ export function LocationInput({
   required,
   error,
   places = [],
+  includeStops = false,
+  extraActions,
 }: Props) {
   const listId = useId();
   const [query, setQuery] = useState(value?.label ?? "");
@@ -63,7 +69,7 @@ export function LocationInput({
 
     const timer = setTimeout(async () => {
       try {
-        const found = await searchLocations(trimmed, controller.signal);
+        const found = await searchLocations(trimmed, controller.signal, includeStops);
         setResults(found);
         setOpen(true);
         if (found.length === 0) setSearchError("Geen locatie gevonden. Probeer het anders te typen.");
@@ -156,6 +162,8 @@ export function LocationInput({
           )}
         </span>
       </div>
+
+      {extraActions ? <div className="mt-2 flex flex-wrap gap-1.5">{extraActions}</div> : null}
 
       {!value && places.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-1.5">

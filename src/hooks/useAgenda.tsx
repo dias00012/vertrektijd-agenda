@@ -29,6 +29,7 @@ import {
   type ImportSummary,
 } from "@/lib/backup";
 import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
+import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { getSupabase } from "@/lib/supabase";
 import { mergePayload, pullData, pushData } from "@/lib/sync";
@@ -36,6 +37,7 @@ import type {
   Activity,
   ActivityDraft,
   CategoryId,
+  CustomCategory,
   Exam,
   GeoLocation,
   SavedPlace,
@@ -74,6 +76,16 @@ interface AgendaContextValue {
   rememberPlace: (location: GeoLocation, category: CategoryId | null) => void;
   /** Verwijdert een bewaarde locatie en de verwijzingen ernaar. */
   forgetPlace: (placeId: string) => void;
+
+  /* --- Activiteitstypes ------------------------------------------------- */
+  /** Alle types: eerst de vijf standaardtypes, daarna je eigen types. */
+  categories: CategoryMeta[];
+  /** Zoekt een type op id; werkt ook voor zelfgemaakte types. */
+  categoryFor: (id: CategoryId) => CategoryMeta;
+  /** Voegt een zelfgemaakt type toe en geeft het terug. */
+  addCustomCategory: (input: { label: string; emoji: string; color: string }) => CustomCategory;
+  /** Verwijdert een zelfgemaakt type (bestaande activiteiten blijven staan). */
+  removeCustomCategory: (id: string) => void;
   /** Forceert een herberekening, ook als een eerdere poging faalde. */
   retryTravel: (id: string) => void;
 
@@ -419,6 +431,37 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  /* --- Activiteitstypes --------------------------------------------------- */
+
+  const categories = useMemo(
+    () => allCategories(settings.customCategories),
+    [settings.customCategories],
+  );
+
+  const categoryFor = useCallback(
+    (id: CategoryId) => resolveCategory(id, settings.customCategories),
+    [settings.customCategories],
+  );
+
+  const addCustomCategory = useCallback(
+    (input: { label: string; emoji: string; color: string }): CustomCategory => {
+      const category: CustomCategory = { id: createId(), ...input };
+      setSettings((current) => ({
+        ...current,
+        customCategories: [...current.customCategories, category],
+      }));
+      return category;
+    },
+    [],
+  );
+
+  const removeCustomCategory = useCallback((id: string) => {
+    setSettings((current) => ({
+      ...current,
+      customCategories: current.customCategories.filter((c) => c.id !== id),
+    }));
+  }, []);
+
   const retryTravel = useCallback(
     (id: string) => {
       failedKeys.current.clear();
@@ -641,6 +684,10 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateSettings,
       rememberPlace,
       forgetPlace,
+      categories,
+      categoryFor,
+      addCustomCategory,
+      removeCustomCategory,
       retryTravel,
       tasks,
       exams,
@@ -670,6 +717,10 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateSettings,
       rememberPlace,
       forgetPlace,
+      categories,
+      categoryFor,
+      addCustomCategory,
+      removeCustomCategory,
       retryTravel,
       tasks,
       exams,

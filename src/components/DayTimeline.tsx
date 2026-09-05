@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { activityColor, getCategory } from "@/lib/categories";
+import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
 import { formatDuration, minutesToTime, timeToMinutes } from "@/lib/time";
@@ -76,8 +76,9 @@ function TimelineRow({
   passed: boolean;
   onSelect: () => void;
 }) {
-  const category = getCategory(entry.activity.category);
-  const color = activityColor(entry.activity);
+  const { categoryFor } = useAgenda();
+  const category = categoryFor(entry.activity.category);
+  const color = activityColor(entry.activity, category);
   const isDeparture = entry.kind === "departure";
   const isReturn = entry.kind === "return";
   // Vertrek- en terugregels zijn allebei reisregels: dezelfde ingetogen opmaak.

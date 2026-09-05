@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
+import { SchoolworkForm } from "@/components/SchoolworkForm";
 import {
   PRIORITY_META,
   STATUS_META,
@@ -23,16 +25,36 @@ export default function SchoolworkPage() {
   const { tasks, exams, hydrated } = useAgenda();
   const now = useNow(60_000);
 
+  const [adding, setAdding] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editExam, setEditExam] = useState<Exam | null>(null);
+  const formOpen = adding || editTask !== null || editExam !== null;
+
+  function closeForm() {
+    setAdding(false);
+    setEditTask(null);
+    setEditExam(null);
+  }
+
   const sortedTasks = sortTasks(tasks);
   const sortedExams = sortExams(exams);
 
   return (
     <div>
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">Schoolwerk</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Je opdrachten en toetsen, aangeleverd door je planner.
-        </p>
+      <header className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Schoolwerk</h1>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            Je opdrachten en toetsen.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary shrink-0 px-3 py-2 text-sm"
+          onClick={() => setAdding(true)}
+        >
+          + Toevoegen
+        </button>
       </header>
 
       {!hydrated ? (
@@ -43,7 +65,12 @@ export default function SchoolworkPage() {
         <EmptyState
           icon="📚"
           title="Nog geen schoolwerk"
-          description="Importeer een bestand van je planner via Instellingen → Back-up & synchronisatie."
+          description="Voeg zelf een opdracht of toets toe, of importeer een bestand van je planner via Instellingen → Back-up & synchronisatie."
+          action={
+            <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
+              + Opdracht of toets toevoegen
+            </button>
+          }
         />
       ) : (
         <div className="space-y-8">
@@ -58,7 +85,7 @@ export default function SchoolworkPage() {
             ) : (
               <div className="space-y-2.5">
                 {sortedTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} now={now} />
+                  <TaskCard key={task.id} task={task} now={now} onEdit={() => setEditTask(task)} />
                 ))}
               </div>
             )}
@@ -75,13 +102,21 @@ export default function SchoolworkPage() {
             ) : (
               <div className="space-y-2.5">
                 {sortedExams.map((exam) => (
-                  <ExamCard key={exam.id} exam={exam} now={now} />
+                  <ExamCard key={exam.id} exam={exam} now={now} onEdit={() => setEditExam(exam)} />
                 ))}
               </div>
             )}
           </section>
         </div>
       )}
+
+      {formOpen ? (
+        <SchoolworkForm
+          task={editTask ?? undefined}
+          exam={editExam ?? undefined}
+          onClose={closeForm}
+        />
+      ) : null}
     </div>
   );
 }
@@ -152,7 +187,7 @@ function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: numbe
   );
 }
 
-function TaskCard({ task, now }: { task: Task; now: Date }) {
+function TaskCard({ task, now, onEdit }: { task: Task; now: Date; onEdit: () => void }) {
   const { activities, setTaskStatus, toggleTaskStep } = useAgenda();
   const plannedMinutes = plannedMinutesForTask(activities, task.id);
   const priority = PRIORITY_META[task.priority];
@@ -181,6 +216,15 @@ function TaskCard({ task, now }: { task: Task; now: Date }) {
             <span className="text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
               {task.subject}
             </span>
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`${task.title} bewerken`}
+              className="ml-auto shrink-0 rounded-lg px-2 py-0.5 text-xs"
+              style={{ color: "var(--muted)" }}
+            >
+              &#9998;
+            </button>
           </div>
 
           {task.description ? (
@@ -244,7 +288,7 @@ function TaskCard({ task, now }: { task: Task; now: Date }) {
   );
 }
 
-function ExamCard({ exam, now }: { exam: Exam; now: Date }) {
+function ExamCard({ exam, now, onEdit }: { exam: Exam; now: Date; onEdit: () => void }) {
   const { activities, setExamStatus } = useAgenda();
   const plannedMinutes = plannedMinutesForExam(activities, exam.id);
   const priority = PRIORITY_META[exam.priority];
@@ -273,6 +317,15 @@ function ExamCard({ exam, now }: { exam: Exam; now: Date }) {
             <span className="text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
               {exam.subject}
             </span>
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={`Toets ${exam.subject} bewerken`}
+              className="ml-auto shrink-0 rounded-lg px-2 py-0.5 text-xs"
+              style={{ color: "var(--muted)" }}
+            >
+              &#9998;
+            </button>
           </div>
 
           <p className="mt-1.5 text-xs tabular-nums" style={{ color: soon ? "var(--danger)" : "var(--muted)" }}>
