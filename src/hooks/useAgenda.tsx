@@ -1,0 +1,572 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { fetchTravel } from "@/lib/api";
+import {
+  DEFAULT_SETTINGS,
+  loadActivities,
+  loadExams,
+  loadSettings,
+  loadTasks,
+  saveActivities,
+  saveExams,
+  saveSettings,
+  saveTasks,
+} from "@/lib/storage";
+import {
+  buildBackup,
+  type BackupFile,
+  type ImportMode,
+  type ImportSummary,
+} from "@/lib/backup";
+import { needsTravelRefresh, travelKey } from "@/lib/travel";
+import type {
+  Activity,
+  ActivityDraft,
+  CategoryId,
+  Exam,
+  GeoLocation,
+  SavedPlace,
+  Settings,
+  Task,
+  TaskStep,
+} from "@/lib/types";
+
+interface AgendaContextValue {
+  activities: Activity[];
+  settings: Settings;
+  /** false zolang localStorage nog niet is uitgelezen (voorkomt hydration-flits). */
+  hydrated: boolean;
+  /** Ids waarvoor op dit moment een reistijd wordt opgehaald. */
+  calculatingIds: Set<string>;
+  addActivity: (draft: ActivityDraft) => Activity;
+  /**
+   * Vervangt een set activiteiten in één keer: verwijdert `remove` en voegt
+   * `add` toe. Gebruikt door de weekplanning, zodat opnieuw toepassen de vorige
+   * planning overschrijft in plaats van te verdubbelen.
+   */
+  replaceActivities: (options: {
+    remove: string[];
+    add: ActivityDraft[];
+    source?: string;
+  }) => void;
+  updateActivity: (id: string, draft: ActivityDraft) => void;
+  removeActivity: (id: string) => void;
+  /** Haalt één dag uit een herhalende reeks, zonder de reeks te verwijderen. */
+  removeOccurrence: (id: string, dateKey: string) => void;
+  updateSettings: (patch: Partial<Settings>) => void;
+  /**
+   * Bewaart een locatie voor hergebruik en maakt hem, als er een categorie
+   * bij zit, de vaste locatie voor die categorie.
+   */
+  rememberPlace: (location: GeoLocation, category: CategoryId | null) => void;
+  /** Verwijdert een bewaarde locatie en de verwijzingen ernaar. */
+  forgetPlace: (placeId: string) => void;
+  /** Forceert een herberekening, ook als een eerdere poging faalde. */
+  retryTravel: (id: string) => void;
+
+  /* --- Schoolwerk: taken en toetsen ------------------------------------- */
+  tasks: Task[];
+  exams: Exam[];
+  addTask: (task: Task) => void;
+  updateTask: (id: string, patch: Partial<Task>) => void;
+  removeTask: (id: string) => void;
+  setTaskStatus: (id: string, status: Task["status"]) => void;
+  toggleTaskStep: (taskId: string, stepId: string) => void;
+  addExam: (exam: Exam) => void;
+  updateExam: (id: string, patch: Partial<Exam>) => void;
+  removeExam: (id: string) => void;
+  setExamStatus: (id: string, status: Exam["status"]) => void;
+
+  /* --- Back-up & synchronisatie ----------------------------------------- */
+  /** Bouwt het exportobject met de volledige, actuele data. */
+  exportData: () => BackupFile;
+  /** Leest een bestand in (samenvoegen of vervangen) en geeft een samenvatting. */
+  importData: (data: BackupFile, mode: ImportMode) => ImportSummary;
+}
+
+const AgendaContext = createContext<AgendaContextValue | null>(null);
+
+/** Twee locaties op dezelfde plek gelden als dezelfde bewaarde locatie. */
+function placeKey(location: GeoLocation): string {
+  return `${location.lat.toFixed(5)},${location.lon.toFixed(5)}`;
+}
+
+function createId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `a_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * Voegt inkomende records samen met bestaande op basis van id: bestaande worden
+ * bijgewerkt, nieuwe toegevoegd. Puur, dus veilig binnen een state-updater.
+ */
+function upsertById<T extends { id: string }>(current: T[], incoming: T[]): T[] {
+  const byId = new Map(current.map((item) => [item.id, item]));
+  for (const item of incoming) byId.set(item.id, item);
+  return [...byId.values()];
+}
+
+/** Telt hoeveel inkomende records nieuw zijn en hoeveel er bestaande bijwerken. */
+function countUpsert<T extends { id: string }>(
+  current: T[],
+  incoming: T[],
+): { added: number; updated: number } {
+  const ids = new Set(current.map((item) => item.id));
+  let added = 0;
+  let updated = 0;
+  for (const item of incoming) {
+    if (ids.has(item.id)) updated += 1;
+    else added += 1;
+  }
+  return { added, updated };
+}
+
+export function AgendaProvider({ children }: { children: ReactNode }) {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+  const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
+
+  /** Sleutels waarvoor de berekening faalde; niet automatisch opnieuw proberen. */
+  const failedKeys = useRef<Set<string>>(new Set());
+  const inFlight = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setActivities(loadActivities());
+    setSettings(loadSettings());
+    setTasks(loadTasks());
+    setExams(loadExams());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) saveActivities(activities);
+  }, [activities, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveSettings(settings);
+  }, [settings, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveTasks(tasks);
+  }, [tasks, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveExams(exams);
+  }, [exams, hydrated]);
+
+  const markCalculating = useCallback((id: string, active: boolean) => {
+    setCalculatingIds((current) => {
+      const next = new Set(current);
+      if (active) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  /**
+   * Haalt de reistijd op voor een activiteit en schrijft het resultaat terug.
+   * Wordt automatisch aangeroepen zodra locatie, thuislocatie of vervoersmiddel
+   * verandert.
+   */
+  const computeTravel = useCallback(
+    async (activity: Activity, currentSettings: Settings) => {
+      const key = travelKey(currentSettings.home, activity.location, currentSettings.travelMode);
+      if (!key || !currentSettings.home || !activity.location) return;
+      if (inFlight.current.has(activity.id)) return;
+
+      inFlight.current.add(activity.id);
+      markCalculating(activity.id, true);
+
+      const returnKey = travelKey(activity.location, currentSettings.home, currentSettings.travelMode);
+
+      try {
+        // Heen en terug tegelijk: de terugweg kan door eenrichtingsverkeer
+        // afwijken, dus we berekenen hem apart in plaats van te spiegelen.
+        const [outbound, inbound] = await Promise.all([
+          fetchTravel(currentSettings.home, activity.location, currentSettings.travelMode),
+          fetchTravel(activity.location, currentSettings.home, currentSettings.travelMode),
+        ]);
+        const computedAt = new Date().toISOString();
+        failedKeys.current.delete(key);
+        setActivities((current) =>
+          current.map((item) =>
+            item.id === activity.id
+              ? {
+                  ...item,
+                  travel: {
+                    durationMinutes: outbound.durationMinutes,
+                    distanceKm: outbound.distanceKm,
+                    mode: outbound.mode,
+                    provider: outbound.provider,
+                    computedAt,
+                    key,
+                  },
+                  returnTravel: {
+                    durationMinutes: inbound.durationMinutes,
+                    distanceKm: inbound.distanceKm,
+                    mode: inbound.mode,
+                    provider: inbound.provider,
+                    computedAt,
+                    key: returnKey ?? "",
+                  },
+                  travelError: null,
+                }
+              : item,
+          ),
+        );
+      } catch (error) {
+        failedKeys.current.add(key);
+        const message =
+          error instanceof Error ? error.message : "De reistijd kon niet worden berekend.";
+        setActivities((current) =>
+          current.map((item) =>
+            item.id === activity.id
+              ? { ...item, travel: null, returnTravel: null, travelError: message }
+              : item,
+          ),
+        );
+      } finally {
+        inFlight.current.delete(activity.id);
+        markCalculating(activity.id, false);
+      }
+    },
+    [markCalculating],
+  );
+
+  // Reactieve herberekening: elke activiteit met een verouderde reistijdsleutel
+  // wordt opnieuw doorgerekend. Dit dekt zowel het wijzigen van een activiteit
+  // als het wijzigen van de thuislocatie in de instellingen.
+  useEffect(() => {
+    if (!hydrated || !settings.home) return;
+    for (const activity of activities) {
+      if (!needsTravelRefresh(activity, settings)) continue;
+      const key = travelKey(settings.home, activity.location, settings.travelMode);
+      if (key && failedKeys.current.has(key)) continue;
+      void computeTravel(activity, settings);
+    }
+  }, [activities, settings, hydrated, computeTravel]);
+
+  const addActivity = useCallback((draft: ActivityDraft): Activity => {
+    const now = new Date().toISOString();
+    const activity: Activity = {
+      id: createId(),
+      ...draft,
+      source: null,
+      exceptions: [],
+      travel: null,
+      returnTravel: null,
+      travelError: null,
+      bufferMinutes: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    setActivities((current) => [...current, activity]);
+    return activity;
+  }, []);
+
+  const replaceActivities = useCallback(
+    ({ remove, add, source }: { remove: string[]; add: ActivityDraft[]; source?: string }) => {
+      const now = new Date().toISOString();
+      const created: Activity[] = add.map((draft) => ({
+        id: createId(),
+        ...draft,
+        source: source ?? null,
+        exceptions: [],
+        travel: null,
+        returnTravel: null,
+        travelError: null,
+        bufferMinutes: null,
+        createdAt: now,
+        updatedAt: now,
+      }));
+      const removing = new Set(remove);
+      setActivities((current) => [
+        ...current.filter((item) => !removing.has(item.id)),
+        ...created,
+      ]);
+    },
+    [],
+  );
+
+  const updateActivity = useCallback((id: string, draft: ActivityDraft) => {
+    setActivities((current) =>
+      current.map((item) => {
+        if (item.id !== id) return item;
+        const locationChanged =
+          item.location?.lat !== draft.location?.lat || item.location?.lon !== draft.location?.lon;
+        return {
+          ...item,
+          ...draft,
+          // Overgeslagen dagen blijven alleen relevant zolang de reeks bestaat.
+          exceptions: draft.recurrence ? item.exceptions : [],
+          // Alleen de reistijd weggooien wanneer de bestemming echt wijzigde.
+          // Een andere starttijd verschuift enkel de (afgeleide) vertrektijd.
+          travel: locationChanged ? null : item.travel,
+          returnTravel: locationChanged ? null : item.returnTravel,
+          travelError: locationChanged ? null : item.travelError,
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    );
+  }, []);
+
+  const removeActivity = useCallback((id: string) => {
+    setActivities((current) => current.filter((item) => item.id !== id));
+  }, []);
+
+  const removeOccurrence = useCallback((id: string, dateKey: string) => {
+    setActivities((current) =>
+      current.map((item) =>
+        item.id === id && !item.exceptions.includes(dateKey)
+          ? { ...item, exceptions: [...item.exceptions, dateKey], updatedAt: new Date().toISOString() }
+          : item,
+      ),
+    );
+  }, []);
+
+  const updateSettings = useCallback((patch: Partial<Settings>) => {
+    // Nieuwe thuislocatie betekent: alle eerdere mislukkingen mogen opnieuw.
+    failedKeys.current.clear();
+    setSettings((current) => ({ ...current, ...patch }));
+  }, []);
+
+  const rememberPlace = useCallback((location: GeoLocation, category: CategoryId | null) => {
+    setSettings((current) => {
+      const key = placeKey(location);
+      const existing = current.savedPlaces.find((place) => placeKey(place.location) === key);
+      const place: SavedPlace = existing ?? {
+        id: createId(),
+        name: location.label,
+        location,
+        createdAt: new Date().toISOString(),
+      };
+
+      return {
+        ...current,
+        savedPlaces: existing ? current.savedPlaces : [...current.savedPlaces, place],
+        categoryPlaces: category
+          ? { ...current.categoryPlaces, [category]: place.id }
+          : current.categoryPlaces,
+      };
+    });
+  }, []);
+
+  const forgetPlace = useCallback((placeId: string) => {
+    setSettings((current) => {
+      const categoryPlaces = { ...current.categoryPlaces };
+      for (const [category, id] of Object.entries(categoryPlaces)) {
+        if (id === placeId) delete categoryPlaces[category as CategoryId];
+      }
+      return {
+        ...current,
+        savedPlaces: current.savedPlaces.filter((place) => place.id !== placeId),
+        categoryPlaces,
+      };
+    });
+  }, []);
+
+  const retryTravel = useCallback(
+    (id: string) => {
+      failedKeys.current.clear();
+      const activity = activities.find((item) => item.id === id);
+      if (activity) void computeTravel(activity, settings);
+    },
+    [activities, settings, computeTravel],
+  );
+
+  /* --- Schoolwerk: taken ------------------------------------------------ */
+
+  const addTask = useCallback((task: Task) => {
+    setTasks((current) => [...current, task]);
+  }, []);
+
+  const updateTask = useCallback((id: string, patch: Partial<Task>) => {
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === id ? { ...task, ...patch, updatedAt: new Date().toISOString() } : task,
+      ),
+    );
+  }, []);
+
+  const removeTask = useCallback((id: string) => {
+    setTasks((current) => current.filter((task) => task.id !== id));
+  }, []);
+
+  const setTaskStatus = useCallback((id: string, status: Task["status"]) => {
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === id ? { ...task, status, updatedAt: new Date().toISOString() } : task,
+      ),
+    );
+  }, []);
+
+  const toggleTaskStep = useCallback((taskId: string, stepId: string) => {
+    setTasks((current) =>
+      current.map((task) => {
+        if (task.id !== taskId || !task.steps) return task;
+        const steps: TaskStep[] = task.steps.map((step) =>
+          step.id === stepId ? { ...step, done: !step.done } : step,
+        );
+        return { ...task, steps, updatedAt: new Date().toISOString() };
+      }),
+    );
+  }, []);
+
+  /* --- Schoolwerk: toetsen ---------------------------------------------- */
+
+  const addExam = useCallback((exam: Exam) => {
+    setExams((current) => [...current, exam]);
+  }, []);
+
+  const updateExam = useCallback((id: string, patch: Partial<Exam>) => {
+    setExams((current) =>
+      current.map((exam) =>
+        exam.id === id ? { ...exam, ...patch, updatedAt: new Date().toISOString() } : exam,
+      ),
+    );
+  }, []);
+
+  const removeExam = useCallback((id: string) => {
+    setExams((current) => current.filter((exam) => exam.id !== id));
+  }, []);
+
+  const setExamStatus = useCallback((id: string, status: Exam["status"]) => {
+    setExams((current) =>
+      current.map((exam) =>
+        exam.id === id ? { ...exam, status, updatedAt: new Date().toISOString() } : exam,
+      ),
+    );
+  }, []);
+
+  /* --- Back-up & synchronisatie ----------------------------------------- */
+
+  const exportData = useCallback(
+    (): BackupFile => buildBackup(settings, activities, tasks, exams),
+    [settings, activities, tasks, exams],
+  );
+
+  const importData = useCallback(
+    (data: BackupFile, mode: ImportMode): ImportSummary => {
+      // Nieuwe of gewijzigde bestemmingen moeten opnieuw doorgerekend kunnen
+      // worden, dus eerdere mislukkingen wissen we.
+      failedKeys.current.clear();
+
+      // De telling gebeurt hier, buiten de state-updater. Een updater kan door
+      // React (StrictMode) twee keer draaien; muteren daarin zou dubbeltellen.
+      const summary: ImportSummary = {
+        activities:
+          mode === "replace"
+            ? { added: data.activities.length, updated: 0 }
+            : countUpsert(activities, data.activities),
+        tasks:
+          mode === "replace"
+            ? { added: data.tasks.length, updated: 0 }
+            : countUpsert(tasks, data.tasks),
+        exams:
+          mode === "replace"
+            ? { added: data.exams.length, updated: 0 }
+            : countUpsert(exams, data.exams),
+        settingsReplaced: Boolean(data.settings),
+        mode,
+      };
+
+      if (mode === "replace") {
+        setActivities(data.activities);
+        setTasks(data.tasks);
+        setExams(data.exams);
+      } else {
+        setActivities((current) => upsertById(current, data.activities));
+        setTasks((current) => upsertById(current, data.tasks));
+        setExams((current) => upsertById(current, data.exams));
+      }
+
+      if (data.settings) {
+        const incoming = data.settings;
+        setSettings((current) => ({ ...current, ...incoming }));
+      }
+
+      return summary;
+    },
+    [activities, tasks, exams],
+  );
+
+  const value = useMemo<AgendaContextValue>(
+    () => ({
+      activities,
+      settings,
+      hydrated,
+      calculatingIds,
+      addActivity,
+      replaceActivities,
+      updateActivity,
+      removeActivity,
+      removeOccurrence,
+      updateSettings,
+      rememberPlace,
+      forgetPlace,
+      retryTravel,
+      tasks,
+      exams,
+      addTask,
+      updateTask,
+      removeTask,
+      setTaskStatus,
+      toggleTaskStep,
+      addExam,
+      updateExam,
+      removeExam,
+      setExamStatus,
+      exportData,
+      importData,
+    }),
+    [
+      activities,
+      settings,
+      hydrated,
+      calculatingIds,
+      addActivity,
+      replaceActivities,
+      updateActivity,
+      removeActivity,
+      removeOccurrence,
+      updateSettings,
+      rememberPlace,
+      forgetPlace,
+      retryTravel,
+      tasks,
+      exams,
+      addTask,
+      updateTask,
+      removeTask,
+      setTaskStatus,
+      toggleTaskStep,
+      addExam,
+      updateExam,
+      removeExam,
+      setExamStatus,
+      exportData,
+      importData,
+    ],
+  );
+
+  return <AgendaContext.Provider value={value}>{children}</AgendaContext.Provider>;
+}
+
+export function useAgenda(): AgendaContextValue {
+  const context = useContext(AgendaContext);
+  if (!context) throw new Error("useAgenda moet binnen een <AgendaProvider> gebruikt worden.");
+  return context;
+}
