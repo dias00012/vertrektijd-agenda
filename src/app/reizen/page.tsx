@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { fetchJourneys } from "@/lib/api";
-import { sortedPlaces } from "@/lib/places";
+import { placeChoices } from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
 import { JourneyCard } from "@/components/JourneyCard";
 import { EmptyState, Spinner } from "@/components/ui";
@@ -35,7 +35,7 @@ export default function TravelPlannerPage() {
   const [searched, setSearched] = useState(false);
   const [locating, setLocating] = useState(false);
 
-  const places = hydrated ? sortedPlaces(settings) : [];
+  const places = hydrated ? placeChoices(settings) : [];
 
   // Vertrekpunt standaard op thuis: dat is bijna altijd waar je vandaan gaat.
   useEffect(() => {

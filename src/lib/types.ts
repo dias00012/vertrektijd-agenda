@@ -203,8 +203,13 @@ export interface ActivityOccurrence extends Activity {
 /** Een locatie die de gebruiker heeft bewaard om te hergebruiken. */
 export interface SavedPlace {
   id: string;
-  /** Naam zoals de gebruiker hem herkent, bv. "Basic-Fit, Almere". */
+  /** Naam uit de zoekopdracht, bv. "Basic-Fit, Almere". */
   name: string;
+  /**
+   * Zelfgekozen naam ("Werk", "Bijbaan"). Staat die er, dan wint hij van zowel
+   * de categorie als het adres. Zie `placeDisplayName`.
+   */
+  customName?: string;
   location: GeoLocation;
   createdAt: string;
 }

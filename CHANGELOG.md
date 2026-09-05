@@ -8,6 +8,23 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.8.0
+
+- **OV-reis per dag, in je agenda.** Bij een herhalende activiteit stond overal dezelfde rit:
+  die van de eerstvolgende keer. Nu haalt de app voor elke dag de rit van díé dag op, zodat
+  donderdag niet de trein van maandag laat zien. Je ziet per dag je vertrektijd, welke trein en
+  bussen je pakt, van welk spoor, waar je overstapt en **hoe lang je in totaal loopt**. Bij je
+  eerstvolgende activiteit staat de reis meteen open.
+- **Locaties heten waar je heen gaat.** Overal in de app stond een adres als "19, Almere" of
+  "2S, Zwolle". Nu staat er 🏫 School, 💼 Werk, 🏋️ Gym of 🏠 Thuis, met het adres eronder.
+  Via Instellingen → Opgeslagen locaties geef je met ✎ een eigen naam ("Bijbaan", "Windesheim").
+- **Betere adresnamen.** Bij een huisadres gaf de zoekdienst alleen het huisnummer terug ("60").
+  Nieuwe zoekopdrachten geven nu de straatnaam erbij ("Wisselweg 60, Almere").
+- **"Lopen" is weg** als vervoermiddel; je kiest tussen 🚗 auto, 🚲 fiets en 🚆 OV. Loopstukken
+  binnen een OV-reis blijven natuurlijk gewoon staan.
+- Techniek: `SavedPlace` heeft een optionele `customName`. Het uitwisselformaat blijft `version` 2
+  en volledig compatibel.
+
 ## 0.7.0
 
 - **Reisplanner-tab (zoals 9292).** Nieuw tabblad **Reizen**: zoek van A naar B met trein, bus,

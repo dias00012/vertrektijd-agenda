@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { searchLocations } from "@/lib/api";
 import { Spinner } from "./ui";
-import type { GeocodeResult, GeoLocation, SavedPlace } from "@/lib/types";
+import type { PlaceChoice } from "@/lib/places";
+import type { GeocodeResult, GeoLocation } from "@/lib/types";
 
 interface Props {
   value: GeoLocation | null;
@@ -14,7 +15,7 @@ interface Props {
   required?: boolean;
   error?: string | null;
   /** Bewaarde locaties als snelkeuze, zodat je niet opnieuw hoeft te zoeken. */
-  places?: SavedPlace[];
+  places?: PlaceChoice[];
   /** Haltes en stations meenemen in de suggesties (voor de reisplanner). */
   includeStops?: boolean;
   /** Extra knoppen naast de snelkeuzes, bv. "Mijn locatie". */
@@ -167,10 +168,12 @@ export function LocationInput({
 
       {!value && places.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
-          {places.slice(0, 6).map((place) => (
+          {places.map((place) => (
             <button
               key={place.id}
               type="button"
+              // Het adres in de tooltip: op de knop zelf telt waar je heen gaat.
+              title={place.address}
               onClick={() => {
                 dirty.current = false;
                 onChange(place.location);
@@ -182,7 +185,7 @@ export function LocationInput({
               className="max-w-full truncate rounded-full border px-2.5 py-1 text-xs transition-colors"
               style={{ borderColor: "var(--line)", color: "var(--muted)" }}
             >
-              &#128205; {place.name}
+              {place.emoji} {place.name}
             </button>
           ))}
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
+import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { computeDeparture, computeReturn } from "@/lib/travel";
 import { timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
@@ -26,9 +27,19 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
   const category = categoryFor(activity.category);
   const color = activityColor(activity, category);
-  const departure = computeDeparture(activity, settings);
-  const back = computeReturn(activity, settings);
-  const calculating = calculatingIds.has(activity.id);
+
+  // Bij OV hoort de rit bij de dag zelf: donderdag rijdt er een andere trein
+  // dan maandag. Voor auto en fiets is dit gewoon de reis van de activiteit.
+  const dayTravel = useOccurrenceTravel(activity, settings);
+  const shown = {
+    ...activity,
+    travel: dayTravel.travel,
+    returnTravel: dayTravel.returnTravel,
+  };
+
+  const departure = computeDeparture(shown, settings);
+  const back = computeReturn(shown, settings);
+  const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
@@ -151,17 +162,17 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     <p className="text-xs" style={{ color: "var(--muted)" }}>
                       Stel je thuislocatie in voor de vertrektijd.
                     </p>
-                  ) : departure && activity.travel ? (
+                  ) : departure && shown.travel ? (
                     <>
                       <p className="text-xs" style={{ color: "var(--muted)" }}>
-                        {travelModeMeta(activity.travel.mode).emoji} Reistijd:{" "}
-                        {formatDuration(activity.travel.durationMinutes)}
+                        {travelModeMeta(shown.travel.mode).emoji} Reistijd:{" "}
+                        {formatDuration(shown.travel.durationMinutes)}
                         <span className="opacity-70">
-                          {activity.travel.mode === "transit"
-                            ? ` · ${activity.travel.transfers ?? 0} ${
-                                (activity.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
+                          {shown.travel.mode === "transit"
+                            ? ` · ${shown.travel.transfers ?? 0} ${
+                                (shown.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
                               }`
-                            : ` · ${formatDistance(activity.travel.distanceKm)}`}
+                            : ` · ${formatDistance(shown.travel.distanceKm)}`}
                         </span>
                       </p>
                       <p className="text-sm font-semibold tabular-nums">
@@ -188,13 +199,19 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
         </button>
 
         {/* Buiten de knop: een <details> mag niet in een <button> staan. */}
-        {activity.travel?.legs?.length || activity.returnTravel?.legs?.length ? (
+        {shown.travel?.legs?.length || shown.returnTravel?.legs?.length ? (
           <div className="px-4 pb-3.5">
-            {activity.travel ? (
-              <JourneyDetails travel={activity.travel} label="🚆 Heenreis" />
+            {shown.travel ? (
+              <JourneyDetails travel={shown.travel} label="🚆 Heenreis" defaultOpen={isNow} />
             ) : null}
-            {activity.returnTravel ? (
-              <JourneyDetails travel={activity.returnTravel} label="↩️ Terugreis" />
+            {shown.returnTravel ? (
+              <JourneyDetails travel={shown.returnTravel} label="↩️ Terugreis" />
+            ) : null}
+            {!dayTravel.exact && !dayTravel.loading ? (
+              <p className="mt-1.5 text-[0.7rem]" style={{ color: "var(--muted)" }}>
+                &#8505;&#65039; Deze tijden komen van een andere dag; open de app op de dag zelf
+                voor de actuele rit.
+              </p>
             ) : null}
           </div>
         ) : null}

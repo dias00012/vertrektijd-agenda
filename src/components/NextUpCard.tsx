@@ -2,6 +2,7 @@
 
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
+import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
 import { computeDeparture, computeReturn } from "@/lib/travel";
 import { formatDateLabel, formatDuration } from "@/lib/time";
@@ -18,10 +19,18 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
   const { settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
   const category = categoryFor(activity.category);
   const color = activityColor(activity, category);
-  const departure = computeDeparture(activity, settings);
-  const back = computeReturn(activity, settings);
-  const untilDeparture = minutesUntilDeparture(activity, settings, now);
-  const calculating = calculatingIds.has(activity.id);
+  // De rit van déze dag: bij OV rijdt er morgen een andere trein dan vandaag.
+  const dayTravel = useOccurrenceTravel(activity, settings);
+  const shown = {
+    ...activity,
+    travel: dayTravel.travel,
+    returnTravel: dayTravel.returnTravel,
+  };
+
+  const departure = computeDeparture(shown, settings);
+  const back = computeReturn(shown, settings);
+  const untilDeparture = minutesUntilDeparture(shown, settings, now);
+  const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
@@ -91,7 +100,7 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
               <p className="text-sm" style={{ color: "var(--danger)" }}>
                 &#9888;&#65039; {activity.travelError}
               </p>
-            ) : departure && activity.travel ? (
+            ) : departure && shown.travel ? (
               <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
                 <div>
                   <p className="text-[0.7rem] uppercase tracking-wide" style={{ color: "var(--muted)" }}>
@@ -103,13 +112,13 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                 </div>
                 <div className="pb-1">
                   <p className="text-sm" style={{ color: "var(--muted)" }}>
-                    {travelModeMeta(activity.travel.mode).emoji}{" "}
-                    {formatDuration(activity.travel.durationMinutes)}{" "}
-                    {activity.travel.mode === "car" ? "rijden" : "reizen"}
+                    {travelModeMeta(shown.travel.mode).emoji}{" "}
+                    {formatDuration(shown.travel.durationMinutes)}{" "}
+                    {shown.travel.mode === "car" ? "rijden" : "reizen"}
                     <span className="opacity-70">
-                      {activity.travel.mode === "transit"
-                        ? ` · ${activity.travel.transfers ?? 0} ${
-                            (activity.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
+                      {shown.travel.mode === "transit"
+                        ? ` · ${shown.travel.transfers ?? 0} ${
+                            (shown.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
                           }`
                         : ` + ${departure.bufferMinutes} min marge`}
                     </span>
@@ -135,8 +144,9 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
               </p>
             ) : null}
 
-            {activity.travel?.legs?.length ? (
-              <JourneyDetails travel={activity.travel} label="🚆 Bekijk je reis" />
+            {/* Je eerstvolgende reis staat open: dít is wat je nu wilt weten. */}
+            {shown.travel?.legs?.length ? (
+              <JourneyDetails travel={shown.travel} label="🚆 Je reis" defaultOpen />
             ) : null}
           </div>
         ) : (

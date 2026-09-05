@@ -72,10 +72,22 @@ export function travelPlanFor(
   settings: Settings,
   now: Date = new Date(),
 ): TravelPlan | null {
+  return travelPlanForDate(activity, settings, nextOccurrenceDate(activity, now));
+}
+
+/**
+ * Dezelfde reis, maar voor één specifieke dag. Bij een herhalende activiteit
+ * rijdt er op dinsdag een andere trein dan op maandag, dus de dag hoort bij de
+ * berekening — anders staat er een vertrektijd die op die dag niet klopt.
+ */
+export function travelPlanForDate(
+  activity: Activity,
+  settings: Settings,
+  dateKey: string,
+): TravelPlan | null {
   if (!settings.home || !activity.location) return null;
 
   const mode = travelModeFor(activity, settings);
-  const dateKey = nextOccurrenceDate(activity, now);
 
   // Bij OV rekenen we met echte ritten: heen "uiterlijk aankomen om
   // starttijd - marge", terug "vertrekken vanaf de eindtijd".

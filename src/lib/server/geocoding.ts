@@ -114,9 +114,15 @@ async function geocodeNominatim(query: string, limit: number): Promise<GeocodeRe
   return items.map((item) => {
     const parts = item.display_name.split(",").map((part) => part.trim());
     const address = item.address ?? {};
-    const name = item.name?.trim() || parts[0] || item.display_name;
     const place = address.city ?? address.town ?? address.village ?? address.municipality;
     const street = [address.road, address.house_number].filter(Boolean).join(" ");
+
+    // Bij een huisadres geeft Nominatim alleen het huisnummer als naam ("60").
+    // "Wisselweg 60" is dan een stuk herkenbaarder dan "60".
+    const rawName = item.name?.trim() ?? "";
+    const numberOnly = /^\d+[a-zA-Z]?$/.test(rawName);
+    const name =
+      (numberOnly && street ? street : rawName) || street || parts[0] || item.display_name;
 
     // Tweede regel van de suggestie: straat, wijk en plaats, zonder herhaling
     // van de naam die al op de eerste regel staat.

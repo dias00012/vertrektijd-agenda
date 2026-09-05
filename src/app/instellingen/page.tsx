@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
-import { categoriesUsingPlace, sortedPlaces } from "@/lib/places";
+import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces } from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
@@ -111,7 +111,7 @@ export default function SettingsPage() {
 
           <fieldset>
             <legend className="label">Standaard vervoermiddel</legend>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {TRAVEL_MODES.map((item) => {
                 const active = mode === item.id;
                 return (
@@ -175,8 +175,9 @@ export default function SettingsPage() {
       <section className="card mt-4 px-5 py-4">
         <h2 className="text-sm font-semibold">Over de reistijden</h2>
         <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-          Reistijden worden met de auto berekend via een routeservice op de server, zonder rekening
-          te houden met actuele drukte. Je gegevens blijven lokaal op dit apparaat opgeslagen.
+          Reistijden worden op de server berekend. Auto en fiets gaan via een routeservice, zonder
+          rekening te houden met actuele drukte. Bij OV komt je vertrektijd uit de echte
+          dienstregeling, inclusief overstappen en vertragingen.
         </p>
       </section>
     </div>
@@ -185,15 +186,18 @@ export default function SettingsPage() {
 
 /** Overzicht van bewaarde locaties, met de categorieën die ze als vaste plek gebruiken. */
 function SavedPlaces() {
-  const { settings, forgetPlace, categoryFor } = useAgenda();
+  const { settings, forgetPlace, renamePlace, categoryFor } = useAgenda();
   const places = sortedPlaces(settings);
+  /** De locatie waarvan je op dit moment de naam aanpast. */
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
 
   return (
     <section className="card mt-4 px-5 py-5">
       <h2 className="text-base font-semibold">&#128205; Opgeslagen locaties</h2>
       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-        Locaties die je bij een activiteit bewaart, verschijnen hier. Ze staan als snelkeuze in
-        het formulier, en de vaste locatie van een categorie wordt automatisch ingevuld.
+        Locaties die je bij een activiteit bewaart, verschijnen hier onder de naam van waar je
+        heen gaat &mdash; niet onder het adres. Met &#9998; geef je ze een eigen naam.
       </p>
 
       {places.length === 0 ? (
@@ -212,7 +216,48 @@ function SavedPlaces() {
                 style={{ borderColor: "var(--line)" }}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{place.name}</p>
+                  {renaming === place.id ? (
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        renamePlace(place.id, draftName);
+                        setRenaming(null);
+                      }}
+                      className="flex gap-2"
+                    >
+                      <input
+                        className="field py-1.5 text-sm"
+                        value={draftName}
+                        autoFocus
+                        placeholder="Bijv. Werk"
+                        aria-label="Naam van deze locatie"
+                        onChange={(event) => setDraftName(event.target.value)}
+                      />
+                      <button type="submit" className="btn btn-primary shrink-0 px-3 py-1.5 text-xs">
+                        Opslaan
+                      </button>
+                    </form>
+                  ) : (
+                    <p className="flex items-center gap-1.5 text-sm font-medium">
+                      <span aria-hidden>{placeEmoji(place, settings)}</span>
+                      <span className="truncate">{placeDisplayName(place, settings)}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDraftName(place.customName ?? "");
+                          setRenaming(place.id);
+                        }}
+                        aria-label="Naam aanpassen"
+                        className="shrink-0 text-xs"
+                        style={{ color: "var(--muted)" }}
+                      >
+                        &#9998;
+                      </button>
+                    </p>
+                  )}
+                  <p className="mt-0.5 truncate text-xs" style={{ color: "var(--muted)" }}>
+                    {place.location.label}
+                  </p>
                   {categories.length > 0 ? (
                     <p className="mt-1 flex flex-wrap gap-1.5">
                       {categories.map((id) => {
@@ -241,7 +286,7 @@ function SavedPlaces() {
                 <button
                   type="button"
                   onClick={() => forgetPlace(place.id)}
-                  aria-label={`${place.name} verwijderen`}
+                  aria-label={`${placeDisplayName(place, settings)} verwijderen`}
                   className="shrink-0 rounded-lg px-2 py-1 text-sm"
                   style={{ color: "var(--danger)" }}
                 >

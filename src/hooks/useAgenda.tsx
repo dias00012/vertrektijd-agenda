@@ -74,6 +74,8 @@ interface AgendaContextValue {
    * bij zit, de vaste locatie voor die categorie.
    */
   rememberPlace: (location: GeoLocation, category: CategoryId | null) => void;
+  /** Geeft een bewaarde locatie een eigen naam; leeg maakt de naam weer los. */
+  renamePlace: (placeId: string, name: string) => void;
   /** Verwijdert een bewaarde locatie en de verwijzingen ernaar. */
   forgetPlace: (placeId: string) => void;
 
@@ -417,6 +419,17 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  /** Een bewaarde locatie een eigen naam geven ("Werk", "Bijbaan"). */
+  const renamePlace = useCallback((placeId: string, name: string) => {
+    const trimmed = name.trim();
+    setSettings((current) => ({
+      ...current,
+      savedPlaces: current.savedPlaces.map((place) =>
+        place.id === placeId ? { ...place, customName: trimmed || undefined } : place,
+      ),
+    }));
+  }, []);
+
   const forgetPlace = useCallback((placeId: string) => {
     setSettings((current) => {
       const categoryPlaces = { ...current.categoryPlaces };
@@ -683,6 +696,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeOccurrence,
       updateSettings,
       rememberPlace,
+      renamePlace,
       forgetPlace,
       categories,
       categoryFor,
@@ -716,6 +730,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeOccurrence,
       updateSettings,
       rememberPlace,
+      renamePlace,
       forgetPlace,
       categories,
       categoryFor,

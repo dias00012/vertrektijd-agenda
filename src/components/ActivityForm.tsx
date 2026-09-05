@@ -5,7 +5,7 @@ import { ACTIVITY_COLORS, activityColor, resolveCategory } from "@/lib/categorie
 import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { WEEKDAYS, defaultRecurrence, sortWeekdays } from "@/lib/recurrence";
-import { placeForCategory, sortedPlaces } from "@/lib/places";
+import { placeChoices, placeForCategory } from "@/lib/places";
 import { TRAVEL_MODES, travelModeMeta } from "@/lib/travelModes";
 import { LocationInput } from "./LocationInput";
 import type {
@@ -105,7 +105,7 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
    */
   const autoFilled = useRef(!activity && Boolean(placeForCategory(settings, "school")));
 
-  const savedPlaces = sortedPlaces(settings);
+  const savedPlaces = placeChoices(settings);
   const categoryPlace = placeForCategory(settings, draft.category);
   // Al bekend als vaste plek voor deze categorie? Dan valt er niets te onthouden.
   const alreadyDefault =
@@ -658,7 +658,7 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
           {draft.location ? (
             <fieldset>
               <legend className="label">Hoe reis je hierheen?</legend>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {TRAVEL_MODES.map((item) => {
                   const active = draft.travelMode === item.id;
                   return (
