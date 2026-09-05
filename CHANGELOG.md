@@ -8,12 +8,6 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
-## 0.5.2
-
-- **Statusfilter op Schoolwerk.** Bovenaan staan nu knoppen **Openstaand · Klaar · Alles** (met
-  aantallen). Standaard zie je "Openstaand" (te doen + bezig); zet je een opdracht of toets op
-  **Klaar**, dan verdwijnt hij uit die lijst. Klik **Klaar** om alleen afgeronde items te zien.
-
 ## 0.5.1
 
 - **Sync voegt nu samen i.p.v. overschrijven.** Bij inloggen op een tweede apparaat worden
