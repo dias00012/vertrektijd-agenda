@@ -29,6 +29,9 @@ import {
   type ImportSummary,
 } from "@/lib/backup";
 import { needsTravelRefresh, travelKey } from "@/lib/travel";
+import { useAuth } from "@/hooks/useAuth";
+import { getSupabase } from "@/lib/supabase";
+import { pullData, pushData } from "@/lib/sync";
 import type {
   Activity,
   ActivityDraft,
@@ -92,6 +95,14 @@ interface AgendaContextValue {
   exportData: () => BackupFile;
   /** Leest een bestand in (samenvoegen of vervangen) en geeft een samenvatting. */
   importData: (data: BackupFile, mode: ImportMode) => ImportSummary;
+
+  /* --- Synchronisatie --------------------------------------------------- */
+  sync: {
+    /** "off" = niet ingelogd/niet ingesteld; anders de live status. */
+    status: "off" | "idle" | "syncing" | "error";
+    error: string | null;
+    lastSyncedAt: string | null;
+  };
 }
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
@@ -147,6 +158,15 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
+
+  const { user } = useAuth();
+  const supabase = getSupabase();
+  const [syncStatus, setSyncStatus] = useState<"off" | "idle" | "syncing" | "error">("off");
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  /** Onderdrukt de push-naar-server terwijl we net data van de server toepassen. */
+  const applyingRemote = useRef(false);
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Sleutels waarvoor de berekening faalde; niet automatisch opnieuw proberen. */
   const failedKeys = useRef<Set<string>>(new Set());
@@ -518,6 +538,79 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     [activities, tasks, exams],
   );
 
+  // Bij inloggen: haal de data van de gebruiker op. Bestaat er nog niets in de
+  // cloud, dan zetten we de huidige lokale data erin (eerste keer migreren).
+  useEffect(() => {
+    if (!supabase || !user || !hydrated) {
+      setSyncStatus("off");
+      return;
+    }
+
+    let cancelled = false;
+    setSyncStatus("syncing");
+    setSyncError(null);
+    applyingRemote.current = true;
+
+    (async () => {
+      try {
+        const remote = await pullData(supabase, user.id);
+        if (cancelled) return;
+
+        if (remote) {
+          setActivities(remote.activities);
+          setTasks(remote.tasks);
+          setExams(remote.exams);
+          if (remote.settings) setSettings((current) => ({ ...current, ...remote.settings }));
+        } else {
+          await pushData(supabase, user.id, { settings, activities, tasks, exams });
+        }
+        if (cancelled) return;
+        setLastSyncedAt(new Date().toISOString());
+        setSyncStatus("idle");
+      } catch (error) {
+        if (cancelled) return;
+        setSyncStatus("error");
+        setSyncError(error instanceof Error ? error.message : "Synchroniseren is mislukt.");
+      } finally {
+        // Iets later vrijgeven zodat de state-update van hierboven de push-effect
+        // niet meteen opnieuw triggert.
+        setTimeout(() => {
+          applyingRemote.current = false;
+        }, 150);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Alleen opnieuw draaien wanneer de gebruiker wisselt of na hydratatie.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, user, hydrated]);
+
+  // Terwijl je bent ingelogd: schrijf wijzigingen (debounced) naar de cloud.
+  useEffect(() => {
+    if (!supabase || !user || !hydrated || applyingRemote.current) return;
+
+    if (pushTimer.current) clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(async () => {
+      setSyncStatus("syncing");
+      try {
+        await pushData(supabase, user.id, { settings, activities, tasks, exams });
+        setLastSyncedAt(new Date().toISOString());
+        setSyncStatus("idle");
+        setSyncError(null);
+      } catch (error) {
+        setSyncStatus("error");
+        setSyncError(error instanceof Error ? error.message : "Opslaan in de cloud is mislukt.");
+      }
+    }, 800);
+
+    return () => {
+      if (pushTimer.current) clearTimeout(pushTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, user, hydrated, activities, tasks, exams, settings]);
+
   const value = useMemo<AgendaContextValue>(
     () => ({
       activities,
@@ -546,6 +639,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
+      sync: { status: syncStatus, error: syncError, lastSyncedAt },
     }),
     [
       activities,
@@ -574,6 +668,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
+      syncStatus,
+      syncError,
+      lastSyncedAt,
     ],
   );
 

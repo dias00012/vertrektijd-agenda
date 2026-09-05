@@ -8,6 +8,16 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.5.0
+
+- **Accounts & synchronisatie (optioneel).** Je kunt nu een account aanmaken met e-mail +
+  wachtwoord en inloggen via **Instellingen → Account & synchronisatie**. Ingelogd worden je
+  agenda, schoolwerk en instellingen bewaard in je account en gedeeld tussen apparaten. Zonder
+  account werkt de app lokaal precies zoals voorheen.
+- Techniek: Supabase (auth + database, gratis laag) met Row Level Security; alles staat per
+  gebruiker in één rij. Zie [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md) voor het eenmalig instellen.
+- De serverkant (`src/lib/server/*`, `/api/*`) en het uitwisselformaat zijn ongewijzigd.
+
 ## 0.4.2
 
 - **Voorbije blokken gedempt.** Activiteiten die vandaag al voorbij zijn, worden grijs weergegeven

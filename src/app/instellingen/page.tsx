@@ -13,6 +13,7 @@ import {
 } from "@/lib/weekPlan";
 import { startOfWeekKey, todayKey } from "@/lib/time";
 import { LocationInput } from "@/components/LocationInput";
+import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { Spinner } from "@/components/ui";
 import type { GeoLocation } from "@/lib/types";
@@ -135,6 +136,7 @@ export default function SettingsPage() {
         </form>
       )}
 
+      {hydrated ? <AccountSection /> : null}
       {hydrated ? <SavedPlaces /> : null}
       {hydrated ? <WeekPlanner /> : null}
       {hydrated ? <BackupSection /> : null}

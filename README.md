@@ -279,6 +279,15 @@ leerplan: zet `category: "school"` en `source: "leerplan"`. Koppel een blok aan 
 `linkedTaskId` of `linkedExamId` (de `id` van een taak of toets); de app toont dan bij die taak/
 toets hoeveel leertijd is ingepland en labelt het blok in de agenda.
 
+## Account & synchronisatie
+
+De app werkt standaard lokaal (localStorage). Optioneel kun je login met e-mail + wachtwoord en
+cloud-synchronisatie tussen apparaten activeren met een gratis **Supabase**-project. Eenmalige
+instelstappen (project, database-schema, sleutels in Vercel) staan in
+[`SUPABASE-SETUP.md`](SUPABASE-SETUP.md). Zonder de env-variabelen
+`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` blijft alles lokaal en verandert er
+niets. Elke gebruiker heeft alleen toegang tot zijn eigen data (Row Level Security).
+
 ## Klaar voor later
 
 Het model is bewust ruim opgezet, maar deze functies zijn nog **niet** gebouwd:
