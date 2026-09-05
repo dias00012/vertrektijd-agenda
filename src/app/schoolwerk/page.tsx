@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
 import {
@@ -18,17 +19,44 @@ import { formatDateLabel, formatDuration } from "@/lib/time";
 import { EmptyState, Spinner } from "@/components/ui";
 import type { Exam, SchoolworkStatus, Task } from "@/lib/types";
 
+/** Filter op status. "open" = te doen + bezig (alles wat nog moet gebeuren). */
+type StatusFilter = "open" | "done" | "all";
+
+const FILTERS: { id: StatusFilter; label: string }[] = [
+  { id: "open", label: "Openstaand" },
+  { id: "done", label: "Klaar" },
+  { id: "all", label: "Alles" },
+];
+
+function matchesFilter(status: SchoolworkStatus, filter: StatusFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "done") return status === "done";
+  return status !== "done"; // "open"
+}
+
 /** Schoolwerk: opdrachten op deadline en toetsen op datum, met status en stappen. */
 export default function SchoolworkPage() {
   const { tasks, exams, hydrated } = useAgenda();
   const now = useNow(60_000);
+  const [filter, setFilter] = useState<StatusFilter>("open");
 
-  const sortedTasks = sortTasks(tasks);
-  const sortedExams = sortExams(exams);
+  const sortedTasks = sortTasks(tasks).filter((t) => matchesFilter(t.status, filter));
+  const sortedExams = sortExams(exams).filter((e) => matchesFilter(e.status, filter));
+
+  // Aantallen per filter voor de labels op de knoppen.
+  const openCount = tasks.filter((t) => t.status !== "done").length +
+    exams.filter((e) => e.status !== "done").length;
+  const doneCount = tasks.filter((t) => t.status === "done").length +
+    exams.filter((e) => e.status === "done").length;
+  const counts: Record<StatusFilter, number> = {
+    open: openCount,
+    done: doneCount,
+    all: tasks.length + exams.length,
+  };
 
   return (
     <div>
-      <header className="mb-5">
+      <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight">Schoolwerk</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
           Je opdrachten en toetsen, aangeleverd door je planner.
@@ -46,41 +74,72 @@ export default function SchoolworkPage() {
           description="Importeer een bestand van je planner via Instellingen → Back-up & synchronisatie."
         />
       ) : (
-        <div className="space-y-8">
-          <section aria-label="Opdrachten">
-            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              Opdrachten ({sortedTasks.length})
-            </h2>
-            {sortedTasks.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Geen opdrachten.
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {sortedTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} now={now} />
-                ))}
-              </div>
-            )}
-          </section>
+        <>
+          <div
+            className="mb-5 grid grid-cols-3 gap-1 rounded-2xl border p-1"
+            role="tablist"
+            aria-label="Filter op status"
+            style={{ background: "var(--surface-soft)", borderColor: "var(--line)" }}
+          >
+            {FILTERS.map((item) => {
+              const active = item.id === filter;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setFilter(item.id)}
+                  className="rounded-xl px-2 py-2 text-sm font-medium transition-colors"
+                  style={{
+                    background: active ? "var(--surface)" : "transparent",
+                    color: active ? "var(--ink)" : "var(--muted)",
+                    boxShadow: active ? "var(--shadow-card)" : "none",
+                  }}
+                >
+                  {item.label}
+                  <span className="ml-1 text-xs opacity-70">{counts[item.id]}</span>
+                </button>
+              );
+            })}
+          </div>
 
-          <section aria-label="Toetsen">
-            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              Toetsen ({sortedExams.length})
-            </h2>
-            {sortedExams.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Geen toetsen.
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {sortedExams.map((exam) => (
-                  <ExamCard key={exam.id} exam={exam} now={now} />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+          <div className="space-y-8">
+            <section aria-label="Opdrachten">
+              <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+                Opdrachten ({sortedTasks.length})
+              </h2>
+              {sortedTasks.length === 0 ? (
+                <p className="text-sm" style={{ color: "var(--muted)" }}>
+                  {filter === "done" ? "Nog niets afgerond." : "Geen openstaande opdrachten. 🎉"}
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {sortedTasks.map((task) => (
+                    <TaskCard key={task.id} task={task} now={now} />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section aria-label="Toetsen">
+              <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+                Toetsen ({sortedExams.length})
+              </h2>
+              {sortedExams.length === 0 ? (
+                <p className="text-sm" style={{ color: "var(--muted)" }}>
+                  {filter === "done" ? "Nog geen toetsen afgerond." : "Geen openstaande toetsen."}
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {sortedExams.map((exam) => (
+                    <ExamCard key={exam.id} exam={exam} now={now} />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </>
       )}
     </div>
   );
