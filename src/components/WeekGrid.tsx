@@ -195,9 +195,9 @@ function GridBlock({
             ...travelStyle,
           }}
         >
-          {travelHeight >= 20 ? (
+          {travelHeight >= 11 ? (
             <span
-              className="block truncate text-[0.6rem] font-semibold leading-tight"
+              className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
               &#128663; {minutesToTime(item.departureMinutes)}
@@ -264,9 +264,9 @@ function GridBlock({
             ...travelStyle,
           }}
         >
-          {returnHeight >= 20 ? (
+          {returnHeight >= 11 ? (
             <span
-              className="block truncate text-[0.6rem] font-semibold leading-tight"
+              className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
               &#8617;&#65039; {minutesToTime(item.returnMinutes)}

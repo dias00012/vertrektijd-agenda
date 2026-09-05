@@ -8,6 +8,12 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.5.2
+
+- **Terugreis-tijd zichtbaar in het weekraster.** De thuiskomsttijd van korte ritten (zoals de
+  gym) werd verborgen omdat het blokje te laag was; het label verschijnt nu ook bij korte
+  reisblokken (heen én terug).
+
 ## 0.5.1
 
 - **Sync voegt nu samen i.p.v. overschrijven.** Bij inloggen op een tweede apparaat worden
