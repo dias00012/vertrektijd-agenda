@@ -64,11 +64,11 @@ export default function SettingsPage() {
       {hydrated ? <AccountSection /> : null}
 
       {!hydrated ? (
-        <div className="card px-5 py-10 text-center">
+        <div className="card mt-4 px-5 py-10 text-center">
           <Spinner size={18} label="Instellingen laden…" />
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate className="card space-y-5 px-5 py-5">
+        <form onSubmit={handleSubmit} noValidate className="card mt-4 space-y-5 px-5 py-5">
           <div>
             <h2 className="mb-3 text-base font-semibold">&#127968; Mijn thuislocatie</h2>
             <LocationInput
@@ -200,7 +200,7 @@ function IntroSection() {
     <section className="card mt-4 px-5 py-5">
       <h2 className="text-base font-semibold">&#128075; Uitleg &amp; rondleiding</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        De rondleiding loopt met je langs elk tabblad en legt uit wat je daar ziet &mdash; je
+        De rondleiding loopt met je langs elk tabblad en legt uit wat je daar ziet. Je
         blijft gewoon in de app, dus je kijkt naar het echte scherm. De introductie begint bij de
         instelvragen; je huidige antwoorden staan er al in.
       </p>
@@ -229,7 +229,7 @@ function SavedPlaces() {
       <h2 className="text-base font-semibold">&#128205; Opgeslagen locaties</h2>
       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
         Locaties die je bij een activiteit bewaart, verschijnen hier onder de naam van waar je
-        heen gaat &mdash; niet onder het adres. Met &#9998; geef je ze een eigen naam.
+        heen gaat, niet onder het adres. Met &#9998; geef je ze een eigen naam.
       </p>
 
       {places.length === 0 ? (

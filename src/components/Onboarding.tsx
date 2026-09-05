@@ -122,7 +122,7 @@ export function Onboarding({
             </p>
             <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
               Dat is het hele idee. Jij zet erin wat je gaat doen en waar; de app rekent uit hoe
-              laat je de deur uit moet — met de auto, de fiets of het OV, inclusief overstappen en
+              laat je de deur uit moet, met de auto, de fiets of het OV, inclusief overstappen en
               vertragingen.
             </p>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
@@ -242,7 +242,7 @@ export function Onboarding({
             style={{ color: "var(--muted)" }}
             onClick={() => finish(false)}
           >
-            Opslaan en zelf rondkijken &mdash; sla de rondleiding over
+            Opslaan en zelf rondkijken, zonder rondleiding
           </button>
         ) : null}
       </div>

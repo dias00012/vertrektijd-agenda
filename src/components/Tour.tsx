@@ -30,13 +30,13 @@ const STOPS: Stop[] = [
     href: "/agenda",
     emoji: "🗓️",
     title: "Agenda",
-    body: "Je planning per dag, week of maand. In het weekraster zie je de reistijd als gestreepte blokken vóór en ná elke activiteit — zo zie je in één oogopslag hoeveel van je dag onderweg opgaat.",
+    body: "Je planning per dag, week of maand. In het weekraster zie je de reistijd als gestreepte blokken vóór en ná elke activiteit. Zo zie je in één oogopslag hoeveel van je dag onderweg opgaat.",
   },
   {
     href: "/reizen",
     emoji: "🚆",
     title: "Reizen",
-    body: "Een losse reisplanner, zoals 9292. Kies van en naar — een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
+    body: "Een losse reisplanner, zoals 9292. Kies van en naar: een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
   },
   {
     href: "/schoolwerk",
@@ -163,7 +163,7 @@ export function Tour({
                   onAddActivity();
                 }}
               >
-                Klaar &mdash; eerste activiteit
+                Eerste activiteit toevoegen
               </button>
             ) : (
               <button

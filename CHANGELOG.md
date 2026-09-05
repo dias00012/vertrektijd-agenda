@@ -8,10 +8,28 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.12.1
+
+- **Gedachtestreepjes weg uit alle teksten.** Overal in de app, en in de README en dit bestand,
+  staat nu gewone interpunctie: een punt, een komma, een dubbele punt of haakjes.
+- **Naam "Vertrektijd" uit de zijbalk.** Die stond boven de navigatie en linkte naar Vandaag,
+  wat er direct onder al staat.
+- **Tussenruimte in Instellingen hersteld.** De kaarten Account & synchronisatie en Mijn
+  thuislocatie stonden tegen elkaar aan, de rest niet.
+
+## 0.12.0
+
+- **Echte rondleiding door de app.** De rondleiding navigeert nu naar elk tabblad (Vandaag,
+  Agenda, Reizen, Schoolwerk, Instellingen) met een klein paneel onderaan dat uitlegt wat je op
+  dat moment vóór je ziet. De pagina erachter blijft zichtbaar; dat is het hele punt.
+  Te starten via Instellingen of aan het eind van de startwizard. Pijltjestoetsen bladeren,
+  Escape sluit.
+- **Introductie terug te vinden** in Instellingen, met je huidige instellingen al ingevuld.
+
 ## 0.11.0
 
 - **Werkt zonder bereik.** Een service worker bewaart de app zelf, zodat je in de trein of in een
-  tunnel je planning gewoon ziet. Reistijden (`/api/*`) worden nooit bewaard — een verouderde
+  tunnel je planning gewoon ziet. Reistijden (`/api/*`) worden nooit bewaard: een verouderde
   vertrektijd is erger dan geen. Lukt een pagina niet, dan verschijnt `/offline` in plaats van
   een foutscherm.
 - **Startwizard.** Bij de eerste keer openen vraagt de app om je thuislocatie, je vervoermiddel
@@ -22,7 +40,7 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 - **Herinneringen.** Stel in Instellingen in hoeveel minuten van tevoren je een melding wilt.
   Werkt zolang de app open staat (ook op de achtergrond); dat staat er eerlijk bij.
 - **Nette foutpagina's** in plaats van een wit scherm, en optionele foutrapportage via
-  `NEXT_PUBLIC_SENTRY_DSN` — zonder die instelling gaat er niets naar buiten.
+  `NEXT_PUBLIC_SENTRY_DSN`. Zonder die instelling gaat er niets naar buiten.
 
 ## 0.10.0
 
@@ -41,8 +59,8 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 ## 0.9.0
 
 - **Echte laptoplayout.** Vanaf 1024 px staat de navigatie links als zijbalk, verdwijnt de
-  telefoon-onderbalk en krijgt de inhoud meer breedte — het weekraster kan zijn zeven kolommen
-  nu echt gebruiken. Op telefoon en tablet verandert er niets.
+  telefoon-onderbalk en krijgt de inhoud meer breedte, zodat het weekraster zijn zeven kolommen
+  nu echt kan gebruiken. Op telefoon en tablet verandert er niets.
 - **Bedienbaar zonder muis.** Alles wat je met Tab kunt bereiken krijgt een zichtbare
   focusrand (`:focus-visible`), zodat toetsenbord- en schermlezergebruikers zien waar ze zijn.
 
@@ -88,7 +106,7 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   **zelfgekozen emoji van je toetsenbord** (Windows: Win + `.` · Mac: Ctrl + Cmd + spatie), een
   eigen naam en kleur. Ze verschijnen overal in de app.
 - **Schoolwerk zelf toevoegen.** Opdrachten en toetsen kun je nu zelf aanmaken, bewerken en
-  verwijderen — inclusief stappen, prioriteit, status en geschatte tijd. Voorheen kon dat alleen
+  verwijderen, inclusief stappen, prioriteit, status en geschatte tijd. Voorheen kon dat alleen
   via een importbestand.
 - **"Standaard"-knoppen weg** bij Kleur en bij "Hoe reis je hierheen?". Je ziet nu meteen welke
   kleur en welk vervoermiddel gelden; de kleur volgt je type tenzij je hem zelf kiest.
@@ -97,11 +115,11 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 
 - **OV-reisplanner.** Kies per activiteit **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV**. Bij OV zoekt de
   app een echte rit die je op tijd laat aankomen en toont hij de hele reis: lopen naar de halte,
-  welke trein/bus/metro, richting, **spoor**, overstappen en aankomsttijden — heen én terug.
+  welke trein/bus/metro, richting, **spoor**, overstappen en aankomsttijden, heen én terug.
   Je vertrektijd komt dan uit de dienstregeling in plaats van uit een rekensom.
 - **Fiets- en looptijden zijn nu écht.** De gratis OSRM-server gaf voor auto, fiets en lopen
   dezelfde tijd (hij kent alleen het autoprofiel). Fiets en lopen lopen nu via MOTIS:
-  9,5 km werd 13 min "fiets" en is nu 29 min — en lopen 133 min.
+  9,5 km werd 13 min "fiets" en is nu 29 min, en lopen 133 min.
 - **Standaard vervoermiddel** in Instellingen; per activiteit kun je afwijken.
 - Techniek: MOTIS/transitous (gratis, zonder sleutel, wereldwijde GTFS-dekking). Auto blijft OSRM.
   `TravelInfo` heeft nu optioneel `legs`, `transfers`, `plannedDeparture` en `plannedArrival`.
@@ -141,7 +159,7 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 
 - **Voorbije blokken gedempt.** Activiteiten die vandaag al voorbij zijn, worden grijs weergegeven
   met een "✓ geweest"-label; de lopende activiteit krijgt een accentrand en "● bezig". Zo zie je
-  in één oogopslag wat gedaan is en wat er nu/volgende op de planning staat — in de agenda-lijsten
+  in één oogopslag wat gedaan is en wat er nu/volgende op de planning staat, in de agenda-lijsten
   en in het dagoverzicht op het dashboard.
 - **Terugreis self-healing bevestigd.** Gym-/activiteitenblokken van vóór de terugreis-functie
   krijgen die reistijd terug-naar-huis nu automatisch bij het openen van de app.

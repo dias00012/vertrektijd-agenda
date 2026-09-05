@@ -186,7 +186,7 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
         ) : (
           <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
             &#9201;&#65039; Begint om <strong style={{ color: "var(--ink)" }}>{activity.startTime}</strong>
-            {linkedTask || linkedExam ? " — thuis, geen reistijd." : " — geen locatie, geen reistijd."}
+            {linkedTask || linkedExam ? ". Thuis, dus geen reistijd." : ". Geen locatie, dus geen reistijd."}
           </p>
         )}
       </div>

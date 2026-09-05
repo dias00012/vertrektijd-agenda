@@ -51,15 +51,6 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r px-4 py-6 lg:flex"
         style={{ borderColor: "var(--line)" }}
       >
-        {/* Bewust geen link: "Vandaag" staat er al onder, en twee knoppen naar
-            dezelfde pagina is verwarrend. Dit is alleen de naam van de app. */}
-        <p className="mb-6 flex items-center gap-2 px-2">
-          <span aria-hidden className="text-xl leading-none">
-            &#128337;
-          </span>
-          <span className="text-base font-semibold tracking-tight">Vertrektijd</span>
-        </p>
-
         <button
           type="button"
           className="btn btn-primary mb-4 w-full"

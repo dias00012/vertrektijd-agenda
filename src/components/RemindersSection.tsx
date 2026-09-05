@@ -46,7 +46,7 @@ export function RemindersSection() {
     <section className="card mt-4 px-5 py-5">
       <h2 className="text-base font-semibold">&#128276; Herinneringen</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        Krijg een melding vlak voordat je moet vertrekken, met de tijd van dat moment &mdash;
+        Krijg een melding vlak voordat je moet vertrekken, met de tijd van dat moment,
         inclusief vertraging.
       </p>
 
@@ -94,7 +94,7 @@ export function RemindersSection() {
       )}
 
       <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        <strong>Let op:</strong> meldingen komen binnen zolang de app open staat &mdash; ook op de
+        <strong>Let op:</strong> meldingen komen binnen zolang de app open staat, ook op de
         achtergrond. Sluit je hem helemaal af, dan hoor je niets. Installeer de app op je
         beginscherm en laat hem draaien voor de beste kans dat je het seintje krijgt.
       </p>

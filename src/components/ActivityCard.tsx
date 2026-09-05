@@ -110,7 +110,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
-                    title={`Leerblok voor: ${linkedTask.subject} — ${linkedTask.title}`}
+                    title={`Leerblok voor: ${linkedTask.subject}, ${linkedTask.title}`}
                   >
                     📚 {linkedTask.subject}
                   </span>
@@ -213,7 +213,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
                       {cancelled ? (
                         <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
-                          &#9888;&#65039; Deze rit is uitgevallen &mdash; zoek een andere reis.
+                          &#9888;&#65039; Deze rit is uitgevallen. Zoek een andere reis.
                         </p>
                       ) : delay > 0 ? (
                         <p className="text-xs font-semibold" style={{ color: "#f97316" }}>

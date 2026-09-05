@@ -6,7 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { ServiceWorker } from "@/components/ServiceWorker";
 
 export const metadata: Metadata = {
-  title: "Vertrektijd \u2014 slimme agenda",
+  title: "Vertrektijd, slimme agenda",
   description:
     "Persoonlijke agenda die automatisch berekent hoe laat je van huis moet vertrekken.",
   manifest: "/manifest.webmanifest",

@@ -1,4 +1,4 @@
-# Vertrektijd — slimme agenda
+# Vertrektijd, slimme agenda
 
 Een persoonlijke agenda die niet alleen zegt _"je hebt om 09:00 school"_, maar vooral
 _"je hebt om 09:00 school, je moet om 08:23 vertrekken."_
@@ -21,7 +21,7 @@ npm run dev
 
 Open daarna http://localhost:3000. De app werkt direct, zonder API-sleutel.
 
-Stel bij het eerste gebruik je thuislocatie in via **Instellingen** — daarna berekent de
+Stel bij het eerste gebruik je thuislocatie in via **Instellingen**. Daarna berekent de
 app voor elke activiteit met een locatie automatisch de reistijd en de vertrektijd.
 
 ## Technische keuzes
@@ -30,7 +30,7 @@ app voor elke activiteit met een locatie automatisch de reistijd en de vertrekti
 | --- | --- |
 | **Next.js 15 (App Router) + TypeScript** | Eén project voor frontend én server. De API-routes draaien op de server, dus geocoding en routing gebeuren nooit vanuit de browser. |
 | **Tailwind CSS v4** | Snel, klein en consistent. Categoriekleuren gaan via CSS-variabelen, zodat ze dynamisch kunnen zijn zonder gegenereerde klassen. |
-| **Nominatim + OSRM (standaard)** | Gratis, open en **zonder API-sleutel** — de app werkt meteen na `npm install`. |
+| **Nominatim + OSRM (standaard)** | Gratis, open en **zonder API-sleutel**, dus de app werkt meteen na `npm install`. |
 | **OpenRouteService (optioneel)** | Nauwkeuriger en met hogere limieten. Zet `TRAVEL_PROVIDER=ors` en `ORS_API_KEY=…` in `.env.local`; de key blijft server-side. |
 | **localStorage** | Voor deze MVP is een database overbodig. De opslaglaag (`src/lib/storage.ts`) is bewust klein, zodat er later een echte backend achter kan. |
 
@@ -93,7 +93,7 @@ src/
 
 Elke berekende reistijd wordt opgeslagen met een sleutel:
 `thuis-coördinaten → bestemming-coördinaten @ vervoersmiddel`. Zodra die sleutel niet meer
-klopt — je verandert de locatie van een activiteit, of je thuislocatie in de instellingen —
+klopt (je verandert de locatie van een activiteit, of je thuislocatie in de instellingen),
 haalt de store automatisch een nieuwe reistijd op voor alle betrokken activiteiten.
 
 De **vertrektijd is afgeleid**, niet opgeslagen. Verschuif je Gym van 18:00 naar 19:00, dan
@@ -104,7 +104,7 @@ Activiteiten **zonder locatie** (bijvoorbeeld koken) tonen geen reistijd en geen
 ### Terugreis
 
 Voor elke activiteit met een locatie wordt ook de rit **terug naar huis** berekend, zodat je
-onder de activiteit ziet hoe laat je thuis bent. Heen en terug worden apart opgehaald — door
+onder de activiteit ziet hoe laat je thuis bent. Heen en terug worden apart opgehaald, door
 eenrichtingsverkeer en afslagen verschillen ze in de praktijk (bv. 32 min heen, 31 min terug),
 dus spiegelen zou een verkeerd antwoord geven.
 
@@ -125,7 +125,7 @@ spoor, overstappen en aankomsttijden.
 Vanuit de agenda kun je doorlinken met
 `/reizen?toLat=…&toLon=…&toLabel=…&arriveBy=<ISO>`.
 
-Wat er bewust **niet** in zit: ticketprijzen en storingsteksten — die zitten niet in de open data.
+Wat er bewust **niet** in zit: ticketprijzen en storingsteksten. Die zitten niet in de open data.
 
 ### Eigen activiteitstypes
 
@@ -139,14 +139,14 @@ Per activiteit kies je **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV** (of "Sta
 instelling uit **Instellingen → Standaard vervoermiddel**).
 
 Bij **OV** werkt de app als een reisplanner: hij zoekt een echte rit die je vóór de starttijd
-(min de marge) laat aankomen, en toont de hele reis — lopen naar de halte, de lijn, de richting,
+(min de marge) laat aankomen, en toont de hele reis: lopen naar de halte, de lijn, de richting,
 het **spoor**, overstappen en aankomsttijden. De vertrektijd komt dan uit de dienstregeling in
 plaats van uit een rekensom. Ook de terugreis wordt als echte rit gepland, vanaf de eindtijd.
 
 | Vervoermiddel | Bron | Waarom |
 | --- | --- | --- |
 | 🚗 Auto | OSRM | Snel en betrouwbaar voor autoroutes. |
-| 🚲 Fiets / 🚶 Lopen | MOTIS | De publieke OSRM-demo kent alleen het autoprofiel en gaf voor fiets en lopen dezelfde — dus foute — tijd. |
+| 🚲 Fiets / 🚶 Lopen | MOTIS | De publieke OSRM-demo kent alleen het autoprofiel en gaf voor fiets en lopen dezelfde (en dus foute) tijd. |
 | 🚆 OV | MOTIS (transitous) | Gratis, zonder sleutel, met wereldwijde GTFS-dekking en dienstregelingdetail. |
 
 MOTIS vraagt om een herkenbare `User-Agent`; die hergebruiken we uit `NOMINATIM_USER_AGENT`.
@@ -184,13 +184,13 @@ overschrijft de categoriekleur in alle weergaven. `Standaard` zet hem terug.
 
 De agenda heeft vier tabbladen:
 
-- **Vandaag** en **Morgen** — lijst met alle details per activiteit.
-- **Week** — een raster van ma t/m zo op een tijdas. De reistijd staat als
+- **Vandaag** en **Morgen**: lijst met alle details per activiteit.
+- **Week**: een raster van ma t/m zo op een tijdas. De reistijd staat als
   gestreept blok direct boven de activiteit, dus je ziet je vertrekmoment op de
   tijdlijn staan. Overlappende activiteiten komen naast elkaar. Met de knop
   **Raster / Lijst** schakel je naar de lijstweergave, die op een smal scherm
   prettiger leest.
-- **Maand** — een maandraster met een gekleurde stip per activiteit; tik een dag
+- **Maand**: een maandraster met een gekleurde stip per activiteit; tik een dag
   aan en de volledige dag verschijnt eronder, inclusief vertrektijden.
 
 Het tijdvenster van het weekraster past zich aan: het loopt van een uur vóór je
@@ -198,7 +198,7 @@ vroegste vertrek tot een uur na je laatste activiteit.
 
 ### Herhalende activiteiten
 
-Zet **🔁 Herhalen** aan in het formulier en kies de weekdagen — bijvoorbeeld ma t/m do voor
+Zet **🔁 Herhalen** aan in het formulier en kies de weekdagen, bijvoorbeeld ma t/m do voor
 werk. De datum wordt dan de **startdatum** van de reeks; optioneel stel je een einddatum in.
 
 Een reeks wordt éénmaal opgeslagen en per dag uitgeklapt bij het tonen
@@ -207,8 +207,8 @@ op elke dag van de reeks geldt.
 
 Bij het verwijderen van een dag uit een reeks krijg je de keuze:
 
-- **Alleen deze dag** — die datum komt in `exceptions` en wordt overgeslagen.
-- **Hele reeks** — de activiteit verdwijnt helemaal.
+- **Alleen deze dag**: die datum komt in `exceptions` en wordt overgeslagen.
+- **Hele reeks**: de activiteit verdwijnt helemaal.
 
 Andere wijzigingen (tijd, locatie, categorie) gelden altijd voor de hele reeks; dat staat ook
 zo in het formulier vermeld.
@@ -216,7 +216,7 @@ zo in het formulier vermeld.
 ### Schoolwerk
 
 Het tabblad **Schoolwerk** toont je opdrachten en toetsen, zoals aangeleverd door je planner
-(Claude in een aparte chat). De app berekent hier zelf niets — hij leest de data getrouw in.
+(Claude in een aparte chat). De app berekent hier zelf niets; hij leest de data getrouw in.
 
 - **Opdrachten** staan op deadline gesorteerd, met een prioriteitskleur (🔴 hoog, 🟠 middel,
   🟡 laag, 🟢 later), de deadline met "over X dagen", de geschatte tijd en de status. Zijn er
@@ -262,7 +262,7 @@ verhoogd bij een echte wijziging, en oudere versies blijven inleesbaar. Onbekend
 genegeerd; ontbrekende velden krijgen een veilige standaardwaarde.
 
 Een volledig, geldig voorbeeld staat in
-[`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json) — inclusief een leerblok dat
+[`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json), inclusief een leerblok dat
 aan een toets is gekoppeld en een werkblok dat aan een opdracht is gekoppeld.
 
 **`tasks[]` (opdrachten/huiswerk):**

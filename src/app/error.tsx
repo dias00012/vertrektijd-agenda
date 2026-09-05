@@ -26,7 +26,7 @@ export default function Error({
       <h1 className="mt-2 text-lg font-semibold">Er ging iets mis</h1>
       <p className="mx-auto mt-1 max-w-sm text-sm" style={{ color: "var(--muted)" }}>
         Deze pagina kon niet worden geladen. Je agenda staat veilig op je apparaat en in je
-        account — er is niets weg.
+        account. Er is niets weg.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         <button type="button" className="btn btn-primary" onClick={reset}>

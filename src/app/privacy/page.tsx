@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy — Vertrektijd",
+  title: "Privacy | Vertrektijd",
   description: "Wat Vertrektijd van je bewaart, waarom, en hoe je het weer weghaalt.",
 };
 
@@ -34,11 +34,11 @@ export default function PrivacyPage() {
           <p>Log je in, dan bewaren we in je account:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              <strong>Je e-mailadres en een versleuteld wachtwoord</strong> — om je te kunnen laten
+              <strong>Je e-mailadres en een versleuteld wachtwoord</strong>, om je te kunnen laten
               inloggen.
             </li>
             <li>
-              <strong>Je agenda, schoolwerk en instellingen</strong> — inclusief je thuislocatie en
+              <strong>Je agenda, schoolwerk en instellingen</strong>, inclusief je thuislocatie en
               opgeslagen locaties, want zonder die adressen kan de app geen vertrektijd berekenen.
             </li>
           </ul>
@@ -52,19 +52,19 @@ export default function PrivacyPage() {
           <p>Om reistijden en ritten te berekenen sturen we alleen coördinaten en tijdstippen naar:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              <strong>OpenStreetMap / Nominatim</strong> — om een adres om te zetten naar
+              <strong>OpenStreetMap / Nominatim</strong>, om een adres om te zetten naar
               coördinaten.
             </li>
             <li>
-              <strong>OSRM</strong> — reistijd met de auto.
+              <strong>OSRM</strong>, voor de reistijd met de auto.
             </li>
             <li>
-              <strong>transitous (MOTIS)</strong> — OV-ritten, fiets- en looptijden.
+              <strong>transitous (MOTIS)</strong>, voor OV-ritten, fiets- en looptijden.
             </li>
           </ul>
           <p className="mt-2">
             Die verzoeken lopen via onze eigen server, dus die diensten zien jouw IP-adres niet.
-            Er gaat <strong>nooit</strong> een naam, e-mailadres of afspraaktitel mee — alleen een
+            Er gaat <strong>nooit</strong> een naam, e-mailadres of afspraaktitel mee, alleen een
             punt op de kaart en een tijd.
           </p>
         </Section>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         <Section title="⏳ Hoe lang">
           <p>
             Zolang je je account hebt. Verwijder je het, dan gaan je e-mailadres en al je gegevens
-            direct mee — er blijft geen kopie achter.
+            direct mee. Er blijft geen kopie achter.
           </p>
         </Section>
 

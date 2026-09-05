@@ -59,7 +59,7 @@ export function BackupSection() {
     <section className="card mt-4 px-5 py-5">
       <h2 className="text-base font-semibold">&#128260; Back-up &amp; synchronisatie</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        Exporteer je hele agenda &mdash; instellingen, activiteiten, taken en toetsen &mdash; als
+        Exporteer je hele agenda (instellingen, activiteiten, taken en toetsen) als
         één JSON-bestand, of importeer een bestand van je planner. Zo werken app en planner met
         precies dezelfde gegevens.
       </p>

@@ -630,7 +630,7 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
               places={savedPlaces}
               hint={
                 settings.home
-                  ? "Laat leeg voor activiteiten thuis — dan toont de app geen reistijd."
+                  ? "Laat leeg voor activiteiten thuis. Dan toont de app geen reistijd."
                   : "Stel eerst je thuislocatie in om reistijden te kunnen berekenen."
               }
             />
@@ -644,7 +644,7 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
                   onChange={(event) => setRemember(event.target.checked)}
                 />
                 <span style={{ color: "var(--muted)" }}>
-                  Onthouden als vaste locatie voor {category.emoji} {category.label} — dan staat
+                  Onthouden als vaste locatie voor {category.emoji} {category.label}. Dan staat
                   hij de volgende keer meteen ingevuld.
                 </span>
               </label>

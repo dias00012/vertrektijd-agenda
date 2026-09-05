@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Geen verbinding — Vertrektijd",
+  title: "Geen verbinding | Vertrektijd",
 };
 
 /**
@@ -18,7 +18,7 @@ export default function OfflinePage() {
       </p>
       <h1 className="mt-2 text-lg font-semibold">Even geen verbinding</h1>
       <p className="mx-auto mt-1 max-w-sm text-sm" style={{ color: "var(--muted)" }}>
-        Deze pagina is nog niet opgeslagen op je apparaat. Je agenda zelf staat er wél op — open
+        Deze pagina is nog niet opgeslagen op je apparaat. Je agenda zelf staat er wél op. Open
         Vandaag of Agenda en je ziet je planning gewoon.
       </p>
       <p className="mx-auto mt-3 max-w-sm text-xs" style={{ color: "var(--muted)" }}>
