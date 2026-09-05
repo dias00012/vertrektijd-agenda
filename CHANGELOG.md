@@ -8,6 +8,14 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.9.0
+
+- **Echte laptoplayout.** Vanaf 1024 px staat de navigatie links als zijbalk, verdwijnt de
+  telefoon-onderbalk en krijgt de inhoud meer breedte — het weekraster kan zijn zeven kolommen
+  nu echt gebruiken. Op telefoon en tablet verandert er niets.
+- **Bedienbaar zonder muis.** Alles wat je met Tab kunt bereiken krijgt een zichtbare
+  focusrand (`:focus-visible`), zodat toetsenbord- en schermlezergebruikers zien waar ze zijn.
+
 ## 0.8.2
 
 - **Wachtwoord vergeten.** Onder het inlogscherm staat nu "Wachtwoord vergeten?". Je krijgt een
