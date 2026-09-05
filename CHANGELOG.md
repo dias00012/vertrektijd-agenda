@@ -8,6 +8,20 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.8.2
+
+- **Wachtwoord vergeten.** Onder het inlogscherm staat nu "Wachtwoord vergeten?". Je krijgt een
+  herstelmail met een link naar `/wachtwoord`, waar je een nieuw wachtwoord kiest. De melding
+  verklapt niet of een e-mailadres bekend is.
+- **Duidelijkere inlogfouten.** "Email logins are disabled", "Email not confirmed" en
+  "too many requests" worden vertaald naar begrijpelijk Nederlands met wat je eraan kunt doen.
+
+## 0.8.1
+
+- **Snelkeuzes voor locaties blijven staan.** In de reisplanner verdwenen Thuis, Gym en School
+  bij "Van" zodra er al een locatie stond. Ze blijven nu staan met de actieve gemarkeerd, zodat
+  je met één tik van vertrekpunt wisselt.
+
 ## 0.8.0
 
 - **OV-reis per dag, in je agenda.** Bij een herhalende activiteit stond overal dezelfde rit:

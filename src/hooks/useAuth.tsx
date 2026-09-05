@@ -29,6 +29,10 @@ interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<AuthResult>;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
+  /** Stuurt een herstelmail met een link waarmee je een nieuw wachtwoord kiest. */
+  resetPassword: (email: string) => Promise<AuthResult>;
+  /** Zet een nieuw wachtwoord voor de sessie die uit de herstelmail komt. */
+  updatePassword: (password: string) => Promise<AuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -42,8 +46,21 @@ function translateError(message: string): string {
   if (m.includes("password") && m.includes("6"))
     return "Kies een wachtwoord van minstens 6 tekens.";
   if (m.includes("email") && m.includes("valid")) return "Vul een geldig e-mailadres in.";
-  if (m.includes("rate limit")) return "Te veel pogingen. Wacht even en probeer opnieuw.";
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Te veel pogingen. Wacht even en probeer opnieuw.";
+  if (m.includes("email logins are disabled") || m.includes("signups not allowed"))
+    return "Inloggen met e-mail staat nog uit voor deze app. De beheerder moet e-mail als inlogmethode aanzetten.";
+  if (m.includes("email not confirmed"))
+    return "Bevestig eerst je e-mailadres via de link in je mailbox.";
+  if (m.includes("same password") || m.includes("should be different"))
+    return "Kies een ander wachtwoord dan je vorige.";
   return message;
+}
+
+/** Waar de link uit een herstelmail op moet uitkomen. */
+function resetRedirectUrl(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/wachtwoord`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -98,9 +115,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, [supabase]);
 
+  const resetPassword = useCallback(
+    async (email: string): Promise<AuthResult> => {
+      if (!supabase) return { ok: false, error: "Synchronisatie is niet ingesteld." };
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: resetRedirectUrl(),
+      });
+      if (error) return { ok: false, error: translateError(error.message) };
+      return { ok: true };
+    },
+    [supabase],
+  );
+
+  const updatePassword = useCallback(
+    async (password: string): Promise<AuthResult> => {
+      if (!supabase) return { ok: false, error: "Synchronisatie is niet ingesteld." };
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) return { ok: false, error: translateError(error.message) };
+      return { ok: true };
+    },
+    [supabase],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ configured: isSyncConfigured, ready, user, signUp, signIn, signOut }),
-    [ready, user, signUp, signIn, signOut],
+    () => ({
+      configured: isSyncConfigured,
+      ready,
+      user,
+      signUp,
+      signIn,
+      signOut,
+      resetPassword,
+      updatePassword,
+    }),
+    [ready, user, signUp, signIn, signOut, resetPassword, updatePassword],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

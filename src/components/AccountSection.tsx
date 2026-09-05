@@ -11,10 +11,10 @@ import { Spinner } from "./ui";
  * gedeeld tussen je apparaten. Zonder account werkt de app gewoon lokaal.
  */
 export function AccountSection() {
-  const { configured, ready, user, signIn, signUp, signOut } = useAuth();
+  const { configured, ready, user, signIn, signUp, signOut, resetPassword } = useAuth();
   const { sync } = useAgenda();
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -41,11 +41,24 @@ export function AccountSection() {
     setNotice(null);
     setBusy(true);
     const result =
-      mode === "login" ? await signIn(email, password) : await signUp(email, password);
+      mode === "login"
+        ? await signIn(email, password)
+        : mode === "signup"
+          ? await signUp(email, password)
+          : await resetPassword(email);
     setBusy(false);
 
     if (!result.ok) {
       setError(result.error ?? "Er ging iets mis.");
+      return;
+    }
+    if (mode === "reset") {
+      // Bewust geen onderscheid tussen wel/niet bestaande accounts: dat zou
+      // verklappen wie hier een account heeft.
+      setNotice(
+        "Als er een account is met dit e-mailadres, staat er een herstelmail in je mailbox. Kijk ook even in je spam.",
+      );
+      setMode("login");
       return;
     }
     if (result.needsConfirmation) {
@@ -84,8 +97,9 @@ export function AccountSection() {
       ) : (
         <>
           <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-            Log in om je agenda en schoolwerk te bewaren en op al je apparaten hetzelfde te
-            hebben. Nog geen account? Maak er gratis een aan.
+            {mode === "reset"
+              ? "Vul je e-mailadres in. We sturen je een link waarmee je een nieuw wachtwoord kiest."
+              : "Log in om je agenda en schoolwerk te bewaren en op al je apparaten hetzelfde te hebben. Nog geen account? Maak er gratis een aan."}
           </p>
 
           <div
@@ -135,26 +149,29 @@ export function AccountSection() {
                 required
               />
             </div>
-            <div>
-              <label className="label" htmlFor="account-password">
-                Wachtwoord
-              </label>
-              <input
-                id="account-password"
-                type="password"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
-                className="field"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-              {mode === "signup" ? (
-                <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                  Minstens 6 tekens.
-                </p>
-              ) : null}
-            </div>
+            {/* Bij "wachtwoord vergeten" is je e-mailadres genoeg. */}
+            {mode !== "reset" ? (
+              <div>
+                <label className="label" htmlFor="account-password">
+                  Wachtwoord
+                </label>
+                <input
+                  id="account-password"
+                  type="password"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  className="field"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+                {mode === "signup" ? (
+                  <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                    Minstens 6 tekens.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             {error ? (
               <p className="text-sm" style={{ color: "var(--danger)" }} role="alert">
@@ -172,10 +189,40 @@ export function AccountSection() {
                 <Spinner size={16} />
               ) : mode === "login" ? (
                 "Inloggen"
-              ) : (
+              ) : mode === "signup" ? (
                 "Account aanmaken"
+              ) : (
+                "Stuur herstelmail"
               )}
             </button>
+
+            {mode === "login" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("reset");
+                  setError(null);
+                  setNotice(null);
+                }}
+                className="block text-xs underline"
+                style={{ color: "var(--muted)" }}
+              >
+                Wachtwoord vergeten?
+              </button>
+            ) : mode === "reset" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError(null);
+                  setNotice(null);
+                }}
+                className="block text-xs underline"
+                style={{ color: "var(--muted)" }}
+              >
+                &larr; Terug naar inloggen
+              </button>
+            ) : null}
           </form>
         </>
       )}
