@@ -8,6 +8,32 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.14.0
+
+- **Schoolrooster koppelen.** Instellingen heeft nu "Schoolrooster koppelen": plak de iCal-link
+  uit Magister, Somtoday, Zermelo, Google Agenda of Outlook, of kies een .ics-bestand. De app
+  leest je lessen van de komende 8 weken in, laat ze eerst zien, en zet ze pas na jouw akkoord in
+  de agenda. Je kiest daarbij het adres van je school, want het lokaal uit je rooster ("A1.23")
+  is geen adres waar een routeplanner iets mee kan.
+  Opnieuw ophalen vervangt de vorige import, zodat verschoven en uitgevallen uren vanzelf
+  kloppen; activiteiten die je zelf toevoegde blijven staan.
+- Techniek: eigen iCal-lezer (`src/lib/ical.ts`) met 12 tests, inclusief zomer- en wintertijd,
+  wekelijkse herhalingen, uitzonderingsdagen en afgelaste lessen. De route die de link ophaalt
+  weigert adressen binnen een netwerk, ook via een omleiding, en heeft een grens op omvang en
+  tijd (`src/lib/safeUrl.ts`, 9 tests).
+
+## 0.13.0
+
+- **Echte app-iconen.** PNG's van 192 en 512 px, een maskable variant voor Android en een
+  apple-touch-icon. Er was alleen een SVG, en die zet geen enkele telefoon op je beginscherm.
+  De klok staat op 08:23, de tijd uit het idee achter de app.
+- **Leertijd inplannen vanuit een opdracht of toets.** Eén knop maakt een leerblok op de dag voor
+  de deadline, met de geschatte tijd als lengte en de koppeling al gelegd.
+
+## 0.12.2
+
+- Het tabblad **Reizen** heet nu **Reisplanner**.
+
 ## 0.12.1
 
 - **Gedachtestreepjes weg uit alle teksten.** Overal in de app, en in de README en dit bestand,

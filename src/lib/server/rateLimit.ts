@@ -82,6 +82,8 @@ export const LIMITS = {
   travel: { limit: 60, windowMs: 60_000 },
   /** Reisplanner: één zoekopdracht per klik, plus bladeren. */
   journeys: { limit: 25, windowMs: 60_000 },
+  /** Rooster ophalen: doe je een paar keer, niet honderd keer per minuut. */
+  rooster: { limit: 10, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 /**

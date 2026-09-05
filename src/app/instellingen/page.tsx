@@ -7,6 +7,7 @@ import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { RemindersSection } from "@/components/RemindersSection";
+import { TimetableImport } from "@/components/TimetableImport";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { TRAVEL_MODES } from "@/lib/travelModes";
@@ -171,6 +172,7 @@ export default function SettingsPage() {
         </form>
       )}
 
+      {hydrated ? <TimetableImport /> : null}
       {hydrated ? <RemindersSection /> : null}
       {hydrated ? <SavedPlaces /> : null}
       {hydrated ? <BackupSection /> : null}
