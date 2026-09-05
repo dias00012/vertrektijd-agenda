@@ -347,3 +347,26 @@ Remove-Item -Recurse -Force .next; npm run dev
 
 Draai `npm run build` dus niet tegelijk met `npm run dev`. Voor een snelle controle op
 typefouten kun je wel gerust `npm run typecheck` naast de dev-server gebruiken.
+
+## Serverinstellingen (Vercel → Settings → Environment Variables)
+
+| Variabele | Nodig voor | Opmerking |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | accounts & synchronisatie | mag publiek zijn |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | accounts & synchronisatie | mag publiek zijn, beschermd door RLS |
+| `SUPABASE_SERVICE_ROLE_KEY` | "Account verwijderen" | **geheim**, uitsluitend server-side |
+| `NEXT_PUBLIC_SENTRY_DSN` | foutmonitoring (optioneel) | zonder deze waarde gaat er niets naar buiten |
+| `NOMINATIM_USER_AGENT` | nette identificatie bij de gratis kaartdiensten | bv. `Vertrektijd/1.0 (https://jouw-app.vercel.app)` |
+
+Zonder `SUPABASE_SERVICE_ROLE_KEY` blijft de app werken; de verwijderknop meldt dan
+dat het handmatig moet. Zet die sleutel **nooit** in een `NEXT_PUBLIC_`-variabele:
+hij omzeilt Row Level Security en geeft toegang tot de gegevens van álle gebruikers.
+
+## Tests
+
+```
+npm test
+```
+
+Vitest draait de tests over tijdrekenen, herhalingen, vertrek-/thuiskomsttijd en
+de sync-samenvoeging. Draai ze voordat je iets pusht.

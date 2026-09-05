@@ -8,6 +8,36 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.11.0
+
+- **Werkt zonder bereik.** Een service worker bewaart de app zelf, zodat je in de trein of in een
+  tunnel je planning gewoon ziet. Reistijden (`/api/*`) worden nooit bewaard — een verouderde
+  vertrektijd is erger dan geen. Lukt een pagina niet, dan verschijnt `/offline` in plaats van
+  een foutscherm.
+- **Startwizard.** Bij de eerste keer openen vraagt de app om je thuislocatie, je vervoermiddel
+  en je gewenste speling. Daarna werkt alles meteen.
+- **Live vertragingen in je agenda.** Een OV-rit van vandaag wordt elke twee minuten ververst, en
+  meteen wanneer je terugkeert naar de app. Is je trein vertraagd, dan kleurt je vertrektijd
+  oranje met de dienstregelingstijd doorgestreept ernaast; uitgevallen ritten staan in rood.
+- **Herinneringen.** Stel in Instellingen in hoeveel minuten van tevoren je een melding wilt.
+  Werkt zolang de app open staat (ook op de achtergrond); dat staat er eerlijk bij.
+- **Nette foutpagina's** in plaats van een wit scherm, en optionele foutrapportage via
+  `NEXT_PUBLIC_SENTRY_DSN` — zonder die instelling gaat er niets naar buiten.
+
+## 0.10.0
+
+- **Verkeersdrempel op `/api/*`.** Achter die routes zitten gratis diensten die op fair use
+  draaien; zonder rem kon één script ze voor alle gebruikers laten blokkeren. Per IP: geocode
+  30/min, reistijden 60/min, reisplanner 25/min.
+- **Privacyverklaring** op `/privacy`: wat we bewaren, wat er naar buiten gaat (alleen
+  coördinaten en tijden, nooit namen of afspraken) en hoe je alles weer weghaalt.
+- **Account verwijderen** met bevestigingsstap, in Instellingen. Vereist
+  `SUPABASE_SERVICE_ROLE_KEY` als serverinstelling; zonder die sleutel meldt de app netjes dat
+  het handmatig moet.
+- **Automatische tests** (Vitest, 45 stuks) over tijdrekenen, herhalingen, vertrek- en
+  thuiskomsttijd (auto én OV) en de sync-samenvoeging die dataverlies moet voorkomen.
+  Draaien met `npm test`.
+
 ## 0.9.0
 
 - **Echte laptoplayout.** Vanaf 1024 px staat de navigatie links als zijbalk, verdwijnt de
