@@ -123,6 +123,24 @@ export function minutesUntilDeparture(
   return Math.round((departure.getTime() - now.getTime()) / 60_000);
 }
 
+/**
+ * Waar staat een activiteit-dag t.o.v. nu?
+ * - "past": helemaal afgelopen (eindtijd voorbij)
+ * - "now": bezig (gestart, nog niet afgelopen)
+ * - "upcoming": moet nog beginnen
+ * Alleen zinvol op de dag zelf; voor andere dagen altijd "upcoming".
+ */
+export type TimeStatus = "past" | "now" | "upcoming";
+
+export function timeStatusFor(occurrence: ActivityOccurrence, now: Date): TimeStatus {
+  const start = toDateTime(occurrence.date, occurrence.startTime).getTime();
+  const end = toDateTime(occurrence.date, occurrence.endTime).getTime();
+  const t = now.getTime();
+  if (t >= end) return "past";
+  if (t >= start) return "now";
+  return "upcoming";
+}
+
 /* --- Positionering voor het weekraster --------------------------------- */
 
 export interface PositionedActivity {

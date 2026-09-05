@@ -4,6 +4,7 @@ import { useState } from "react";
 import { activityColor, getCategory } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { computeDeparture, computeReturn } from "@/lib/travel";
+import { timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
 import { describeRecurrence } from "@/lib/recurrence";
 import { ActivityForm } from "./ActivityForm";
@@ -13,8 +14,11 @@ import type { ActivityOccurrence } from "@/lib/types";
 /**
  * Eén activiteit in de agenda, inclusief reistijd en vertrektijd.
  * Klikken opent hetzelfde formulier als bij toevoegen, in bewerkmodus.
+ *
+ * `now` (optioneel): geef dit mee om activiteiten die vandaag al voorbij zijn
+ * gedempt te tonen ("geweest") en de lopende activiteit te markeren ("bezig").
  */
-export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
+export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; now?: Date }) {
   const { settings, calculatingIds, retryTravel, tasks, exams } = useAgenda();
   const [editing, setEditing] = useState(false);
 
@@ -26,11 +30,19 @@ export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
+  const status = now ? timeStatusFor(activity, now) : "upcoming";
+  const isPast = status === "past";
+  const isNow = status === "now";
+
   return (
     <>
       <article
-        className="card overflow-hidden"
-        style={{ borderLeft: `4px solid ${color}` }}
+        className="card overflow-hidden transition-opacity"
+        style={{
+          borderLeft: `4px solid ${color}`,
+          opacity: isPast ? 0.5 : 1,
+          boxShadow: isNow ? `0 0 0 2px color-mix(in srgb, ${color} 55%, transparent)` : undefined,
+        }}
       >
         <button
           type="button"
@@ -52,6 +64,21 @@ export function ActivityCard({ activity }: { activity: ActivityOccurrence }) {
                 >
                   {category.label}
                 </span>
+                {isPast ? (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
+                    style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
+                  >
+                    ✓ geweest
+                  </span>
+                ) : isNow ? (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
+                    style={{ background: `color-mix(in srgb, ${color} 20%, transparent)`, color }}
+                  >
+                    ● bezig
+                  </span>
+                ) : null}
                 {linkedTask ? (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"

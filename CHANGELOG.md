@@ -8,6 +8,15 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.4.2
+
+- **Voorbije blokken gedempt.** Activiteiten die vandaag al voorbij zijn, worden grijs weergegeven
+  met een "✓ geweest"-label; de lopende activiteit krijgt een accentrand en "● bezig". Zo zie je
+  in één oogopslag wat gedaan is en wat er nu/volgende op de planning staat — in de agenda-lijsten
+  en in het dagoverzicht op het dashboard.
+- **Terugreis self-healing bevestigd.** Gym-/activiteitenblokken van vóór de terugreis-functie
+  krijgen die reistijd terug-naar-huis nu automatisch bij het openen van de app.
+
 ## 0.4.1
 
 - **Robuustere import.** Bij "samenvoegen" kan een bestand je thuislocatie of opgeslagen locaties

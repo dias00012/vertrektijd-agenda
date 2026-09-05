@@ -4,27 +4,41 @@ import { useState } from "react";
 import { activityColor, getCategory } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
-import { formatDuration, minutesToTime } from "@/lib/time";
+import { formatDuration, minutesToTime, timeToMinutes } from "@/lib/time";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
 /**
  * Chronologisch dagoverzicht waarin vertrekmomenten als eigen regel tussen de
  * activiteiten staan.
+ *
+ * `now` (optioneel): momenten die vandaag al voorbij zijn worden gedempt, zodat
+ * in één oogopslag zichtbaar is wat al is geweest en wat er nog aankomt.
  */
-export function DayTimeline({ dateKey }: { dateKey: string }) {
+export function DayTimeline({ dateKey, now }: { dateKey: string; now?: Date }) {
   const { activities, settings } = useAgenda();
   const [editing, setEditing] = useState<ActivityOccurrence | null>(null);
   const entries = buildTimeline(activities, settings, dateKey);
 
+  // Alleen dempen wanneer we naar de dag van 'now' kijken.
+  const nowMinutes =
+    now && dateKey === toKey(now) ? now.getHours() * 60 + now.getMinutes() : null;
+
   return (
     <>
       <ol className="space-y-1">
-        {entries.map((entry) => (
-          <li key={entry.id}>
-            <TimelineRow entry={entry} onSelect={() => setEditing(entry.activity)} />
-          </li>
-        ))}
+        {entries.map((entry) => {
+          const passed = nowMinutes !== null && passedMinutesFor(entry) <= nowMinutes;
+          return (
+            <li key={entry.id}>
+              <TimelineRow
+                entry={entry}
+                passed={passed}
+                onSelect={() => setEditing(entry.activity)}
+              />
+            </li>
+          );
+        })}
       </ol>
 
       {editing ? (
@@ -38,7 +52,29 @@ export function DayTimeline({ dateKey }: { dateKey: string }) {
   );
 }
 
-function TimelineRow({ entry, onSelect }: { entry: TimelineEntry; onSelect: () => void }) {
+function toKey(d: Date): string {
+  const p = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Het moment (minuten sinds middernacht) waarop een regel "voorbij" is. */
+function passedMinutesFor(entry: TimelineEntry): number {
+  if (entry.kind === "activity") return timeToMinutes(entry.activity.endTime);
+  if (entry.kind === "return" && entry.returnMinutes !== undefined) {
+    return entry.minutes + entry.returnMinutes;
+  }
+  return entry.minutes;
+}
+
+function TimelineRow({
+  entry,
+  passed,
+  onSelect,
+}: {
+  entry: TimelineEntry;
+  passed: boolean;
+  onSelect: () => void;
+}) {
   const category = getCategory(entry.activity.category);
   const color = activityColor(entry.activity);
   const isDeparture = entry.kind === "departure";
@@ -51,6 +87,7 @@ function TimelineRow({ entry, onSelect }: { entry: TimelineEntry; onSelect: () =
       type="button"
       onClick={onSelect}
       className="flex w-full items-stretch gap-3 rounded-2xl px-1 py-1 text-left transition-colors hover:bg-[var(--surface-soft)]"
+      style={{ opacity: passed ? 0.45 : 1 }}
     >
       <span
         className="w-14 shrink-0 pt-3 text-right text-sm font-semibold tabular-nums"
@@ -107,6 +144,11 @@ function TimelineRow({ entry, onSelect }: { entry: TimelineEntry; onSelect: () =
             entry.activity.linkedExamId ? (
               <span aria-hidden title="Leer-/werkblok uit je leerplan">
                 📚
+              </span>
+            ) : null}
+            {passed ? (
+              <span className="text-[0.6rem] font-semibold" style={{ color: "var(--muted)" }}>
+                ✓
               </span>
             ) : null}
           </span>

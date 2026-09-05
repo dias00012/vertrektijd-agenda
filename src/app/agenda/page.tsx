@@ -242,7 +242,7 @@ function DayList({
   return (
     <section aria-label={formatDateLabel(dateKey, now)} className="space-y-2.5">
       {items.map((activity) => (
-        <ActivityCard key={activity.occurrenceId} activity={activity} />
+        <ActivityCard key={activity.occurrenceId} activity={activity} now={now} />
       ))}
     </section>
   );
@@ -274,7 +274,7 @@ function WeekList({ weekStart, now }: { weekStart: string; now: Date }) {
           </h2>
           <div className="space-y-2.5">
             {day.items.map((activity) => (
-              <ActivityCard key={activity.occurrenceId} activity={activity} />
+              <ActivityCard key={activity.occurrenceId} activity={activity} now={now} />
             ))}
           </div>
         </section>

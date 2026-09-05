@@ -55,7 +55,7 @@ export default function DashboardPage() {
               <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
                 Dagoverzicht
               </h2>
-              <DayTimeline dateKey={today} />
+              <DayTimeline dateKey={today} now={now} />
             </section>
           )}
         </>
