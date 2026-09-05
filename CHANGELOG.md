@@ -8,6 +8,13 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.5.1
+
+- **Sync voegt nu samen i.p.v. overschrijven.** Bij inloggen op een tweede apparaat worden
+  lokale en cloud-gegevens gecombineerd (union op id, meest recente wijziging wint). Zo
+  verschijnen je opgeslagen locaties en weekplanning ook op je telefoon, en kan een leeg
+  apparaat je bestaande data niet meer wissen.
+
 ## 0.5.0
 
 - **Accounts & synchronisatie (optioneel).** Je kunt nu een account aanmaken met e-mail +

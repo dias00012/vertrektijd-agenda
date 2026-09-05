@@ -31,7 +31,7 @@ import {
 import { needsTravelRefresh, travelKey } from "@/lib/travel";
 import { useAuth } from "@/hooks/useAuth";
 import { getSupabase } from "@/lib/supabase";
-import { pullData, pushData } from "@/lib/sync";
+import { mergePayload, pullData, pushData } from "@/lib/sync";
 import type {
   Activity,
   ActivityDraft,
@@ -556,14 +556,18 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         const remote = await pullData(supabase, user.id);
         if (cancelled) return;
 
-        if (remote) {
-          setActivities(remote.activities);
-          setTasks(remote.tasks);
-          setExams(remote.exams);
-          if (remote.settings) setSettings((current) => ({ ...current, ...remote.settings }));
-        } else {
-          await pushData(supabase, user.id, { settings, activities, tasks, exams });
-        }
+        // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
+        // en niets wordt overschreven.
+        const local = { settings, activities, tasks, exams };
+        const merged = remote ? mergePayload(local, remote) : local;
+
+        setActivities(merged.activities);
+        setTasks(merged.tasks);
+        setExams(merged.exams);
+        if (merged.settings) setSettings((current) => ({ ...current, ...merged.settings }));
+
+        // Schrijf het samengevoegde resultaat terug, zodat beide kanten gelijk zijn.
+        await pushData(supabase, user.id, merged);
         if (cancelled) return;
         setLastSyncedAt(new Date().toISOString());
         setSyncStatus("idle");

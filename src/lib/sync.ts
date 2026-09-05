@@ -67,3 +67,49 @@ export async function pushData(
 
   if (error) throw new Error(error.message);
 }
+
+/* --- Samenvoegen van lokaal en cloud (voorkomt dataverlies) ------------- */
+
+function laterOf<T extends { id: string; updatedAt?: string }>(a: T, b: T): T {
+  return (b.updatedAt ?? "") > (a.updatedAt ?? "") ? b : a;
+}
+
+/** Union op id; bij dezelfde id wint de meest recent gewijzigde. */
+function mergeById<T extends { id: string; updatedAt?: string }>(local: T[], remote: T[]): T[] {
+  const byId = new Map<string, T>();
+  for (const item of local) byId.set(item.id, item);
+  for (const item of remote) {
+    const existing = byId.get(item.id);
+    byId.set(item.id, existing ? laterOf(existing, item) : item);
+  }
+  return [...byId.values()];
+}
+
+function mergeSettings(local: Settings | null, remote: Settings | null): Settings | null {
+  if (!remote) return local;
+  if (!local) return remote;
+  const savedById = new Map((local.savedPlaces ?? []).map((p) => [p.id, p]));
+  for (const p of remote.savedPlaces ?? []) savedById.set(p.id, p);
+  return {
+    ...local,
+    ...remote,
+    // Behoud een thuislocatie als de ene kant hem mist.
+    home: remote.home ?? local.home,
+    savedPlaces: [...savedById.values()],
+    categoryPlaces: { ...local.categoryPlaces, ...remote.categoryPlaces },
+  };
+}
+
+/**
+ * Voegt lokale en cloud-data samen, zodat inloggen op een tweede apparaat de
+ * gegevens van beide kanten combineert in plaats van er een te overschrijven.
+ */
+export function mergePayload(local: SyncPayload, remote: SyncPayload): SyncPayload {
+  return {
+    settings: mergeSettings(local.settings, remote.settings),
+    activities: mergeById(local.activities, remote.activities),
+    tasks: mergeById(local.tasks, remote.tasks),
+    exams: mergeById(local.exams, remote.exams),
+  };
+}
+
