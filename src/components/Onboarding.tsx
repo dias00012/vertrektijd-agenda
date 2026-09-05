@@ -32,7 +32,16 @@ function markDone(): void {
  * hij moet beginnen. Twee vragen zijn genoeg om de app te laten werken: waar
  * woon je, en hoe reis je meestal.
  */
-export function Onboarding({ onAddActivity }: { onAddActivity: () => void }) {
+export function Onboarding({
+  onAddActivity,
+  reopen = false,
+  onClose,
+}: {
+  onAddActivity: () => void;
+  /** Wordt true wanneer je de introductie zelf opnieuw opent vanuit Instellingen. */
+  reopen?: boolean;
+  onClose?: () => void;
+}) {
   const { settings, hydrated, updateSettings } = useAgenda();
 
   const [open, setOpen] = useState(false);
@@ -48,7 +57,23 @@ export function Onboarding({ onAddActivity }: { onAddActivity: () => void }) {
     setOpen(true);
   }, [hydrated, settings.home]);
 
+  // Opnieuw bekijken: begin bij stap 1 en vul in wat je al hebt ingesteld, zodat
+  // rondkijken je bestaande instellingen niet overschrijft met standaardwaarden.
+  useEffect(() => {
+    if (!reopen) return;
+    setHome(settings.home);
+    setMode(settings.travelMode);
+    setBuffer(String(settings.bufferMinutes));
+    setStep(0);
+    setOpen(true);
+  }, [reopen, settings.home, settings.travelMode, settings.bufferMinutes]);
+
   if (!open) return null;
+
+  function close() {
+    setOpen(false);
+    onClose?.();
+  }
 
   function finish(startWithActivity: boolean) {
     updateSettings({
@@ -57,13 +82,13 @@ export function Onboarding({ onAddActivity }: { onAddActivity: () => void }) {
       bufferMinutes: Math.min(120, Math.max(0, Number(buffer) || 10)),
     });
     markDone();
-    setOpen(false);
+    close();
     if (startWithActivity) onAddActivity();
   }
 
   function skip() {
     markDone();
-    setOpen(false);
+    close();
   }
 
   return (
@@ -182,7 +207,7 @@ export function Onboarding({ onAddActivity }: { onAddActivity: () => void }) {
               style={{ color: "var(--muted)" }}
               onClick={skip}
             >
-              Overslaan
+              {reopen ? "Sluiten" : "Overslaan"}
             </button>
           )}
 

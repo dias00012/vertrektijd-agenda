@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { IntroContext } from "@/hooks/useIntro";
 import { ActivityForm } from "./ActivityForm";
 import { Onboarding } from "./Onboarding";
 import { useAgenda } from "@/hooks/useAgenda";
@@ -26,10 +27,14 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [formOpen, setFormOpen] = useState(false);
+  /** De kennismaking opnieuw bekijken, aangezet vanuit Instellingen. */
+  const [introOpen, setIntroOpen] = useState(false);
   const { settings, hydrated } = useAgenda();
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
   useReminders();
+
+  const introValue = useMemo(() => ({ open: () => setIntroOpen(true) }), []);
 
   const showHomeHint = hydrated && !settings.home && pathname !== "/instellingen";
 
@@ -40,12 +45,14 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r px-4 py-6 lg:flex"
         style={{ borderColor: "var(--line)" }}
       >
-        <Link href="/" className="mb-6 flex items-center gap-2 px-2 no-underline">
+        {/* Bewust geen link: "Vandaag" staat er al onder, en twee knoppen naar
+            dezelfde pagina is verwarrend. Dit is alleen de naam van de app. */}
+        <p className="mb-6 flex items-center gap-2 px-2">
           <span aria-hidden className="text-xl leading-none">
             &#128337;
           </span>
           <span className="text-base font-semibold tracking-tight">Vertrektijd</span>
-        </Link>
+        </p>
 
         <button
           type="button"
@@ -108,7 +115,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ) : null}
 
-          {children}
+          <IntroContext.Provider value={introValue}>{children}</IntroContext.Provider>
         </main>
       </div>
 
@@ -159,7 +166,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <Onboarding onAddActivity={() => setFormOpen(true)} />
+      <Onboarding
+        onAddActivity={() => setFormOpen(true)}
+        reopen={introOpen}
+        onClose={() => setIntroOpen(false)}
+      />
       {formOpen ? <ActivityForm onClose={() => setFormOpen(false)} /> : null}
     </div>
   );

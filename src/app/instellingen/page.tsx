@@ -7,6 +7,7 @@ import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { RemindersSection } from "@/components/RemindersSection";
+import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { TRAVEL_MODES } from "@/lib/travelModes";
 import type { GeoLocation, TravelMode } from "@/lib/types";
@@ -173,6 +174,7 @@ export default function SettingsPage() {
       {hydrated ? <RemindersSection /> : null}
       {hydrated ? <SavedPlaces /> : null}
       {hydrated ? <BackupSection /> : null}
+      <IntroSection />
 
       <section className="card mt-4 px-5 py-4">
         <h2 className="text-sm font-semibold">Over de reistijden</h2>
@@ -183,6 +185,29 @@ export default function SettingsPage() {
         </p>
       </section>
     </div>
+  );
+}
+
+/**
+ * De kennismaking opnieuw bekijken. Je krijgt hem één keer bij de eerste keer
+ * openen, en dan nooit meer — terwijl je juist dán nog niet weet wat de app kan.
+ */
+function IntroSection() {
+  const intro = useIntro();
+  if (!intro) return null;
+
+  return (
+    <section className="card mt-4 px-5 py-5">
+      <h2 className="text-base font-semibold">&#128075; Uitleg &amp; rondleiding</h2>
+      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+        De korte introductie die je bij de eerste keer openen kreeg: waar de app voor is, je
+        thuislocatie, je vervoermiddel en hoeveel speling je wilt. Je huidige instellingen staan
+        er al in ingevuld.
+      </p>
+      <button type="button" className="btn btn-ghost mt-3" onClick={intro.open}>
+        Bekijk de introductie
+      </button>
+    </section>
   );
 }
 
