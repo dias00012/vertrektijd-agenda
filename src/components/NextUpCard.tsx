@@ -13,13 +13,15 @@ import type { Activity } from "@/lib/types";
  * reistijd, vertrektijd en een aftelling.
  */
 export function NextUpCard({ activity, now }: { activity: Activity; now: Date }) {
-  const { settings, calculatingIds } = useAgenda();
+  const { settings, calculatingIds, tasks, exams } = useAgenda();
   const category = getCategory(activity.category);
   const color = activityColor(activity);
   const departure = computeDeparture(activity, settings);
   const back = computeReturn(activity, settings);
   const untilDeparture = minutesUntilDeparture(activity, settings, now);
   const calculating = calculatingIds.has(activity.id);
+  const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
+  const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
   // Een aftelling is alleen zinvol binnen een halve dag; daarbuiten zegt het
   // datumlabel ("maandag 7 september") al genoeg.
@@ -62,6 +64,15 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
               {formatDateLabel(activity.date, now)} &middot; {activity.startTime} &ndash;{" "}
               {activity.endTime}
             </p>
+            {linkedTask ? (
+              <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
+                &#128218; Voor opdracht: {linkedTask.title}
+              </p>
+            ) : linkedExam ? (
+              <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
+                &#128221; Leren voor: {linkedExam.title ?? linkedExam.subject}
+              </p>
+            ) : null}
             {activity.location ? (
               <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
                 &#128205; {activity.location.label}
@@ -119,7 +130,8 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
           </div>
         ) : (
           <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
-            Geen locatie &mdash; je hoeft nergens naartoe.
+            &#9201;&#65039; Begint om <strong style={{ color: "var(--ink)" }}>{activity.startTime}</strong>
+            {linkedTask || linkedExam ? " — thuis, geen reistijd." : " — geen locatie, geen reistijd."}
           </p>
         )}
       </div>

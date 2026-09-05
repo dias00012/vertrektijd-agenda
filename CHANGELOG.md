@@ -8,6 +8,15 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.4.1
+
+- **Robuustere import.** Bij "samenvoegen" kan een bestand je thuislocatie of opgeslagen locaties
+  niet meer per ongeluk wissen met lege (`null`) waarden; alleen echt ingevulde instellingen
+  worden overgenomen. Bij "vervangen" geldt het bestand onverkort.
+- **Duidelijker "eerstvolgende activiteit".** Het dashboard toont nu bij een leerblok voor welke
+  opdracht of toets het is, en voor blokken zonder locatie de starttijd in plaats van
+  "je hoeft nergens naartoe".
+
 ## 0.4.0
 
 - **Koppeling zichtbaar gemaakt.** Bij een opdracht en toets toont de app nu hoeveel leertijd

@@ -116,6 +116,15 @@ function upsertById<T extends { id: string }>(current: T[], incoming: T[]): T[] 
   return [...byId.values()];
 }
 
+/** Verwijdert velden met waarde null/undefined uit een object (ondiep). */
+function dropNullish<T extends object>(obj: T): Partial<T> {
+  const out: Partial<T> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== null && value !== undefined) out[key as keyof T] = value as T[keyof T];
+  }
+  return out;
+}
+
 /** Telt hoeveel inkomende records nieuw zijn en hoeveel er bestaande bijwerken. */
 function countUpsert<T extends { id: string }>(
   current: T[],
@@ -479,7 +488,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           mode === "replace"
             ? { added: data.exams.length, updated: 0 }
             : countUpsert(exams, data.exams),
-        settingsReplaced: Boolean(data.settings),
+        settingsReplaced: false,
         mode,
       };
 
@@ -494,8 +503,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.settings) {
-        const incoming = data.settings;
-        setSettings((current) => ({ ...current, ...incoming }));
+        // Bij samenvoegen mag een importbestand bestaande instellingen niet met
+        // null wissen (bv. je thuislocatie). Bij vervangen geldt het bestand.
+        const incoming =
+          mode === "replace" ? data.settings : dropNullish(data.settings);
+        if (Object.keys(incoming).length > 0) {
+          summary.settingsReplaced = true;
+          setSettings((current) => ({ ...current, ...incoming }));
+        }
       }
 
       return summary;
