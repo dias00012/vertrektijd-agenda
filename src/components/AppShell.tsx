@@ -13,7 +13,7 @@ import { useReminders } from "@/hooks/useReminders";
 const NAV = [
   { href: "/", label: "Vandaag", icon: "☀️" },
   { href: "/agenda", label: "Agenda", icon: "\u{1F5D3}️" },
-  { href: "/reizen", label: "Reizen", icon: "\u{1F686}" },
+  { href: "/reizen", label: "Reisplanner", icon: "\u{1F686}" },
   { href: "/schoolwerk", label: "Schoolwerk", icon: "\u{1F4DA}" },
   { href: "/instellingen", label: "Instellingen", icon: "⚙️" },
 ];

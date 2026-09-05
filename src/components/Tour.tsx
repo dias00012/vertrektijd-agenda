@@ -35,7 +35,7 @@ const STOPS: Stop[] = [
   {
     href: "/reizen",
     emoji: "🚆",
-    title: "Reizen",
+    title: "Reisplanner",
     body: "Een losse reisplanner, zoals 9292. Kies van en naar: een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
   },
   {

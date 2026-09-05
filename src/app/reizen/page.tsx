@@ -126,7 +126,7 @@ export default function TravelPlannerPage() {
   return (
     <div>
       <header className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Reizen</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Reisplanner</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
           Plan je rit met trein, bus, tram of metro, inclusief live vertragingen.
         </p>
