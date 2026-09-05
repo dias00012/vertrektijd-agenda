@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAgenda } from "@/hooks/useAgenda";
+import { getSupabase } from "@/lib/supabase";
 import { Spinner } from "./ui";
 
 /**
@@ -20,6 +22,43 @@ export function AccountSection() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Twee stappen, want een account verwijderen kun je niet terugdraaien. */
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteAccount() {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    setError(null);
+    setDeleting(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setError("Je sessie is verlopen. Log opnieuw in en probeer het nog eens.");
+        return;
+      }
+
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(payload.error ?? "Het account kon niet worden verwijderd.");
+        return;
+      }
+
+      await signOut();
+      setConfirmDelete(false);
+      setNotice("Je account en alle gegevens erin zijn verwijderd.");
+    } catch {
+      setError("Het account kon niet worden verwijderd. Controleer je internetverbinding.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   // Synchronisatie is (nog) niet ingesteld: alleen relevant voordat de
   // beheerder de sleutels heeft toegevoegd. De app werkt lokaal gewoon door.
@@ -90,9 +129,65 @@ export function AccountSection() {
                 ? `⚠️ Synchroniseren mislukt: ${sync.error ?? ""}`
                 : "✓ Je agenda, schoolwerk en instellingen worden bewaard in je account en gedeeld tussen je apparaten."}
           </p>
-          <button type="button" className="btn btn-ghost" onClick={() => void signOut()}>
-            Uitloggen
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-ghost" onClick={() => void signOut()}>
+              Uitloggen
+            </button>
+            {!confirmDelete ? (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  setConfirmDelete(true);
+                  setError(null);
+                }}
+              >
+                Account verwijderen
+              </button>
+            ) : null}
+          </div>
+
+          {confirmDelete ? (
+            <div
+              className="rounded-xl border px-4 py-3"
+              style={{ borderColor: "color-mix(in srgb, var(--danger) 40%, transparent)" }}
+            >
+              <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
+                Weet je het zeker?
+              </p>
+              <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+                Je account, je agenda, je schoolwerk en je locaties worden definitief verwijderd.
+                Dit kan niet ongedaan worden gemaakt. Wil je je gegevens bewaren, exporteer ze dan
+                eerst hieronder bij Back-up.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => void deleteAccount()}
+                  disabled={deleting}
+                >
+                  {deleting ? <Spinner size={16} /> : "Ja, verwijder mijn account"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                >
+                  Annuleren
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {error ? (
+            <p className="text-sm" style={{ color: "var(--danger)" }} role="alert">
+              &#9888;&#65039; {error}
+            </p>
+          ) : null}
+
+          <PrivacyLink />
         </div>
       ) : (
         <>
@@ -224,8 +319,23 @@ export function AccountSection() {
               </button>
             ) : null}
           </form>
+
+          <PrivacyLink />
         </>
       )}
     </section>
+  );
+}
+
+/** Waar je gegevens blijven — hoort zichtbaar te zijn waar je je account maakt. */
+function PrivacyLink() {
+  return (
+    <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
+      Wat we bewaren en hoe je het weghaalt staat in de{" "}
+      <Link href="/privacy" style={{ color: "var(--accent)" }}>
+        privacyverklaring
+      </Link>
+      .
+    </p>
   );
 }

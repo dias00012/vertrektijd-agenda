@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { geocode } from "@/lib/server/geocoding";
 import { ProviderError } from "@/lib/server/config";
+import { enforceRateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic";
  * blijven op de server.
  */
 export async function GET(request: Request) {
+  const limited = enforceRateLimit(request, "geocode");
+  if (limited) return limited;
+
   const params = new URL(request.url).searchParams;
   const query = params.get("q")?.trim() ?? "";
   // ?stops=1 zet haltes en stations vooraan (reisplanner).

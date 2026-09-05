@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { planJourneys } from "@/lib/server/journeys";
 import { ProviderError } from "@/lib/server/config";
+import { enforceRateLimit } from "@/lib/server/rateLimit";
 import type { GeoLocation } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -40,6 +41,9 @@ function isoOrUndefined(value: unknown): string | undefined {
  * de server.
  */
 export async function POST(request: Request) {
+  const limited = enforceRateLimit(request, "journeys");
+  if (limited) return limited;
+
   let body: JourneyRequestBody;
   try {
     body = (await request.json()) as JourneyRequestBody;

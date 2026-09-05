@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { route } from "@/lib/server/routing";
 import { ProviderError } from "@/lib/server/config";
+import { enforceRateLimit } from "@/lib/server/rateLimit";
 import type { GeoLocation, TravelMode } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -43,6 +44,9 @@ function isValidPoint(point: Partial<GeoLocation> | undefined): point is GeoLoca
  * HOME_LOCATION -> DESTINATION -> ROUTING API -> TRAVEL TIME
  */
 export async function POST(request: Request) {
+  const limited = enforceRateLimit(request, "travel");
+  if (limited) return limited;
+
   let body: TravelRequestBody;
   try {
     body = (await request.json()) as TravelRequestBody;
