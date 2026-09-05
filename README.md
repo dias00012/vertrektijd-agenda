@@ -82,7 +82,6 @@ src/
    ├─ recurrence.ts              Wekelijkse herhaling: weekdagen en uitzonderingen
    ├─ agenda.ts                  Selectors: dag, week, tijdlijn, eerstvolgende
    ├─ places.ts                  Opgeslagen locaties en vaste plek per categorie
-   ├─ weekPlan.ts                De standaardweek als data + generator
    ├─ backup.ts                  Import/export-formaat, validatie en normalisatie
    ├─ schoolwork.ts              Sortering, prioriteitskleuren en "dagen tot"
    ├─ storage.ts                 Persistentie (localStorage)
@@ -115,38 +114,6 @@ een schatting van je thuiskomst op te rekken.
 Let op: de app gaat ervan uit dat je na elke activiteit naar huis gaat. Plan je twee dingen
 achter elkaar, dan zie je dus zowel de terugreis van de eerste als de heenreis van de tweede.
 
-### Weekplanning
-
-**Instellingen → Mijn weekplanning** zet de vaste week in één keer klaar:
-
-| Dag | |
-| --- | --- |
-| ma | Werken 9&ndash;17 · Sporten 18:15&ndash;19:30 · Koken 20:00 · Lezen 21:15 |
-| di | Werken 9&ndash;17 · Sporten 18:15&ndash;19:30 · Koken 20:00 · Gitaar 21:15 |
-| wo | Werken 9&ndash;17 · Koken 18:00 · Gamen 19:30&ndash;21:30 |
-| do | Werken 9&ndash;17 · Sporten 18:15&ndash;19:30 · Koken 20:00 · Lezen 21:15 |
-| vr | School 9&ndash;17 · Koken 18:00 · Gamen 19:30&ndash;21:30 |
-| za | Sporten 10:00&ndash;11:15 · Studeren 13:00&ndash;15:00 · Koken 17:30 · Gitaar 20:00 |
-| zo | Studeren 10:30&ndash;12:30 · Koken 17:30 · Lezen 20:00 |
-
-Het plan staat als data in `src/lib/weekPlan.ts` en wordt toegevoegd als herhalende
-activiteiten. Elk onderdeel geeft zelf aan of het de **opgeslagen locatie van zijn categorie**
-gebruikt (`location: "category"`, zoals werken, school en sporten) of thuis plaatsvindt
-(`location: "none"`, zoals studeren, koken en de hobby's). Ontbreekt zo'n opgeslagen locatie,
-dan komt die activiteit er zonder locatie in en kun je hem later aanvullen.
-
-Studeren valt onder de categorie School — zelfde kleur, herkenbaar als schoolwerk — maar
-krijgt bewust geen locatie, zodat er geen reistijd naar je opleiding bij komt.
-
-Activiteiten uit het plan krijgen `source: "weekplan"`. Daardoor **vervangt** de knop de vorige
-weekplanning in plaats van hem te verdubbelen: opnieuw drukken levert altijd precies één set
-op. Activiteiten die je zelf hebt toegevoegd blijven staan. Er staat ook een knop om de
-weekplanning in één keer te verwijderen.
-
-Activiteiten die vóór deze markering zijn aangemaakt worden herkend door ze te vergelijken met
-het plan (categorie, naam, tijden en weekdagen), zodat oude dubbelingen bij het opnieuw
-toepassen alsnog worden opgeruimd. Elk onderdeel is daarna gewoon aan te passen of los te
-verwijderen.
 
 ### Opgeslagen locaties
 

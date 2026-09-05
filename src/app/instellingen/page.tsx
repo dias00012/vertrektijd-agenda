@@ -3,15 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { getCategory } from "@/lib/categories";
-import { categoriesUsingPlace, placeForCategory, sortedPlaces } from "@/lib/places";
-import {
-  PLAN_LOCATION_CATEGORIES,
-  WEEK_PLAN_SOURCE,
-  buildWeekPlanDrafts,
-  isWeekPlanActivity,
-  weekPlanByDay,
-} from "@/lib/weekPlan";
-import { startOfWeekKey, todayKey } from "@/lib/time";
+import { categoriesUsingPlace, sortedPlaces } from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
@@ -64,6 +56,8 @@ export default function SettingsPage() {
           Vanaf deze plek worden alle reistijden berekend.
         </p>
       </header>
+
+      {hydrated ? <AccountSection /> : null}
 
       {!hydrated ? (
         <div className="card px-5 py-10 text-center">
@@ -136,9 +130,7 @@ export default function SettingsPage() {
         </form>
       )}
 
-      {hydrated ? <AccountSection /> : null}
       {hydrated ? <SavedPlaces /> : null}
-      {hydrated ? <WeekPlanner /> : null}
       {hydrated ? <BackupSection /> : null}
 
       <section className="card mt-4 px-5 py-4">
@@ -221,151 +213,6 @@ function SavedPlaces() {
           })}
         </ul>
       )}
-    </section>
-  );
-}
-
-/**
- * Zet de standaardweek in één keer in de agenda: werk ma t/m do, school op
- * vrijdag, vier keer sporten, elke dag koken en de hobby's ertussendoor.
- */
-function WeekPlanner() {
-  const { settings, activities, replaceActivities } = useAgenda();
-  const [open, setOpen] = useState(false);
-  const [result, setResult] = useState<{ added: number; replaced: number } | null>(null);
-
-  // Wat er al uit de weekplanning in de agenda staat; dat wordt vervangen.
-  const existing = activities.filter(isWeekPlanActivity);
-  const own = activities.length - existing.length;
-
-  const days = weekPlanByDay();
-  const total = days.reduce((sum, day) => sum + day.items.length, 0);
-
-  // Categorieën uit het plan waarvoor nog geen vaste locatie bekend is.
-  const missing = PLAN_LOCATION_CATEGORIES.filter(
-    (category) => !placeForCategory(settings, category),
-  );
-
-  function applyPlan() {
-    const drafts = buildWeekPlanDrafts(settings, startOfWeekKey(todayKey()));
-    replaceActivities({
-      remove: existing.map((activity) => activity.id),
-      add: drafts,
-      source: WEEK_PLAN_SOURCE,
-    });
-    setResult({ added: drafts.length, replaced: existing.length });
-    setOpen(false);
-  }
-
-  function clearPlan() {
-    replaceActivities({ remove: existing.map((activity) => activity.id), add: [] });
-    setResult({ added: 0, replaced: existing.length });
-  }
-
-  return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128197; Mijn weekplanning</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        Zet je vaste week in één keer klaar: werken ma t/m do en school op vrijdag (9:00&ndash;17:00),
-        vier keer sporten, elke dag zelf koken, en lezen, gitaar en gamen verdeeld over de week.
-        Alles komt als herhalende activiteit in je agenda, dus je kunt elk onderdeel daarna
-        losstaand aanpassen.
-      </p>
-
-      {missing.length > 0 ? (
-        <p className="mt-3 rounded-xl px-3 py-2 text-xs" style={{ background: "var(--surface-soft)" }}>
-          &#9888;&#65039; Nog geen vaste locatie voor{" "}
-          {missing.map((id) => getCategory(id).label.toLowerCase()).join(", ")}. Die activiteiten
-          komen zonder locatie in je agenda &mdash; vul ze later aan, dan rekent de app de
-          vertrektijden alsnog uit.
-        </p>
-      ) : (
-        <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-          &#128205; Gebruikt je opgeslagen locaties voor{" "}
-          {PLAN_LOCATION_CATEGORIES.map((id) => getCategory(id).label.toLowerCase()).join(", ")}.
-        </p>
-      )}
-
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="mt-3 text-xs font-medium underline underline-offset-2"
-        style={{ color: "var(--muted)" }}
-        aria-expanded={open}
-      >
-        {open ? "Overzicht verbergen" : `Bekijk de week (${total} activiteiten)`}
-      </button>
-
-      {open ? (
-        <ul className="mt-3 space-y-3">
-          {days.map((day) => (
-            <li key={day.weekday}>
-              <p className="text-xs font-semibold capitalize">{day.label}</p>
-              {day.items.length === 0 ? (
-                <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  Vrij
-                </p>
-              ) : (
-                <ul className="mt-0.5 space-y-0.5">
-                  {day.items.map((item) => {
-                    const category = getCategory(item.category);
-                    return (
-                      <li
-                        key={`${item.title}-${item.startTime}`}
-                        className="flex gap-2 text-xs tabular-nums"
-                        style={{ color: "var(--muted)" }}
-                      >
-                        <span className="w-24 shrink-0">
-                          {item.startTime}&ndash;{item.endTime}
-                        </span>
-                        <span style={{ color: category.color }}>{category.emoji}</span>
-                        <span>{item.title}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      {result ? (
-        <p className="mt-4 text-sm" style={{ color: "var(--accent)" }} role="status">
-          &#10003;{" "}
-          {result.added === 0
-            ? `Weekplanning verwijderd (${result.replaced} ${
-                result.replaced === 1 ? "reeks" : "reeksen"
-              }).`
-            : result.replaced > 0
-              ? `Weekplanning bijgewerkt: ${result.replaced} oude ${
-                  result.replaced === 1 ? "reeks" : "reeksen"
-                } vervangen door ${result.added}.`
-              : `${result.added} reeksen toegevoegd. Bekijk ze in de agenda.`}
-        </p>
-      ) : null}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={applyPlan} className="btn btn-primary">
-          {existing.length > 0 ? "Weekplanning opnieuw instellen" : "Weekplanning in mijn agenda zetten"}
-        </button>
-        {existing.length > 0 ? (
-          <button type="button" onClick={clearPlan} className="btn btn-danger">
-            Weekplanning verwijderen
-          </button>
-        ) : null}
-      </div>
-
-      <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
-        {existing.length > 0
-          ? `Er ${existing.length === 1 ? "staat" : "staan"} al ${existing.length} ${
-              existing.length === 1 ? "reeks" : "reeksen"
-            } uit de weekplanning in je agenda. Die worden vervangen, niet verdubbeld.`
-          : "Het plan komt naast wat je zelf hebt toegevoegd."}
-        {own > 0
-          ? ` Je ${own === 1 ? "eigen activiteit blijft" : `${own} eigen activiteiten blijven`} staan.`
-          : ""}
-      </p>
     </section>
   );
 }

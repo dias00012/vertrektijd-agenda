@@ -8,6 +8,13 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.5.3
+
+- **"Mijn weekplanning" verwijderd.** De vaste, in de code ingebakken standaardweek is weg; de
+  planner levert je week nu persoonlijk via de JSON-import, wat flexibeler is. `src/lib/weekPlan.ts`
+  is verwijderd.
+- **Account & synchronisatie bovenaan** in Instellingen gezet.
+
 ## 0.5.2
 
 - **Terugreis-tijd zichtbaar in het weekraster.** De thuiskomsttijd van korte ritten (zoals de
