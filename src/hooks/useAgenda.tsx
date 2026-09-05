@@ -28,7 +28,7 @@ import {
   type ImportMode,
   type ImportSummary,
 } from "@/lib/backup";
-import { needsTravelRefresh, travelKey } from "@/lib/travel";
+import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
 import { useAuth } from "@/hooks/useAuth";
 import { getSupabase } from "@/lib/supabase";
 import { mergePayload, pullData, pushData } from "@/lib/sync";
@@ -212,24 +212,28 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
    */
   const computeTravel = useCallback(
     async (activity: Activity, currentSettings: Settings) => {
-      const key = travelKey(currentSettings.home, activity.location, currentSettings.travelMode);
-      if (!key || !currentSettings.home || !activity.location) return;
+      const plan = travelPlanFor(activity, currentSettings);
+      if (!plan || !currentSettings.home || !activity.location) return;
       if (inFlight.current.has(activity.id)) return;
 
       inFlight.current.add(activity.id);
       markCalculating(activity.id, true);
 
-      const returnKey = travelKey(activity.location, currentSettings.home, currentSettings.travelMode);
-
       try {
-        // Heen en terug tegelijk: de terugweg kan door eenrichtingsverkeer
-        // afwijken, dus we berekenen hem apart in plaats van te spiegelen.
+        // Heen en terug apart: de terugweg kan afwijken (eenrichtingsverkeer),
+        // en bij OV is het een heel andere rit op een ander tijdstip.
         const [outbound, inbound] = await Promise.all([
-          fetchTravel(currentSettings.home, activity.location, currentSettings.travelMode),
-          fetchTravel(activity.location, currentSettings.home, currentSettings.travelMode),
+          fetchTravel(currentSettings.home, activity.location, {
+            mode: plan.mode,
+            arriveBy: plan.arriveBy,
+          }),
+          fetchTravel(activity.location, currentSettings.home, {
+            mode: plan.mode,
+            departAt: plan.departAt,
+          }),
         ]);
         const computedAt = new Date().toISOString();
-        failedKeys.current.delete(key);
+        failedKeys.current.delete(plan.outboundKey);
         setActivities((current) =>
           current.map((item) =>
             item.id === activity.id
@@ -240,16 +244,24 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
                     distanceKm: outbound.distanceKm,
                     mode: outbound.mode,
                     provider: outbound.provider,
+                    legs: outbound.legs,
+                    transfers: outbound.transfers,
+                    plannedDeparture: outbound.plannedDeparture,
+                    plannedArrival: outbound.plannedArrival,
                     computedAt,
-                    key,
+                    key: plan.outboundKey,
                   },
                   returnTravel: {
                     durationMinutes: inbound.durationMinutes,
                     distanceKm: inbound.distanceKm,
                     mode: inbound.mode,
                     provider: inbound.provider,
+                    legs: inbound.legs,
+                    transfers: inbound.transfers,
+                    plannedDeparture: inbound.plannedDeparture,
+                    plannedArrival: inbound.plannedArrival,
                     computedAt,
-                    key: returnKey ?? "",
+                    key: plan.returnKey,
                   },
                   travelError: null,
                 }
@@ -257,7 +269,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           ),
         );
       } catch (error) {
-        failedKeys.current.add(key);
+        failedKeys.current.add(plan.outboundKey);
         const message =
           error instanceof Error ? error.message : "De reistijd kon niet worden berekend.";
         setActivities((current) =>
@@ -282,8 +294,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     if (!hydrated || !settings.home) return;
     for (const activity of activities) {
       if (!needsTravelRefresh(activity, settings)) continue;
-      const key = travelKey(settings.home, activity.location, settings.travelMode);
-      if (key && failedKeys.current.has(key)) continue;
+      const plan = travelPlanFor(activity, settings);
+      if (plan && failedKeys.current.has(plan.outboundKey)) continue;
       void computeTravel(activity, settings);
     }
   }, [activities, settings, hydrated, computeTravel]);

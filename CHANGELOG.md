@@ -8,6 +8,20 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.6.0
+
+- **OV-reisplanner.** Kies per activiteit **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV**. Bij OV zoekt de
+  app een echte rit die je op tijd laat aankomen en toont hij de hele reis: lopen naar de halte,
+  welke trein/bus/metro, richting, **spoor**, overstappen en aankomsttijden — heen én terug.
+  Je vertrektijd komt dan uit de dienstregeling in plaats van uit een rekensom.
+- **Fiets- en looptijden zijn nu écht.** De gratis OSRM-server gaf voor auto, fiets en lopen
+  dezelfde tijd (hij kent alleen het autoprofiel). Fiets en lopen lopen nu via MOTIS:
+  9,5 km werd 13 min "fiets" en is nu 29 min — en lopen 133 min.
+- **Standaard vervoermiddel** in Instellingen; per activiteit kun je afwijken.
+- Techniek: MOTIS/transitous (gratis, zonder sleutel, wereldwijde GTFS-dekking). Auto blijft OSRM.
+  `TravelInfo` heeft nu optioneel `legs`, `transfers`, `plannedDeparture` en `plannedArrival`.
+  Het uitwisselformaat blijft compatibel (`version` 2).
+
 ## 0.5.3
 
 - **"Mijn weekplanning" verwijderd.** De vaste, in de code ingebakken standaardweek is weg; de

@@ -5,6 +5,7 @@ import { activityColor, getCategory } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
 import { formatDuration, minutesToTime, timeToMinutes } from "@/lib/time";
+import { travelModeMeta } from "@/lib/travelModes";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -111,14 +112,20 @@ function TimelineRow({
         <span className="min-w-0 flex-1 py-2.5">
           <span className="block text-sm font-medium" style={{ color: "var(--muted)" }}>
             {isDeparture ? (
-              <>&#128663; Vertrekken naar {entry.activity.title.toLowerCase()}</>
+              <>
+                {entry.activity.travel
+                  ? travelModeMeta(entry.activity.travel.mode).emoji
+                  : "\u{1F697}"}{" "}
+                Vertrekken naar {entry.activity.title.toLowerCase()}
+              </>
             ) : (
               <>&#8617;&#65039; Terug naar huis</>
             )}
           </span>
           {isDeparture && entry.activity.travel ? (
             <span className="block text-xs" style={{ color: "var(--muted)" }}>
-              {formatDuration(entry.activity.travel.durationMinutes)} rijden naar{" "}
+              {formatDuration(entry.activity.travel.durationMinutes)}{" "}
+              {entry.activity.travel.mode === "car" ? "rijden" : "reizen"} naar{" "}
               {entry.activity.location?.label}
             </span>
           ) : null}

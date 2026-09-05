@@ -12,6 +12,17 @@ interface TravelRequestBody {
   from?: Partial<GeoLocation>;
   to?: Partial<GeoLocation>;
   mode?: string;
+  /** ISO-tijd: uiterlijk aankomen (heenreis met OV). */
+  arriveBy?: string;
+  /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
+  departAt?: string;
+}
+
+/** Accepteert alleen een geldige ISO-tijd; anders negeren we het veld. */
+function isoOrUndefined(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? undefined : new Date(parsed).toISOString();
 }
 
 function isValidPoint(point: Partial<GeoLocation> | undefined): point is GeoLocation {
@@ -52,7 +63,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await route(body.from, body.to, mode);
+    const result = await route(body.from, body.to, {
+      mode,
+      arriveBy: isoOrUndefined(body.arriveBy),
+      departAt: isoOrUndefined(body.departAt),
+    });
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ProviderError) {

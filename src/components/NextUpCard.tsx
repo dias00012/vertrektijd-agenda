@@ -5,6 +5,8 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { minutesUntilDeparture } from "@/lib/agenda";
 import { computeDeparture, computeReturn } from "@/lib/travel";
 import { formatDateLabel, formatDuration } from "@/lib/time";
+import { travelModeMeta } from "@/lib/travelModes";
+import { JourneyDetails } from "./JourneyDetails";
 import { Spinner } from "./ui";
 import type { Activity } from "@/lib/types";
 
@@ -101,10 +103,15 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                 </div>
                 <div className="pb-1">
                   <p className="text-sm" style={{ color: "var(--muted)" }}>
-                    &#128663; {formatDuration(activity.travel.durationMinutes)} rijden
+                    {travelModeMeta(activity.travel.mode).emoji}{" "}
+                    {formatDuration(activity.travel.durationMinutes)}{" "}
+                    {activity.travel.mode === "car" ? "rijden" : "reizen"}
                     <span className="opacity-70">
-                      {" "}
-                      + {departure.bufferMinutes} min marge
+                      {activity.travel.mode === "transit"
+                        ? ` · ${activity.travel.transfers ?? 0} ${
+                            (activity.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
+                          }`
+                        : ` + ${departure.bufferMinutes} min marge`}
                     </span>
                   </p>
                   {back ? (
@@ -126,6 +133,10 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 Stel je thuislocatie in om de vertrektijd te zien.
               </p>
+            ) : null}
+
+            {activity.travel?.legs?.length ? (
+              <JourneyDetails travel={activity.travel} label="🚆 Bekijk je reis" />
             ) : null}
           </div>
         ) : (

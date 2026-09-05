@@ -65,6 +65,7 @@ export function loadActivities(): Activity[] {
       ...item,
       color: item.color ?? null,
       source: item.source ?? null,
+      travelMode: item.travelMode ?? null,
       recurrence: item.recurrence ?? null,
       exceptions: Array.isArray(item.exceptions) ? item.exceptions : [],
       returnTravel: item.returnTravel ?? null,

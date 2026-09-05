@@ -7,7 +7,9 @@ import { computeDeparture, computeReturn } from "@/lib/travel";
 import { timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
 import { describeRecurrence } from "@/lib/recurrence";
+import { travelModeMeta } from "@/lib/travelModes";
 import { ActivityForm } from "./ActivityForm";
+import { JourneyDetails } from "./JourneyDetails";
 import { ErrorNote, Spinner } from "./ui";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -152,10 +154,14 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                   ) : departure && activity.travel ? (
                     <>
                       <p className="text-xs" style={{ color: "var(--muted)" }}>
-                        &#128663; Reistijd: {formatDuration(activity.travel.durationMinutes)}
+                        {travelModeMeta(activity.travel.mode).emoji} Reistijd:{" "}
+                        {formatDuration(activity.travel.durationMinutes)}
                         <span className="opacity-70">
-                          {" "}
-                          &middot; {formatDistance(activity.travel.distanceKm)}
+                          {activity.travel.mode === "transit"
+                            ? ` · ${activity.travel.transfers ?? 0} ${
+                                (activity.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
+                              }`
+                            : ` · ${formatDistance(activity.travel.distanceKm)}`}
                         </span>
                       </p>
                       <p className="text-sm font-semibold tabular-nums">
@@ -180,6 +186,18 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
             </div>
           </div>
         </button>
+
+        {/* Buiten de knop: een <details> mag niet in een <button> staan. */}
+        {activity.travel?.legs?.length || activity.returnTravel?.legs?.length ? (
+          <div className="px-4 pb-3.5">
+            {activity.travel ? (
+              <JourneyDetails travel={activity.travel} label="🚆 Heenreis" />
+            ) : null}
+            {activity.returnTravel ? (
+              <JourneyDetails travel={activity.returnTravel} label="↩️ Terugreis" />
+            ) : null}
+          </div>
+        ) : null}
       </article>
 
       {editing ? (

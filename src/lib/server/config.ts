@@ -12,6 +12,8 @@ export interface ProviderConfig {
   orsApiKey: string;
   nominatimBaseUrl: string;
   osrmBaseUrl: string;
+  /** MOTIS/transitous: OV-planning en realistische fiets-/looproutes. */
+  motisBaseUrl: string;
   userAgent: string;
 }
 
@@ -30,6 +32,8 @@ export function getProviderConfig(): ProviderConfig {
       process.env.NOMINATIM_BASE_URL?.replace(/\/$/, "") ?? "https://nominatim.openstreetmap.org",
     osrmBaseUrl:
       process.env.OSRM_BASE_URL?.replace(/\/$/, "") ?? "https://router.project-osrm.org",
+    motisBaseUrl:
+      process.env.MOTIS_BASE_URL?.replace(/\/$/, "") ?? "https://api.transitous.org",
     userAgent:
       process.env.NOMINATIM_USER_AGENT?.trim() ||
       "VertrektijdAgenda/0.1 (https://localhost; persoonlijke agenda-app)",

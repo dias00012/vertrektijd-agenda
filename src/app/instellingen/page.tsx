@@ -8,7 +8,8 @@ import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { Spinner } from "@/components/ui";
-import type { GeoLocation } from "@/lib/types";
+import { TRAVEL_MODES } from "@/lib/travelModes";
+import type { GeoLocation, TravelMode } from "@/lib/types";
 
 const MAX_BUFFER_MINUTES = 120;
 
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const { settings, hydrated, updateSettings, activities } = useAgenda();
   const [home, setHome] = useState<GeoLocation | null>(null);
   const [buffer, setBuffer] = useState("10");
+  const [mode, setMode] = useState<TravelMode>("car");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +26,8 @@ export default function SettingsPage() {
     if (!hydrated) return;
     setHome(settings.home);
     setBuffer(String(settings.bufferMinutes));
-  }, [hydrated, settings.home, settings.bufferMinutes]);
+    setMode(settings.travelMode);
+  }, [hydrated, settings.home, settings.bufferMinutes, settings.travelMode]);
 
   const activitiesWithLocation = activities.filter((activity) => activity.location).length;
 
@@ -44,7 +47,7 @@ export default function SettingsPage() {
 
     setError(null);
     // Wijzigt de thuislocatie? Dan herberekent de store alle reistijden zelf.
-    updateSettings({ home, bufferMinutes: Math.round(parsed) });
+    updateSettings({ home, bufferMinutes: Math.round(parsed), travelMode: mode });
     setSaved(true);
   }
 
@@ -106,6 +109,43 @@ export default function SettingsPage() {
               Vertrektijd = starttijd &minus; reistijd &minus; marge.
             </p>
           </div>
+
+          <fieldset>
+            <legend className="label">Standaard vervoermiddel</legend>
+            <div className="grid grid-cols-4 gap-2">
+              {TRAVEL_MODES.map((item) => {
+                const active = mode === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={active}
+                    title={item.hint}
+                    onClick={() => {
+                      setMode(item.id);
+                      setSaved(false);
+                    }}
+                    className="flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition-colors"
+                    style={{
+                      borderColor: active ? "var(--accent)" : "var(--line)",
+                      background: active
+                        ? "color-mix(in srgb, var(--accent) 12%, transparent)"
+                        : "transparent",
+                      color: active ? "var(--accent)" : "var(--muted)",
+                    }}
+                  >
+                    <span aria-hidden className="text-base leading-none">
+                      {item.emoji}
+                    </span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+              Geldt voor nieuwe activiteiten; per activiteit kun je hiervan afwijken.
+            </p>
+          </fieldset>
 
           {error ? (
             <p className="text-sm" style={{ color: "var(--danger)" }} role="alert">

@@ -114,6 +114,29 @@ een schatting van je thuiskomst op te rekken.
 Let op: de app gaat ervan uit dat je na elke activiteit naar huis gaat. Plan je twee dingen
 achter elkaar, dan zie je dus zowel de terugreis van de eerste als de heenreis van de tweede.
 
+### Vervoermiddel en OV-reisplanner
+
+Per activiteit kies je **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV** (of "Standaard", dan geldt de
+instelling uit **Instellingen → Standaard vervoermiddel**).
+
+Bij **OV** werkt de app als een reisplanner: hij zoekt een echte rit die je vóór de starttijd
+(min de marge) laat aankomen, en toont de hele reis — lopen naar de halte, de lijn, de richting,
+het **spoor**, overstappen en aankomsttijden. De vertrektijd komt dan uit de dienstregeling in
+plaats van uit een rekensom. Ook de terugreis wordt als echte rit gepland, vanaf de eindtijd.
+
+| Vervoermiddel | Bron | Waarom |
+| --- | --- | --- |
+| 🚗 Auto | OSRM | Snel en betrouwbaar voor autoroutes. |
+| 🚲 Fiets / 🚶 Lopen | MOTIS | De publieke OSRM-demo kent alleen het autoprofiel en gaf voor fiets en lopen dezelfde — dus foute — tijd. |
+| 🚆 OV | MOTIS (transitous) | Gratis, zonder sleutel, met wereldwijde GTFS-dekking en dienstregelingdetail. |
+
+MOTIS vraagt om een herkenbare `User-Agent`; die hergebruiken we uit `NOMINATIM_USER_AGENT`.
+Zie de [gebruiksvoorwaarden van transitous](https://transitous.org/api/).
+
+Omdat een OV-rit afhangt van het tijdstip, zit de dag en starttijd in de cache-sleutel: verandert
+de tijd of de dag, dan wordt de rit opnieuw opgezocht. Voor een herhalende activiteit plant de app
+op de **eerstvolgende dag** dat hij voorkomt.
+
 
 ### Opgeslagen locaties
 

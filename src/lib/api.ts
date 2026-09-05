@@ -28,16 +28,24 @@ export async function searchLocations(
   return data.results ?? [];
 }
 
+export interface TravelRequestOptions {
+  mode: TravelMode;
+  /** ISO-tijd: uiterlijk aankomen (heenreis met OV). */
+  arriveBy?: string;
+  /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
+  departAt?: string;
+}
+
 export async function fetchTravel(
   from: GeoLocation,
   to: GeoLocation,
-  mode: TravelMode,
+  options: TravelRequestOptions,
   signal?: AbortSignal,
 ): Promise<TravelResult> {
   const response = await fetch("/api/travel", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ from, to, mode }),
+    body: JSON.stringify({ from, to, ...options }),
     signal,
   });
   if (!response.ok) {

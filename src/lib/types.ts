@@ -18,12 +18,59 @@ export interface GeoLocation {
   lon: number;
 }
 
+/** Vervoerswijze van één onderdeel van een reis. */
+export type TravelLegMode =
+  | "walk"
+  | "bike"
+  | "car"
+  | "rail"
+  | "bus"
+  | "tram"
+  | "subway"
+  | "ferry"
+  | "other";
+
+/**
+ * Eén onderdeel van een reis, bv. "lopen naar het station" of
+ * "Sprinter naar Amsterdam Centraal, spoor 1". Alleen gevuld bij OV-reizen.
+ */
+export interface TravelLeg {
+  mode: TravelLegMode;
+  durationMinutes: number;
+  /** Naam van de halte/plek waar dit deel begint en eindigt. */
+  from: string;
+  to: string;
+  /** ISO-tijden; alleen bij OV-onderdelen met een dienstregeling. */
+  departure?: string;
+  arrival?: string;
+  /** Lijnnaam, bv. "Sprinter", "IC" of "3". */
+  line?: string;
+  /** Richting/eindbestemming zoals op het bord. */
+  headsign?: string;
+  /** Vervoerder, bv. "NS" of "GVB". */
+  agency?: string;
+  /** Ritnummer, bv. treinnummer "4620". */
+  trip?: string;
+  /** Spoor of perron van vertrek. */
+  track?: string;
+}
+
 export interface TravelInfo {
   durationMinutes: number;
   distanceKm: number;
   mode: TravelMode;
   /** Naam van de provider die dit berekende, bv. "osrm" of "openrouteservice". */
   provider: string;
+  /** Onderdelen van de reis; alleen bij OV. */
+  legs?: TravelLeg[];
+  /** Aantal overstappen; alleen bij OV. */
+  transfers?: number;
+  /**
+   * Werkelijke vertrek-/aankomsttijd volgens de dienstregeling (ISO). Bij OV is
+   * de vertrektijd geen simpele aftrekking maar het moment van een echte rit.
+   */
+  plannedDeparture?: string;
+  plannedArrival?: string;
   /** ISO-timestamp van de berekening. */
   computedAt: string;
   /**
@@ -77,6 +124,8 @@ export interface Activity {
   travelError: string | null;
   /** Per-activiteit marge; null = globale instelling gebruiken. */
   bufferMinutes: number | null;
+  /** Vervoermiddel voor deze activiteit; null = de standaard uit instellingen. */
+  travelMode?: TravelMode | null;
   /** Optioneel: koppeling naar een taak (huiswerk) waar dit blok bij hoort. */
   linkedTaskId?: string | null;
   /** Optioneel: koppeling naar een toets waar dit blok bij hoort. */
@@ -94,6 +143,7 @@ export interface ActivityDraft {
   endTime: string;
   location: GeoLocation | null;
   color: string | null;
+  travelMode: TravelMode | null;
   recurrence: Recurrence | null;
 }
 
@@ -146,6 +196,10 @@ export interface TravelResult {
   distanceKm: number;
   provider: string;
   mode: TravelMode;
+  legs?: TravelLeg[];
+  transfers?: number;
+  plannedDeparture?: string;
+  plannedArrival?: string;
 }
 
 /* --- Schoolwerk: taken (huiswerk/opdrachten) en toetsen ------------------- */

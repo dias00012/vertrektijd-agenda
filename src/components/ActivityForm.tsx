@@ -6,6 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { WEEKDAYS, defaultRecurrence, sortWeekdays } from "@/lib/recurrence";
 import { placeForCategory, sortedPlaces } from "@/lib/places";
+import { TRAVEL_MODES, travelModeMeta } from "@/lib/travelModes";
 import { LocationInput } from "./LocationInput";
 import type {
   Activity,
@@ -47,6 +48,7 @@ function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
       endTime: activity.endTime,
       location: activity.location,
       color: activity.color,
+      travelMode: activity.travelMode ?? null,
       recurrence: activity.recurrence,
     };
   }
@@ -62,6 +64,7 @@ function initialDraft(settings: Settings, activity?: Activity): ActivityDraft {
     endTime: minutesToTime(start + DEFAULT_DURATION_MINUTES),
     location: placeForCategory(settings, category)?.location ?? null,
     color: null,
+    travelMode: null,
     recurrence: null,
   };
 }
@@ -524,6 +527,64 @@ export function ActivityForm({ activity, occurrenceDate, onClose }: Props) {
               </p>
             ) : null}
           </div>
+
+          {draft.location ? (
+            <fieldset>
+              <legend className="label">Hoe reis je hierheen?</legend>
+              <div className="grid grid-cols-5 gap-2">
+                <button
+                  type="button"
+                  onClick={() => patch({ travelMode: null })}
+                  aria-pressed={draft.travelMode === null}
+                  className="flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[0.7rem] font-medium transition-colors"
+                  style={{
+                    borderColor: draft.travelMode === null ? accent : "var(--line)",
+                    background:
+                      draft.travelMode === null
+                        ? `color-mix(in srgb, ${accent} 12%, transparent)`
+                        : "transparent",
+                    color: draft.travelMode === null ? accent : "var(--muted)",
+                  }}
+                  title={`Standaard: ${travelModeMeta(settings.travelMode).label}`}
+                >
+                  <span aria-hidden className="text-base leading-none">
+                    {travelModeMeta(settings.travelMode).emoji}
+                  </span>
+                  Standaard
+                </button>
+
+                {TRAVEL_MODES.map((item) => {
+                  const active = draft.travelMode === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => patch({ travelMode: item.id })}
+                      aria-pressed={active}
+                      title={item.hint}
+                      className="flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-[0.7rem] font-medium transition-colors"
+                      style={{
+                        borderColor: active ? accent : "var(--line)",
+                        background: active
+                          ? `color-mix(in srgb, ${accent} 12%, transparent)`
+                          : "transparent",
+                        color: active ? accent : "var(--muted)",
+                      }}
+                    >
+                      <span aria-hidden className="text-base leading-none">
+                        {item.emoji}
+                      </span>
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+                Bij OV zoekt de app een echte rit die je op tijd laat aankomen, inclusief
+                overstappen en spoor.
+              </p>
+            </fieldset>
+          ) : null}
         </div>
 
         <footer className="border-t px-5 py-4" style={{ borderColor: "var(--line)" }}>

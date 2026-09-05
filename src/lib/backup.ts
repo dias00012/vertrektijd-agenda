@@ -155,6 +155,11 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
     location: isRecord(raw.location) ? (raw.location as unknown as Activity["location"]) : null,
     color: typeof raw.color === "string" ? raw.color : null,
     source: typeof raw.source === "string" ? raw.source : null,
+    travelMode: (["car", "bike", "walk", "transit"] as const).includes(
+      raw.travelMode as "car" | "bike" | "walk" | "transit",
+    )
+      ? (raw.travelMode as Activity["travelMode"])
+      : null,
     recurrence: isRecord(raw.recurrence)
       ? (raw.recurrence as unknown as Activity["recurrence"])
       : null,
