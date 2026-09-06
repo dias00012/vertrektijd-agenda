@@ -204,11 +204,18 @@ export function buildTimeline(
   );
 }
 
-/** Hoe ver vooruit we zoeken naar de eerstvolgende activiteit. */
-const LOOKAHEAD_DAYS = 21;
+/**
+ * Hoe ver vooruit we zoeken naar de eerstvolgende activiteit.
+ *
+ * Ruim twee maanden, want een maandelijkse reeks kan verder weg liggen dan drie
+ * weken: staat er iets op de 31e, dan is de eerstvolgende keer na januari pas
+ * in maart. Met een kortere blik zei de kaart "niets gepland" terwijl er wel
+ * degelijk iets stond.
+ */
+const LOOKAHEAD_DAYS = 62;
 
 /**
- * De eerstvolgende activiteit die nog niet is afgelopen. Kijkt een aantal weken
+ * De eerstvolgende activiteit die nog niet is afgelopen. Kijkt twee maanden
  * vooruit, zodat ook een herhalende reeks de juiste eerstvolgende dag oplevert.
  */
 export function findNextActivity(
@@ -217,19 +224,29 @@ export function findNextActivity(
   now: Date,
 ): ActivityOccurrence | null {
   const today = toDateKey(now);
+  // Bewust settings meegenomen: later kan hier voorrang gegeven worden aan de
+  // activiteit waarvoor je als eerste moet vertrekken.
+  void settings;
+
+  /** Een hele dag telt pas mee als er verder niets staat; zie hieronder. */
+  let allDayFallback: ActivityOccurrence | null = null;
 
   for (let offset = 0; offset <= LOOKAHEAD_DAYS; offset += 1) {
     const dateKey = addDaysToKey(today, offset);
     const upcoming = activitiesOnDate(activities, dateKey).filter(
       (activity) => toDateTime(activity.date, activity.endTime).getTime() > now.getTime(),
     );
-    // Bewust settings meegenomen: later kan hier voorrang gegeven worden aan de
-    // activiteit waarvoor je als eerste moet vertrekken.
-    void settings;
-    if (upcoming[0]) return upcoming[0];
+
+    // Iets dat de hele dag duurt ("Herfstvakantie") staat in het dagoverzicht
+    // bovenaan als context, maar heeft geen tijdstip en dus geen vertrektijd.
+    // Als antwoord op "waar moet ik straks heen" verdrong het de afspraak
+    // eronder — precies de vraag waar deze app voor is.
+    const timed = upcoming.find((activity) => !activity.allDay);
+    if (timed) return timed;
+    if (!allDayFallback && upcoming[0]) allDayFallback = upcoming[0];
   }
 
-  return null;
+  return allDayFallback;
 }
 
 /** Minuten tot vertrek; negatief betekent dat je al had moeten gaan. */
