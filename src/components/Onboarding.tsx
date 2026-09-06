@@ -94,6 +94,32 @@ export function Onboarding({
     close();
   }
 
+  /**
+   * De belofte van de app als plaatje. Een uitgewerkt voorbeeld overtuigt sneller
+   * dan een alinea uitleg: je ziet meteen dat de vertrektijd uit een echte rit
+   * komt, inclusief het fietsen ernaartoe en de vertraging van dat moment.
+   */
+  const example: {
+    time: string;
+    label: string;
+    emoji: string;
+    /** Begin en eind van de reis; die krijgen de accentkleur. */
+    anchor?: boolean;
+    delay?: string;
+  }[] = [
+    { time: "08:23", label: t("intro.exDepart"), emoji: "🚪", anchor: true },
+    { time: "", label: t("intro.exBike"), emoji: "🚲" },
+    { time: "", label: t("intro.exTrain"), emoji: "🚆", delay: t("intro.exDelay") },
+    { time: "09:00", label: t("intro.exArrive"), emoji: "🎓", anchor: true },
+  ];
+
+  /** Wat deze app anders maakt dan de agenda die je al hebt. Drie punten, niet meer. */
+  const points = [
+    { emoji: "🚉", title: t("intro.point1.title"), body: t("intro.point1.body") },
+    { emoji: "🚲", title: t("intro.point2.title"), body: t("intro.point2.body") },
+    { emoji: "📚", title: t("intro.point3.title"), body: t("intro.point3.body") },
+  ];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
@@ -103,7 +129,7 @@ export function Onboarding({
     >
       <div className="card animate-sheet-in max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-b-none px-5 py-6 sm:rounded-2xl">
         {/* Voortgang: drie stappen, zodat je weet hoe lang dit duurt. */}
-        <div className="mb-5 flex gap-1.5" aria-hidden>
+        <div className="mb-4 flex gap-1.5" aria-hidden>
           {[0, 1, 2].map((index) => (
             <span
               key={index}
@@ -115,17 +141,92 @@ export function Onboarding({
 
         {step === 0 ? (
           <>
-            <p aria-hidden className="text-3xl">
-              🕐
-            </p>
-            <h2 className="mt-2 text-xl font-semibold">{t("intro.pitch1")}</h2>
-            <p className="mt-1 text-xl font-semibold" style={{ color: "var(--accent)" }}>
+            <h2 className="text-xl leading-snug font-semibold">{t("intro.pitch1")}</h2>
+            <p className="text-xl leading-snug font-semibold" style={{ color: "var(--accent)" }}>
               {t("intro.pitch2")}
             </p>
-            <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
               {t("intro.body")}
             </p>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
+
+            <div
+              className="mt-3 rounded-xl border px-3 py-2.5"
+              style={{ borderColor: "var(--line)", background: "var(--surface-soft)" }}
+            >
+              {example.map((row, index) => {
+                const last = index === example.length - 1;
+                return (
+                  <div key={row.label} className="flex items-stretch gap-2.5">
+                    <span
+                      className="w-10 shrink-0 text-right text-xs font-semibold tabular-nums"
+                      style={{ color: row.anchor ? "var(--accent)" : "var(--muted)" }}
+                    >
+                      {row.time}
+                    </span>
+                    {/* Het lijntje van vertrek naar aankomst: het is één reis. */}
+                    <span aria-hidden className="relative flex w-2 shrink-0 justify-center">
+                      <span
+                        className="absolute w-px"
+                        style={{
+                          background: "var(--line)",
+                          top: index === 0 ? "0.4rem" : 0,
+                          bottom: last ? "auto" : 0,
+                          height: last ? "0.4rem" : undefined,
+                        }}
+                      />
+                      <span
+                        className="relative mt-1.5 h-1.5 w-1.5 rounded-full"
+                        style={{ background: row.anchor ? "var(--accent)" : "var(--line)" }}
+                      />
+                    </span>
+                    <span className={last ? "text-xs" : "pb-2.5 text-xs"}>
+                      <span aria-hidden className="mr-1">
+                        {row.emoji}
+                      </span>
+                      <span style={row.anchor ? undefined : { color: "var(--muted)" }}>
+                        {row.label}
+                      </span>
+                      {row.delay ? (
+                        <span
+                          className="ml-1.5 rounded px-1 py-px text-[10px] font-semibold whitespace-nowrap"
+                          style={{
+                            background: "color-mix(in srgb, #f97316 18%, transparent)",
+                            color: "#f97316",
+                          }}
+                        >
+                          {row.delay}
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <ul className="mt-3 space-y-2.5">
+              {points.map((point) => (
+                <li key={point.title} className="flex gap-3">
+                  <span
+                    aria-hidden
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base"
+                    style={{ background: "var(--surface-soft)" }}
+                  >
+                    {point.emoji}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{point.title}</span>
+                    <span
+                      className="block text-xs leading-relaxed"
+                      style={{ color: "var(--muted)" }}
+                    >
+                      {point.body}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
               {t("intro.twoQuestions")}
             </p>
           </>
