@@ -364,7 +364,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
             <fieldset>
               <legend className="label">{t("swForm.steps")}</legend>
               <p className="mb-2 text-xs" style={{ color: "var(--muted)" }}>
-                Hak een grote opdracht op in behapbare stukken. Optioneel.
+                {t("swForm.stepsHint")}
               </p>
               <ul className="space-y-2">
                 {steps.map((step, index) => (

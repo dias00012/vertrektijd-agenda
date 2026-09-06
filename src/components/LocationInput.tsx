@@ -171,12 +171,14 @@ export function LocationInput({
         </span>
       </div>
 
-      {extraActions ? <div className="mt-2 flex flex-wrap gap-1.5">{extraActions}</div> : null}
-
-      {/* De snelkeuzes blijven staan als er al een locatie is gekozen: je wilt
-          ook van thuis naar school kunnen wisselen zonder eerst te wissen. */}
-      {places.length > 0 ? (
+      {/* Snelkeuzes en extra knoppen horen in dezelfde rij: in twee aparte
+          rijen kreeg "Mijn locatie" een eigen regel terwijl er ruimte naast
+          stond. De snelkeuzes blijven ook staan als er al een locatie is
+          gekozen: je wilt van thuis naar school kunnen wisselen zonder eerst
+          te wissen. */}
+      {extraActions || places.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
+          {extraActions}
           {places.map((place) => {
             const active = isSamePlace(value, place.location);
             return (

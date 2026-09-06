@@ -125,6 +125,21 @@ export function startOfWeekKey(dateKey: string): string {
   return toDateKey(date);
 }
 
+/**
+ * ISO-weeknummer. Roosters worden op school per weeknummer gepubliceerd
+ * ("toets in week 37"), dus in de weekweergave wil je kunnen zien in welke
+ * week je nu kijkt zonder zelf te tellen.
+ */
+export function isoWeekNumber(dateKey: string): number {
+  // De donderdag van deze week bepaalt bij ISO zowel het jaar als het nummer.
+  const thursday = parseDateKey(dateKey);
+  thursday.setDate(thursday.getDate() - ((thursday.getDay() + 6) % 7) + 3);
+  const firstThursday = new Date(thursday.getFullYear(), 0, 4);
+  firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3);
+  // Afronden vangt het uur op dat de zomertijd erin of eruit haalt.
+  return 1 + Math.round((thursday.getTime() - firstThursday.getTime()) / (7 * 86_400_000));
+}
+
 /** De zeven dagen (ma t/m zo) van de kalenderweek rond deze dag. */
 export function calendarWeekKeys(dateKey: string): string[] {
   const start = startOfWeekKey(dateKey);

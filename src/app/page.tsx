@@ -40,31 +40,41 @@ export default function DashboardPage() {
           <Spinner size={18} label={t("today.loading")} />
         </div>
       ) : (
-        <>
-          {next ? <NextUpCard activity={next} now={now} /> : null}
+        // Op een laptop stond alles onder elkaar in een smalle kolom met een
+        // lege rechterhelft. Naast elkaar past je hele dag op het scherm.
+        // Op een telefoon blijft het één kolom, in dezelfde volgorde als eerst:
+        // eerst wanneer je weg moet, dan je schoolwerk, dan de dag zelf.
+        <div className="xl:grid xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] xl:items-start xl:gap-x-5">
+          <div className="xl:col-start-1 xl:row-start-1">
+            {next ? <NextUpCard activity={next} now={now} /> : null}
+          </div>
 
-          <SchoolworkTodayCard now={now} />
+          <div className="xl:col-start-2 xl:row-start-1">
+            <SchoolworkTodayCard now={now} />
+          </div>
 
-          {todayItems.length === 0 ? (
-            <EmptyState
-              icon="☕"
-              title={t("today.empty.title")}
-              description={t("today.empty.body")}
-              action={
-                <Link href="/agenda" className="btn btn-ghost no-underline">
-                  {t("today.empty.week")}
-                </Link>
-              }
-            />
-          ) : (
-            <section aria-label={t("today.overview")}>
-              <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-                {t("today.overview")}
-              </h2>
-              <DayTimeline dateKey={today} now={now} />
-            </section>
-          )}
-        </>
+          <div className="xl:col-start-1 xl:row-start-2">
+            {todayItems.length === 0 ? (
+              <EmptyState
+                icon="☕"
+                title={t("today.empty.title")}
+                description={t("today.empty.body")}
+                action={
+                  <Link href="/agenda" className="btn btn-ghost no-underline">
+                    {t("today.empty.week")}
+                  </Link>
+                }
+              />
+            ) : (
+              <section aria-label={t("today.overview")}>
+                <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+                  {t("today.overview")}
+                </h2>
+                <DayTimeline dateKey={today} now={now} />
+              </section>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

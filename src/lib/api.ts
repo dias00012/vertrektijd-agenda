@@ -1,6 +1,7 @@
 "use client";
 
 import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
 import type {
   GeocodeResult,
   GeoLocation,
@@ -9,6 +10,11 @@ import type {
   TravelMode,
   TravelResult,
 } from "./types";
+
+/** Een tekst in de taal die nu actief is. */
+function say(key: TranslationKey): string {
+  return translate(getLanguage(), key);
+}
 
 /**
  * De server kent de gekozen taal niet uit zichzelf; die staat in de browser.
@@ -44,7 +50,7 @@ export async function searchLocations(
     headers: headers(),
   });
   if (!response.ok) {
-    throw new Error(await parseError(response, "Zoeken naar de locatie is mislukt."));
+    throw new Error(await parseError(response, say("error.geocode")));
   }
   const data = (await response.json()) as { results: GeocodeResult[] };
   return data.results ?? [];
@@ -73,7 +79,7 @@ export async function fetchTravel(
     signal,
   });
   if (!response.ok) {
-    throw new Error(await parseError(response, "De reistijd kon niet worden berekend."));
+    throw new Error(await parseError(response, say("error.travel")));
   }
   return (await response.json()) as TravelResult;
 }
@@ -110,7 +116,7 @@ export async function fetchJourneys(
     signal,
   });
   if (!response.ok) {
-    throw new Error(await parseError(response, "De reis kon niet worden gepland."));
+    throw new Error(await parseError(response, say("error.journey")));
   }
   return (await response.json()) as JourneySearchResult;
 }

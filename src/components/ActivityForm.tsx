@@ -207,7 +207,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     const label = newTypeLabel.trim();
     const emoji = newTypeEmoji.trim();
     if (!label) {
-      setTypeError("Geef je type een naam.");
+      setTypeError(t("form.needTypeName"));
       return;
     }
     if (!emoji) {

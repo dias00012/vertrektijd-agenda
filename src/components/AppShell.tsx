@@ -121,7 +121,14 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* --- Onderbalk (telefoon en tablet) ------------------------------- */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 lg:hidden">
-        <div className="mx-auto w-full max-w-2xl px-4 sm:px-6">
+        {/* Zonder deze vervaging schuift je agenda zichtbaar door het gat
+            tussen de knop en de balk. Nu loopt hij netjes uit beeld. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 h-full"
+          style={{ background: "linear-gradient(to top, var(--canvas) 62%, transparent)" }}
+        />
+        <div className="relative mx-auto w-full max-w-2xl px-4 sm:px-6">
           <div className="pointer-events-auto mb-3 flex justify-center">
             <button
               type="button"

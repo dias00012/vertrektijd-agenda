@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDaysToKey,
   formatDuration,
+  isoWeekNumber,
   minutesToTime,
   timeToMinutes,
   toDateKey,
@@ -67,5 +68,30 @@ describe("formatDuration", () => {
 
   it("wordt nooit negatief", () => {
     expect(formatDuration(-5)).toBe("0 min");
+  });
+});
+
+describe("isoWeekNumber", () => {
+  it("telt de eerste week van het jaar volgens ISO", () => {
+    // 1 januari 2026 is een donderdag, dus die hoort al bij week 1.
+    expect(isoWeekNumber("2026-01-01")).toBe(1);
+    expect(isoWeekNumber("2026-01-05")).toBe(2);
+  });
+
+  it("laat 1 januari bij het vorige jaar horen als die vroeg in de week valt", () => {
+    // 1 januari 2027 is een vrijdag: die week begon in 2026 en is week 53.
+    expect(isoWeekNumber("2027-01-01")).toBe(53);
+  });
+
+  it("blijft kloppen over de zomertijdgrens heen", () => {
+    // De klok gaat op 25 oktober 2026 een uur terug.
+    expect(isoWeekNumber("2026-10-19")).toBe(43);
+    expect(isoWeekNumber("2026-10-26")).toBe(44);
+    expect(isoWeekNumber("2026-11-02")).toBe(45);
+  });
+
+  it("geeft elke dag van dezelfde week hetzelfde nummer", () => {
+    const week = ["2026-09-07", "2026-09-08", "2026-09-11", "2026-09-13"];
+    expect(new Set(week.map(isoWeekNumber)).size).toBe(1);
   });
 });

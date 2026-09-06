@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { layoutDay, timeRangeFor, type PositionedActivity } from "@/lib/agenda";
-import { calendarWeekKeys, minutesToTime, pad2, parseDateKey, toDateKey } from "@/lib/time";
+import {
+  calendarWeekKeys,
+  formatDateLabel,
+  minutesToTime,
+  pad2,
+  parseDateKey,
+  toDateKey,
+} from "@/lib/time";
 import { useT } from "@/hooks/useLanguage";
 import { weekdayHeadings } from "@/lib/recurrence";
 import { ActivityForm } from "./ActivityForm";
@@ -15,6 +22,19 @@ const HOUR_HEIGHT = 56;
 const PX_PER_MINUTE = HOUR_HEIGHT / 60;
 /** Onder deze hoogte past er geen tekst meer in een blok. */
 const COMPACT_BLOCK_HEIGHT = 34;
+/** Breedte van de tijdas links. */
+const GUTTER = 44;
+/**
+ * Smalste dagkolom. Op een telefoon zijn zeven kolommen in 340px zo'n 42px
+ * breed: daar past geen woord in, alleen een afgekapte letter. Liever een
+ * kolom die je kunt lezen en horizontaal schuiven, zoals elke agenda-app op
+ * een telefoon doet.
+ */
+const MIN_COLUMN = 64;
+/** Klikken in het raster plant op het halve uur, zoals elke agenda-app. */
+const SNAP_MINUTES = 30;
+/** Standaardlengte van een activiteit die je uit het raster begint. */
+const NEW_DURATION_MINUTES = 60;
 
 
 /**
@@ -26,6 +46,10 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
   const dayLabels = weekdayHeadings();
   const { activities, settings } = useAgenda();
   const [editing, setEditing] = useState<ActivityOccurrence | null>(null);
+  /** Datum en begintijd van een activiteit die je in het raster aanklikte. */
+  const [creating, setCreating] = useState<{ date: string; startTime: string } | null>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   const dateKeys = calendarWeekKeys(weekStart);
   const days = dateKeys.map((dateKey) => layoutDay(activities, settings, dateKey));
@@ -41,16 +65,31 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
     (_, index) => range.start / 60 + index,
   );
 
+  // Past de week niet in beeld, dan begint hij bij vandaag in plaats van bij
+  // maandag: dat is de dag waar je naar op zoek bent.
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    const index = calendarWeekKeys(weekStart).indexOf(toDateKey(now));
+    if (index < 0) return;
+    const column = (el.scrollWidth - GUTTER) / 7;
+    el.scrollLeft = Math.max(0, GUTTER + index * column - (el.clientWidth - column) / 2);
+    // Alleen bij een andere week opnieuw: `now` tikt elke minuut door.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart]);
+
   return (
     <>
-      <div className="card overflow-x-auto">
+      <div ref={scroller} className="card overflow-x-auto">
         <div
-          className="min-w-[340px]"
-          style={{ display: "grid", gridTemplateColumns: "40px repeat(7, minmax(42px, 1fr))" }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: `${GUTTER}px repeat(7, minmax(${MIN_COLUMN}px, 1fr))`,
+          }}
         >
           {/* Kop met de weekdagen */}
           <div
-            className="sticky left-0 z-10 border-b"
+            className="sticky left-0 z-10 border-r border-b"
             style={{ background: "var(--surface)", borderColor: "var(--line)" }}
           />
           {dateKeys.map((dateKey) => {
@@ -81,9 +120,15 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
           })}
 
           {/* Tijdas */}
+          {/* De rand houdt de tijdas gescheiden van de dagen die eronderdoor
+              schuiven op een smal scherm. */}
           <div
-            className="sticky left-0 z-10 relative"
-            style={{ height: totalHeight, background: "var(--surface)" }}
+            className="sticky left-0 z-10 relative border-r"
+            style={{
+              height: totalHeight,
+              background: "var(--surface)",
+              borderColor: "var(--line)",
+            }}
           >
             {hours.slice(0, -1).map((hour) => (
               <span
@@ -107,6 +152,26 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
                 background: `repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px ${HOUR_HEIGHT}px)`,
               }}
             >
+              {/* Een klik op een leeg stuk plant iets op dat tijdstip, zoals je
+                  van een agenda verwacht. Als knop in plaats van een klikbare
+                  div, zodat het ook met het toetsenbord werkt; dan begint het
+                  bij het begin van de dag. */}
+              <button
+                type="button"
+                aria-label={t("week.addOn", { date: formatDateLabel(dateKey, now) })}
+                className="absolute inset-0 h-full w-full"
+                onClick={(event) => {
+                  const box = event.currentTarget.getBoundingClientRect();
+                  const offset = event.clientY > 0 ? event.clientY - box.top : 0;
+                  const minutes = range.start + offset / PX_PER_MINUTE;
+                  const start = Math.max(
+                    0,
+                    Math.min(23 * 60 + 30, Math.floor(minutes / SNAP_MINUTES) * SNAP_MINUTES),
+                  );
+                  setCreating({ date: dateKey, startTime: minutesToTime(start) });
+                }}
+              />
+
               {days[index].map((item) => (
                 <GridBlock
                   key={item.occurrence.occurrenceId}
@@ -141,6 +206,24 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
           activity={editing}
           occurrenceDate={editing.date}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {creating ? (
+        <ActivityForm
+          preset={{
+            date: creating.date,
+            startTime: creating.startTime,
+            endTime: minutesToTime(
+              Math.min(
+                23 * 60 + 59,
+                Number(creating.startTime.slice(0, 2)) * 60 +
+                  Number(creating.startTime.slice(3)) +
+                  NEW_DURATION_MINUTES,
+              ),
+            ),
+          }}
+          onClose={() => setCreating(null)}
         />
       ) : null}
     </>

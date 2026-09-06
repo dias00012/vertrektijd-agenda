@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { fetchTravel } from "@/lib/api";
+import { getLanguage } from "@/lib/i18n/locale";
+import { translate, type TranslationKey } from "@/lib/i18n/dictionary";
 import {
   DEFAULT_SETTINGS,
   loadActivities,
@@ -45,6 +47,11 @@ import type {
   Task,
   TaskStep,
 } from "@/lib/types";
+
+/** Een tekst in de taal die nu actief is. */
+function say(key: TranslationKey): string {
+  return translate(getLanguage(), key);
+}
 
 interface AgendaContextValue {
   activities: Activity[];
@@ -287,7 +294,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         failedKeys.current.add(plan.outboundKey);
         const message =
-          error instanceof Error ? error.message : "De reistijd kon niet worden berekend.";
+          error instanceof Error ? error.message : say("error.travel");
         setActivities((current) =>
           current.map((item) =>
             item.id === activity.id
@@ -675,7 +682,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         setSyncError(null);
       } catch (error) {
         setSyncStatus("error");
-        setSyncError(error instanceof Error ? error.message : "Opslaan in de cloud is mislukt.");
+        setSyncError(error instanceof Error ? error.message : say("error.cloudSave"));
       }
     }, 800);
 

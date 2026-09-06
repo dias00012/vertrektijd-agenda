@@ -136,6 +136,9 @@ export default function TravelPlannerPage() {
       </header>
 
       <section className="card space-y-4 px-5 py-5" aria-label={t("travel.search")}>
+        {/* Op een laptop stonden van, wisselen en naar onder elkaar met een
+            lege rechterhelft ernaast. Naast elkaar lees je de rit als één regel. */}
+        <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-start lg:gap-3 lg:space-y-0">
         <LocationInput
           label={t("travel.from")}
           value={from}
@@ -158,7 +161,7 @@ export default function TravelPlannerPage() {
           }
         />
 
-        <div className="flex justify-center">
+        <div className="flex justify-center lg:pt-7">
           <button
             type="button"
             onClick={swap}
@@ -166,7 +169,9 @@ export default function TravelPlannerPage() {
             className="rounded-full border px-3 py-1 text-sm"
             style={{ borderColor: "var(--line)", color: "var(--muted)" }}
           >
-            &#8645;
+            <span aria-hidden className="block lg:rotate-90">
+              &#8645;
+            </span>
           </button>
         </div>
 
@@ -179,6 +184,7 @@ export default function TravelPlannerPage() {
           places={places}
           placeholder={t("travel.placeholder")}
         />
+        </div>
 
         <div>
           <span className="label">{t("travel.when")}</span>

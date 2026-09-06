@@ -1,4 +1,6 @@
 import { SCHEMA_VERSION } from "./storage";
+import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
 import type {
   Activity,
   Exam,
@@ -8,6 +10,11 @@ import type {
   Task,
   TaskStep,
 } from "./types";
+
+/** Een tekst in de taal die nu actief is. */
+function say(key: TranslationKey): string {
+  return translate(getLanguage(), key);
+}
 
 /**
  * Import/export van de volledige agenda als één JSON-bestand. Bedoeld om met een
@@ -103,11 +110,11 @@ export function parseBackup(text: string): ParseResult {
   try {
     raw = JSON.parse(text);
   } catch {
-    return { ok: false, error: "Dit is geen geldig JSON-bestand." };
+    return { ok: false, error: say("backup.invalidJson") };
   }
 
   if (!isRecord(raw)) {
-    return { ok: false, error: "Het bestand heeft niet de verwachte structuur." };
+    return { ok: false, error: say("backup.invalidShape") };
   }
 
   if (raw.app !== APP_ID) {

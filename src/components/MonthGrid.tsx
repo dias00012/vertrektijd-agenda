@@ -9,6 +9,11 @@ import { isSameMonth, monthGridKeys, parseDateKey, toDateKey } from "@/lib/time"
 
 /** Meer stippen dan dit passen niet in een dagvakje. */
 const MAX_DOTS = 4;
+/**
+ * Op een laptop is er ruimte voor de namen zelf. Stippen vertellen je alleen
+ * dát er iets is; met de titel erbij zie je je maand zonder te klikken.
+ */
+const MAX_TITLES = 3;
 
 /**
  * Maandraster. Elke dag toont gekleurde stippen per activiteit; de gekozen dag
@@ -60,7 +65,7 @@ export function MonthGrid({
               aria-label={`${parseDateKey(dateKey).getDate()}, ${items.length} ${
                 t(items.length === 1 ? "month.activity" : "month.activities")
               }`}
-              className="flex min-h-[58px] flex-col items-center gap-1 border-b border-l px-0.5 py-1.5 transition-colors first:border-l-0"
+              className="flex min-h-[58px] flex-col items-center gap-1 border-b border-l px-0.5 py-1.5 transition-colors first:border-l-0 lg:min-h-[104px]"
               style={{
                 borderColor: "var(--line)",
                 background: isSelected ? "var(--surface-soft)" : "transparent",
@@ -77,7 +82,7 @@ export function MonthGrid({
                 {parseDateKey(dateKey).getDate()}
               </span>
 
-              <span className="flex flex-wrap items-center justify-center gap-0.5">
+              <span className="flex flex-wrap items-center justify-center gap-0.5 lg:hidden">
                 {items.slice(0, MAX_DOTS).map((activity) => (
                   <span
                     key={activity.occurrenceId}
@@ -96,6 +101,38 @@ export function MonthGrid({
                   </span>
                 ) : null}
               </span>
+
+              <span aria-hidden className="hidden w-full flex-col gap-0.5 px-0.5 lg:flex">
+                {items.slice(0, MAX_TITLES).map((activity) => {
+                  const color = activityColor(activity, categoryFor(activity.category));
+                  return (
+                    <span
+                      key={activity.occurrenceId}
+                      className="flex items-center gap-1 rounded px-1 py-px text-left text-[0.65rem] leading-tight"
+                      style={{ background: `color-mix(in srgb, ${color} 16%, transparent)` }}
+                    >
+                      <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full"
+                        style={{ background: color }}
+                      />
+                      <span className="truncate">
+                        <span className="tabular-nums" style={{ color: "var(--muted)" }}>
+                          {activity.startTime}
+                        </span>{" "}
+                        {activity.title}
+                      </span>
+                    </span>
+                  );
+                })}
+                {items.length > MAX_TITLES ? (
+                  <span
+                    className="px-1 text-[0.6rem] font-semibold"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    +{items.length - MAX_TITLES}
+                  </span>
+                ) : null}
+              </span>
             </button>
           );
         })}
@@ -106,7 +143,7 @@ export function MonthGrid({
           className="border-t px-3 py-2 text-[0.65rem]"
           style={{ borderColor: "var(--line)", color: "var(--muted)" }}
         >
-          Stel je thuislocatie in voor vertrektijden.
+          {t("month.homeHint")}
         </p>
       )}
     </div>

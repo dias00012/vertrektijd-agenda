@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
 import { activitiesOnDate, groupByDate } from "@/lib/agenda";
@@ -12,6 +12,7 @@ import {
   formatDateLabel,
   formatMonthLabel,
   formatRangeLabel,
+  isoWeekNumber,
   isSameMonth,
   startOfWeekKey,
   todayKey,
@@ -45,16 +46,68 @@ export default function AgendaPage() {
   const [month, setMonth] = useState(today);
   const [selectedDay, setSelectedDay] = useState(today);
 
-  function goToToday() {
+  const goToToday = useCallback(() => {
     setWeekStart(startOfWeekKey(today));
     setMonth(today);
     setSelectedDay(today);
-  }
+  }, [today]);
+
+  /** Een periode vooruit of achteruit; wat een periode is hangt af van de weergave. */
+  const step = useCallback(
+    (delta: number) => {
+      if (view === "week") setWeekStart((current) => addWeeksToKey(current, delta));
+      if (view === "maand") setMonth((current) => addMonthsToKey(current, delta));
+    },
+    [view],
+  );
+
+  /**
+   * Sneltoetsen zoals elke agenda op een laptop ze heeft: T voor vandaag, de
+   * pijlen voor vorige en volgende, D W M voor de weergave. Zonder muis door
+   * je weken bladeren scheelt echt tijd.
+   */
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      // Niet ingrijpen terwijl iemand typt of een venster openstaat.
+      if (target?.isContentEditable) return;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      if (document.querySelector('[role="dialog"]')) return;
+
+      switch (event.key.toLowerCase()) {
+        case "t":
+          goToToday();
+          break;
+        case "d":
+          setView("vandaag");
+          break;
+        case "w":
+          setView("week");
+          break;
+        case "m":
+          setView("maand");
+          break;
+        case "arrowleft":
+          step(-1);
+          break;
+        case "arrowright":
+          step(1);
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [goToToday, step]);
 
   return (
     <div>
       <header className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Agenda</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("nav.agenda")}</h1>
       </header>
 
       <div
@@ -95,6 +148,7 @@ export default function AgendaPage() {
         <div>
           <PeriodNav
             label={formatRangeLabel(weekStart, addDaysToKey(weekStart, 6))}
+            note={t("agenda.weekNumber", { number: isoWeekNumber(weekStart) })}
             onPrevious={() => setWeekStart(addWeeksToKey(weekStart, -1))}
             onNext={() => setWeekStart(addWeeksToKey(weekStart, 1))}
             previousLabel={t("agenda.previousWeek")}
@@ -158,6 +212,11 @@ export default function AgendaPage() {
           </section>
         </div>
       )}
+
+      {/* Alleen op een laptop: op een telefoon is er geen toetsenbord. */}
+      <p className="mt-6 hidden text-center text-xs lg:block" style={{ color: "var(--muted)" }}>
+        {t("agenda.shortcuts")}
+      </p>
     </div>
   );
 }
@@ -165,6 +224,7 @@ export default function AgendaPage() {
 /** Navigatiebalk boven het week- of maandraster. */
 function PeriodNav({
   label,
+  note,
   onPrevious,
   onNext,
   onToday,
@@ -173,6 +233,8 @@ function PeriodNav({
   extra,
 }: {
   label: string;
+  /** Kleine toevoeging naast het label, bv. het weeknummer. */
+  note?: string;
   onPrevious: () => void;
   onNext: () => void;
   onToday?: () => void;
@@ -203,6 +265,11 @@ function PeriodNav({
       </div>
 
       <span className="text-sm font-semibold first-letter:uppercase">{label}</span>
+      {note ? (
+        <span className="text-xs" style={{ color: "var(--muted)" }}>
+          {note}
+        </span>
+      ) : null}
 
       <div className="ml-auto flex items-center gap-2">
         {onToday ? (
