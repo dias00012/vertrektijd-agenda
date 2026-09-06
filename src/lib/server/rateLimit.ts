@@ -1,6 +1,10 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { say } from "./language";
+import { clientKey } from "../clientKey";
+
+// Doorgegeven zodat de routes hem via deze module kunnen blijven gebruiken.
+export { clientKey };
 
 /**
  * Verkeersdrempel voor onze eigen API-routes.
@@ -64,16 +68,7 @@ export function checkRateLimit(key: string, rule: RateLimitRule): RateLimitResul
   return { ok: true, retryAfter: 0, remaining: rule.limit - existing.count };
 }
 
-/**
- * Wie stuurt deze aanvraag? Achter Vercel staat het echte adres in
- * `x-forwarded-for`. Lukt dat niet, dan vallen alle anonieme aanvragen samen op
- * één emmer — streng, maar dat is precies wat je wilt als je de bron niet kent.
- */
-export function clientKey(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || request.headers.get("x-real-ip")?.trim();
-  return ip || "onbekend";
-}
+
 
 /** Standaardgrenzen per route. Ruim boven normaal gebruik, ver onder misbruik. */
 export const LIMITS = {
