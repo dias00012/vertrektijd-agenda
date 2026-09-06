@@ -539,3 +539,111 @@ describe("parseIcs met losse afwijkingen op een reeks", () => {
     ]);
   });
 });
+
+describe("parseIcs met een duur in plaats van een eindtijd", () => {
+  it("leest DURATION als er geen DTEND staat", () => {
+    // Zonder dit werd elke afspraak zonder DTEND stil een uur lang, terwijl
+    // agenda's juist vaak een duur meesturen.
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:werkgroep",
+          "SUMMARY:Werkgroep",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DURATION:PT1H45M",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.startTime).toBe("09:00");
+    expect(events[0]?.endTime).toBe("10:45");
+  });
+
+  it("kent ook dagen en losse minuten", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:kort",
+          "SUMMARY:Kort",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DURATION:PT30M",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.endTime).toBe("09:30");
+  });
+
+  it("valt terug op een uur bij een duur die nergens op slaat", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:raar",
+          "SUMMARY:Raar",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DURATION:banaan",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.endTime).toBe("10:00");
+  });
+
+  it("laat een eindtijd voorgaan op een duur", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:beide",
+          "SUMMARY:Beide",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DTEND;TZID=Europe/Amsterdam:20260907T101500",
+          "DURATION:PT5H",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.endTime).toBe("10:15");
+  });
+});
+
+describe("parseIcs bij een vrije periode over de tijdswissel", () => {
+  it("houdt de laatste dag erbij als de zomertijd binnen de periode eindigt", () => {
+    // 25 oktober 2026 duurt 25 uur. Met een aftreksom van 24 uur viel de
+    // laatste dag van de herfstvakantie eraf.
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:herfst",
+          "SUMMARY:Herfstvakantie",
+          "DTSTART;VALUE=DATE:20261019",
+          "DTEND;VALUE=DATE:20261027",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      {
+        from: new Date("2026-10-01T00:00:00Z"),
+        to: new Date("2026-11-15T00:00:00Z"),
+        zone: "Europe/Amsterdam",
+      },
+    );
+
+    expect(events[0]).toMatchObject({
+      allDay: true,
+      date: "2026-10-19",
+      endDate: "2026-10-26",
+    });
+  });
+});

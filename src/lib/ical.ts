@@ -284,9 +284,10 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
       if (start.date.getTime() > toMs || spanEndMs <= fromMs) continue;
 
       const from = localParts(start.date, zone);
-      const lastDay = end
-        ? localParts(new Date(end.date.getTime() - 86_400_000), zone).date
-        : from.date;
+      // DTEND is bij een hele dag exclusief, dus een dag eraf. In kalender-
+      // dagen tellen, niet in 24 uur: begint of eindigt de zomertijd binnen de
+      // periode, dan duurt zo'n dag 23 of 25 uur en viel de laatste dag weg.
+      const lastDay = end ? addDays(localParts(end.date, zone).date, -1) : from.date;
       out.push({
         uid: `${uid}@${from.date}`,
         title,
@@ -300,8 +301,11 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
       continue;
     }
 
-    // Zonder eindtijd: een uur aannemen.
-    const durationMs = end ? end.date.getTime() - start.date.getTime() : 60 * 60_000;
+    // Eindtijd, anders de meegestuurde duur, anders een uur aannemen.
+    const durationMs =
+      (end ? end.date.getTime() - start.date.getTime() : null) ??
+      parseDuration(event.props.get("DURATION")?.value) ??
+      60 * 60_000;
     if (durationMs <= 0) continue;
 
     // Dagen waarvoor een losse afwijking bestaat slaat de reeks over: die
@@ -343,6 +347,29 @@ function addDays(dateKey: string, days: number): string {
   moment.setUTCDate(moment.getUTCDate() + days);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${moment.getUTCFullYear()}-${pad(moment.getUTCMonth() + 1)}-${pad(moment.getUTCDate())}`;
+}
+
+/**
+ * Leest een duur zoals iCalendar die schrijft: `PT1H30M`, `P1D`, `P1DT2H15M`.
+ * Zonder dit werd een afspraak zonder DTEND stil een uur lang, terwijl agenda's
+ * (Google voorop) juist vaak DURATION meesturen in plaats van een eindtijd.
+ * Geeft milliseconden, of null als de tekst niet klopt.
+ */
+function parseDuration(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const match = /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(
+    raw.trim().toUpperCase(),
+  );
+  if (!match) return null;
+
+  const [, sign, weeks, days, hours, minutes, seconds] = match;
+  const total =
+    (Number(weeks ?? 0) * 7 + Number(days ?? 0)) * 86_400 +
+    Number(hours ?? 0) * 3600 +
+    Number(minutes ?? 0) * 60 +
+    Number(seconds ?? 0);
+  if (total === 0) return null;
+  return (sign === "-" ? -total : total) * 1000;
 }
 
 /** Weekdag van een kalenderdag (0 = zondag), zonder tijdzone-invloed. */
