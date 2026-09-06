@@ -31,8 +31,9 @@ export function usePushQueue(): void {
     if (settings.reminderMinutes === null || settings.reminderMinutes === undefined) return;
 
     let active = true;
+    let retry: ReturnType<typeof setTimeout> | null = null;
 
-    void (async () => {
+    async function send(): Promise<void> {
       if (!(await pushEnabled()) || !active) return;
 
       const messages = plannedReminders(activities, settings, new Date(), DAYS_AHEAD).map(
@@ -46,14 +47,27 @@ export function usePushQueue(): void {
       const fingerprint = messages.map((m) => `${m.sendAt}|${m.title}`).join("\n");
       const previous = lastSent.current;
       if (previous && previous.fingerprint === fingerprint) return;
-      if (previous && Date.now() - previous.at < MIN_INTERVAL_MS) return;
+
+      // Te snel na de vorige keer? Dan even wachten in plaats van weggooien.
+      // Wie binnen vijf minuten twee dingen verzette, kreeg de tweede
+      // wijziging nooit op de server: dit effect draait pas weer bij een
+      // volgende wijziging, en tot die tijd stonden er verkeerde meldingen
+      // klaar.
+      const wait = previous ? MIN_INTERVAL_MS - (Date.now() - previous.at) : 0;
+      if (wait > 0) {
+        retry = setTimeout(() => void send(), wait);
+        return;
+      }
 
       lastSent.current = { fingerprint, at: Date.now() };
       if (active) await replaceQueue(messages);
-    })();
+    }
+
+    void send();
 
     return () => {
       active = false;
+      if (retry) clearTimeout(retry);
     };
   }, [activities, settings, hydrated]);
 }
