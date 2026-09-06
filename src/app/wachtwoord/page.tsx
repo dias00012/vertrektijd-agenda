@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { Spinner } from "@/components/ui";
+import { useT } from "@/hooks/useLanguage";
 
 /**
  * Nieuw wachtwoord kiezen. Hier kom je terecht via de link uit de herstelmail:
@@ -11,6 +12,7 @@ import { Spinner } from "@/components/ui";
  */
 export default function ResetPasswordPage() {
   const { configured, ready, user, updatePassword } = useAuth();
+  const t = useT();
 
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
@@ -31,7 +33,7 @@ export default function ResetPasswordPage() {
     setError(null);
 
     if (password !== repeat) {
-      setError("De twee wachtwoorden zijn niet gelijk.");
+      setError(t("password.mismatch"));
       return;
     }
 
@@ -40,7 +42,7 @@ export default function ResetPasswordPage() {
     setBusy(false);
 
     if (!result.ok) {
-      setError(result.error ?? "Het wachtwoord kon niet worden gewijzigd.");
+      setError(result.error ?? t("password.failed"));
       return;
     }
     setDone(true);
@@ -49,42 +51,42 @@ export default function ResetPasswordPage() {
   return (
     <div>
       <header className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Nieuw wachtwoord</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("password.title")}</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Kies een nieuw wachtwoord voor je account.
+          {t("password.subtitle")}
         </p>
       </header>
 
       <section className="card px-5 py-5">
         {!configured ? (
           <p className="text-sm" style={{ color: "var(--muted)" }}>
-            Accounts zijn voor deze app nog niet ingesteld.
+            {t("password.notConfigured")}
           </p>
         ) : !ready || (!user && !waited) ? (
-          <Spinner size={16} label="Even geduld…" />
+          <Spinner size={16} label={t("password.wait")} />
         ) : done ? (
           <div className="space-y-3">
             <p className="text-sm" style={{ color: "var(--accent)" }} role="status">
-              &#10003; Je wachtwoord is gewijzigd. Je bent nu ingelogd.
+              &#10003; {t("password.changed")}
             </p>
             <Link href="/" className="btn btn-primary inline-flex">
-              Naar de agenda
+              {t("password.toAgenda")}
             </Link>
           </div>
         ) : !user ? (
           <div className="space-y-3">
             <p className="text-sm">
-              Deze link is verlopen of al gebruikt. Vraag een nieuwe herstelmail aan.
+              {t("password.expired")}
             </p>
             <Link href="/instellingen" className="btn btn-ghost inline-flex">
-              Naar Instellingen
+              {t("password.toSettings")}
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="label" htmlFor="new-password">
-                Nieuw wachtwoord
+                {t("password.new")}
               </label>
               <input
                 id="new-password"
@@ -97,13 +99,13 @@ export default function ResetPasswordPage() {
                 minLength={6}
               />
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                Minstens 6 tekens.
+                {t("account.minChars")}
               </p>
             </div>
 
             <div>
               <label className="label" htmlFor="repeat-password">
-                Herhaal wachtwoord
+                {t("password.repeat")}
               </label>
               <input
                 id="repeat-password"
@@ -124,7 +126,7 @@ export default function ResetPasswordPage() {
             ) : null}
 
             <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={busy}>
-              {busy ? <Spinner size={16} /> : "Wachtwoord opslaan"}
+              {busy ? <Spinner size={16} /> : t("password.save")}
             </button>
           </form>
         )}

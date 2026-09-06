@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { parseIcs, type IcsEvent } from "@/lib/ical";
 import { addDaysToKey, formatDateLabel, todayKey } from "@/lib/time";
@@ -26,6 +27,7 @@ const WEEKS_AHEAD = 8;
  */
 export function TimetableImport() {
   const { settings, replaceActivities, activities, categories } = useAgenda();
+  const t = useT();
 
   const [url, setUrl] = useState("");
   const [events, setEvents] = useState<IcsEvent[] | null>(null);
@@ -46,9 +48,7 @@ export function TimetableImport() {
     const found = parseIcs(text, { from, to });
     if (found.length === 0) {
       setEvents(null);
-      setError(
-        `Geen lessen gevonden in de komende ${WEEKS_AHEAD} weken. Klopt de link, en staat je rooster er al in?`,
-      );
+      setError(t("timetable.none", { weeks: WEEKS_AHEAD }));
       return;
     }
     setError(null);
@@ -67,12 +67,12 @@ export function TimetableImport() {
       });
       const payload = (await response.json()) as { text?: string; error?: string };
       if (!response.ok || !payload.text) {
-        setError(payload.error ?? "Het rooster kon niet worden opgehaald.");
+        setError(payload.error ?? t("timetable.fetchFailed"));
         return;
       }
       read(payload.text);
     } catch {
-      setError("Het rooster kon niet worden opgehaald. Controleer je internetverbinding.");
+      setError(t("timetable.offline"));
     } finally {
       setLoading(false);
     }
@@ -84,7 +84,7 @@ export function TimetableImport() {
     try {
       read(await file.text());
     } catch {
-      setError("Dit bestand kon niet worden gelezen.");
+      setError(t("timetable.readFailed"));
     }
   }
 
@@ -110,8 +110,10 @@ export function TimetableImport() {
     replaceActivities({ remove: existing.map((item) => item.id), add: drafts, source: SOURCE });
 
     setDone(
-      `${drafts.length} ${drafts.length === 1 ? "les" : "lessen"} in je agenda gezet` +
-        (existing.length > 0 ? `, ${existing.length} uit de vorige import vervangen.` : "."),
+      (drafts.length === 1
+        ? t("timetable.importedOne")
+        : t("timetable.imported", { count: drafts.length })) +
+        (existing.length > 0 ? t("timetable.replaced", { count: existing.length }) : "."),
     );
     setEvents(null);
   }
@@ -121,17 +123,14 @@ export function TimetableImport() {
 
   return (
     <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#127979; Schoolrooster koppelen</h2>
+      <h2 className="text-base font-semibold">&#127979; {t("timetable.title")}</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        Haal je rooster op uit Magister, Somtoday, Zermelo, Google Agenda of Outlook, zodat je het
-        niet hoeft over te typen. Je hebt de <strong>iCal-link</strong> nodig; die vind je in dat
-        systeem onder &ldquo;agenda exporteren&rdquo;, &ldquo;abonneren&rdquo; of
-        &ldquo;agenda delen&rdquo;.
+        {t("timetable.body")}
       </p>
 
       <div className="mt-3">
         <label className="label" htmlFor="rooster-url">
-          Link naar je rooster
+          {t("timetable.urlLabel")}
         </label>
         <input
           id="rooster-url"
@@ -151,7 +150,7 @@ export function TimetableImport() {
           onClick={() => void fetchUrl()}
           disabled={loading || url.trim().length === 0}
         >
-          {loading ? <Spinner size={16} /> : "Rooster ophalen"}
+          {loading ? <Spinner size={16} /> : t("timetable.fetch")}
         </button>
         <button
           type="button"
@@ -159,7 +158,7 @@ export function TimetableImport() {
           onClick={() => fileInput.current?.click()}
           disabled={loading}
         >
-          Of kies een .ics-bestand
+          {t("timetable.orFile")}
         </button>
         <input
           ref={fileInput}
@@ -189,9 +188,13 @@ export function TimetableImport() {
       {events ? (
         <div className="mt-4 border-t pt-4" style={{ borderColor: "var(--line)" }}>
           <p className="text-sm font-semibold">
-            {events.length} {events.length === 1 ? "les" : "lessen"} gevonden
+            {events.length === 1
+              ? t("timetable.foundOne")
+              : t("timetable.found", { count: events.length })}
             <span className="font-normal" style={{ color: "var(--muted)" }}>
-              {lastDate ? ` tot en met ${formatDateLabel(lastDate, new Date())}` : ""}
+              {lastDate
+                ? ` ${t("timetable.until", { date: formatDateLabel(lastDate, new Date()) })}`
+                : ""}
             </span>
           </p>
 
@@ -205,24 +208,24 @@ export function TimetableImport() {
               </li>
             ))}
             {events.length > preview.length ? (
-              <li>en nog {events.length - preview.length} andere.</li>
+              <li>{t("timetable.andMore", { count: events.length - preview.length })}</li>
             ) : null}
           </ul>
 
           <div className="mt-4">
             <LocationInput
-              label="Waar vinden deze lessen plaats?"
+              label={t("timetable.where")}
               value={location}
               onChange={setLocation}
               required
               places={placeChoices(settings)}
-              placeholder="Adres van je school"
-              hint="Het lokaal uit je rooster is geen adres; hiermee kan de app wel je reistijd berekenen."
+              placeholder={t("timetable.wherePlaceholder")}
+              hint={t("timetable.whereHint")}
             />
           </div>
 
           <div className="mt-3">
-            <span className="label">Als welk type?</span>
+            <span className="label">{t("timetable.asType")}</span>
             <div className="flex flex-wrap gap-1.5">
               {categories.map((item) => (
                 <button
@@ -244,9 +247,7 @@ export function TimetableImport() {
 
           {existing.length > 0 ? (
             <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-              Je hebt al {existing.length} lessen uit een eerder rooster staan. Die worden
-              vervangen, zodat verschoven en uitgevallen uren vanzelf kloppen. Activiteiten die je
-              zelf hebt toegevoegd blijven staan.
+              {t("timetable.replaceNote", { count: existing.length })}
             </p>
           ) : null}
 
@@ -257,15 +258,15 @@ export function TimetableImport() {
               onClick={importAll}
               disabled={!location}
             >
-              In mijn agenda zetten
+              {t("timetable.doImport")}
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setEvents(null)}>
-              Annuleren
+              {t("common.cancel")}
             </button>
           </div>
           {!location ? (
             <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
-              Kies eerst het adres van je school.
+              {t("timetable.needPlace")}
             </p>
           ) : null}
         </div>
@@ -273,18 +274,22 @@ export function TimetableImport() {
 
       {existing.length > 0 && !events ? (
         <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-          &#128197; Er staan nu {existing.length} lessen uit je rooster in de agenda, tot en met{" "}
-          {formatDateLabel(
-            existing.map((item) => item.date).sort().at(-1) ?? todayKey(),
-            new Date(),
-          )}
-          . Haal je rooster opnieuw op zodra er iets verandert.
+          &#128197;{" "}
+          {t("timetable.current", {
+            count: existing.length,
+            date: formatDateLabel(
+              existing.map((item) => item.date).sort().at(-1) ?? todayKey(),
+              new Date(),
+            ),
+          })}
         </p>
       ) : null}
 
       <p className="mt-3 text-[0.7rem]" style={{ color: "var(--muted)" }}>
-        We halen lessen op tot {WEEKS_AHEAD} weken vooruit (nu tot{" "}
-        {formatDateLabel(addDaysToKey(todayKey(), WEEKS_AHEAD * 7), new Date())}).
+        {t("timetable.horizon", {
+          weeks: WEEKS_AHEAD,
+          date: formatDateLabel(addDaysToKey(todayKey(), WEEKS_AHEAD * 7), new Date()),
+        })}
       </p>
     </section>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useAgenda } from "@/hooks/useAgenda";
@@ -15,6 +16,7 @@ import { Spinner } from "./ui";
 export function AccountSection() {
   const { configured, ready, user, signIn, signUp, signOut, resetPassword } = useAuth();
   const { sync } = useAgenda();
+  const t = useT();
 
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
@@ -36,7 +38,7 @@ export function AccountSection() {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) {
-        setError("Je sessie is verlopen. Log opnieuw in en probeer het nog eens.");
+        setError(t("account.sessionExpired"));
         return;
       }
 
@@ -46,15 +48,15 @@ export function AccountSection() {
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => ({}))) as { error?: string };
-        setError(payload.error ?? "Het account kon niet worden verwijderd.");
+        setError(payload.error ?? t("account.deleteFailed"));
         return;
       }
 
       await signOut();
       setConfirmDelete(false);
-      setNotice("Je account en alle gegevens erin zijn verwijderd.");
+      setNotice(t("account.deleted"));
     } catch {
-      setError("Het account kon niet worden verwijderd. Controleer je internetverbinding.");
+      setError(t("account.deleteOffline"));
     } finally {
       setDeleting(false);
     }
@@ -65,10 +67,9 @@ export function AccountSection() {
   if (!configured) {
     return (
       <section className="card mt-4 px-5 py-5">
-        <h2 className="text-base font-semibold">&#128100; Account &amp; synchronisatie</h2>
+        <h2 className="text-base font-semibold">&#128100; {t("account.title")}</h2>
         <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-          Synchronisatie is nog niet ingesteld. Je gegevens staan lokaal op dit apparaat. Zodra
-          accounts zijn geactiveerd kun je hier inloggen om je agenda tussen apparaten te delen.
+          {t("account.notConfigured")}
         </p>
       </section>
     );
@@ -88,22 +89,18 @@ export function AccountSection() {
     setBusy(false);
 
     if (!result.ok) {
-      setError(result.error ?? "Er ging iets mis.");
+      setError(result.error ?? t("account.somethingWrong"));
       return;
     }
     if (mode === "reset") {
       // Bewust geen onderscheid tussen wel/niet bestaande accounts: dat zou
       // verklappen wie hier een account heeft.
-      setNotice(
-        "Als er een account is met dit e-mailadres, staat er een herstelmail in je mailbox. Kijk ook even in je spam.",
-      );
+      setNotice(t("account.resetSent"));
       setMode("login");
       return;
     }
     if (result.needsConfirmation) {
-      setNotice(
-        "Account aangemaakt. Bevestig je e-mailadres via de link die we je hebben gestuurd en log daarna in.",
-      );
+      setNotice(t("account.created"));
       setMode("login");
       setPassword("");
     }
@@ -111,27 +108,27 @@ export function AccountSection() {
 
   return (
     <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128100; Account &amp; synchronisatie</h2>
+      <h2 className="text-base font-semibold">&#128100; {t("account.title")}</h2>
 
       {!ready ? (
         <div className="mt-3">
-          <Spinner size={16} label="Laden…" />
+          <Spinner size={16} label={t("common.loading")} />
         </div>
       ) : user ? (
         <div className="mt-3 space-y-3">
           <p className="text-sm">
-            Ingelogd als <strong>{user.email}</strong>
+            {t("account.loggedInAs")} <strong>{user.email}</strong>
           </p>
           <p className="text-xs" style={{ color: "var(--muted)" }}>
             {sync.status === "syncing"
-              ? "↻ Bezig met synchroniseren…"
+              ? `↻ ${t("account.syncing")}`
               : sync.status === "error"
-                ? `⚠️ Synchroniseren mislukt: ${sync.error ?? ""}`
-                : "✓ Je agenda, schoolwerk en instellingen worden bewaard in je account en gedeeld tussen je apparaten."}
+                ? `⚠️ ${t("account.syncFailed", { error: sync.error ?? "" })}`
+                : `✓ ${t("account.syncOk")}`}
           </p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn btn-ghost" onClick={() => void signOut()}>
-              Uitloggen
+              {t("account.logout")}
             </button>
             {!confirmDelete ? (
               <button
@@ -142,7 +139,7 @@ export function AccountSection() {
                   setError(null);
                 }}
               >
-                Account verwijderen
+                {t("account.delete")}
               </button>
             ) : null}
           </div>
@@ -153,12 +150,10 @@ export function AccountSection() {
               style={{ borderColor: "color-mix(in srgb, var(--danger) 40%, transparent)" }}
             >
               <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
-                Weet je het zeker?
+                {t("account.deleteSure")}
               </p>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                Je account, je agenda, je schoolwerk en je locaties worden definitief verwijderd.
-                Dit kan niet ongedaan worden gemaakt. Wil je je gegevens bewaren, exporteer ze dan
-                eerst hieronder bij Back-up.
+                {t("account.deleteBody")}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
@@ -167,7 +162,7 @@ export function AccountSection() {
                   onClick={() => void deleteAccount()}
                   disabled={deleting}
                 >
-                  {deleting ? <Spinner size={16} /> : "Ja, verwijder mijn account"}
+                  {deleting ? <Spinner size={16} /> : t("account.deleteConfirm")}
                 </button>
                 <button
                   type="button"
@@ -175,7 +170,7 @@ export function AccountSection() {
                   onClick={() => setConfirmDelete(false)}
                   disabled={deleting}
                 >
-                  Annuleren
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -193,20 +188,20 @@ export function AccountSection() {
         <>
           <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
             {mode === "reset"
-              ? "Vul je e-mailadres in. We sturen je een link waarmee je een nieuw wachtwoord kiest."
-              : "Log in om je agenda en schoolwerk te bewaren en op al je apparaten hetzelfde te hebben. Nog geen account? Maak er gratis een aan."}
+              ? t("account.resetIntro")
+              : t("account.loginIntro")}
           </p>
 
           <div
             className="mt-3 flex rounded-xl border p-0.5"
             style={{ borderColor: "var(--line)" }}
             role="group"
-            aria-label="Inloggen of registreren"
+            aria-label={t("account.loginOrRegister")}
           >
             {(
               [
-                { id: "login", label: "Inloggen" },
-                { id: "signup", label: "Account aanmaken" },
+                { id: "login", key: "account.login" },
+                { id: "signup", key: "account.register" },
               ] as const
             ).map((option) => (
               <button
@@ -224,7 +219,7 @@ export function AccountSection() {
                   color: mode === option.id ? "var(--ink)" : "var(--muted)",
                 }}
               >
-                {option.label}
+                {t(option.key)}
               </button>
             ))}
           </div>
@@ -232,7 +227,7 @@ export function AccountSection() {
           <form onSubmit={handleSubmit} className="mt-3 space-y-3">
             <div>
               <label className="label" htmlFor="account-email">
-                E-mailadres
+                {t("account.email")}
               </label>
               <input
                 id="account-email"
@@ -248,7 +243,7 @@ export function AccountSection() {
             {mode !== "reset" ? (
               <div>
                 <label className="label" htmlFor="account-password">
-                  Wachtwoord
+                  {t("account.password")}
                 </label>
                 <input
                   id="account-password"
@@ -262,7 +257,7 @@ export function AccountSection() {
                 />
                 {mode === "signup" ? (
                   <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                    Minstens 6 tekens.
+                    {t("account.minChars")}
                   </p>
                 ) : null}
               </div>
@@ -283,11 +278,11 @@ export function AccountSection() {
               {busy ? (
                 <Spinner size={16} />
               ) : mode === "login" ? (
-                "Inloggen"
+                t("account.login")
               ) : mode === "signup" ? (
-                "Account aanmaken"
+                t("account.register")
               ) : (
-                "Stuur herstelmail"
+                t("account.sendReset")
               )}
             </button>
 
@@ -302,7 +297,7 @@ export function AccountSection() {
                 className="block text-xs underline"
                 style={{ color: "var(--muted)" }}
               >
-                Wachtwoord vergeten?
+                {t("account.forgot")}
               </button>
             ) : mode === "reset" ? (
               <button
@@ -315,7 +310,7 @@ export function AccountSection() {
                 className="block text-xs underline"
                 style={{ color: "var(--muted)" }}
               >
-                &larr; Terug naar inloggen
+                &larr; {t("account.backToLogin")}
               </button>
             ) : null}
           </form>
@@ -329,11 +324,12 @@ export function AccountSection() {
 
 /** Waar je gegevens blijven — hoort zichtbaar te zijn waar je je account maakt. */
 function PrivacyLink() {
+  const t = useT();
   return (
     <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
-      Wat we bewaren en hoe je het weghaalt staat in de{" "}
+      {t("account.privacyIntro")}{" "}
       <Link href="/privacy" style={{ color: "var(--accent)" }}>
-        privacyverklaring
+        {t("account.privacyLink")}
       </Link>
       .
     </p>
