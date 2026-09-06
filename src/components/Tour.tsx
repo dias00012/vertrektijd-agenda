@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/hooks/useLanguage";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 /**
  * Rondleiding door de app.
@@ -15,41 +17,16 @@ import { useRouter } from "next/navigation";
 interface Stop {
   href: string;
   emoji: string;
-  title: string;
-  body: string;
+  titleKey: TranslationKey;
+  bodyKey: TranslationKey;
 }
 
 const STOPS: Stop[] = [
-  {
-    href: "/",
-    emoji: "☀️",
-    title: "Vandaag",
-    body: "Je startscherm. Bovenaan staat je eerstvolgende activiteit met één groot getal: hoe laat je de deur uit moet. Bij OV zie je daaronder welke trein en bussen je pakt, en of ze op tijd rijden.",
-  },
-  {
-    href: "/agenda",
-    emoji: "🗓️",
-    title: "Agenda",
-    body: "Je planning per dag, week of maand. In het weekraster zie je de reistijd als gestreepte blokken vóór en ná elke activiteit. Zo zie je in één oogopslag hoeveel van je dag onderweg opgaat.",
-  },
-  {
-    href: "/reizen",
-    emoji: "🚆",
-    title: "Reisplanner",
-    body: "Een losse reisplanner, zoals 9292. Kies van en naar: een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
-  },
-  {
-    href: "/schoolwerk",
-    emoji: "📚",
-    title: "Schoolwerk",
-    body: "Je opdrachten op deadline en je toetsen op datum, met een kleur voor hoe dringend het is. Per opdracht kun je stappen afvinken, en je ziet hoeveel leertijd je er al voor hebt ingepland.",
-  },
-  {
-    href: "/instellingen",
-    emoji: "⚙️",
-    title: "Instellingen",
-    body: "Je thuislocatie en standaard vervoermiddel, herinneringen vóór vertrek, opgeslagen locaties, en een back-up van alles als één bestand. Ook je account, als je je agenda tussen telefoon en laptop wilt delen.",
-  },
+  { href: "/", emoji: "☀️", titleKey: "nav.today", bodyKey: "tour.today.body" },
+  { href: "/agenda", emoji: "🗓️", titleKey: "nav.agenda", bodyKey: "tour.agenda.body" },
+  { href: "/reizen", emoji: "🚆", titleKey: "nav.travel", bodyKey: "tour.travel.body" },
+  { href: "/schoolwerk", emoji: "📚", titleKey: "nav.schoolwork", bodyKey: "tour.schoolwork.body" },
+  { href: "/instellingen", emoji: "⚙️", titleKey: "nav.settings", bodyKey: "tour.settings.body" },
 ];
 
 export function Tour({
@@ -60,6 +37,7 @@ export function Tour({
   onAddActivity: () => void;
 }) {
   const router = useRouter();
+  const t = useT();
   const [index, setIndex] = useState(0);
   const stop = STOPS[index];
 
@@ -84,7 +62,7 @@ export function Tour({
     <aside
       role="dialog"
       aria-modal="false"
-      aria-label={`Rondleiding: ${stop.title}`}
+      aria-label={t("tour.label", { title: t(stop.titleKey) })}
       /* Boven de onderbalk op mobiel, rechtsonder op een laptop. */
       className="animate-sheet-in fixed inset-x-3 bottom-[9.5rem] z-40 mx-auto max-w-md lg:inset-x-auto lg:bottom-6 lg:right-6 lg:mx-0"
     >
@@ -104,14 +82,14 @@ export function Tour({
               className="text-[0.65rem] font-semibold uppercase tracking-wider"
               style={{ color: "var(--muted)" }}
             >
-              Rondleiding &middot; {index + 1} van {STOPS.length}
+              {t("tour.progress", { step: index + 1, total: STOPS.length })}
             </p>
-            <h2 className="text-base font-semibold">{stop.title}</h2>
+            <h2 className="text-base font-semibold">{t(stop.titleKey)}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Rondleiding sluiten"
+            aria-label={t("tour.closeLabel")}
             className="shrink-0 text-sm leading-none"
             style={{ color: "var(--muted)" }}
           >
@@ -120,7 +98,7 @@ export function Tour({
         </div>
 
         <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
-          {stop.body}
+          {t(stop.bodyKey)}
         </p>
 
         <div className="mt-3 flex gap-1" aria-hidden>
@@ -140,7 +118,7 @@ export function Tour({
               className="btn btn-ghost px-3 py-1.5 text-xs"
               onClick={() => setIndex(index - 1)}
             >
-              Vorige
+              {t("common.previous")}
             </button>
           ) : (
             <button
@@ -149,7 +127,7 @@ export function Tour({
               style={{ color: "var(--muted)" }}
               onClick={onClose}
             >
-              Overslaan
+              {t("common.skip")}
             </button>
           )}
 
@@ -163,7 +141,7 @@ export function Tour({
                   onAddActivity();
                 }}
               >
-                Eerste activiteit toevoegen
+                {t("tour.finish")}
               </button>
             ) : (
               <button
@@ -171,7 +149,7 @@ export function Tour({
                 className="btn btn-primary px-3 py-1.5 text-xs"
                 onClick={() => setIndex(index + 1)}
               >
-                Volgende
+                {t("common.next")}
               </button>
             )}
           </div>

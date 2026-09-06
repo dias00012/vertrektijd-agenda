@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import { AuthProvider } from "@/hooks/useAuth";
 import { AgendaProvider } from "@/hooks/useAgenda";
 import { AppShell } from "@/components/AppShell";
@@ -37,11 +38,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nl">
       <body>
-        <AuthProvider>
-          <AgendaProvider>
-            <AppShell>{children}</AppShell>
-          </AgendaProvider>
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <AgendaProvider>
+              <AppShell>{children}</AppShell>
+            </AgendaProvider>
+          </AuthProvider>
+        </LanguageProvider>
         <ServiceWorker />
       </body>
     </html>

@@ -1,28 +1,37 @@
 import type { Activity, ActivityOccurrence, Recurrence } from "./types";
 import { parseDateKey } from "./time";
+import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
+
+function word(key: TranslationKey, values?: Record<string, string | number>): string {
+  return translate(getLanguage(), key, values);
+}
 
 /**
  * Wekelijkse herhaling. Een activiteit met een `recurrence` gebruikt zijn eigen
  * `date` als startdatum en verschijnt daarna op elke gekozen weekdag.
  */
 
-/** Weekdagen in Nederlandse volgorde; `value` volgt Date#getDay(). */
-export const WEEKDAYS: { value: number; short: string; long: string }[] = [
-  { value: 1, short: "ma", long: "maandag" },
-  { value: 2, short: "di", long: "dinsdag" },
-  { value: 3, short: "wo", long: "woensdag" },
-  { value: 4, short: "do", long: "donderdag" },
-  { value: 5, short: "vr", long: "vrijdag" },
-  { value: 6, short: "za", long: "zaterdag" },
-  { value: 0, short: "zo", long: "zondag" },
-];
+/**
+ * Weekdagen met maandag eerst; `value` volgt Date#getDay(). De namen volgen de
+ * gekozen taal, dus dit is een functie en geen vaste lijst.
+ */
+export function weekdays(): { value: number; short: string; long: string }[] {
+  return [1, 2, 3, 4, 5, 6, 0].map((value) => ({
+    value,
+    short: word(`weekdayShort.${value}` as TranslationKey),
+    long: word(`weekday.${value}` as TranslationKey),
+  }));
+}
+
+/** Vaste volgorde (ma t/m zo), zonder namen. */
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 const WORKWEEK = [1, 2, 3, 4, 5];
 
 /** Weekdagen op vaste (ma-eerst) volgorde, zonder duplicaten. */
-export function sortWeekdays(weekdays: number[]): number[] {
-  const order = WEEKDAYS.map((day) => day.value);
-  return [...new Set(weekdays)].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+export function sortWeekdays(days: number[]): number[] {
+  return [...new Set(days)].sort((a, b) => WEEK_ORDER.indexOf(a) - WEEK_ORDER.indexOf(b));
 }
 
 /** Valt deze activiteit op de opgegeven dag? */
@@ -56,37 +65,38 @@ export function occurrencesOnDate(activities: Activity[], dateKey: string): Acti
 
 /** Leesbare samenvatting, bv. "Elke werkdag" of "Elke ma, wo t/m 31 dec". */
 export function describeRecurrence(recurrence: Recurrence): string {
-  const weekdays = sortWeekdays(recurrence.weekdays);
-  if (weekdays.length === 0) return "Herhaalt niet";
+  const chosen = sortWeekdays(recurrence.weekdays);
+  if (chosen.length === 0) return word("recurrence.none");
 
   let days: string;
-  if (weekdays.length === 7) {
-    days = "Elke dag";
-  } else if (
-    weekdays.length === WORKWEEK.length &&
-    WORKWEEK.every((day) => weekdays.includes(day))
-  ) {
-    days = "Elke werkdag";
-  } else if (weekdays.length === 1) {
-    days = `Elke ${WEEKDAYS.find((day) => day.value === weekdays[0])?.long ?? ""}`;
+  if (chosen.length === 7) {
+    days = word("recurrence.daily");
+  } else if (chosen.length === WORKWEEK.length && WORKWEEK.every((day) => chosen.includes(day))) {
+    days = word("recurrence.weekdays");
+  } else if (chosen.length === 1) {
+    days = word("recurrence.every", {
+      days: word(`weekday.${chosen[0]}` as TranslationKey),
+    });
   } else {
-    const labels = weekdays.map(
-      (value) => WEEKDAYS.find((day) => day.value === value)?.short ?? "",
-    );
+    const labels = chosen.map((value) => word(`weekdayShort.${value}` as TranslationKey));
     // Aaneengesloten reeks korter weergeven: "ma t/m do". Bij twee dagen is
     // "za, zo" korter en leesbaarder dan "za t/m zo".
-    const positions = weekdays.map((value) => WEEKDAYS.findIndex((day) => day.value === value));
+    const positions = chosen.map((value) => WEEK_ORDER.indexOf(value));
     const contiguous =
-      weekdays.length >= 3 &&
+      chosen.length >= 3 &&
       positions.every((pos, index) => index === 0 || pos === positions[index - 1] + 1);
     days = contiguous
-      ? `Elke ${labels[0]} t/m ${labels[labels.length - 1]}`
-      : `Elke ${labels.join(", ")}`;
+      ? word("recurrence.range", { from: labels[0], to: labels[labels.length - 1] })
+      : word("recurrence.every", { days: labels.join(", ") });
   }
 
   if (!recurrence.until) return days;
   const end = parseDateKey(recurrence.until);
-  return `${days}, t/m ${end.getDate()}-${end.getMonth() + 1}-${end.getFullYear()}`;
+  const date =
+    getLanguage() === "en"
+      ? `${end.getFullYear()}-${end.getMonth() + 1}-${end.getDate()}`
+      : `${end.getDate()}-${end.getMonth() + 1}-${end.getFullYear()}`;
+  return word("recurrence.until", { days, date });
 }
 
 /** Standaardpatroon zodra de gebruiker herhaling aanzet: dezelfde weekdag. */

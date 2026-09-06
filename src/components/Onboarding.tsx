@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { LocationInput } from "./LocationInput";
-import { TRAVEL_MODES } from "@/lib/travelModes";
+import { travelModes } from "@/lib/travelModes";
 import type { GeoLocation, TravelMode } from "@/lib/types";
 
 const DONE_KEY = "agenda.onboarded.v1";
@@ -151,7 +151,7 @@ export function Onboarding({
             </p>
 
             <div className="grid grid-cols-3 gap-2">
-              {TRAVEL_MODES.map((item) => (
+              {travelModes().map((item) => (
                 <button
                   key={item.id}
                   type="button"

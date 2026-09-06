@@ -1,4 +1,10 @@
 import type { Activity, CategoryId, CustomCategory } from "./types";
+import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
+
+function word(key: TranslationKey): string {
+  return translate(getLanguage(), key);
+}
 
 export interface CategoryMeta {
   id: CategoryId;
@@ -12,54 +18,25 @@ export interface CategoryMeta {
   locationExpected: boolean;
 }
 
-export const CATEGORIES: CategoryMeta[] = [
-  {
-    id: "school",
-    label: "School",
-    emoji: "\u{1F3EB}",
-    color: "#3b82f6",
-    placeholder: "Wiskunde",
-    locationExpected: true,
-  },
-  {
-    id: "werk",
-    label: "Werk",
-    emoji: "\u{1F4BC}",
-    color: "#64748b",
-    placeholder: "Werken",
-    locationExpected: true,
-  },
-  {
-    id: "gym",
-    label: "Gym",
-    emoji: "\u{1F3CB}\u{FE0F}",
-    color: "#22c55e",
-    placeholder: "Leg day",
-    locationExpected: true,
-  },
-  {
-    id: "koken",
-    label: "Koken",
-    emoji: "\u{1F373}",
-    color: "#f97316",
-    placeholder: "Pasta koken",
-    locationExpected: false,
-  },
-  {
-    id: "hobby",
-    label: "Hobby",
-    emoji: "\u{1F3AE}",
-    color: "#a855f7",
-    placeholder: "Gamen",
-    locationExpected: false,
-  },
-];
-
-const BY_ID = new Map<CategoryId, CategoryMeta>(CATEGORIES.map((c) => [c.id, c]));
+/** De vijf ingebouwde types. Een functie, want de namen volgen de taal. */
+export function builtinCategories(): CategoryMeta[] {
+  return [
+    { id: "school", emoji: "\u{1F3EB}", color: "#3b82f6", locationExpected: true },
+    { id: "werk", emoji: "\u{1F4BC}", color: "#64748b", locationExpected: true },
+    { id: "gym", emoji: "\u{1F3CB}\u{FE0F}", color: "#22c55e", locationExpected: true },
+    { id: "koken", emoji: "\u{1F373}", color: "#f97316", locationExpected: false },
+    { id: "hobby", emoji: "\u{1F3AE}", color: "#a855f7", locationExpected: false },
+  ].map((item) => ({
+    ...item,
+    label: word(`category.${item.id}` as TranslationKey),
+    placeholder: word(`category.${item.id}.placeholder` as TranslationKey),
+  }));
+}
 
 /** Alleen de vijf ingebouwde types. Voor eigen types: `resolveCategory`. */
 export function getCategory(id: CategoryId): CategoryMeta {
-  return BY_ID.get(id) ?? CATEGORIES[0];
+  const all = builtinCategories();
+  return all.find((item) => item.id === id) ?? all[0];
 }
 
 /** Zelfgemaakt type omzetten naar dezelfde vorm als een ingebouwd type. */
@@ -76,7 +53,7 @@ function toMeta(custom: CustomCategory): CategoryMeta {
 
 /** Alle types die de gebruiker kan kiezen: eerst de standaard, dan de eigen. */
 export function allCategories(custom: CustomCategory[] = []): CategoryMeta[] {
-  return [...CATEGORIES, ...custom.map(toMeta)];
+  return [...builtinCategories(), ...custom.map(toMeta)];
 }
 
 /**
@@ -85,10 +62,11 @@ export function allCategories(custom: CustomCategory[] = []): CategoryMeta[] {
  * altijd getoond kan worden.
  */
 export function resolveCategory(id: CategoryId, custom: CustomCategory[] = []): CategoryMeta {
-  const builtin = BY_ID.get(id);
+  const all = builtinCategories();
+  const builtin = all.find((item) => item.id === id);
   if (builtin) return builtin;
   const own = custom.find((c) => c.id === id);
-  return own ? toMeta(own) : CATEGORIES[0];
+  return own ? toMeta(own) : all[0];
 }
 
 /** Keuzepalet voor een eigen kleur per activiteit. */

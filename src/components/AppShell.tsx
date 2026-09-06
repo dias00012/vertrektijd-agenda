@@ -9,14 +9,15 @@ import { Onboarding } from "./Onboarding";
 import { Tour } from "./Tour";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
+import { useT } from "@/hooks/useLanguage";
 
 const NAV = [
-  { href: "/", label: "Vandaag", icon: "☀️" },
-  { href: "/agenda", label: "Agenda", icon: "\u{1F5D3}️" },
-  { href: "/reizen", label: "Reisplanner", icon: "\u{1F686}" },
-  { href: "/schoolwerk", label: "Schoolwerk", icon: "\u{1F4DA}" },
-  { href: "/instellingen", label: "Instellingen", icon: "⚙️" },
-];
+  { href: "/", key: "nav.today", icon: "☀️" },
+  { href: "/agenda", key: "nav.agenda", icon: "\u{1F5D3}️" },
+  { href: "/reizen", key: "nav.travel", icon: "\u{1F686}" },
+  { href: "/schoolwerk", key: "nav.schoolwork", icon: "\u{1F4DA}" },
+  { href: "/instellingen", key: "nav.settings", icon: "⚙️" },
+] as const;
 
 /**
  * Applicatieframe.
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   /** De rondleiding langs de tabbladen. */
   const [tourOpen, setTourOpen] = useState(false);
   const { settings, hydrated } = useAgenda();
+  const t = useT();
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
   useReminders();
@@ -56,10 +58,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           className="btn btn-primary mb-4 w-full"
           onClick={() => setFormOpen(true)}
         >
-          <span aria-hidden>+</span> Activiteit
+          <span aria-hidden>+</span> {t("shell.add")}
         </button>
 
-        <nav className="flex flex-col gap-0.5" aria-label="Hoofdnavigatie">
+        <nav className="flex flex-col gap-0.5" aria-label={t("nav.main")}>
           {NAV.map((item) => {
             const active = pathname === item.href;
             return (
@@ -76,14 +78,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span aria-hidden className="text-base leading-none">
                   {item.icon}
                 </span>
-                {item.label}
+                {t(item.key)}
               </Link>
             );
           })}
         </nav>
 
         <p className="mt-auto px-3 text-[0.7rem]" style={{ color: "var(--muted)" }}>
-          Weet altijd hoe laat je moet vertrekken.
+          {t("shell.tagline")}
         </p>
       </aside>
 
@@ -101,10 +103,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 🏠
               </span>
               <span className="flex-1">
-                <span className="block font-semibold">Stel je thuislocatie in</span>
-                <span style={{ color: "var(--muted)" }}>
-                  Daarna berekent de app automatisch je vertrektijden.
-                </span>
+                <span className="block font-semibold">{t("shell.setHome.title")}</span>
+                <span style={{ color: "var(--muted)" }}>{t("shell.setHome.body")}</span>
               </span>
               <span aria-hidden style={{ color: "var(--muted)" }}>
                 →
@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               className="btn btn-primary w-full shadow-lg sm:w-auto"
               onClick={() => setFormOpen(true)}
             >
-              <span aria-hidden>+</span> Activiteit toevoegen
+              <span aria-hidden>+</span> {t("shell.addActivity")}
             </button>
           </div>
 
@@ -137,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               boxShadow: "var(--shadow-card)",
               backdropFilter: "blur(12px)",
             }}
-            aria-label="Hoofdnavigatie"
+            aria-label={t("nav.main")}
           >
             {NAV.map((item) => {
               const active = pathname === item.href;
@@ -155,7 +155,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <span aria-hidden className="text-base leading-none">
                     {item.icon}
                   </span>
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               );
             })}

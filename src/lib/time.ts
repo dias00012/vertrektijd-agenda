@@ -1,7 +1,18 @@
+import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
+
 /**
  * Datum- en tijdhelpers. Alles werkt met lokale tijd en de string-formaten
  * "YYYY-MM-DD" en "HH:mm", zodat opgeslagen data leesbaar en tijdzone-stabiel is.
+ *
+ * De teksten volgen de gekozen taal. Deze functies worden vanuit tientallen
+ * plekken aangeroepen, ook buiten componenten, dus ze lezen de taal zelf uit.
  */
+
+/** Kort: één woord in de nu actieve taal. */
+function word(key: TranslationKey): string {
+  return translate(getLanguage(), key);
+}
 
 export const MINUTES_PER_DAY = 24 * 60;
 
@@ -57,37 +68,49 @@ export function toDateTime(dateKey: string, time: string): Date {
 /** "32 min" / "1 u 12 min" */
 export function formatDuration(minutes: number): string {
   const rounded = Math.max(0, Math.round(minutes));
-  if (rounded < 60) return `${rounded} min`;
+  const min = word("time.minutesShort");
+  const hour = word("time.hoursShort");
+  if (rounded < 60) return `${rounded} ${min}`;
   const h = Math.floor(rounded / 60);
   const m = rounded % 60;
-  return m === 0 ? `${h} u` : `${h} u ${m} min`;
+  return m === 0 ? `${h} ${hour}` : `${h} ${hour} ${m} ${min}`;
 }
 
 export function formatDistance(km: number): string {
   if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1).replace(".", ",")} km`;
+  // Nederlands schrijft een komma waar Engels een punt zet.
+  const value = km.toFixed(1);
+  return `${getLanguage() === "en" ? value : value.replace(".", ",")} km`;
 }
 
-const WEEKDAYS = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
-const MONTHS = [
-  "januari", "februari", "maart", "april", "mei", "juni",
-  "juli", "augustus", "september", "oktober", "november", "december",
-];
-
-/** "Vandaag" / "Morgen" / "donderdag 4 september" */
+/**
+ * "Vandaag" / "Morgen" / "donderdag 4 september"
+ *
+ * In het Engels staat de dag voor de maand ("Thursday 4 September" wordt
+ * "Thursday, September 4"), dus de volgorde hangt van de taal af.
+ */
 export function formatDateLabel(dateKey: string, now: Date = new Date()): string {
   const today = toDateKey(now);
-  if (dateKey === today) return "Vandaag";
-  if (dateKey === addDaysToKey(today, 1)) return "Morgen";
-  if (dateKey === addDaysToKey(today, -1)) return "Gisteren";
+  if (dateKey === today) return word("common.today");
+  if (dateKey === addDaysToKey(today, 1)) return word("common.tomorrow");
+  if (dateKey === addDaysToKey(today, -1)) return word("common.yesterday");
+
   const d = parseDateKey(dateKey);
-  return `${WEEKDAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  const weekday = word(`weekday.${d.getDay()}` as TranslationKey);
+  const month = word(`month.${d.getMonth()}` as TranslationKey);
+  return getLanguage() === "en"
+    ? `${weekday}, ${month} ${d.getDate()}`
+    : `${weekday} ${d.getDate()} ${month}`;
 }
 
 /** Korte variant voor kopjes in de weekweergave: "do 4 sep". */
 export function formatDateShort(dateKey: string): string {
   const d = parseDateKey(dateKey);
-  return `${WEEKDAYS[d.getDay()].slice(0, 2)} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}`;
+  const weekday = word(`weekdayShort.${d.getDay()}` as TranslationKey);
+  const month = word(`monthShort.${d.getMonth()}` as TranslationKey);
+  return getLanguage() === "en"
+    ? `${weekday} ${month} ${d.getDate()}`
+    : `${weekday} ${d.getDate()} ${month}`;
 }
 
 
@@ -154,13 +177,14 @@ export function isSameMonth(dateKey: string, otherKey: string): boolean {
 /** "2 sep" */
 export function formatDayMonth(dateKey: string): string {
   const date = parseDateKey(dateKey);
-  return `${date.getDate()} ${MONTHS[date.getMonth()].slice(0, 3)}`;
+  const month = word(`monthShort.${date.getMonth()}` as TranslationKey);
+  return getLanguage() === "en" ? `${month} ${date.getDate()}` : `${date.getDate()} ${month}`;
 }
 
 /** "september 2026" */
 export function formatMonthLabel(dateKey: string): string {
   const date = parseDateKey(dateKey);
-  return `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
+  return `${word(`month.${date.getMonth()}` as TranslationKey)} ${date.getFullYear()}`;
 }
 
 /** "31 aug – 6 sep" */

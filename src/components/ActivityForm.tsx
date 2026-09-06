@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ACTIVITY_COLORS, activityColor, resolveCategory } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
-import { WEEKDAYS, defaultRecurrence, sortWeekdays } from "@/lib/recurrence";
+import { defaultRecurrence, sortWeekdays, weekdays } from "@/lib/recurrence";
 import { placeChoices, placeForCategory } from "@/lib/places";
-import { TRAVEL_MODES, travelModeMeta } from "@/lib/travelModes";
+import { travelModeMeta, travelModes } from "@/lib/travelModes";
 import { LocationInput } from "./LocationInput";
 import type {
   Activity,
@@ -570,7 +570,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                 <div>
                   <span className="label">Op deze dagen</span>
                   <div className="flex flex-wrap gap-1.5">
-                    {WEEKDAYS.map((day) => {
+                    {weekdays().map((day) => {
                       const active = draft.recurrence!.weekdays.includes(day.value);
                       return (
                         <button
@@ -673,7 +673,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
             <fieldset>
               <legend className="label">Hoe reis je hierheen?</legend>
               <div className="grid grid-cols-3 gap-2">
-                {TRAVEL_MODES.map((item) => {
+                {travelModes().map((item) => {
                   const active = draft.travelMode === item.id;
                   return (
                     <button

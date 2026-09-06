@@ -1,4 +1,10 @@
 import type { TravelLeg, TravelLegMode, TravelMode } from "./types";
+import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
+
+function word(key: TranslationKey, values?: Record<string, string | number>): string {
+  return translate(getLanguage(), key, values);
+}
 
 interface TravelModeMeta {
   id: TravelMode;
@@ -11,20 +17,31 @@ interface TravelModeMeta {
  * Alle vervoermiddelen die het datamodel kent. "walk" staat er nog in zodat
  * oude activiteiten die op lopen stonden hun eigen naam en icoon houden.
  */
-export const ALL_TRAVEL_MODES: TravelModeMeta[] = [
-  { id: "car", label: "Auto", emoji: "\u{1F697}", hint: "Snelste route met de auto" },
-  { id: "bike", label: "Fiets", emoji: "\u{1F6B2}", hint: "Fietsroute" },
-  { id: "transit", label: "OV", emoji: "\u{1F686}", hint: "Trein, bus, tram en metro" },
-  { id: "walk", label: "Lopen", emoji: "\u{1F6B6}", hint: "Wandelroute" },
-];
+const MODE_EMOJI: Record<TravelMode, string> = {
+  car: "\u{1F697}",
+  bike: "\u{1F6B2}",
+  transit: "\u{1F686}",
+  walk: "\u{1F6B6}",
+};
+
+/** Alle vervoermiddelen, met namen in de gekozen taal. */
+export function allTravelModes(): TravelModeMeta[] {
+  return (["car", "bike", "transit", "walk"] as TravelMode[]).map((id) => ({
+    id,
+    emoji: MODE_EMOJI[id],
+    label: word(`travelMode.${id}` as TranslationKey),
+    hint: word(`travelMode.${id}.hint` as TranslationKey),
+  }));
+}
 
 /** De vervoermiddelen die je kunt kiezen bij een activiteit. */
-export const TRAVEL_MODES: TravelModeMeta[] = ALL_TRAVEL_MODES.filter((m) => m.id !== "walk");
-
-const MODE_BY_ID = new Map(ALL_TRAVEL_MODES.map((m) => [m.id, m]));
+export function travelModes(): TravelModeMeta[] {
+  return allTravelModes().filter((mode) => mode.id !== "walk");
+}
 
 export function travelModeMeta(mode: TravelMode) {
-  return MODE_BY_ID.get(mode) ?? ALL_TRAVEL_MODES[0];
+  const all = allTravelModes();
+  return all.find((item) => item.id === mode) ?? all[0];
 }
 
 /** Icoon per onderdeel van een OV-reis. */
@@ -45,16 +62,20 @@ export const LEG_EMOJI: Record<TravelLegMode, string> = {
  * "Sprinter naar Amsterdam Centraal" of "Lopen naar Almere Centrum".
  */
 export function describeLeg(leg: TravelLeg): string {
-  if (leg.mode === "walk") return leg.to ? `Lopen naar ${leg.to}` : "Lopen";
-  if (leg.mode === "bike") return leg.to ? `Fietsen naar ${leg.to}` : "Fietsen";
+  if (leg.mode === "walk") {
+    return leg.to ? word("leg.walkTo", { place: leg.to }) : word("leg.walk");
+  }
+  if (leg.mode === "bike") {
+    return leg.to ? word("leg.bikeTo", { place: leg.to }) : word("leg.bike");
+  }
 
   // Het ritnummer staat soms al in de lijnnaam ("ICD 2422"); niet verdubbelen.
   const name =
     leg.line && leg.trip && !leg.line.includes(leg.trip)
       ? `${leg.line} ${leg.trip}`
       : (leg.line ?? leg.trip ?? "");
-  const direction = leg.headsign ? ` richting ${leg.headsign}` : "";
-  return name ? `${name}${direction}` : leg.to || "Verder reizen";
+  if (!name) return leg.to || word("leg.continue");
+  return leg.headsign ? word("leg.towards", { line: name, headsign: leg.headsign }) : name;
 }
 
 /** "HH:mm" uit een ISO-tijd, in lokale tijd. */

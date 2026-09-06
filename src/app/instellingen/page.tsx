@@ -8,9 +8,10 @@ import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { RemindersSection } from "@/components/RemindersSection";
 import { TimetableImport } from "@/components/TimetableImport";
+import { LanguageSection } from "@/components/LanguageSection";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
-import { TRAVEL_MODES } from "@/lib/travelModes";
+import { travelModes } from "@/lib/travelModes";
 import type { GeoLocation, TravelMode } from "@/lib/types";
 
 const MAX_BUFFER_MINUTES = 120;
@@ -62,6 +63,7 @@ export default function SettingsPage() {
         </p>
       </header>
 
+      <LanguageSection />
       {hydrated ? <AccountSection /> : null}
 
       {!hydrated ? (
@@ -115,7 +117,7 @@ export default function SettingsPage() {
           <fieldset>
             <legend className="label">Standaard vervoermiddel</legend>
             <div className="grid grid-cols-3 gap-2">
-              {TRAVEL_MODES.map((item) => {
+              {travelModes().map((item) => {
                 const active = mode === item.id;
                 return (
                   <button
