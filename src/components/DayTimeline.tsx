@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
@@ -77,6 +78,7 @@ function TimelineRow({
   onSelect: () => void;
 }) {
   const { categoryFor } = useAgenda();
+  const t = useT();
   const category = categoryFor(entry.activity.category);
   const color = activityColor(entry.activity, category);
   const isDeparture = entry.kind === "departure";
@@ -117,23 +119,30 @@ function TimelineRow({
                 {entry.activity.travel
                   ? travelModeMeta(entry.activity.travel.mode).emoji
                   : "\u{1F697}"}{" "}
-                Vertrekken naar {entry.activity.title.toLowerCase()}
+                {t("timeline.leaveFor", { title: entry.activity.title.toLowerCase() })}
               </>
             ) : (
-              <>&#8617;&#65039; Terug naar huis</>
+              <>&#8617;&#65039; {t("timeline.backHomeTitle")}</>
             )}
           </span>
           {isDeparture && entry.activity.travel ? (
             <span className="block text-xs" style={{ color: "var(--muted)" }}>
-              {formatDuration(entry.activity.travel.durationMinutes)}{" "}
-              {entry.activity.travel.mode === "car" ? "rijden" : "reizen"} naar{" "}
-              {entry.activity.location?.label}
+              {t("timeline.travelTo", {
+                duration: formatDuration(entry.activity.travel.durationMinutes),
+                verb: t(
+                  entry.activity.travel.mode === "car" ? "timeline.drive" : "timeline.travel",
+                ),
+                place: entry.activity.location?.label ?? "",
+              })}
             </span>
           ) : null}
           {isReturn && entry.returnMinutes !== undefined ? (
             <span className="block text-xs tabular-nums" style={{ color: "var(--muted)" }}>
-              {formatDuration(entry.returnMinutes)} rijden &middot; thuis om{" "}
-              {minutesToTime(entry.minutes + entry.returnMinutes)}
+              {t("timeline.backHome", {
+                duration: formatDuration(entry.returnMinutes),
+                verb: t("timeline.drive"),
+                time: minutesToTime(entry.minutes + entry.returnMinutes),
+              })}
             </span>
           ) : null}
         </span>
@@ -150,7 +159,7 @@ function TimelineRow({
             {entry.activity.source === "leerplan" ||
             entry.activity.linkedTaskId ||
             entry.activity.linkedExamId ? (
-              <span aria-hidden title="Leer-/werkblok uit je leerplan">
+              <span aria-hidden title={t("timeline.studyBlock")}>
                 📚
               </span>
             ) : null}

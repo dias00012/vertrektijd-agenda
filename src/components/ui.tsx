@@ -1,10 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useT } from "@/hooks/useLanguage";
 
 /** Kleine, gedeelde UI-bouwstenen. */
 
 export function Spinner({ size = 16, label }: { size?: number; label?: string }) {
+  const t = useT();
   return (
     <span className="inline-flex items-center gap-2" role="status" aria-live="polite">
       <span
@@ -19,7 +21,7 @@ export function Spinner({ size = 16, label }: { size?: number; label?: string })
           animation: "spin 700ms linear infinite",
         }}
       />
-      {label ? <span className="text-xs">{label}</span> : <span className="sr-only">Bezig…</span>}
+      {label ? <span className="text-xs">{label}</span> : <span className="sr-only">{t("ui.busy")}</span>}
     </span>
   );
 }
@@ -50,6 +52,7 @@ export function EmptyState({
 }
 
 export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?: () => void }) {
+  const t = useT();
   return (
     <p
       className="flex flex-wrap items-center gap-2 text-xs"
@@ -59,7 +62,7 @@ export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?
       <span>⚠️ {children}</span>
       {onRetry ? (
         <button type="button" onClick={onRetry} className="underline underline-offset-2">
-          Opnieuw proberen
+          {t("common.retry")}
         </button>
       ) : null}
     </p>

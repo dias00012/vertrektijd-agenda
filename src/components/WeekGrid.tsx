@@ -5,6 +5,7 @@ import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { layoutDay, timeRangeFor, type PositionedActivity } from "@/lib/agenda";
 import { calendarWeekKeys, minutesToTime, pad2, parseDateKey, toDateKey } from "@/lib/time";
+import { useT } from "@/hooks/useLanguage";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -155,6 +156,7 @@ function GridBlock({
   onSelect: () => void;
 }) {
   const { categoryFor } = useAgenda();
+  const t = useT();
   const category = categoryFor(item.occurrence.category);
   const color = activityColor(item.occurrence, category);
   const width = 100 / item.lanes;
@@ -185,7 +187,7 @@ function GridBlock({
         <button
           type="button"
           onClick={onSelect}
-          title={`Vertrekken om ${minutesToTime(item.departureMinutes)}`}
+          title={t("week.leaveAt", { time: minutesToTime(item.departureMinutes) })}
           className="absolute overflow-hidden rounded-md text-left"
           style={{
             top: (item.departureMinutes - rangeStart) * PX_PER_MINUTE,
@@ -254,7 +256,7 @@ function GridBlock({
         <button
           type="button"
           onClick={onSelect}
-          title={`Terug thuis om ${minutesToTime(item.returnMinutes)}`}
+          title={t("week.homeAt", { time: minutesToTime(item.returnMinutes) })}
           className="absolute overflow-hidden text-left"
           style={{
             top: (item.endMinutes - rangeStart) * PX_PER_MINUTE,

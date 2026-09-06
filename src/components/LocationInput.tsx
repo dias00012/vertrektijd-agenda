@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { searchLocations } from "@/lib/api";
 import { Spinner } from "./ui";
+import { useT } from "@/hooks/useLanguage";
 import type { PlaceChoice } from "@/lib/places";
 import type { GeocodeResult, GeoLocation } from "@/lib/types";
 
@@ -38,7 +39,7 @@ export function LocationInput({
   value,
   onChange,
   label,
-  placeholder = "Bijv. Windesheim Almere",
+  placeholder,
   hint,
   required,
   error,
@@ -47,6 +48,7 @@ export function LocationInput({
   extraActions,
 }: Props) {
   const listId = useId();
+  const t = useT();
   const [query, setQuery] = useState(value?.label ?? "");
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -78,10 +80,10 @@ export function LocationInput({
         const found = await searchLocations(trimmed, controller.signal, includeStops);
         setResults(found);
         setOpen(true);
-        if (found.length === 0) setSearchError("Geen locatie gevonden. Probeer het anders te typen.");
+        if (found.length === 0) setSearchError(t("location.notFound"));
       } catch (err) {
         if (controller.signal.aborted) return;
-        setSearchError(err instanceof Error ? err.message : "Zoeken is mislukt.");
+        setSearchError(err instanceof Error ? err.message : t("location.searchFailed"));
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -125,7 +127,7 @@ export function LocationInput({
       <label className="label" htmlFor={listId}>
         {label}
         {!required ? (
-          <span style={{ fontWeight: 400 }}> · optioneel</span>
+          <span style={{ fontWeight: 400 }}> · {t("common.optional")}</span>
         ) : null}
       </label>
 
@@ -134,7 +136,7 @@ export function LocationInput({
           id={listId}
           type="text"
           className="field pr-10"
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("location.placeholder")}
           value={query}
           autoComplete="off"
           aria-invalid={showError ? "true" : undefined}
@@ -156,7 +158,7 @@ export function LocationInput({
             <button
               type="button"
               onClick={clear}
-              aria-label="Locatie wissen"
+              aria-label={t("location.clear")}
               className="text-sm leading-none"
             >
               ✕
@@ -226,7 +228,7 @@ export function LocationInput({
         <ul
           className="card animate-fade-in absolute z-20 mt-2 max-h-64 w-full overflow-auto p-1"
           role="listbox"
-          aria-label="Locatiesuggesties"
+          aria-label={t("location.suggestions")}
         >
           {results.map((result) => (
             <li key={`${result.lat},${result.lon},${result.label}`}>

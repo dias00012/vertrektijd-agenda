@@ -11,6 +11,12 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { getSupabase, isSyncConfigured } from "@/lib/supabase";
+import { getLanguage } from "@/lib/i18n/locale";
+import { translate, type TranslationKey } from "@/lib/i18n/dictionary";
+
+function word(key: TranslationKey): string {
+  return translate(getLanguage(), key);
+}
 
 interface AuthResult {
   ok: boolean;
@@ -40,20 +46,20 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 /** Vertaalt bekende Supabase-foutmeldingen naar begrijpelijk Nederlands. */
 function translateError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login")) return "E-mailadres of wachtwoord klopt niet.";
+  if (m.includes("invalid login")) return word("auth.invalidLogin");
   if (m.includes("already registered") || m.includes("already exists"))
-    return "Er bestaat al een account met dit e-mailadres. Log in.";
+    return word("auth.exists");
   if (m.includes("password") && m.includes("6"))
-    return "Kies een wachtwoord van minstens 6 tekens.";
-  if (m.includes("email") && m.includes("valid")) return "Vul een geldig e-mailadres in.";
+    return word("auth.shortPassword");
+  if (m.includes("email") && m.includes("valid")) return word("auth.invalidEmail");
   if (m.includes("rate limit") || m.includes("too many"))
-    return "Te veel pogingen. Wacht even en probeer opnieuw.";
+    return word("auth.tooMany");
   if (m.includes("email logins are disabled") || m.includes("signups not allowed"))
-    return "Inloggen met e-mail staat nog uit voor deze app. De beheerder moet e-mail als inlogmethode aanzetten.";
+    return word("auth.emailDisabled");
   if (m.includes("email not confirmed"))
-    return "Bevestig eerst je e-mailadres via de link in je mailbox.";
+    return word("auth.notConfirmed");
   if (m.includes("same password") || m.includes("should be different"))
-    return "Kies een ander wachtwoord dan je vorige.";
+    return word("auth.samePassword");
   return message;
 }
 
@@ -90,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
-      if (!supabase) return { ok: false, error: "Synchronisatie is niet ingesteld." };
+      if (!supabase) return { ok: false, error: word("auth.syncOff") };
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) return { ok: false, error: translateError(error.message) };
       // Bij verplichte e-mailbevestiging is er nog geen sessie.
@@ -101,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<AuthResult> => {
-      if (!supabase) return { ok: false, error: "Synchronisatie is niet ingesteld." };
+      if (!supabase) return { ok: false, error: word("auth.syncOff") };
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { ok: false, error: translateError(error.message) };
       return { ok: true };
@@ -117,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(
     async (email: string): Promise<AuthResult> => {
-      if (!supabase) return { ok: false, error: "Synchronisatie is niet ingesteld." };
+      if (!supabase) return { ok: false, error: word("auth.syncOff") };
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: resetRedirectUrl(),
       });
@@ -129,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = useCallback(
     async (password: string): Promise<AuthResult> => {
-      if (!supabase) return { ok: false, error: "Synchronisatie is niet ingesteld." };
+      if (!supabase) return { ok: false, error: word("auth.syncOff") };
       const { error } = await supabase.auth.updateUser({ password });
       if (error) return { ok: false, error: translateError(error.message) };
       return { ok: true };

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { reportError } from "@/lib/monitoring";
+import { useT } from "@/hooks/useLanguage";
 
 /**
  * Vangt een fout in een pagina op. Zonder dit ziet iemand een leeg wit scherm
@@ -14,6 +15,8 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useT();
+
   useEffect(() => {
     reportError(error, { digest: error.digest });
   }, [error]);
@@ -23,22 +26,21 @@ export default function Error({
       <p aria-hidden className="text-3xl">
         ⚠️
       </p>
-      <h1 className="mt-2 text-lg font-semibold">Er ging iets mis</h1>
+      <h1 className="mt-2 text-lg font-semibold">{t("error.title")}</h1>
       <p className="mx-auto mt-1 max-w-sm text-sm" style={{ color: "var(--muted)" }}>
-        Deze pagina kon niet worden geladen. Je agenda staat veilig op je apparaat en in je
-        account. Er is niets weg.
+        {t("error.body")}
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
         <button type="button" className="btn btn-primary" onClick={reset}>
-          Opnieuw proberen
+          {t("common.retry")}
         </button>
         <a href="/" className="btn btn-ghost">
-          Naar Vandaag
+          {t("error.toToday")}
         </a>
       </div>
       {error.digest ? (
         <p className="mt-4 text-[0.7rem]" style={{ color: "var(--muted)" }}>
-          Foutcode: {error.digest}
+          {t("error.code", { digest: error.digest })}
         </p>
       ) : null}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
 import {
@@ -19,6 +20,7 @@ import { formatDuration, todayKey } from "@/lib/time";
  */
 export function SchoolworkTodayCard({ now }: { now: Date }) {
   const { activities, tasks, exams } = useAgenda();
+  const t = useT();
 
   const today = todayKey(now);
   const studyToday = activitiesOnDate(activities, today).filter(
@@ -35,14 +37,14 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
     <Link
       href="/schoolwerk"
       className="card mb-5 block px-5 py-4 no-underline"
-      aria-label="Schoolwerk-overzicht openen"
+      aria-label={t("schoolworkToday.open")}
     >
       <div className="flex items-center justify-between">
         <p
           className="text-[0.7rem] font-semibold uppercase tracking-wider"
           style={{ color: "var(--muted)" }}
         >
-          Schoolwerk vandaag
+          {t("schoolworkToday.title")}
         </p>
         <span aria-hidden style={{ color: "var(--muted)" }}>
           →
@@ -52,27 +54,38 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
       <p className="mt-2 text-sm">
         {studyToday.length > 0 ? (
           <>
-            &#127919; <strong>{formatDuration(studyMinutes)}</strong> leren gepland vandaag
+            &#127919;{" "}
+            {t("schoolworkToday.planned", { duration: formatDuration(studyMinutes) })}
             <span style={{ color: "var(--muted)" }}>
-              {" "}
-              ({studyToday.length} {studyToday.length === 1 ? "blok" : "blokken"})
+              {" ("}
+              {t(studyToday.length === 1 ? "schoolworkToday.block" : "schoolworkToday.blocks", {
+                count: studyToday.length,
+              })}
+              {")"}
             </span>
           </>
         ) : (
-          <span style={{ color: "var(--muted)" }}>Geen leerblokken gepland voor vandaag.</span>
+          <span style={{ color: "var(--muted)" }}>{t("schoolworkToday.none")}</span>
         )}
       </p>
 
       <div className="mt-1.5 space-y-0.5 text-xs" style={{ color: "var(--muted)" }}>
         {nextTask ? (
           <p className="truncate">
-            <span aria-hidden>{PRIORITY_META[nextTask.priority].emoji}</span> Deadline:{" "}
-            {nextTask.title} &middot; {describeDaysUntil(nextTask.deadline, now)}
+            <span aria-hidden>{PRIORITY_META[nextTask.priority].emoji}</span>{" "}
+            {t("schoolworkToday.deadline", {
+              title: nextTask.title,
+              days: describeDaysUntil(nextTask.deadline, now),
+            })}
           </p>
         ) : null}
         {nextExam ? (
           <p className="truncate">
-            &#128221; Toets {nextExam.subject} &middot; {describeDaysUntil(nextExam.date, now)}
+            &#128221;{" "}
+            {t("schoolworkToday.exam", {
+              subject: nextExam.subject,
+              days: describeDaysUntil(nextExam.date, now),
+            })}
           </p>
         ) : null}
       </div>

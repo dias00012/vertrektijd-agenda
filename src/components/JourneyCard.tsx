@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatDuration } from "@/lib/time";
 import { LEG_EMOJI, describeLeg, legTime } from "@/lib/travelModes";
+import { useT } from "@/hooks/useLanguage";
 import type { Journey, TravelLeg } from "@/lib/types";
 
 /**
@@ -10,6 +11,7 @@ import type { Journey, TravelLeg } from "@/lib/types";
  * met live vertraging in het rood. Uitklappen toont de hele rit.
  */
 export function JourneyCard({ journey }: { journey: Journey }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   const delayed = journey.delayMinutes > 0;
@@ -43,25 +45,32 @@ export function JourneyCard({ journey }: { journey: Journey }) {
             {formatDuration(journey.durationMinutes)}
             <br />
             {journey.transfers === 0
-              ? "direct"
-              : `${journey.transfers} ${journey.transfers === 1 ? "overstap" : "overstappen"}`}
+              ? t("journey.direct")
+              : `${journey.transfers} ${t(
+                  journey.transfers === 1 ? "journey.transfer" : "journey.transfers",
+                )}`}
           </span>
         </div>
 
         {journey.cancelled ? (
           <p className="mt-1 text-xs font-semibold" style={{ color: "var(--danger)" }}>
-            &#9888;&#65039; Deze rit is uitgevallen
+            &#9888;&#65039; {t("journey.cancelled")}
           </p>
         ) : delayed ? (
           <p className="mt-1 text-xs font-semibold" style={{ color: "#f97316" }}>
-            &#9200; {journey.delayMinutes} min vertraging
+            &#9200; {t("journey.delay", { count: journey.delayMinutes })}
             <span className="ml-1 font-normal" style={{ color: "var(--muted)" }}>
-              (gepland {legTime(journey.legs.find((l) => l.scheduledDeparture)?.scheduledDeparture)})
+              {" ("}
+              {t("journey.scheduled", {
+                time:
+                  legTime(journey.legs.find((l) => l.scheduledDeparture)?.scheduledDeparture) ?? "",
+              })}
+              {")"}
             </span>
           </p>
         ) : journey.realTime ? (
           <p className="mt-1 text-xs" style={{ color: "#22c55e" }}>
-            &#9679; Op tijd &middot; live
+            &#9679; {t("journey.onTime")} &middot; {t("journey.live")}
           </p>
         ) : null}
 
@@ -87,7 +96,7 @@ export function JourneyCard({ journey }: { journey: Journey }) {
             </span>
           ))}
           <span className="ml-auto text-[0.7rem]" style={{ color: "var(--muted)" }}>
-            {open ? "verberg" : "toon reis"}
+            {open ? t("journey.hide") : t("journey.show")}
           </span>
         </div>
       </button>
@@ -111,6 +120,7 @@ export function JourneyCard({ journey }: { journey: Journey }) {
 }
 
 function LegRow({ leg }: { leg: TravelLeg }) {
+  const t = useT();
   const delayed = (leg.delayMinutes ?? 0) > 0;
 
   return (
@@ -149,7 +159,7 @@ function LegRow({ leg }: { leg: TravelLeg }) {
         )}
         {leg.cancelled ? (
           <span className="block font-semibold" style={{ color: "var(--danger)" }}>
-            Uitgevallen
+            {t("journey.cancelledShort")}
           </span>
         ) : null}
       </span>

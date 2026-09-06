@@ -9,6 +9,7 @@ import {
   meaningfulLegs,
   walkingMinutes,
 } from "@/lib/travelModes";
+import { useT } from "@/hooks/useLanguage";
 import type { TravelInfo } from "@/lib/types";
 
 /**
@@ -28,6 +29,7 @@ export function JourneyDetails({
   label: string;
   defaultOpen?: boolean;
 }) {
+  const t = useT();
   const legs = meaningfulLegs(travel.legs);
   if (legs.length === 0) return null;
 
@@ -50,8 +52,8 @@ export function JourneyDetails({
         ) : null}{" "}
         &middot; {formatDuration(travel.durationMinutes)}
         {transfers > 0
-          ? ` · ${transfers} ${transfers === 1 ? "overstap" : "overstappen"}`
-          : " · zonder overstappen"}
+          ? ` · ${transfers} ${t(transfers === 1 ? "journey.transfer" : "journey.transfers")}`
+          : ` · ${t("journey.noTransfers")}`}
       </summary>
 
       {/* Altijd zichtbaar zodra je de reis opent: wat pak je, hoe lang loop je. */}
@@ -78,7 +80,7 @@ export function JourneyDetails({
 
       {walking >= 1 ? (
         <p className="mt-1.5 text-[0.7rem]" style={{ color: "var(--muted)" }}>
-          &#128694; In totaal {formatDuration(Math.round(walking))} lopen.
+          &#128694; {t("journey.walkTotal", { duration: formatDuration(Math.round(walking)) })}
         </p>
       ) : null}
 
@@ -108,7 +110,7 @@ export function JourneyDetails({
                 {onFoot ? null : (
                   <span className="block" style={{ color: "var(--muted)" }}>
                     {leg.from}
-                    {leg.track ? ` · spoor ${leg.track}` : ""}
+                    {leg.track ? ` · ${t("leg.track", { track: leg.track })}` : ""}
                     {legEnd ? ` → ${leg.to} (${legEnd})` : leg.to ? ` → ${leg.to}` : ""}
                   </span>
                 )}

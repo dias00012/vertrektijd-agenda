@@ -1,6 +1,7 @@
 "use client";
 
 import { activityColor } from "@/lib/categories";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
 import { isSameMonth, monthGridKeys, parseDateKey, toDateKey } from "@/lib/time";
@@ -26,6 +27,7 @@ export function MonthGrid({
   now: Date;
 }) {
   const { activities, settings, categoryFor } = useAgenda();
+  const t = useT();
   const dateKeys = monthGridKeys(month);
   const today = toDateKey(now);
 
@@ -55,7 +57,7 @@ export function MonthGrid({
               onClick={() => onSelect(dateKey)}
               aria-pressed={isSelected}
               aria-label={`${parseDateKey(dateKey).getDate()}, ${items.length} ${
-                items.length === 1 ? "activiteit" : "activiteiten"
+                t(items.length === 1 ? "month.activity" : "month.activities")
               }`}
               className="flex min-h-[58px] flex-col items-center gap-1 border-b border-l px-0.5 py-1.5 transition-colors first:border-l-0"
               style={{

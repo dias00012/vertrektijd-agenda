@@ -20,19 +20,22 @@ import { ActivityCard } from "@/components/ActivityCard";
 import { MonthGrid } from "@/components/MonthGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { EmptyState, Spinner } from "@/components/ui";
+import { useT } from "@/hooks/useLanguage";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 type View = "vandaag" | "morgen" | "week" | "maand";
 
-const VIEWS: { id: View; label: string }[] = [
-  { id: "vandaag", label: "Vandaag" },
-  { id: "morgen", label: "Morgen" },
-  { id: "week", label: "Week" },
-  { id: "maand", label: "Maand" },
+const VIEWS: { id: View; key: TranslationKey }[] = [
+  { id: "vandaag", key: "agenda.tab.today" },
+  { id: "morgen", key: "agenda.tab.tomorrow" },
+  { id: "week", key: "agenda.tab.week" },
+  { id: "maand", key: "agenda.tab.month" },
 ];
 
 /** Agenda met dag-, week- (raster of lijst) en maandweergave. */
 export default function AgendaPage() {
   const { hydrated } = useAgenda();
+  const t = useT();
   const now = useNow(60_000);
   const today = todayKey(now);
 
@@ -57,7 +60,7 @@ export default function AgendaPage() {
       <div
         className="mb-4 grid grid-cols-4 gap-1 rounded-2xl border p-1"
         role="tablist"
-        aria-label="Weergave"
+        aria-label={t("agenda.view")}
         style={{ background: "var(--surface-soft)", borderColor: "var(--line)" }}
       >
         {VIEWS.map((item) => {
@@ -76,7 +79,7 @@ export default function AgendaPage() {
                 boxShadow: active ? "var(--shadow-card)" : "none",
               }}
             >
-              {item.label}
+              {t(item.key)}
             </button>
           );
         })}
@@ -84,7 +87,7 @@ export default function AgendaPage() {
 
       {!hydrated ? (
         <div className="card px-5 py-10 text-center">
-          <Spinner size={18} label="Agenda laden…" />
+          <Spinner size={18} label={t("agenda.loading")} />
         </div>
       ) : view === "vandaag" || view === "morgen" ? (
         <DayList dateKey={view === "vandaag" ? today : addDaysToKey(today, 1)} now={now} />
@@ -94,15 +97,15 @@ export default function AgendaPage() {
             label={formatRangeLabel(weekStart, addDaysToKey(weekStart, 6))}
             onPrevious={() => setWeekStart(addWeeksToKey(weekStart, -1))}
             onNext={() => setWeekStart(addWeeksToKey(weekStart, 1))}
-            previousLabel="Vorige week"
-            nextLabel="Volgende week"
+            previousLabel={t("agenda.previousWeek")}
+            nextLabel={t("agenda.nextWeek")}
             onToday={weekStart === startOfWeekKey(today) ? undefined : goToToday}
             extra={
               <div
                 className="flex rounded-lg border p-0.5"
                 style={{ borderColor: "var(--line)" }}
                 role="group"
-                aria-label="Weekweergave"
+                aria-label={t("agenda.weekView")}
               >
                 {(["raster", "lijst"] as const).map((option) => (
                   <button
@@ -116,7 +119,7 @@ export default function AgendaPage() {
                       color: weekLayout === option ? "var(--ink)" : "var(--muted)",
                     }}
                   >
-                    {option}
+                    {t(option === "raster" ? "agenda.layout.grid" : "agenda.layout.list")}
                   </button>
                 ))}
               </div>
@@ -127,7 +130,7 @@ export default function AgendaPage() {
             <>
               <WeekGrid weekStart={weekStart} now={now} />
               <p className="mt-3 text-center text-xs" style={{ color: "var(--muted)" }}>
-                Gestreepte blokken zijn je reistijd: 🚗 heen, ↩️ terug naar huis.
+                {t("agenda.travelHint")}
               </p>
             </>
           ) : (
@@ -140,14 +143,14 @@ export default function AgendaPage() {
             label={formatMonthLabel(month)}
             onPrevious={() => setMonth(addMonthsToKey(month, -1))}
             onNext={() => setMonth(addMonthsToKey(month, 1))}
-            previousLabel="Vorige maand"
-            nextLabel="Volgende maand"
+            previousLabel={t("agenda.previousMonth")}
+            nextLabel={t("agenda.nextMonth")}
             onToday={isSameMonth(month, today) ? undefined : goToToday}
           />
 
           <MonthGrid month={month} selected={selectedDay} onSelect={setSelectedDay} now={now} />
 
-          <section className="mt-5" aria-label={`Activiteiten op ${formatDateLabel(selectedDay, now)}`}>
+          <section className="mt-5" aria-label={t("agenda.activitiesOn", { date: formatDateLabel(selectedDay, now) })}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
               {formatDateLabel(selectedDay, now)}
             </h2>
@@ -177,6 +180,7 @@ function PeriodNav({
   nextLabel: string;
   extra?: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="mb-3 flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1">
@@ -203,7 +207,7 @@ function PeriodNav({
       <div className="ml-auto flex items-center gap-2">
         {onToday ? (
           <button type="button" onClick={onToday} className="btn btn-ghost px-2.5 py-1.5 text-xs">
-            Vandaag
+            {t("agenda.tab.today")}
           </button>
         ) : null}
         {extra}
@@ -223,18 +227,19 @@ function DayList({
   compactEmpty?: boolean;
 }) {
   const { activities } = useAgenda();
+  const t = useT();
   const items = activitiesOnDate(activities, dateKey);
 
   if (items.length === 0) {
     return compactEmpty ? (
       <p className="text-sm" style={{ color: "var(--muted)" }}>
-        Niets gepland op deze dag.
+        {t("agenda.empty.day")}
       </p>
     ) : (
       <EmptyState
         icon="📅"
-        title="Niets gepland"
-        description="Gebruik de knop “+ Activiteit toevoegen”."
+        title={t("agenda.empty.title")}
+        description={t("agenda.empty.body")}
       />
     );
   }
@@ -251,6 +256,7 @@ function DayList({
 /** De week als lijst per dag; prettiger dan het raster op een smal scherm. */
 function WeekList({ weekStart, now }: { weekStart: string; now: Date }) {
   const { activities } = useAgenda();
+  const t = useT();
   const days = groupByDate(activities, calendarWeekKeys(weekStart)).filter(
     (day) => day.items.length > 0,
   );
@@ -259,8 +265,8 @@ function WeekList({ weekStart, now }: { weekStart: string; now: Date }) {
     return (
       <EmptyState
         icon="📅"
-        title="Geen activiteiten deze week"
-        description="Gebruik de knop “+ Activiteit toevoegen” voor je eerste activiteit."
+        title={t("agenda.empty.weekTitle")}
+        description={t("agenda.empty.weekBody")}
       />
     );
   }

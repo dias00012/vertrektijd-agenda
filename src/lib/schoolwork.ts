@@ -1,4 +1,10 @@
 import type { Activity, Exam, SchoolworkPriority, SchoolworkStatus, Task } from "./types";
+import { getLanguage } from "./i18n/locale";
+import { translate, type TranslationKey } from "./i18n/dictionary";
+
+function word(key: TranslationKey, values?: Record<string, string | number>): string {
+  return translate(getLanguage(), key, values);
+}
 import { parseDateKey, timeToMinutes, todayKey } from "./time";
 
 /** Weergave-informatie per prioriteit. */
@@ -6,16 +12,16 @@ export const PRIORITY_META: Record<
   SchoolworkPriority,
   { label: string; emoji: string; color: string; order: number }
 > = {
-  high: { label: "Hoog", emoji: "\u{1F534}", color: "#ef4444", order: 0 },
-  medium: { label: "Middel", emoji: "\u{1F7E0}", color: "#f97316", order: 1 },
-  low: { label: "Laag", emoji: "\u{1F7E1}", color: "#eab308", order: 2 },
-  later: { label: "Later", emoji: "\u{1F7E2}", color: "#22c55e", order: 3 },
+  high: { get label() { return word("schoolwork.priority.high"); }, emoji: "\u{1F534}", color: "#ef4444", order: 0 },
+  medium: { get label() { return word("schoolwork.priority.medium"); }, emoji: "\u{1F7E0}", color: "#f97316", order: 1 },
+  low: { get label() { return word("schoolwork.priority.low"); }, emoji: "\u{1F7E1}", color: "#eab308", order: 2 },
+  later: { get label() { return word("schoolwork.priority.later"); }, emoji: "\u{1F7E2}", color: "#22c55e", order: 3 },
 };
 
 export const STATUS_META: Record<SchoolworkStatus, { label: string; color: string }> = {
-  todo: { label: "Te doen", color: "#64748b" },
-  doing: { label: "Bezig", color: "#3b82f6" },
-  done: { label: "Klaar", color: "#22c55e" },
+  todo: { get label() { return word("schoolwork.status.todo"); }, color: "#64748b" },
+  doing: { get label() { return word("schoolwork.status.doing"); }, color: "#3b82f6" },
+  done: { get label() { return word("schoolwork.status.done"); }, color: "#22c55e" },
 };
 
 export const STATUS_ORDER: SchoolworkStatus[] = ["todo", "doing", "done"];
@@ -49,11 +55,11 @@ export function daysUntil(dateKey: string, now: Date = new Date()): number {
 /** "vandaag" / "morgen" / "over 3 dagen" / "3 dagen geleden". */
 export function describeDaysUntil(dateKey: string, now: Date = new Date()): string {
   const days = daysUntil(dateKey, now);
-  if (days === 0) return "vandaag";
-  if (days === 1) return "morgen";
-  if (days === -1) return "gisteren";
-  if (days > 1) return `over ${days} dagen`;
-  return `${Math.abs(days)} dagen geleden`;
+  if (days === 0) return word("days.today");
+  if (days === 1) return word("days.tomorrow");
+  if (days === -1) return word("common.yesterday").toLowerCase();
+  if (days > 1) return word("days.in", { count: days });
+  return word("days.ago", { count: Math.abs(days) });
 }
 
 /** Voortgang van een taak op basis van afgevinkte stappen (0 wanneer geen stappen). */
