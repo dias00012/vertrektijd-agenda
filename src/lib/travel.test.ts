@@ -97,6 +97,7 @@ describe("computeDeparture bij een rit die de starttijd niet haalt", () => {
           mode: "transit",
           durationMinutes: 34,
           plannedDeparture: new Date(2026, 8, 6, 23, 50).toISOString(),
+          plannedArrival: new Date(2026, 8, 7, 0, 24).toISOString(),
         }),
       }),
       settings({ travelMode: "transit" }),
@@ -104,6 +105,32 @@ describe("computeDeparture bij een rit die de starttijd niet haalt", () => {
 
     expect(result?.time).toBe("23:50");
     expect(result?.previousDay).toBe(true);
+  });
+});
+
+describe("computeDeparture bij een herhalende activiteit", () => {
+  it("noemt een rit van een andere dag niet 'de dag ervoor'", () => {
+    // Bij een reeks staat er één berekende rit opgeslagen, van de eerste dag
+    // die eraan komt. Kijk je naar donderdag terwijl de rit van maandag is,
+    // dan mag die datum niets zeggen over "dag ervoor" — anders valt de
+    // vertrektijd uit de dag en komt de melding een dag te vroeg.
+    const result = computeDeparture(
+      activity({
+        date: "2026-09-10",
+        occurrenceId: "a1:2026-09-10",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 42,
+          plannedDeparture: new Date(2026, 8, 7, 8, 12).toISOString(),
+          plannedArrival: new Date(2026, 8, 7, 8, 54).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(result?.previousDay).toBe(false);
+    expect(result?.time).toBe("08:12");
+    expect(result?.minutes).toBe(8 * 60 + 12);
   });
 });
 
@@ -125,6 +152,7 @@ describe("departureDateTime", () => {
           mode: "transit",
           durationMinutes: 34,
           plannedDeparture: new Date(2026, 8, 6, 23, 50).toISOString(),
+          plannedArrival: new Date(2026, 8, 7, 0, 24).toISOString(),
         }),
       }),
       settings({ travelMode: "transit" }),

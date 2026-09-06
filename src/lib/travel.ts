@@ -228,11 +228,18 @@ export function computeDeparture(
   if (activity.travel.plannedDeparture) {
     const departure = new Date(activity.travel.plannedDeparture);
     const clockMinutes = departure.getHours() * 60 + departure.getMinutes();
-    // Uit de datum van de rit zelf, niet uit een vergelijking van kloktijden.
-    // Anders geldt elke rit die later vertrekt dan de activiteit begint als
-    // "de dag ervoor" — en dat gebeurt echt, want als er niets op tijd rijdt
-    // toont de app de eerstvolgende rit daarna. Die verdween dan uit de dag.
-    const previousDay = toDateKey(departure) < activity.date;
+    // Binnen de rit zelf kijken: vertrekt hij op een eerdere kalenderdag dan
+    // dat hij aankomt? De aankomst valt per definitie op de dag van de
+    // activiteit, want daar is de rit op gezocht.
+    //
+    // Niet vergelijken met kloktijden — dan geldt elke rit die later vertrekt
+    // dan de activiteit begint als "de dag ervoor", en dat gebeurt echt: als
+    // er niets op tijd rijdt toont de app de eerstvolgende rit daarna.
+    // En niet vergelijken met `activity.date` — bij een reeks staat er één
+    // berekende rit voor alle dagen, dus dan zou elke volgende dag "de dag
+    // ervoor" heten.
+    const arrival = activity.travel.plannedArrival;
+    const previousDay = arrival ? toDateKey(departure) < toDateKey(new Date(arrival)) : false;
     // Bij een vertrek de dag ervoor telt `minutes` negatief door, net als bij
     // de rekensom hieronder; daar rekent `departureDateTime` mee.
     const minutes = previousDay ? clockMinutes - MINUTES_PER_DAY : clockMinutes;
