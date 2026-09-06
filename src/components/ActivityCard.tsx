@@ -179,56 +179,68 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     <p className="text-xs" style={{ color: "var(--muted)" }}>
                       {t("activity.needHome")}
                     </p>
-                  ) : departure && shown.travel ? (
+                  ) : departure || back ? (
                     <>
-                      <p className="text-xs" style={{ color: "var(--muted)" }}>
-                        {travelModeMeta(shown.travel.mode).emoji}{" "}
-                        {t("activity.travelTime", {
-                          duration: formatDuration(shown.travel.durationMinutes),
-                        })}
-                        <span className="opacity-70">
-                          {shown.travel.mode === "transit"
-                            ? ` · ${shown.travel.transfers ?? 0} ${
-                                (shown.travel.transfers ?? 0) === 1
-                                  ? t("journey.transfer")
-                                  : t("journey.transfers")
-                              }`
-                            : ` · ${formatDistance(shown.travel.distanceKm)}`}
-                        </span>
-                      </p>
-                      <p className="text-sm font-semibold tabular-nums">
-                        &#127968; {t("activity.leaveAt")}{" "}
-                        <span style={delay > 0 ? { color: "#f97316" } : undefined}>
-                          {departure.time}
-                        </span>
-                        {/* Bij vertraging: de tijd uit de dienstregeling erbij,
-                            doorgestreept, zodat je ziet dat het is opgeschoven. */}
-                        {delay > 0 && plannedTime ? (
-                          <span
-                            className="ml-1.5 text-xs font-normal line-through"
-                            style={{ color: "var(--muted)" }}
-                          >
-                            {plannedTime}
-                          </span>
-                        ) : null}
-                        {departure.previousDay ? (
-                          <span className="ml-1 text-xs font-normal" style={{ color: "var(--muted)" }}>
-                            {t("activity.previousDay")}
-                          </span>
-                        ) : null}
-                      </p>
+                      {/* De heenreis hoort bij de eerste activiteit van een
+                          verblijf; de laatste toont alleen hoe laat je thuis
+                          bent. Op een schooldag is dat precies wat je wilt
+                          weten van je laatste uur. */}
+                      {departure && shown.travel ? (
+                        <>
+                          <p className="text-xs" style={{ color: "var(--muted)" }}>
+                            {travelModeMeta(shown.travel.mode).emoji}{" "}
+                            {t("activity.travelTime", {
+                              duration: formatDuration(shown.travel.durationMinutes),
+                            })}
+                            <span className="opacity-70">
+                              {shown.travel.mode === "transit"
+                                ? ` · ${shown.travel.transfers ?? 0} ${
+                                    (shown.travel.transfers ?? 0) === 1
+                                      ? t("journey.transfer")
+                                      : t("journey.transfers")
+                                  }`
+                                : ` · ${formatDistance(shown.travel.distanceKm)}`}
+                            </span>
+                          </p>
+                          <p className="text-sm font-semibold tabular-nums">
+                            &#127968; {t("activity.leaveAt")}{" "}
+                            <span style={delay > 0 ? { color: "#f97316" } : undefined}>
+                              {departure.time}
+                            </span>
+                            {/* Bij vertraging: de tijd uit de dienstregeling erbij,
+                                doorgestreept, zodat je ziet dat het is opgeschoven. */}
+                            {delay > 0 && plannedTime ? (
+                              <span
+                                className="ml-1.5 text-xs font-normal line-through"
+                                style={{ color: "var(--muted)" }}
+                              >
+                                {plannedTime}
+                              </span>
+                            ) : null}
+                            {departure.previousDay ? (
+                              <span
+                                className="ml-1 text-xs font-normal"
+                                style={{ color: "var(--muted)" }}
+                              >
+                                {t("activity.previousDay")}
+                              </span>
+                            ) : null}
+                          </p>
 
-                      {/* Alleen bij OV: bij auto en fiets bestaat er geen rit
-                          die kan uitvallen of vertraagd raken. */}
-                      {shown.travel.mode === "transit" ? (
-                        <JourneyStatus
-                          cancelled={cancelled}
-                          delayMinutes={delay}
-                          realTime={live}
-                          scheduledDeparture={scheduledDeparture(legs)}
-                          long
-                        />
+                          {/* Alleen bij OV: bij auto en fiets bestaat er geen rit
+                              die kan uitvallen of vertraagd raken. */}
+                          {shown.travel.mode === "transit" ? (
+                            <JourneyStatus
+                              cancelled={cancelled}
+                              delayMinutes={delay}
+                              realTime={live}
+                              scheduledDeparture={scheduledDeparture(legs)}
+                              long
+                            />
+                          ) : null}
+                        </>
                       ) : null}
+
                       {back ? (
                         <p className="text-xs tabular-nums" style={{ color: "var(--muted)" }}>
                           &#8617;&#65039;{" "}

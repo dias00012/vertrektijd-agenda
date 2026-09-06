@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchTravel } from "@/lib/api";
 import { travelModeFor, travelPlanForDate } from "@/lib/travel";
 import { toDateKey, toDateTime } from "@/lib/time";
-import type { Activity, Settings, TravelInfo, TravelResult } from "@/lib/types";
+import type { ActivityOccurrence, Settings, TravelInfo, TravelResult } from "@/lib/types";
 
 /**
  * Reis van één dag uit een herhalende activiteit.
@@ -53,10 +53,16 @@ function daysBetween(fromKey: string, toKey: string): number {
   return Math.round((to.getTime() - from.getTime()) / 86_400_000);
 }
 
-export function useOccurrenceTravel(activity: Activity, settings: Settings): OccurrenceTravel {
+export function useOccurrenceTravel(
+  activity: ActivityOccurrence,
+  settings: Settings,
+): OccurrenceTravel {
   const stored = { travel: activity.travel ?? null, returnTravel: activity.returnTravel ?? null };
 
-  const isTransit = travelModeFor(activity, settings) === "transit";
+  // Midden op een schooldag valt er niets te reizen: je bent er al. Zonder
+  // deze regel vraagt elk lesuur zijn eigen rit op bij de OV-planner.
+  const travels = activity.travelRole.outbound || activity.travelRole.inbound;
+  const isTransit = travels && travelModeFor(activity, settings) === "transit";
   const plan = isTransit ? travelPlanForDate(activity, settings, activity.date) : null;
 
   // Staat de rit van deze dag al in de activiteit zelf, dan is er niets te doen.

@@ -214,6 +214,18 @@ export interface ActivityDraft {
 }
 
 /**
+ * Hoort de heenreis en/of de terugreis bij deze activiteit?
+ *
+ * Bij opeenvolgende activiteiten op dezelfde plek reis je één keer heen en één
+ * keer terug: de heenreis hoort bij de eerste, de terugreis bij de laatste.
+ * Zie `assignTravelRoles`.
+ */
+export interface TravelRole {
+  outbound: boolean;
+  inbound: boolean;
+}
+
+/**
  * Eén concrete dag uit een activiteit. Voor een eenmalige activiteit is dat de
  * activiteit zelf; voor een reeks een kopie met `date` op die specifieke dag.
  * `id` blijft de id van de reeks, zodat bewerken en reistijden ongewijzigd werken.
@@ -223,6 +235,8 @@ export interface ActivityOccurrence extends Activity {
   occurrenceId: string;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring: boolean;
+  /** Welke reizen bij deze activiteit horen, gezien de rest van de dag. */
+  travelRole: TravelRole;
 }
 
 /** Het gekoppelde schoolrooster: waar het vandaan komt en hoe het is ingelezen. */

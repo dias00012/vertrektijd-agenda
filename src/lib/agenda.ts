@@ -2,12 +2,38 @@ import type { Activity, ActivityOccurrence, Settings } from "./types";
 import { computeDeparture, computeReturn, departureDateTime, nextOccurrenceDate } from "./travel";
 import { addDaysToKey, timeToMinutes, toDateKey, toDateTime } from "./time";
 import { occurrencesOnDate, toOccurrence } from "./recurrence";
+import { assignTravelRoles } from "./stays";
 
-/** Activiteiten van één dag (herhalingen meegerekend), op starttijd gesorteerd. */
+/**
+ * Activiteiten van één dag (herhalingen meegerekend), op starttijd gesorteerd.
+ *
+ * Meteen met de reisrollen erbij: pas als je de hele dag ziet, weet je of een
+ * activiteit het begin van een verblijf is, het eind, of een uur ertussenin.
+ */
 export function activitiesOnDate(activities: Activity[], dateKey: string): ActivityOccurrence[] {
-  return occurrencesOnDate(activities, dateKey).sort(
-    (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
+  return assignTravelRoles(
+    occurrencesOnDate(activities, dateKey).sort(
+      (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
+    ),
   );
+}
+
+/**
+ * Moet er voor deze activiteit een reis berekend worden?
+ *
+ * Voor de uren midden in een verblijf niet: je bent er al. Dat scheelt bij een
+ * gekoppeld rooster tientallen routeaanvragen per week.
+ */
+export function travelIsRelevant(
+  activity: Activity,
+  activities: Activity[],
+  now: Date = new Date(),
+): boolean {
+  if (!activity.location) return false;
+  const day = activitiesOnDate(activities, nextOccurrenceDate(activity, now));
+  const mine = day.find((item) => item.id === activity.id);
+  if (!mine) return true;
+  return mine.travelRole.outbound || mine.travelRole.inbound;
 }
 
 /** Activiteiten binnen een reeks dagen, gegroepeerd per dag. */
@@ -38,13 +64,23 @@ export function searchActivities(
   if (needle.length < 2) return [];
 
   const today = toDateKey(now);
+  /** Dagen die we al uitgerekend hebben; een reeks treffers deelt vaak een dag. */
+  const days = new Map<string, ActivityOccurrence[]>();
+
   return activities
     .filter((activity) =>
       [activity.title, activity.location?.label ?? "", categoryLabel(activity.category)].some(
         (field) => field.toLowerCase().includes(needle),
       ),
     )
-    .map((activity) => toOccurrence(activity, nextOccurrenceDate(activity, now)))
+    .map((activity) => {
+      // Via de dag zelf, zodat een resultaat dezelfde reisrol krijgt als in de
+      // agenda: geen "vertrekken om" bij een uur midden op een schooldag.
+      const dateKey = nextOccurrenceDate(activity, now);
+      const day = days.get(dateKey) ?? activitiesOnDate(activities, dateKey);
+      days.set(dateKey, day);
+      return day.find((item) => item.id === activity.id) ?? toOccurrence(activity, dateKey);
+    })
     .sort((a, b) => {
       // Wat nog komt eerst, oplopend; daarna wat geweest is, met het meest
       // recente bovenaan. Zo staat het antwoord op "wanneer is dat ook alweer"
@@ -153,7 +189,7 @@ export function findNextActivity(
 
 /** Minuten tot vertrek; negatief betekent dat je al had moeten gaan. */
 export function minutesUntilDeparture(
-  activity: Activity,
+  activity: ActivityOccurrence,
   settings: Settings,
   now: Date,
 ): number | null {

@@ -1,4 +1,11 @@
-import type { Activity, GeoLocation, Settings, TransitBike, TravelMode } from "./types";
+import type {
+  Activity,
+  ActivityOccurrence,
+  GeoLocation,
+  Settings,
+  TransitBike,
+  TravelMode,
+} from "./types";
 import {
   MINUTES_PER_DAY,
   addDaysToKey,
@@ -163,7 +170,13 @@ export interface DepartureInfo {
  * Bij OV komt de vertrektijd rechtstreeks uit de geplande rit: dat is het
  * moment waarop je trein of bus echt gaat, niet een rekensom.
  */
-export function computeDeparture(activity: Activity, settings: Settings): DepartureInfo | null {
+export function computeDeparture(
+  activity: ActivityOccurrence,
+  settings: Settings,
+): DepartureInfo | null {
+  // Zit je er al, dan valt er niet te vertrekken: de heenreis hoort bij de
+  // eerste activiteit van het verblijf, niet bij elk uur.
+  if (!activity.travelRole.outbound) return null;
   if (!activity.location || !activity.travel) return null;
 
   const buffer = bufferFor(activity, settings);
@@ -193,7 +206,10 @@ export function computeDeparture(activity: Activity, settings: Settings): Depart
 }
 
 /** Absoluut moment van vertrek, handig voor sorteren en "eerstvolgende". */
-export function departureDateTime(activity: Activity, settings: Settings): Date | null {
+export function departureDateTime(
+  activity: ActivityOccurrence,
+  settings: Settings,
+): Date | null {
   const departure = computeDeparture(activity, settings);
   if (!departure) return null;
   const start = toDateTime(activity.date, activity.startTime);
@@ -219,7 +235,12 @@ export interface ReturnInfo {
  * om een schatting van je thuiskomst op te rekken. Bij OV komt de aankomst uit
  * de geplande rit.
  */
-export function computeReturn(activity: Activity, settings: Settings): ReturnInfo | null {
+export function computeReturn(
+  activity: ActivityOccurrence,
+  settings: Settings,
+): ReturnInfo | null {
+  // Alleen na je laatste uur op die plek ga je naar huis.
+  if (!activity.travelRole.inbound) return null;
   if (!activity.location || !activity.returnTravel) return null;
   void settings;
 

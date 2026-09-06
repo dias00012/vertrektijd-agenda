@@ -76,13 +76,20 @@ export function occursOn(activity: Activity, dateKey: string): boolean {
   return true;
 }
 
-/** Maakt de concrete dag-versie van een activiteit. */
+/**
+ * Maakt de concrete dag-versie van een activiteit.
+ *
+ * Standaard hoort zowel de heen- als de terugreis erbij: dat klopt voor een
+ * losse activiteit. Staat er die dag meer op dezelfde plek, dan verdeelt
+ * `assignTravelRoles` de reizen over de eerste en de laatste.
+ */
 export function toOccurrence(activity: Activity, dateKey: string): ActivityOccurrence {
   return {
     ...activity,
     date: dateKey,
     occurrenceId: `${activity.id}:${dateKey}`,
     recurring: Boolean(activity.recurrence),
+    travelRole: { outbound: true, inbound: true },
   };
 }
 

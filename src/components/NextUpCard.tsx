@@ -17,13 +17,13 @@ import {
 import { JourneyDetails } from "./JourneyDetails";
 import { JourneyStatus } from "./JourneyStatus";
 import { Spinner } from "./ui";
-import type { Activity } from "@/lib/types";
+import type { ActivityOccurrence } from "@/lib/types";
 
 /**
  * Uitgelicht blok bovenaan het dashboard: de eerstvolgende activiteit met
  * reistijd, vertrektijd en een aftelling.
  */
-export function NextUpCard({ activity, now }: { activity: Activity; now: Date }) {
+export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; now: Date }) {
   const { settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
   const t = useT();
   const category = categoryFor(activity.category);
@@ -163,6 +163,31 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                       &#9200; {countdown}
                     </p>
                   ) : null}
+                </div>
+              </div>
+            ) : back && shown.returnTravel ? (
+              /* Zit je al op je plek, dan valt er niets meer te vertrekken.
+                 Wat je dan wilt weten is hoe laat je weer thuis bent; dat is
+                 op een schooldag het getal waar je op wacht. */
+              <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+                <div>
+                  <p
+                    className="text-[0.7rem] tracking-wide uppercase"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {t("next.homeLabel")}
+                  </p>
+                  <p className="text-3xl leading-tight font-semibold tabular-nums">{back.time}</p>
+                </div>
+                <div className="pb-1">
+                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                    &#8617;&#65039; {travelModeMeta(shown.returnTravel.mode).emoji}{" "}
+                    {formatDuration(back.travelMinutes)}{" "}
+                    {t(shown.returnTravel.mode === "car" ? "timeline.drive" : "timeline.travel")}
+                  </p>
+                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                    {t("next.stillHere")}
+                  </p>
                 </div>
               </div>
             ) : !settings.home ? (

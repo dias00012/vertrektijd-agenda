@@ -31,6 +31,7 @@ import {
   type ImportSummary,
 } from "@/lib/backup";
 import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
+import { travelIsRelevant } from "@/lib/agenda";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -317,8 +318,13 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   // als het wijzigen van de thuislocatie in de instellingen.
   useEffect(() => {
     if (!hydrated || !settings.home) return;
+    const now = new Date();
     for (const activity of activities) {
       if (!needsTravelRefresh(activity, settings)) continue;
+      // De uren midden op een schooldag hebben geen eigen reis: je bent er al.
+      // Zonder deze regel haalt een gekoppeld rooster tientallen routes op voor
+      // hetzelfde ritje van huis naar school.
+      if (!travelIsRelevant(activity, activities, now)) continue;
       const plan = travelPlanFor(activity, settings);
       if (plan && failedKeys.current.has(plan.outboundKey)) continue;
       void computeTravel(activity, settings);

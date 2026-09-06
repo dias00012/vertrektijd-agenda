@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeDeparture, computeReturn, nextOccurrenceDate, travelPlanForDate } from "./travel";
-import type { Activity, Settings, TravelInfo } from "./types";
+import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
 
 const HOME = { label: "Thuis", lat: 52.37, lon: 5.21 };
 const SCHOOL = { label: "School", lat: 52.49, lon: 6.07 };
@@ -29,7 +29,7 @@ function travel(patch: Partial<TravelInfo> = {}): TravelInfo {
   };
 }
 
-function activity(patch: Partial<Activity> = {}): Activity {
+function activity(patch: Partial<ActivityOccurrence> = {}): ActivityOccurrence {
   return {
     id: "a1",
     category: "school",
@@ -51,8 +51,12 @@ function activity(patch: Partial<Activity> = {}): Activity {
     linkedExamId: null,
     createdAt: "2026-09-01T00:00:00.000Z",
     updatedAt: "2026-09-01T00:00:00.000Z",
+    occurrenceId: "a1:2026-09-07",
+    recurring: false,
+    // Een losse activiteit reist heen en terug; verblijven worden apart getest.
+    travelRole: { outbound: true, inbound: true },
     ...patch,
-  } as Activity;
+  } as ActivityOccurrence;
 }
 
 describe("computeDeparture", () => {
