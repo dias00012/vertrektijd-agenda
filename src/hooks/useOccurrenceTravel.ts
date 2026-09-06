@@ -65,8 +65,16 @@ export function useOccurrenceTravel(
   const isTransit = travels && travelModeFor(activity, settings) === "transit";
   const plan = isTransit ? travelPlanForDate(activity, settings, activity.date) : null;
 
-  // Staat de rit van deze dag al in de activiteit zelf, dan is er niets te doen.
-  const alreadyExact = Boolean(plan && activity.travel?.key === plan.outboundKey);
+  // Staat de rit van deze dag al in de activiteit zelf, dan is er niets te
+  // doen. Heen én terug: de heensleutel gaat over de starttijd, de terugsleutel
+  // over de eindtijd. Alleen op de heensleutel kijken betekende dat een
+  // gewijzigde eindtijd niets opnieuw ophaalde, en de oude thuiskomsttijd als
+  // exact bleef staan.
+  const alreadyExact = Boolean(
+    plan &&
+      activity.travel?.key === plan.outboundKey &&
+      activity.returnTravel?.key === plan.returnKey,
+  );
   const offset = daysBetween(toDateKey(new Date()), activity.date);
   const inRange = offset >= 0 && offset <= MAX_LOOKAHEAD_DAYS;
   const shouldFetch = Boolean(plan) && !alreadyExact && inRange;
@@ -80,7 +88,9 @@ export function useOccurrenceTravel(
   /** Verandert zodra we opnieuw willen ophalen, bv. na een paar minuten. */
   const [reloadAt, setReloadAt] = useState(0);
 
-  const outboundKey = plan?.outboundKey ?? null;
+  // Eén sleutel voor het hele paar: verandert er aan heen óf terug iets, dan
+  // moet er opnieuw opgehaald worden.
+  const tripKey = plan ? `${plan.outboundKey}|${plan.returnKey}` : null;
 
   /*
    * Vertragingen veranderen, dus halen we een OV-rit regelmatig opnieuw op, en
@@ -115,8 +125,8 @@ export function useOccurrenceTravel(
   }, [isTransit, worthRefreshing]);
 
   useEffect(() => {
-    if (!shouldFetch || !plan || !outboundKey || !settings.home || !activity.location) return;
-    if (fetched?.key === outboundKey && reloadAt === 0) return;
+    if (!shouldFetch || !plan || !tripKey || !settings.home || !activity.location) return;
+    if (fetched?.key === tripKey && reloadAt === 0) return;
 
     const home = settings.home;
     const destination = activity.location;
@@ -126,7 +136,7 @@ export function useOccurrenceTravel(
     // twee kaarten van dezelfde activiteit (dashboard en dagoverzicht) één
     // aanvraag in plaats van er allebei een te doen.
     const maxAge = reloadAt > 0 ? FRESH_MS : CACHE_TTL_MS;
-    const cached = cache.get(outboundKey);
+    const cached = cache.get(tripKey);
     const request =
       cached && Date.now() - cached.at < maxAge
         ? cached.value
@@ -143,9 +153,9 @@ export function useOccurrenceTravel(
                 bike: plan.returnBike,
               }),
             ]).then(([outbound, inbound]) => ({ outbound, inbound }));
-            cache.set(outboundKey, { at: Date.now(), value });
+            cache.set(tripKey, { at: Date.now(), value });
             // Een mislukte reis niet vasthouden: morgen mag het opnieuw.
-            value.catch(() => cache.delete(outboundKey));
+            value.catch(() => cache.delete(tripKey));
             return value;
           })();
 
@@ -155,7 +165,7 @@ export function useOccurrenceTravel(
         if (!active) return;
         const computedAt = new Date().toISOString();
         setFetched({
-          key: outboundKey,
+          key: tripKey,
           travel: { ...outbound, computedAt, key: plan.outboundKey },
           returnTravel: { ...inbound, computedAt, key: plan.returnKey },
         });
@@ -172,12 +182,12 @@ export function useOccurrenceTravel(
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldFetch, outboundKey, reloadAt]);
+  }, [shouldFetch, tripKey, reloadAt]);
 
   if (!isTransit) return { ...stored, loading: false, exact: true };
   if (alreadyExact) return { ...stored, loading: false, exact: true };
 
-  if (fetched && fetched.key === outboundKey) {
+  if (fetched && fetched.key === tripKey) {
     return {
       travel: fetched.travel,
       returnTravel: fetched.returnTravel,
