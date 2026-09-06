@@ -5,7 +5,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AgendaProvider } from "@/hooks/useAgenda";
 import { AppShell } from "@/components/AppShell";
 import { ServiceWorker } from "@/components/ServiceWorker";
-import { THEMES, DEFAULT_THEME, THEME_KEY } from "@/lib/theme";
+import { THEMES, DEFAULT_THEME, THEME_KEY, TINT_KEY } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Vertrektijd, slimme agenda",
@@ -51,6 +51,8 @@ const themeScript = `
     document.documentElement.style.setProperty("--accent-light", tint[0]);
     document.documentElement.style.setProperty("--accent-dark", tint[1]);
     document.documentElement.dataset.theme = id;
+    document.documentElement.dataset.tint =
+      localStorage.getItem(${JSON.stringify(TINT_KEY)}) === "on" ? "on" : "off";
   } catch (error) {
     // Privémodus of geblokkeerde opslag: dan geldt gewoon de standaardkleur.
   }

@@ -33,6 +33,29 @@ export const THEMES: Theme[] = [
 export const DEFAULT_THEME = "blue";
 export const THEME_KEY = "agenda.theme.v1";
 
+/**
+ * Kleurt de achtergrond mee met je thema, of blijft die neutraal?
+ *
+ * Standaard uit: een gekleurde achtergrond is smaak, en wie er last van heeft
+ * moet er niet eerst een instelling voor hoeven zoeken. De accentkleur van
+ * knoppen en markeringen staat er los van en geldt altijd.
+ */
+export const TINT_KEY = "agenda.themeTint.v1";
+
+export function applyTint(on: boolean): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.dataset.tint = on ? "on" : "off";
+}
+
+export function storedTint(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(TINT_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
 export function findTheme(id: string | null | undefined): Theme {
   return THEMES.find((theme) => theme.id === id) ?? THEMES[0];
 }

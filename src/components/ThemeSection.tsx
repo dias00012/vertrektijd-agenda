@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
-import { THEMES, THEME_KEY, applyTheme, storedTheme } from "@/lib/theme";
+import {
+  THEMES,
+  THEME_KEY,
+  TINT_KEY,
+  applyTheme,
+  applyTint,
+  storedTheme,
+  storedTint,
+} from "@/lib/theme";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 /**
@@ -14,10 +22,12 @@ import type { TranslationKey } from "@/lib/i18n/dictionary";
 export function ThemeSection() {
   const t = useT();
   const [theme, setTheme] = useState(THEMES[0].id);
+  const [tint, setTint] = useState(false);
 
   // Pas na het aankoppelen: op de server is er geen opgeslagen keuze.
   useEffect(() => {
     setTheme(storedTheme());
+    setTint(storedTint());
   }, []);
 
   function choose(id: string) {
@@ -27,6 +37,16 @@ export function ThemeSection() {
       window.localStorage.setItem(THEME_KEY, id);
     } catch {
       // Privémodus: de kleur geldt dan alleen voor deze sessie.
+    }
+  }
+
+  function toggleTint(on: boolean) {
+    setTint(on);
+    applyTint(on);
+    try {
+      window.localStorage.setItem(TINT_KEY, on ? "on" : "off");
+    } catch {
+      // Privémodus: de keuze geldt dan alleen voor deze sessie.
     }
   }
 
@@ -68,6 +88,19 @@ export function ThemeSection() {
           );
         })}
       </div>
+
+      <label className="mt-4 flex cursor-pointer items-start gap-2.5">
+        <input
+          type="checkbox"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
+          checked={tint}
+          onChange={(event) => toggleTint(event.target.checked)}
+        />
+        <span className="text-xs leading-relaxed">
+          <span className="block font-medium">{t("theme.tint")}</span>
+          <span style={{ color: "var(--muted)" }}>{t("theme.tintHint")}</span>
+        </span>
+      </label>
     </section>
   );
 }

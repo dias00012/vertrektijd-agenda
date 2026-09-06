@@ -21,15 +21,14 @@
   color-scheme: light;
 
   /*
-   * De grijstinten zijn niet neutraal maar licht gekleurd door de gekozen
-   * accentkleur. Daardoor voelt de hele app als "jouw kleur" in plaats van
-   * alleen de knoppen. De tekstkleuren blijven bewust neutraal: die moeten
-   * leesbaar blijven, hoe fel je kleur ook is.
+   * Kaarten, vlakken en randen blijven altijd neutraal: kleur je die mee, dan
+   * ligt de tint als een waas over alles wat je leest in plaats van erachter.
+   * Alleen de achtergrond kan meekleuren, en dat is een keuze (zie [data-tint]).
    */
-  --canvas: color-mix(in srgb, var(--accent) 14%, #eef0f4);
-  --surface: color-mix(in srgb, var(--accent) 2%, #ffffff);
-  --surface-soft: color-mix(in srgb, var(--accent) 10%, #f2f4f7);
-  --line: color-mix(in srgb, var(--accent) 16%, #e6e8ec);
+  --canvas: #f2f4f7;
+  --surface: #ffffff;
+  --surface-soft: #f2f4f7;
+  --line: #e4e7ec;
   --ink: #111827;
   --muted: #6b7280;
   --danger: #dc2626;
@@ -49,19 +48,28 @@
   :root {
     color-scheme: dark;
     --accent: var(--accent-dark);
-    /*
-     * Ook in het donker een echte kleur, geen bijna-zwart met een vleugje. Elke
-     * laag krijgt dezelfde tint maar een lichtere ondergrond, zodat de volgorde
-     * klopt: achtergrond het donkerst, dan de kaarten, dan de vlakken erop.
-     */
-    --canvas: color-mix(in srgb, var(--accent) 20%, #0a0d12);
-    --surface: color-mix(in srgb, var(--accent) 20%, #1b222e);
-    --surface-soft: color-mix(in srgb, var(--accent) 26%, #222a38);
-    --line: color-mix(in srgb, var(--accent) 30%, #2b3444);
+    --canvas: #0d1117;
+    --surface: #161b22;
+    --surface-soft: #1c2129;
+    --line: #262c36;
     --ink: #e9edf3;
     --muted: #9aa4b2;
     --danger: #f87171;
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/*
+ * Achtergrond meekleuren met je thema. Aan te zetten in Instellingen; in het
+ * donker iets zachter, omdat een lichte kleur daar harder naar voren springt.
+ */
+:root[data-tint="on"] {
+  --canvas: color-mix(in srgb, var(--accent) 10%, #eef0f4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-tint="on"] {
+    --canvas: color-mix(in srgb, var(--accent) 14%, #0a0d12);
   }
 }
 

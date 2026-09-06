@@ -8,6 +8,14 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.17.1
+
+- **Kleur ligt niet meer als een waas over je scherm.** Kaarten, vlakken en randen waren mee
+  getint, waardoor alles wat je leest de kleur van je thema kreeg. Die blijven nu neutraal.
+- **De achtergrond meekleuren is een keuze geworden, en staat standaard uit.** Je thema bepaalt
+  voortaan alleen de knoppen en markeringen; wil je de achtergrond er ook in, dan zet je dat aan
+  bij Instellingen → Kleur van de app.
+
 ## 0.17.0
 
 - **Fietsen naar het station.** De app liet je altijd lopen naar de halte, terwijl vrijwel elke
