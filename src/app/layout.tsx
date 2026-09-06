@@ -5,6 +5,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AgendaProvider } from "@/hooks/useAgenda";
 import { AppShell } from "@/components/AppShell";
 import { ServiceWorker } from "@/components/ServiceWorker";
+import { THEMES, DEFAULT_THEME, THEME_KEY } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Vertrektijd, slimme agenda",
@@ -34,9 +35,34 @@ export const viewport: Viewport = {
   ],
 };
 
+
+/**
+ * Zet de gekozen kleur nog vóór React begint. Zonder dit zie je bij het openen
+ * eerst het standaardblauw en daarna pas je eigen kleur.
+ */
+const themeScript = `
+(function () {
+  try {
+    var themes = ${JSON.stringify(
+      Object.fromEntries(THEMES.map((theme) => [theme.id, [theme.light, theme.dark]])),
+    )};
+    var id = localStorage.getItem(${JSON.stringify(THEME_KEY)}) || ${JSON.stringify(DEFAULT_THEME)};
+    var tint = themes[id] || themes[${JSON.stringify(DEFAULT_THEME)}];
+    document.documentElement.style.setProperty("--accent-light", tint[0]);
+    document.documentElement.style.setProperty("--accent-dark", tint[1]);
+    document.documentElement.dataset.theme = id;
+  } catch (error) {
+    // Privémodus of geblokkeerde opslag: dan geldt gewoon de standaardkleur.
+  }
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="nl">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <LanguageProvider>
           <AuthProvider>

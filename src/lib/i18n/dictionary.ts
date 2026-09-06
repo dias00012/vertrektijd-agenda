@@ -658,6 +658,18 @@ export const nl = {
   "api.notACalendar": "Op dit adres staat geen agenda. Controleer of je de iCal-link hebt gekopieerd.",
   "api.timetableTimeout": "Het rooster reageerde niet op tijd.",
   "api.tooManyRoutes": "Te veel routeberekeningen achter elkaar. Probeer het zo nog eens.",
+
+  /* --- Themakleur -------------------------------------------------------- */
+  "theme.title": "Kleur van de app",
+  "theme.body": "Kies de kleur van knoppen en accenten. De keuze geldt op dit apparaat en werkt in zowel de lichte als de donkere weergave.",
+  "theme.blue": "Blauw",
+  "theme.indigo": "Indigo",
+  "theme.purple": "Paars",
+  "theme.pink": "Roze",
+  "theme.red": "Rood",
+  "theme.orange": "Oranje",
+  "theme.green": "Groen",
+  "theme.teal": "Turquoise",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1282,6 +1294,17 @@ export const en: Record<TranslationKey, string> = {
   "api.notACalendar": "There is no calendar at this address. Check that you copied the iCal link.",
   "api.timetableTimeout": "The timetable did not respond in time.",
   "api.tooManyRoutes": "Too many route calculations in a row. Try again shortly.",
+
+  "theme.title": "App colour",
+  "theme.body": "Choose the colour of buttons and accents. Your choice applies on this device and works in both light and dark mode.",
+  "theme.blue": "Blue",
+  "theme.indigo": "Indigo",
+  "theme.purple": "Purple",
+  "theme.pink": "Pink",
+  "theme.red": "Red",
+  "theme.orange": "Orange",
+  "theme.green": "Green",
+  "theme.teal": "Teal",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

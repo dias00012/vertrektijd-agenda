@@ -8,6 +8,14 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.16.0
+
+- **Kies je eigen kleur.** In Instellingen staat nu "Kleur van de app" met acht kleuren: blauw,
+  indigo, paars, roze, rood, oranje, groen en turquoise. De hele app wisselt mee: knoppen,
+  actieve tabbladen, focusranden en de nadruk op je vertrektijd. Elk thema heeft een eigen tint
+  voor de lichte en de donkere weergave, want een kleur die mooi is op wit is te donker op zwart.
+  De kleur wordt gezet vóór de eerste weergave, dus je ziet geen blauwe flits bij het openen.
+
 ## 0.15.0
 
 - **Taalkeuze: Nederlands of Engels.** In Instellingen staat een knop met twee talen. Kies je

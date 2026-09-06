@@ -10,6 +10,7 @@ import { BackupSection } from "@/components/BackupSection";
 import { RemindersSection } from "@/components/RemindersSection";
 import { TimetableImport } from "@/components/TimetableImport";
 import { LanguageSection } from "@/components/LanguageSection";
+import { ThemeSection } from "@/components/ThemeSection";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
@@ -66,6 +67,7 @@ export default function SettingsPage() {
       </header>
 
       <LanguageSection />
+      <ThemeSection />
       {hydrated ? <AccountSection /> : null}
 
       {!hydrated ? (
