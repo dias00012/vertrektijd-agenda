@@ -2,6 +2,7 @@ import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { motisPlan, toTravelLeg } from "./motis";
+import { pickItinerary } from "../itineraries";
 import type { GeoLocation, TravelMode, TravelResult, TransitBike } from "../types";
 
 /**
@@ -21,6 +22,17 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const TRANSIT_CACHE_TTL_MS = 10 * 60 * 1000;
 /** Ruime bovengrens zodat ook lange fiets-/looproutes een antwoord geven. */
 const MAX_DIRECT_SECONDS = 4 * 60 * 60;
+/**
+ * Hoeveel OV-opties we opvragen. Eén was te weinig: de planner geeft opties
+ * terug die elk ergens beter in zijn, en welke dat is zie je pas als je er
+ * meerdere naast elkaar legt (zie `pickItinerary`).
+ */
+const TRANSIT_OPTIONS = 5;
+/**
+ * Rijdt er niets, dan mag een directe loop- of fietsroute zo lang duren. Korter
+ * dan bij een bewuste fiets-/looproute: dit is een vangnet, geen dagtocht.
+ */
+const MAX_TRANSIT_DIRECT_SECONDS = 45 * 60;
 
 export type RouteResult = TravelResult;
 
@@ -147,20 +159,32 @@ async function planDirect(
 
 /** Zo lang mag het fietsdeel naar of vanaf een halte duren. */
 const MAX_BIKE_SECONDS = 30 * 60;
+/**
+ * Zo lang mag je naar de eerste halte lopen. De planner houdt het uit zichzelf
+ * op een kwartier, en dat is net te kort: wie twintig minuten naar het station
+ * loopt kreeg daardoor geen wandelroute maar een omweg met een extra bus.
+ */
+const MAX_WALK_SECONDS = 20 * 60;
 
 /**
- * Fietsen naar de halte, en eventueel aan de andere kant weer verder. Dat
- * scheelt op een gemiddelde studentenreis al snel twintig minuten ten opzichte
- * van lopen, met precies dezelfde trein.
+ * Hoe je bij de halte komt en er weer vandaan. Lopen kan altijd; wie een fiets
+ * heeft krijgt die er als mogelijkheid bij. Bewust naast elkaar en niet in
+ * plaats van: met alleen fietsen viel de halte om de hoek af en kwam je op een
+ * verder station uit, terwijl fietsen op een langere aanrijroute al snel
+ * twintig minuten scheelt met precies dezelfde trein. De planner mag zelf per
+ * rit kiezen wat sneller is.
  */
-export function applyBikeOptions(params: URLSearchParams, bike: TransitBike | undefined): void {
-  if (!bike || bike === "none") return;
-  params.set("preTransitModes", "BIKE");
-  params.set("maxPreTransitTime", String(MAX_BIKE_SECONDS));
-  if (bike === "both") {
-    params.set("postTransitModes", "BIKE");
-    params.set("maxPostTransitTime", String(MAX_BIKE_SECONDS));
-  }
+export function applyStreetOptions(
+  params: URLSearchParams,
+  bike: TransitBike | undefined,
+): void {
+  const bikeToStop = bike === "start" || bike === "both";
+  params.set("preTransitModes", bikeToStop ? "WALK,BIKE" : "WALK");
+  params.set("maxPreTransitTime", String(bikeToStop ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
+
+  const bikeFromStop = bike === "both";
+  params.set("postTransitModes", bikeFromStop ? "WALK,BIKE" : "WALK");
+  params.set("maxPostTransitTime", String(bikeFromStop ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
 }
 
 async function planTransit(
@@ -176,12 +200,19 @@ async function planTransit(
     toPlace: place(to),
     time,
     arriveBy: String(arriveBy),
-    numItineraries: "1",
+    // Meer dan één, want de planner geeft opties terug die elk ergens beter in
+    // zijn en de beste staat niet per se vooraan. Met één optie kreeg je op een
+    // heenreis vaak de vroegste vertrektijd met de langste route.
+    numItineraries: String(TRANSIT_OPTIONS),
+    maxDirectTime: String(MAX_TRANSIT_DIRECT_SECONDS),
   });
-  applyBikeOptions(params, options.transitBike);
+  applyStreetOptions(params, options.transitBike);
 
   const data = await motisPlan(params);
-  const best = data.itineraries?.[0];
+  // Levert het OV niets op, dan is er soms nog wel een directe loop- of
+  // fietsroute. Die tonen is beter dan zeggen dat er geen verbinding is.
+  const candidates = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  const best = pickItinerary(candidates, { arriveBy, time });
   if (!best?.duration || !best.startTime || !best.endTime) {
     throw new ProviderError("api.noTransit", 422);
   }

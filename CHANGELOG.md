@@ -8,6 +8,35 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.28.0
+
+- **De app kiest nu zelf de beste rit.** De reisplanner geeft meerdere opties terug die elk
+  ergens beter in zijn — de een vertrekt later, de ander komt eerder aan — en in welke volgorde
+  dat binnenkomt ligt niet vast. De app pakte gewoon de eerste, en op een heenreis was dat vaak
+  de **vroegste vertrektijd met de langste route**: je stond een half uur te vroeg op het
+  perron voor een omweg. Nu vraagt de app er vijf op en kiest hij bewust: bij "uiterlijk
+  aankomen om" de laatste vertrektijd waarmee je nog op tijd bent, bij een terugreis de
+  vroegste aankomst.
+- **Een overstap telt mee.** Vijf minuten later de deur uit is fijn, maar niet als je er een
+  extra overstap voor terugkrijgt: die kost tijd op het perron en gaat als eerste mis bij
+  vertraging. Een overstap weegt daarom als vijf minuten.
+- **Lopen kan altijd, ook met een fiets.** Wie "fiets naar de halte" aan had staan kón niet meer
+  lopen: de halte om de hoek viel af en je kwam op een verder station uit. Nu liggen lopen en
+  fietsen naast elkaar en kiest de planner per rit wat sneller is.
+- **Twintig minuten naar het station lopen mag.** De planner hield het uit zichzelf op een
+  kwartier, en wie verder liep kreeg daardoor geen wandelroute maar een omweg met een extra bus.
+- **Geen dubbele en geen zinloze opties meer.** Een rit die eerder weg moet én later aankomt dan
+  een andere valt weg, net als dezelfde trein die twee keer verschijnt met een net ander looppad.
+  De lijst staat op vertrektijd zoals een vertrekbord, en de kortste rit krijgt het merkje
+  *snelste*, want die hoeft niet bovenaan te staan.
+- **Rijdt er niets, dan volgt de loop- of fietsroute.** Voor een bestemming zonder OV in de buurt
+  zei de app "geen verbinding"; nu krijg je gewoon de directe route, tot drie kwartier.
+
+## 0.18.0 t/m 0.27.0
+
+Nog niet uitgeschreven in dit bestand. Wat er in die versies veranderde staat wel in de
+commitberichten (`git log --oneline`).
+
 ## 0.17.1
 
 - **De hele achtergrond krijgt je kleur, de kaarten niet.** Eerst waren ook de kaarten, vlakken

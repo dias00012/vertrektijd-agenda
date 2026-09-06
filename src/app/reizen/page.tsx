@@ -21,6 +21,21 @@ function toLocalInput(date: Date): string {
   )}:${pad(date.getMinutes())}`;
 }
 
+/**
+ * De id van de kortste rit, of null als alle opties even lang duren: dan zegt
+ * een merkje "snelste" niets en is het alleen maar ruis.
+ */
+function fastestJourneyId(journeys: Journey[]): string | null {
+  if (journeys.length < 2) return null;
+  const fastest = journeys.reduce((best, journey) =>
+    journey.durationMinutes < best.durationMinutes ? journey : best,
+  );
+  const shared = journeys.every(
+    (journey) => journey.durationMinutes === fastest.durationMinutes,
+  );
+  return shared ? null : fastest.id;
+}
+
 /** Reisplanner: zoek een rit met trein, bus, tram of metro. */
 export default function TravelPlannerPage() {
   const { settings, hydrated } = useAgenda();
@@ -39,6 +54,9 @@ export default function TravelPlannerPage() {
   const [locating, setLocating] = useState(false);
 
   const places = hydrated ? placeChoices(settings) : [];
+  // De lijst staat op vertrektijd; de snelste rit hoeft dus niet bovenaan te
+  // staan. Alleen merken als er echt iets te kiezen valt.
+  const fastestId = fastestJourneyId(journeys);
 
   // Vertrekpunt standaard op thuis: dat is bijna altijd waar je vandaan gaat.
   useEffect(() => {
@@ -264,7 +282,11 @@ export default function TravelPlannerPage() {
 
           <div className="space-y-2.5">
             {journeys.map((journey) => (
-              <JourneyCard key={journey.id} journey={journey} />
+              <JourneyCard
+                key={journey.id}
+                journey={journey}
+                fastest={journey.id === fastestId}
+              />
             ))}
           </div>
 
