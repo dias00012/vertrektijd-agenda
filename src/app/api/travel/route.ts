@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { say } from "@/lib/server/language";
 import { route } from "@/lib/server/routing";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
@@ -51,19 +52,19 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as TravelRequestBody;
   } catch {
-    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.badRequest") }, { status: 400 });
   }
 
   if (!isValidPoint(body.from)) {
-    return NextResponse.json({ error: "Stel eerst je thuislocatie in." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.needHome") }, { status: 400 });
   }
   if (!isValidPoint(body.to)) {
-    return NextResponse.json({ error: "De bestemming is onbekend." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.unknownDestination") }, { status: 400 });
   }
 
   const mode = (body.mode ?? "car") as TravelMode;
   if (!VALID_MODES.includes(mode)) {
-    return NextResponse.json({ error: "Onbekend vervoersmiddel." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.unknownMode") }, { status: 400 });
   }
 
   try {
@@ -75,9 +76,9 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ProviderError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json({ error: say(request, error.key) }, { status: error.status });
     }
     console.error("[api/travel]", error);
-    return NextResponse.json({ error: "De reistijd kon niet worden berekend." }, { status: 500 });
+    return NextResponse.json({ error: say(request, "api.travelFailed") }, { status: 500 });
   }
 }

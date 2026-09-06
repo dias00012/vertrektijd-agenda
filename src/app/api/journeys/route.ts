@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { say } from "@/lib/server/language";
 import { planJourneys } from "@/lib/server/journeys";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
@@ -48,14 +49,14 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as JourneyRequestBody;
   } catch {
-    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.badRequest") }, { status: 400 });
   }
 
   if (!isValidPoint(body.from)) {
-    return NextResponse.json({ error: "Kies een geldig vertrekpunt." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.needStart") }, { status: 400 });
   }
   if (!isValidPoint(body.to)) {
-    return NextResponse.json({ error: "Kies een geldige bestemming." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.needDestination") }, { status: 400 });
   }
 
   try {
@@ -68,9 +69,9 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ProviderError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json({ error: say(request, error.key) }, { status: error.status });
     }
     console.error("[api/journeys]", error);
-    return NextResponse.json({ error: "De reis kon niet worden gepland." }, { status: 500 });
+    return NextResponse.json({ error: say(request, "api.journeyFailed") }, { status: 500 });
   }
 }

@@ -64,10 +64,10 @@ export async function motisPlan(params: URLSearchParams): Promise<MotisPlanRespo
   );
 
   if (response.status === 429) {
-    throw new ProviderError("Te veel reisaanvragen achter elkaar. Probeer het zo nog eens.", 429);
+    throw new ProviderError("api.tooManyJourneys", 429);
   }
   if (!response.ok) {
-    throw new ProviderError("De reisplanner is niet bereikbaar. Probeer het later opnieuw.");
+    throw new ProviderError("api.plannerDown");
   }
   return (await response.json()) as MotisPlanResponse;
 }

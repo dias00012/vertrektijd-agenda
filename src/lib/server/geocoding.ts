@@ -104,10 +104,10 @@ async function geocodeNominatim(query: string, limit: number): Promise<GeocodeRe
   });
 
   if (response.status === 429) {
-    throw new ProviderError("Te veel zoekopdrachten achter elkaar. Wacht even en probeer opnieuw.", 429);
+    throw new ProviderError("api.tooManySearches", 429);
   }
   if (!response.ok) {
-    throw new ProviderError("Het zoeken van de locatie is mislukt.");
+    throw new ProviderError("api.geocodeFailed");
   }
 
   const items = (await response.json()) as NominatimItem[];
@@ -156,10 +156,10 @@ async function geocodeOrs(query: string, limit: number): Promise<GeocodeResult[]
   });
 
   if (response.status === 401 || response.status === 403) {
-    throw new ProviderError("De API-sleutel voor OpenRouteService is ongeldig.", 500);
+    throw new ProviderError("api.orsKey", 500);
   }
   if (!response.ok) {
-    throw new ProviderError("Het zoeken van de locatie is mislukt.");
+    throw new ProviderError("api.geocodeFailed");
   }
 
   const data = (await response.json()) as { features?: OrsFeature[] };

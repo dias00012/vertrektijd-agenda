@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { say } from "@/lib/server/language";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
 import { checkPublicUrl } from "@/lib/safeUrl";
 
@@ -29,15 +30,15 @@ export async function POST(request: Request) {
   try {
     body = (await request.json()) as { url?: unknown };
   } catch {
-    return NextResponse.json({ error: "Ongeldige aanvraag." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.badRequest") }, { status: 400 });
   }
 
   if (typeof body.url !== "string" || body.url.trim().length === 0) {
-    return NextResponse.json({ error: "Vul de link naar je rooster in." }, { status: 400 });
+    return NextResponse.json({ error: say(request, "api.needUrl") }, { status: 400 });
   }
 
   let target = checkPublicUrl(body.url);
-  if (!target.ok) return NextResponse.json({ error: target.error }, { status: 400 });
+  if (!target.ok) return NextResponse.json({ error: say(request, target.error) }, { status: 400 });
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);
@@ -64,40 +65,40 @@ export async function POST(request: Request) {
       if (!next) break;
       const resolved = checkPublicUrl(new URL(next, target.url).toString());
       if (!resolved.ok) {
-        return NextResponse.json({ error: resolved.error }, { status: 400 });
+        return NextResponse.json({ error: say(request, resolved.error) }, { status: 400 });
       }
       target = resolved;
       response = null;
     }
 
     if (!response) {
-      return NextResponse.json({ error: "De link stuurt te vaak door." }, { status: 400 });
+      return NextResponse.json({ error: say(request, "api.tooManyRedirects") }, { status: 400 });
     }
     if (response.status === 401 || response.status === 403) {
       return NextResponse.json(
-        { error: "Deze link vraagt om inloggen. Gebruik de persoonlijke agenda-link." },
+        { error: say(request, "api.needsLogin") },
         { status: 400 },
       );
     }
     if (!response.ok) {
       return NextResponse.json(
-        { error: `Het rooster kon niet worden opgehaald (${response.status}).` },
+        { error: say(request, "api.timetableFailed", { status: response.status }) },
         { status: 502 },
       );
     }
 
     const declared = Number(response.headers.get("content-length") ?? 0);
     if (declared > MAX_BYTES) {
-      return NextResponse.json({ error: "Dit bestand is te groot." }, { status: 400 });
+      return NextResponse.json({ error: say(request, "api.fileTooBig") }, { status: 400 });
     }
 
     const text = await response.text();
     if (text.length > MAX_BYTES) {
-      return NextResponse.json({ error: "Dit bestand is te groot." }, { status: 400 });
+      return NextResponse.json({ error: say(request, "api.fileTooBig") }, { status: 400 });
     }
     if (!text.includes("BEGIN:VCALENDAR")) {
       return NextResponse.json(
-        { error: "Op dit adres staat geen agenda. Controleer of je de iCal-link hebt gekopieerd." },
+        { error: say(request, "api.notACalendar") },
         { status: 400 },
       );
     }
@@ -105,10 +106,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ text });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      return NextResponse.json({ error: "Het rooster reageerde niet op tijd." }, { status: 504 });
+      return NextResponse.json({ error: say(request, "api.timetableTimeout") }, { status: 504 });
     }
     console.error("[api/rooster]", error);
-    return NextResponse.json({ error: "Het rooster kon niet worden opgehaald." }, { status: 502 });
+    return NextResponse.json({ error: say(request, "api.timetableFailedShort") }, { status: 502 });
   } finally {
     clearTimeout(timer);
   }

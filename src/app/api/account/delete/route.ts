@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { say } from "@/lib/server/language";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
 
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
   });
   if (!limit.ok) {
     return NextResponse.json(
-      { error: "Te veel pogingen. Probeer het later opnieuw." },
+      { error: say(request, "api.deleteTooMany") },
       { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
     );
   }
@@ -35,8 +36,7 @@ export async function POST(request: Request) {
   if (!url || !serviceKey) {
     return NextResponse.json(
       {
-        error:
-          "Automatisch verwijderen is nog niet ingesteld. Mail ons en we verwijderen je account handmatig.",
+        error: say(request, "api.deleteNotConfigured"),
       },
       { status: 501 },
     );
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   if (!token) {
-    return NextResponse.json({ error: "Je bent niet ingelogd." }, { status: 401 });
+    return NextResponse.json({ error: say(request, "api.notLoggedIn") }, { status: 401 });
   }
 
   const admin = createClient(url, serviceKey, {
@@ -55,14 +55,14 @@ export async function POST(request: Request) {
   // want dan zou iemand andermans account kunnen wissen.
   const { data, error: lookupError } = await admin.auth.getUser(token);
   if (lookupError || !data.user) {
-    return NextResponse.json({ error: "Je sessie is verlopen. Log opnieuw in." }, { status: 401 });
+    return NextResponse.json({ error: say(request, "api.sessionExpired") }, { status: 401 });
   }
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id);
   if (deleteError) {
     console.error("[api/account/delete]", deleteError);
     return NextResponse.json(
-      { error: "Het account kon niet worden verwijderd. Probeer het later opnieuw." },
+      { error: say(request, "api.deleteFailed") },
       { status: 500 },
     );
   }

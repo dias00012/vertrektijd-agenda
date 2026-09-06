@@ -57,10 +57,7 @@ export async function planJourneys(
   const itineraries = data.itineraries ?? [];
 
   if (itineraries.length === 0) {
-    throw new ProviderError(
-      "Geen verbinding gevonden. Probeer een ander tijdstip of een andere halte.",
-      422,
-    );
+    throw new ProviderError("api.noConnection", 422);
   }
 
   const fromLabel = from.label || "vertrekpunt";

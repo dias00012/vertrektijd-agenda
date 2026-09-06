@@ -82,9 +82,9 @@ async function routeCar(from: GeoLocation, to: GeoLocation): Promise<RouteResult
   });
 
   if (response.status === 429) {
-    throw new ProviderError("Te veel routeberekeningen achter elkaar. Probeer het zo nog eens.", 429);
+    throw new ProviderError("api.tooManyRoutes", 429);
   }
-  if (!response.ok) throw new ProviderError("De routeberekening is mislukt.");
+  if (!response.ok) throw new ProviderError("api.routeFailed");
 
   const data = (await response.json()) as {
     code?: string;
@@ -92,7 +92,7 @@ async function routeCar(from: GeoLocation, to: GeoLocation): Promise<RouteResult
   };
   const best = data.routes?.[0];
   if (data.code !== "Ok" || !best) {
-    throw new ProviderError("Er is geen autoroute gevonden tussen deze twee locaties.", 422);
+    throw new ProviderError("api.noCarRoute", 422);
   }
 
   return {
@@ -123,12 +123,7 @@ async function planDirect(
   const data = await motisPlan(params);
   const best = data.direct?.[0];
   if (!best?.duration) {
-    throw new ProviderError(
-      mode === "bike"
-        ? "Er is geen fietsroute gevonden tussen deze twee locaties."
-        : "Er is geen looproute gevonden tussen deze twee locaties.",
-      422,
-    );
+    throw new ProviderError(mode === "bike" ? "api.noBikeRoute" : "api.noWalkRoute", 422);
   }
 
   const meters = (best.legs ?? []).reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
@@ -161,10 +156,7 @@ async function planTransit(
   const data = await motisPlan(params);
   const best = data.itineraries?.[0];
   if (!best?.duration || !best.startTime || !best.endTime) {
-    throw new ProviderError(
-      "Geen OV-verbinding gevonden voor dit tijdstip. Probeer een ander vervoermiddel.",
-      422,
-    );
+    throw new ProviderError("api.noTransit", 422);
   }
 
   const fromLabel = from.label || "vertrekpunt";

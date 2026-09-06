@@ -8,6 +8,18 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.15.0
+
+- **Taalkeuze: Nederlands of Engels.** In Instellingen staat een knop met twee talen. Kies je
+  Engels, dan is de hele app Engels: schermen, formulieren, foutmeldingen, en ook datums
+  ("Thursday, September 4"), duur ("1 h 23 min"), herhalingen ("Every weekday") en afstanden
+  (12.5 km met een punt in plaats van een komma). Bij de eerste keer openen kijkt de app naar de
+  taal van je telefoon; daarna geldt je eigen keuze, per apparaat.
+- Techniek: `src/lib/i18n` met Nederlands als bron. Engels moet dezelfde sleutels hebben, anders
+  bouwt de app niet, zodat er geen half vertaald scherm kan ontstaan. Berichten van de server
+  worden ook vertaald: de app stuurt de gekozen taal mee, en `ProviderError` draagt een sleutel
+  in plaats van een kant-en-klare zin.
+
 ## 0.14.0
 
 - **Schoolrooster koppelen.** Instellingen heeft nu "Schoolrooster koppelen": plak de iCal-link

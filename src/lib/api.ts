@@ -1,6 +1,16 @@
 "use client";
 
+import { getLanguage } from "./i18n/locale";
 import type { GeocodeResult, GeoLocation, Journey, TravelMode, TravelResult } from "./types";
+
+/**
+ * De server kent de gekozen taal niet uit zichzelf; die staat in de browser.
+ * Daarom gaat hij bij elke aanvraag mee, zodat foutmeldingen in dezelfde taal
+ * terugkomen als de rest van de app.
+ */
+function headers(extra: Record<string, string> = {}): Record<string, string> {
+  return { "X-Language": getLanguage(), ...extra };
+}
 
 /**
  * Dunne client voor onze eigen API-routes. De frontend kent geen enkele
@@ -22,7 +32,10 @@ export async function searchLocations(
   includeStops = false,
 ): Promise<GeocodeResult[]> {
   const stops = includeStops ? "&stops=1" : "";
-  const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}${stops}`, { signal });
+  const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}${stops}`, {
+    signal,
+    headers: headers(),
+  });
   if (!response.ok) {
     throw new Error(await parseError(response, "Zoeken naar de locatie is mislukt."));
   }
@@ -46,7 +59,7 @@ export async function fetchTravel(
 ): Promise<TravelResult> {
   const response = await fetch("/api/travel", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ from, to, ...options }),
     signal,
   });
@@ -81,7 +94,7 @@ export async function fetchJourneys(
 ): Promise<JourneySearchResult> {
   const response = await fetch("/api/journeys", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ from, to, ...options }),
     signal,
   });

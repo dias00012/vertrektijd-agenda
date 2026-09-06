@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { say } from "@/lib/server/language";
 import { geocode } from "@/lib/server/geocoding";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
@@ -30,9 +31,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ results });
   } catch (error) {
     if (error instanceof ProviderError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
+      return NextResponse.json({ error: say(request, error.key) }, { status: error.status });
     }
     console.error("[api/geocode]", error);
-    return NextResponse.json({ error: "Er ging iets mis bij het zoeken." }, { status: 500 });
+    return NextResponse.json({ error: say(request, "api.searchFailed") }, { status: 500 });
   }
 }

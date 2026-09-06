@@ -1,4 +1,5 @@
 import "server-only";
+import { nl, type TranslationKey } from "@/lib/i18n/dictionary";
 
 /**
  * Alle providerconfiguratie leeft uitsluitend op de server. Er is bewust geen
@@ -40,12 +41,19 @@ export function getProviderConfig(): ProviderConfig {
   };
 }
 
-/** Fout met een nette, in het Nederlands leesbare boodschap voor de client. */
+/**
+ * Fout van een externe dienst, met een sleutel in plaats van een kant-en-klare
+ * zin. De route vertaalt hem pas naar de taal van de gebruiker: hier diep in de
+ * providerlaag weten we niet wie er om vraagt.
+ */
 export class ProviderError extends Error {
   status: number;
-  constructor(message: string, status = 502) {
-    super(message);
+  key: TranslationKey;
+  constructor(key: TranslationKey, status = 502) {
+    // De Nederlandse tekst blijft de boodschap, handig in serverlogs.
+    super(nl[key]);
     this.name = "ProviderError";
+    this.key = key;
     this.status = status;
   }
 }
@@ -62,9 +70,9 @@ export async function fetchWithTimeout(
     return await fetch(url, { ...init, signal: controller.signal, cache: "no-store" });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
-      throw new ProviderError("De kaartenservice reageerde niet op tijd. Probeer het nog eens.", 504);
+      throw new ProviderError("api.mapTimeout", 504);
     }
-    throw new ProviderError("Kon de kaartenservice niet bereiken. Controleer je internetverbinding.");
+    throw new ProviderError("api.mapUnreachable");
   } finally {
     clearTimeout(timer);
   }

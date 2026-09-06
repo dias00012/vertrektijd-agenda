@@ -8,7 +8,9 @@
  * niet mag, in plaats van hopen dat het wel goed komt.
  */
 
-export type UrlCheck = { ok: true; url: URL } | { ok: false; error: string };
+import type { TranslationKey } from "./i18n/dictionary";
+
+export type UrlCheck = { ok: true; url: URL } | { ok: false; error: TranslationKey };
 
 /** Adressen die niet op het open internet staan. */
 export function isPrivateHost(hostname: string): boolean {
@@ -39,14 +41,14 @@ export function checkPublicUrl(raw: string): UrlCheck {
     // webcal:// is hetzelfde als https, alleen met een andere naam ervoor.
     url = new URL(raw.trim().replace(/^webcal:\/\//i, "https://"));
   } catch {
-    return { ok: false, error: "Dat is geen geldig webadres." };
+    return { ok: false, error: "api.badUrl" };
   }
 
   if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return { ok: false, error: "Alleen adressen die met http of https beginnen." };
+    return { ok: false, error: "api.httpOnly" };
   }
   if (isPrivateHost(url.hostname)) {
-    return { ok: false, error: "Dit adres wijst naar een intern netwerk en wordt niet opgehaald." };
+    return { ok: false, error: "api.privateHost" };
   }
   return { ok: true, url };
 }

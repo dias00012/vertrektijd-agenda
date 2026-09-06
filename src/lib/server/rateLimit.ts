@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { say } from "./language";
 
 /**
  * Verkeersdrempel voor onze eigen API-routes.
@@ -98,9 +99,7 @@ export function enforceRateLimit(
   if (result.ok) return null;
 
   return NextResponse.json(
-    {
-      error: `Te veel aanvragen achter elkaar. Probeer het over ${result.retryAfter} seconden opnieuw.`,
-    },
+    { error: say(request, "api.tooMany", { seconds: result.retryAfter }) },
     { status: 429, headers: { "Retry-After": String(result.retryAfter) } },
   );
 }

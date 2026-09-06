@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
+import { say } from "@/lib/server/language";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     windowMs: 60_000,
   });
   if (!limit.ok) {
-    return NextResponse.json({ error: "Te veel aanvragen." }, { status: 429 });
+    return NextResponse.json({ error: say(request, "api.tooManyShort") }, { status: 429 });
   }
 
   const has = (name: string) => Boolean(process.env[name]?.trim());
