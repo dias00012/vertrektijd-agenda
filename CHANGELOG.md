@@ -78,6 +78,12 @@ aantoonbaar faalt op de vorige versie.
   altijd, dus je marge sprong terug.
 - **Een zelfgemaakt activiteitstype werd stil "School"** — bij import, maar ook
   bij elke keer dat de app je agenda uit de cloud haalde.
+- **Mislukt opslaan is niet langer stil.** Zit de opslag van je browser vol of
+  staat hij uit, dan stond alles wat je invoerde alleen op het scherm en was het
+  na één keer herladen weg. Nu staat er een melding bovenaan.
+- **Zet je bij een activiteit van meer dagen alsnog "herhalen" aan**, dan bleef
+  de oude einddatum staan: dag 2 t/m 5 verdwenen zonder melding en op de kaart
+  stond "dag 8 van 5".
 
 **Rooster en agenda's koppelen**
 
@@ -87,6 +93,11 @@ aantoonbaar faalt op de vorige versie.
   afspraak. Je eigen agenda erbij koppelen zit er vol mee.
 - **Twee gekoppelde agenda's overschreven elkaars sync-tijdstip**, waarna de
   eerste bij elke tik opnieuw het net op ging.
+- **Een meegestuurde duur werd genegeerd.** Staat er geen eindtijd maar wel een
+  duur — wat agenda's vaak doen — dan nam de app stil een uur aan. Een werkgroep
+  van 09:00 tot 10:45 stond tot 10:00 in je agenda.
+- **De laatste dag van een vakantie viel eraf** als de zomertijd binnen die
+  periode eindigde: die dag duurt 25 uur, en de app rekende met 24.
 
 **Meldingen**
 
@@ -107,6 +118,11 @@ aantoonbaar faalt op de vorige versie.
   elke omleiding.
 - **De 4MB-grens telde pas nadat het hele bestand in het geheugen stond**, en
   alleen als de bron een lengte meestuurde.
+- **De verkeersdrempel was met één kopregel te omzeilen.** Hij las een waarde
+  die de bezoeker zelf invult; wie bij elke aanvraag een ander adres verzon
+  kreeg elke keer een verse emmer.
+- **Aanmelden voor meldingen accepteerde elk https-adres**, en de server roept
+  dat adres later zelf aan. Nu alleen de pushdiensten van de browsers.
 
 **Onder de motorkap**
 
@@ -118,7 +134,7 @@ aantoonbaar faalt op de vorige versie.
 - `scripts/reis-check.mjs` laat zien wat de OV-planner echt teruggeeft, met
   varianten naast elkaar. Bedoeld om een verschil met 9292 te herleiden tot de
   gegevens of tot een instelling.
-- Van 152 naar 192 tests.
+- Van 152 naar 204 tests.
 
 ## 0.28.0
 
