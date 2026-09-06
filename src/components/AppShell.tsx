@@ -11,6 +11,7 @@ import { Tour } from "./Tour";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
 import { useTimetableSync } from "@/hooks/useTimetableSync";
+import { usePushQueue } from "@/hooks/usePushQueue";
 import { useT } from "@/hooks/useLanguage";
 
 const NAV = [
@@ -42,6 +43,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   useReminders();
   // Een gekoppeld rooster stil bijwerken, hoogstens een keer per dag.
   useTimetableSync();
+  // En de meldingen die met de app dicht moeten komen klaarzetten.
+  usePushQueue();
 
   const introValue = useMemo(
     () => ({ open: () => setIntroOpen(true), openTour: () => setTourOpen(true) }),

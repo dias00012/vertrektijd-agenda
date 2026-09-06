@@ -1,6 +1,6 @@
 {
   "name": "vertrektijd-agenda",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -16,13 +16,15 @@
     "next": "^15.5.25",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.13",
     "@types/node": "22.15.3",
     "@types/react": "19.1.9",
     "@types/react-dom": "19.1.7",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "^15.5.25",
     "tailwindcss": "4.1.13",

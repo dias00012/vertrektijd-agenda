@@ -76,6 +76,120 @@ NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 ```
 
+## 8. Meldingen met de app dicht (optioneel)
+
+De gewone herinneringen werken zolang de app openstaat. Wil je ook een seintje
+krijgen met de app helemaal afgesloten, dan zijn deze vier stappen nodig.
+
+**Hoe het in elkaar zit.** De server leest je agenda niet en kan dat ook niet.
+Je telefoon rekent zelf uit wanneer je moet vertrekken en zet kant-en-klare
+zinnen in een wachtrij: "stuur deze tekst om 07:04". De server weet dus alleen
+een tijdstip en een zin, niet waar je heen gaat. De prijs daarvan: de wachtrij
+loopt twee weken vooruit, dus je moet de app minstens eens per week openen.
+
+### 8.1 De tabellen
+
+**SQL Editor** → nieuwe query → plakken → **Run**:
+
+```sql
+create table if not exists public.push_devices (
+  id uuid primary key,
+  endpoint text not null,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.push_queue (
+  id uuid primary key default gen_random_uuid(),
+  device_id uuid not null references public.push_devices(id) on delete cascade,
+  send_at timestamptz not null,
+  title text not null,
+  body text not null default '',
+  sent_at timestamptz
+);
+
+create index if not exists push_queue_due_idx
+  on public.push_queue (send_at) where sent_at is null;
+
+-- Aan, en bewust zonder policies: alleen de service-sleutel mag hierbij, en die
+-- staat uitsluitend op de server. De browser praat via /api/push/*.
+alter table public.push_devices enable row level security;
+alter table public.push_queue enable row level security;
+```
+
+### 8.2 Het sleutelpaar
+
+Draai dit op je eigen computer:
+
+```
+npx web-push generate-vapid-keys
+```
+
+Je krijgt een **Public Key** en een **Private Key**. De publieke helft hoort in
+de browser, de geheime helft nooit. Geef die laatste dus geen `NEXT_PUBLIC_`.
+
+### 8.3 De instellingen bij je hosting
+
+In Vercel: **Settings → Environment Variables**, en daarna opnieuw deployen.
+
+| Naam | Waarde |
+| --- | --- |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | de publieke helft |
+| `VAPID_PRIVATE_KEY` | de geheime helft |
+| `VAPID_CONTACT` | `mailto:jij@voorbeeld.nl` |
+| `PUSH_CRON_SECRET` | zelf verzinnen, lang en willekeurig |
+
+`SUPABASE_SERVICE_ROLE_KEY` moet er al staan van stap 5.
+
+Controleer daarna `https://jouw-app.vercel.app/api/health`: bij `features` horen
+`pushNotifications` en `pushClock` allebei op `true` te staan. Die pagina toont
+alleen ja of nee, nooit de sleutels zelf.
+
+### 8.4 De klok
+
+Vercel mag op het gratis pakket maar één taak per dag draaien, en dit moet elke
+minuut. Daarom draait de klok in Supabase zelf.
+
+**Database → Extensions**: zet `pg_cron` en `pg_net` aan. Daarna in de SQL
+Editor, met je eigen adres en je eigen `PUSH_CRON_SECRET` ingevuld:
+
+```sql
+select cron.schedule(
+  'vertrektijd-push',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url := 'https://jouw-app.vercel.app/api/push/send',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer JOUW_PUSH_CRON_SECRET'
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);
+
+-- Opgeruimd staat netjes: verstuurde en verlopen berichten gaan na twee dagen weg.
+select cron.schedule(
+  'vertrektijd-push-opruimen',
+  '17 4 * * *',
+  $$ delete from public.push_queue where send_at < now() - interval '2 days'; $$
+);
+```
+
+Het geheim staat hiermee in je eigen database; alleen jij komt daarbij. Wil je
+de taak later aanpassen, gebruik dan `select cron.unschedule('vertrektijd-push');`
+en plan hem opnieuw.
+
+### 8.5 Aanzetten
+
+Open de app → **Instellingen → Herinneringen** → kies een aantal minuten en vink
+**Ook als de app dicht is** aan.
+
+Op een iPhone werkt dit alleen wanneer de app op je beginscherm staat: Safari →
+delen → "Zet op beginscherm". Dat is een regel van Apple, niet van deze app.
+
 ## Klaar
 
 Open de app → **Instellingen → Account & synchronisatie** → maak een account aan of

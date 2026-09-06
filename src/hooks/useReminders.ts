@@ -2,11 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAgenda } from "./useAgenda";
-import { activitiesOnDate } from "@/lib/agenda";
-import { computeDeparture, departureDateTime } from "@/lib/travel";
-import { todayKey } from "@/lib/time";
-import { getLanguage } from "@/lib/i18n/locale";
-import { translate } from "@/lib/i18n/dictionary";
+import { plannedReminders } from "@/lib/reminders";
 
 /**
  * Herinneringen: "over 15 minuten vertrekken".
@@ -14,10 +10,9 @@ import { translate } from "@/lib/i18n/dictionary";
  * Wat dit wél doet: zolang de app open staat (ook als tabblad op de achtergrond
  * of als geïnstalleerde app) krijg je op tijd een melding op je scherm.
  *
- * Wat dit níét doet: je wekken terwijl de app helemaal dicht is. Daarvoor is een
- * pushserver nodig die jouw agenda kent en op het juiste moment iets stuurt —
- * dat is een aparte stap, en die vraagt dat je agenda op een server leesbaar is.
- * Die keuze is bewust nog niet gemaakt.
+ * Voor als de app helemaal dicht is bestaat `usePushQueue`; die zet dezelfde
+ * berichten kant-en-klaar op de server. Allebei rekenen ze met
+ * `plannedReminders`, zodat ze nooit iets anders kunnen zeggen.
  */
 
 /** Zo ver vooruit plannen we meldingen; verder is een timer niet betrouwbaar. */
@@ -40,37 +35,21 @@ export function useReminders(): void {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
 
     const now = new Date();
-    const today = activitiesOnDate(activities, todayKey(now));
 
-    for (const occurrence of today) {
-      const departure = computeDeparture(occurrence, settings);
-      const departAt = departureDateTime(occurrence, settings);
-      if (!departure || !departAt) continue;
-
-      const fireAt = departAt.getTime() - minutesBefore * 60_000;
-      const delay = fireAt - now.getTime();
+    for (const reminder of plannedReminders(activities, settings, now, 1)) {
+      const delay = reminder.at.getTime() - now.getTime();
       if (delay <= 0 || delay > HORIZON_MS) continue;
-
-      const key = `${occurrence.occurrenceId}@${departure.time}`;
-      if (announced.current.has(key)) continue;
+      if (announced.current.has(reminder.key)) continue;
 
       timers.current.push(
         setTimeout(() => {
-          announced.current.add(key);
+          announced.current.add(reminder.key);
           try {
-            const language = getLanguage();
-            new Notification(
-              translate(language, "reminders.notification.title", { time: departure.time }),
-              {
-              body: translate(language, "reminders.notification.body", {
-                title: occurrence.title,
-                start: occurrence.startTime,
-                count: minutesBefore,
-              }),
-              tag: occurrence.occurrenceId,
+            new Notification(reminder.title, {
+              body: reminder.body,
+              tag: reminder.key,
               icon: "/icon-192.png",
-              },
-            );
+            });
           } catch {
             // Sommige browsers staan een losse Notification alleen via de
             // service worker toe; dan valt de melding stil weg.

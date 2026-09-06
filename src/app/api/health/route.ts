@@ -30,6 +30,13 @@ export async function GET(request: Request) {
       sync: has("NEXT_PUBLIC_SUPABASE_URL") && has("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
       /** De knop "Account verwijderen" in Instellingen. */
       accountDeletion: has("NEXT_PUBLIC_SUPABASE_URL") && has("SUPABASE_SERVICE_ROLE_KEY"),
+      /** Meldingen terwijl de app dicht is. */
+      pushNotifications:
+        has("NEXT_PUBLIC_VAPID_PUBLIC_KEY") &&
+        has("VAPID_PRIVATE_KEY") &&
+        has("SUPABASE_SERVICE_ROLE_KEY"),
+      /** De klok die de wachtrij elke minuut leegtrekt. */
+      pushClock: has("PUSH_CRON_SECRET"),
       /** Foutmeldingen doorsturen naar Sentry. */
       errorReporting: has("NEXT_PUBLIC_SENTRY_DSN"),
       /** Herkenbare identificatie bij de gratis kaart- en OV-diensten. */
