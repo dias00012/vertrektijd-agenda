@@ -59,7 +59,7 @@ describe("parseBackup", () => {
     const result = parseBackup(file({ activities: [{ id: "a1", title: "College" }] }));
 
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.activities).toHaveLength(1);
+    expect(result.data?.activities).toHaveLength(1);
   });
 
   it("weigert een bestand van een andere app", () => {
@@ -79,9 +79,7 @@ describe("parseBackup", () => {
     );
 
     expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.activities[0]?.category).toBe("bijbaan");
-      expect(result.data.settings?.customCategories?.[0]?.id).toBe("bijbaan");
-    }
+    expect(result.data?.activities[0]?.category).toBe("bijbaan");
+    expect(result.data?.settings?.customCategories?.[0]?.id).toBe("bijbaan");
   });
 });
