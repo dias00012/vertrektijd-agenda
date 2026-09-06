@@ -8,6 +8,12 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.16.3
+
+- **Echte achtergrondkleur in plaats van een gloed.** De kleurwaas over het scherm is weg; de
+  achtergrond zelf heeft nu jouw kleur, met bijna-witte kaarten erop. Rustiger, en het leest als
+  een achtergrond in plaats van als een filter.
+
 ## 0.16.2
 
 Een ronde langs de app op zoek naar fouten en losse eindjes.
