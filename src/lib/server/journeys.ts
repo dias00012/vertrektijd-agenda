@@ -1,8 +1,8 @@
 import "server-only";
 import { ProviderError } from "./config";
 import { motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
-import { applyStreetOptions, place } from "./routing";
 import { tidyItineraries } from "../itineraries";
+import { transitParams } from "../transitQuery";
 import type { GeoLocation, Journey, TransitBike } from "../types";
 
 /**
@@ -34,11 +34,6 @@ export interface JourneyResult {
 
 const DEFAULT_COUNT = 5;
 const MAX_COUNT = 10;
-/**
- * Zo lang mag een reis zonder OV duren voordat we hem niet meer aanbieden.
- * Voor een ritje binnen de wijk is lopen of fietsen gewoon het antwoord.
- */
-const MAX_DIRECT_SECONDS = 45 * 60;
 
 export async function planJourneys(
   from: GeoLocation,
@@ -47,21 +42,16 @@ export async function planJourneys(
 ): Promise<JourneyResult> {
   const count = Math.min(Math.max(search.count ?? DEFAULT_COUNT, 1), MAX_COUNT);
 
-  const params = new URLSearchParams({
-    fromPlace: place(from),
-    toPlace: place(to),
-    numItineraries: String(count),
-    maxDirectTime: String(MAX_DIRECT_SECONDS),
+  const params = transitParams({
+    from,
+    to,
+    shape: "timetable",
+    options: count,
+    time: search.time ?? new Date().toISOString(),
+    arriveBy: search.arriveBy,
+    bike: search.transitBike,
+    cursor: search.cursor,
   });
-  applyStreetOptions(params, search.transitBike);
-
-  // Bij bladeren bepaalt de cursor het tijdvenster; anders het gekozen tijdstip.
-  if (search.cursor) {
-    params.set("pageCursor", search.cursor);
-  } else {
-    params.set("time", search.time ?? new Date().toISOString());
-    params.set("arriveBy", String(Boolean(search.arriveBy)));
-  }
 
   const data = await motisPlan(params);
   // Rijdt er niets, dan is er soms nog wel een directe loop- of fietsroute.

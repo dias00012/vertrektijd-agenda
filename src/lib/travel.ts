@@ -204,14 +204,19 @@ export function computeDeparture(
   const startMinutes = timeToMinutes(activity.startTime);
 
   if (activity.travel.plannedDeparture) {
-    const minutes = localMinutes(activity.travel.plannedDeparture);
+    const clockMinutes = localMinutes(activity.travel.plannedDeparture);
+    // Vertrek later op de klok dan de starttijd betekent: de dag ervoor. Dat
+    // tellen we van de kloktijd af, zodat `minutes` net als bij de rekensom
+    // hieronder negatief is bij een vertrek voor middernacht. Zonder dat
+    // verschil zag `departureDateTime` de avond ervoor aan voor de avond erna.
+    const previousDay = clockMinutes > startMinutes;
+    const minutes = previousDay ? clockMinutes - MINUTES_PER_DAY : clockMinutes;
     return {
       time: minutesToTime(minutes),
       minutes,
       travelMinutes,
       bufferMinutes: buffer,
-      // Vertrek later op de klok dan de starttijd betekent: de dag ervoor.
-      previousDay: minutes > startMinutes,
+      previousDay,
     };
   }
 
@@ -225,17 +230,22 @@ export function computeDeparture(
   };
 }
 
-/** Absoluut moment van vertrek, handig voor sorteren en "eerstvolgende". */
+/**
+ * Absoluut moment van vertrek, handig voor sorteren, "eerstvolgende" en het
+ * plannen van meldingen.
+ *
+ * Bewust opgebouwd uit een datum en een kloktijd in plaats van "starttijd min
+ * zoveel milliseconden": in de nacht van de tijdswissel duurt een dag 23 of 25
+ * uur, en dan zet een aftreksom in milliseconden je vertrek een uur mis.
+ */
 export function departureDateTime(
   activity: ActivityOccurrence,
   settings: Settings,
 ): Date | null {
   const departure = computeDeparture(activity, settings);
   if (!departure) return null;
-  const start = toDateTime(activity.date, activity.startTime);
-  return new Date(
-    start.getTime() - (timeToMinutes(activity.startTime) - departure.minutes) * 60_000,
-  );
+  const dateKey = departure.previousDay ? addDaysToKey(activity.date, -1) : activity.date;
+  return toDateTime(dateKey, departure.time);
 }
 
 export interface OnwardInfo {

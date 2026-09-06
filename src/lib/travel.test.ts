@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeDeparture, computeReturn, nextOccurrenceDate, travelPlanForDate } from "./travel";
+import {
+  computeDeparture,
+  computeReturn,
+  departureDateTime,
+  nextOccurrenceDate,
+  travelPlanForDate,
+} from "./travel";
 import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
 
 const HOME = { label: "Thuis", lat: 52.37, lon: 5.21 };
@@ -58,6 +64,75 @@ function activity(patch: Partial<ActivityOccurrence> = {}): ActivityOccurrence {
     ...patch,
   } as ActivityOccurrence;
 }
+
+describe("departureDateTime", () => {
+  it("zet een gewone vertrektijd op dezelfde dag", () => {
+    const moment = departureDateTime(activity({ travel: travel() }), settings());
+    // 09:00 - 25 min reizen - 10 min marge = 08:25 op de dag zelf.
+    expect(moment?.toString()).toBe(new Date(2026, 8, 7, 8, 25).toString());
+  });
+
+  it("zet een OV-rit die voor middernacht vertrekt op de dag ervoor", () => {
+    // Een activiteit die om 00:30 begint met de laatste trein van de avond
+    // ervoor: het vertrek is 6 september 23:50, niet 7 september.
+    const moment = departureDateTime(
+      activity({
+        startTime: "00:30",
+        endTime: "04:00",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 34,
+          plannedDeparture: new Date(2026, 8, 6, 23, 50).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(moment?.toString()).toBe(new Date(2026, 8, 6, 23, 50).toString());
+  });
+
+  it("houdt de klok gelijk in de nacht dat de zomertijd eindigt", () => {
+    // 25 oktober 2026 duurt 25 uur. Een aftreksom in milliseconden zou het
+    // vertrek een uur mis zetten, terwijl de app "22:50" op het scherm zet.
+    const moment = departureDateTime(
+      activity({
+        date: "2026-10-25",
+        startTime: "06:00",
+        travel: travel({ durationMinutes: 420 }),
+      }),
+      settings(),
+    );
+
+    expect(moment?.getHours()).toBe(22);
+    expect(moment?.getMinutes()).toBe(50);
+    expect(moment?.getDate()).toBe(24);
+  });
+
+  it("houdt de klok ook gelijk in de nacht dat de zomertijd begint", () => {
+    // 29 maart 2026 duurt 23 uur.
+    const moment = departureDateTime(
+      activity({
+        date: "2026-03-29",
+        startTime: "06:00",
+        travel: travel({ durationMinutes: 420 }),
+      }),
+      settings(),
+    );
+
+    expect(moment?.getHours()).toBe(22);
+    expect(moment?.getMinutes()).toBe(50);
+    expect(moment?.getDate()).toBe(28);
+  });
+
+  it("zet ook een berekende vertrektijd voor middernacht op de dag ervoor", () => {
+    const moment = departureDateTime(
+      activity({ startTime: "06:00", travel: travel({ durationMinutes: 420 }) }),
+      settings(),
+    );
+    // 06:00 - 7 uur - 10 min marge = 22:50 de avond ervoor.
+    expect(moment?.toString()).toBe(new Date(2026, 8, 6, 22, 50).toString());
+  });
+});
 
 describe("computeDeparture", () => {
   it("rekent starttijd - reistijd - marge", () => {

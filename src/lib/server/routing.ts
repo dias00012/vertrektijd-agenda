@@ -3,6 +3,7 @@ import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { motisPlan, toTravelLeg } from "./motis";
 import { pickItinerary } from "../itineraries";
+import { place, transitParams } from "../transitQuery";
 import type { GeoLocation, TravelMode, TravelResult, TransitBike } from "../types";
 
 /**
@@ -22,17 +23,6 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const TRANSIT_CACHE_TTL_MS = 10 * 60 * 1000;
 /** Ruime bovengrens zodat ook lange fiets-/looproutes een antwoord geven. */
 const MAX_DIRECT_SECONDS = 4 * 60 * 60;
-/**
- * Hoeveel OV-opties we opvragen. Eén was te weinig: de planner geeft opties
- * terug die elk ergens beter in zijn, en welke dat is zie je pas als je er
- * meerdere naast elkaar legt (zie `pickItinerary`).
- */
-const TRANSIT_OPTIONS = 5;
-/**
- * Rijdt er niets, dan mag een directe loop- of fietsroute zo lang duren. Korter
- * dan bij een bewuste fiets-/looproute: dit is een vangnet, geen dagtocht.
- */
-const MAX_TRANSIT_DIRECT_SECONDS = 45 * 60;
 
 export type RouteResult = TravelResult;
 
@@ -84,10 +74,6 @@ export async function route(
 
 function coord(point: GeoLocation): string {
   return `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
-}
-
-export function place(point: GeoLocation): string {
-  return `${point.lat},${point.lon}`;
 }
 
 /* --- Auto via OSRM ------------------------------------------------------ */
@@ -157,36 +143,6 @@ async function planDirect(
 
 /* --- OV via MOTIS ------------------------------------------------------- */
 
-/** Zo lang mag het fietsdeel naar of vanaf een halte duren. */
-const MAX_BIKE_SECONDS = 30 * 60;
-/**
- * Zo lang mag je naar de eerste halte lopen. De planner houdt het uit zichzelf
- * op een kwartier, en dat is net te kort: wie twintig minuten naar het station
- * loopt kreeg daardoor geen wandelroute maar een omweg met een extra bus.
- */
-const MAX_WALK_SECONDS = 20 * 60;
-
-/**
- * Hoe je bij de halte komt en er weer vandaan. Lopen kan altijd; wie een fiets
- * heeft krijgt die er als mogelijkheid bij. Bewust naast elkaar en niet in
- * plaats van: met alleen fietsen viel de halte om de hoek af en kwam je op een
- * verder station uit, terwijl fietsen op een langere aanrijroute al snel
- * twintig minuten scheelt met precies dezelfde trein. De planner mag zelf per
- * rit kiezen wat sneller is.
- */
-export function applyStreetOptions(
-  params: URLSearchParams,
-  bike: TransitBike | undefined,
-): void {
-  const bikeToStop = bike === "start" || bike === "both";
-  params.set("preTransitModes", bikeToStop ? "WALK,BIKE" : "WALK");
-  params.set("maxPreTransitTime", String(bikeToStop ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
-
-  const bikeFromStop = bike === "both";
-  params.set("postTransitModes", bikeFromStop ? "WALK,BIKE" : "WALK");
-  params.set("maxPostTransitTime", String(bikeFromStop ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
-}
-
 async function planTransit(
   from: GeoLocation,
   to: GeoLocation,
@@ -195,18 +151,14 @@ async function planTransit(
   const arriveBy = Boolean(options.arriveBy);
   const time = options.arriveBy ?? options.departAt ?? new Date().toISOString();
 
-  const params = new URLSearchParams({
-    fromPlace: place(from),
-    toPlace: place(to),
+  const params = transitParams({
+    from,
+    to,
+    shape: "best",
     time,
-    arriveBy: String(arriveBy),
-    // Meer dan één, want de planner geeft opties terug die elk ergens beter in
-    // zijn en de beste staat niet per se vooraan. Met één optie kreeg je op een
-    // heenreis vaak de vroegste vertrektijd met de langste route.
-    numItineraries: String(TRANSIT_OPTIONS),
-    maxDirectTime: String(MAX_TRANSIT_DIRECT_SECONDS),
+    arriveBy,
+    bike: options.transitBike,
   });
-  applyStreetOptions(params, options.transitBike);
 
   const data = await motisPlan(params);
   // Levert het OV niets op, dan is er soms nog wel een directe loop- of
