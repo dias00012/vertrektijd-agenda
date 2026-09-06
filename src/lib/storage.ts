@@ -61,12 +61,19 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write(key: string, value: unknown): void {
-  if (typeof window === "undefined") return;
+/**
+ * Geeft terug of het opslaan lukte. Dat is geen luxe: is de opslag vol of staat
+ * de browser hem niet toe (privé-venster, "site-gegevens blokkeren"), dan
+ * mislukte dit stil en was een avond invoeren na één keer herladen weg.
+ */
+function write(key: string, value: unknown): boolean {
+  if (typeof window === "undefined") return true;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (error) {
     console.warn(`Kon ${key} niet opslaan in localStorage`, error);
+    return false;
   }
 }
 
@@ -76,8 +83,8 @@ export function loadOwner(): string | null {
   return typeof stored === "string" && stored ? stored : null;
 }
 
-export function saveOwner(userId: string | null): void {
-  write(OWNER_KEY, userId);
+export function saveOwner(userId: string | null): boolean {
+  return write(OWNER_KEY, userId);
 }
 
 export function loadDeletions(): Deletion[] {
@@ -89,8 +96,8 @@ export function loadDeletions(): Deletion[] {
   );
 }
 
-export function saveDeletions(deletions: Deletion[]): void {
-  write(DELETIONS_KEY, deletions);
+export function saveDeletions(deletions: Deletion[]): boolean {
+  return write(DELETIONS_KEY, deletions);
 }
 
 export function loadActivities(): Activity[] {
@@ -117,8 +124,8 @@ export function loadActivities(): Activity[] {
     }));
 }
 
-export function saveActivities(activities: Activity[]): void {
-  write(ACTIVITIES_KEY, activities);
+export function saveActivities(activities: Activity[]): boolean {
+  return write(ACTIVITIES_KEY, activities);
 }
 
 export function loadTasks(): Task[] {
@@ -131,8 +138,8 @@ export function loadTasks(): Task[] {
   );
 }
 
-export function saveTasks(tasks: Task[]): void {
-  write(TASKS_KEY, tasks);
+export function saveTasks(tasks: Task[]): boolean {
+  return write(TASKS_KEY, tasks);
 }
 
 export function loadExams(): Exam[] {
@@ -144,8 +151,8 @@ export function loadExams(): Exam[] {
   );
 }
 
-export function saveExams(exams: Exam[]): void {
-  write(EXAMS_KEY, exams);
+export function saveExams(exams: Exam[]): boolean {
+  return write(EXAMS_KEY, exams);
 }
 
 export function loadSettings(): Settings {
@@ -170,6 +177,6 @@ export function loadSettings(): Settings {
   };
 }
 
-export function saveSettings(settings: Settings): void {
-  write(SETTINGS_KEY, settings);
+export function saveSettings(settings: Settings): boolean {
+  return write(SETTINGS_KEY, settings);
 }

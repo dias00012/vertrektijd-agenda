@@ -148,6 +148,12 @@ interface AgendaContextValue {
     error: string | null;
     lastSyncedAt: string | null;
   };
+  /**
+   * true zodra opslaan op dit apparaat mislukt is — opslag vol, of de browser
+   * staat het niet toe. Zonder dit merkte je dat pas als je herlaadde en je
+   * werk weg was.
+   */
+  storageFull: boolean;
 }
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
@@ -204,6 +210,12 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   // Wat je weggooide, zodat het niet terugkomt bij de eerstvolgende sync.
   const [deletions, setDeletions] = useState<Deletion[]>([]);
+  /**
+   * true zodra opslaan op dit apparaat mislukt. Dat gebeurt als de opslag vol
+   * is of als de browser hem niet toestaat, en tot nu toe merkte je dat pas
+   * als je herlaadde en je werk weg was.
+   */
+  const [storageFull, setStorageFull] = useState(false);
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   const { user } = useAuth();
@@ -230,23 +242,23 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (hydrated) saveActivities(activities);
+    if (hydrated && !saveActivities(activities)) setStorageFull(true);
   }, [activities, hydrated]);
 
   useEffect(() => {
-    if (hydrated) saveDeletions(deletions);
+    if (hydrated && !saveDeletions(deletions)) setStorageFull(true);
   }, [deletions, hydrated]);
 
   useEffect(() => {
-    if (hydrated) saveSettings(settings);
+    if (hydrated && !saveSettings(settings)) setStorageFull(true);
   }, [settings, hydrated]);
 
   useEffect(() => {
-    if (hydrated) saveTasks(tasks);
+    if (hydrated && !saveTasks(tasks)) setStorageFull(true);
   }, [tasks, hydrated]);
 
   useEffect(() => {
-    if (hydrated) saveExams(exams);
+    if (hydrated && !saveExams(exams)) setStorageFull(true);
   }, [exams, hydrated]);
 
   const markCalculating = useCallback((id: string, active: boolean) => {
@@ -909,6 +921,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       exportData,
       importData,
       sync: { status: syncStatus, error: syncError, lastSyncedAt },
+      storageFull,
     }),
     [
       activities,
@@ -947,6 +960,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       importData,
       syncStatus,
       syncError,
+      storageFull,
       lastSyncedAt,
     ],
   );
