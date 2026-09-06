@@ -142,15 +142,28 @@ function mergeDeletions(local: Deletion[], remote: Deletion[], now: string): Del
 function mergeSettings(local: Settings | null, remote: Settings | null): Settings | null {
   if (!remote) return local;
   if (!local) return remote;
-  const savedById = new Map((local.savedPlaces ?? []).map((p) => [p.id, p]));
-  for (const p of remote.savedPlaces ?? []) savedById.set(p.id, p);
+
+  // Wie het laatst iets wijzigde, wint. Zonder dit won de cloud altijd, en
+  // verdween elke instelling die je op dit apparaat had aangepast terwijl je
+  // even offline was. Ontbreekt de stempel aan beide kanten (gegevens van voor
+  // deze versie), dan blijft het oude gedrag gelden en wint de cloud.
+  const localIsNewer = (local.updatedAt ?? "") > (remote.updatedAt ?? "");
+  const [older, newer] = localIsNewer ? [remote, local] : [local, remote];
+
+  // Lijstjes blijven wel van beide kanten: die groeien alleen maar.
+  const savedById = new Map((older.savedPlaces ?? []).map((p) => [p.id, p]));
+  for (const p of newer.savedPlaces ?? []) savedById.set(p.id, p);
+  const categoriesById = new Map((older.customCategories ?? []).map((c) => [c.id, c]));
+  for (const c of newer.customCategories ?? []) categoriesById.set(c.id, c);
+
   return {
-    ...local,
-    ...remote,
+    ...older,
+    ...newer,
     // Behoud een thuislocatie als de ene kant hem mist.
-    home: remote.home ?? local.home,
+    home: newer.home ?? older.home,
     savedPlaces: [...savedById.values()],
-    categoryPlaces: { ...local.categoryPlaces, ...remote.categoryPlaces },
+    customCategories: [...categoriesById.values()],
+    categoryPlaces: { ...older.categoryPlaces, ...newer.categoryPlaces },
   };
 }
 

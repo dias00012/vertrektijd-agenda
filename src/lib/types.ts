@@ -365,6 +365,12 @@ export interface Settings {
    * Zie `useReminders` voor wat er wel en niet kan zonder pushserver.
    */
   reminderMinutes?: number | null;
+  /**
+   * Wanneer je deze instellingen voor het laatst wijzigde (ISO). Nodig bij het
+   * samenvoegen met de cloud: zonder dit won de cloud altijd, en verdween wat
+   * je offline had aangepast.
+   */
+  updatedAt?: string;
 }
 
 export interface GeocodeResult extends GeoLocation {

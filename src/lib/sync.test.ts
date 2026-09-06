@@ -210,3 +210,112 @@ describe("mergePayload met grafstenen", () => {
     expect(merged.activities).toHaveLength(1);
   });
 });
+
+describe("mergeSettings", () => {
+  const NU = "2026-09-07T12:00:00.000Z";
+
+  function set(patch: Partial<Settings> = {}): Settings {
+    return {
+      home: null,
+      savedPlaces: [],
+      categoryPlaces: {},
+      customCategories: [],
+      bufferMinutes: 10,
+      travelMode: "car",
+      ...patch,
+    };
+  }
+
+  function payload(settings: Settings | null): SyncPayload {
+    return { settings, activities: [], tasks: [], exams: [] };
+  }
+
+  it("houdt de instelling die je het laatst aanpaste", () => {
+    // Offline de marge op 30 gezet; de cloud staat nog op 10 van gisteren.
+    const merged = mergePayload(
+      payload(set({ bufferMinutes: 30, updatedAt: "2026-09-07T11:00:00.000Z" })),
+      payload(set({ bufferMinutes: 10, updatedAt: "2026-09-06T09:00:00.000Z" })),
+      NU,
+    );
+
+    expect(merged.settings?.bufferMinutes).toBe(30);
+  });
+
+  it("laat de cloud winnen als die recenter is", () => {
+    const merged = mergePayload(
+      payload(set({ bufferMinutes: 30, updatedAt: "2026-09-06T09:00:00.000Z" })),
+      payload(set({ bufferMinutes: 10, updatedAt: "2026-09-07T11:00:00.000Z" })),
+      NU,
+    );
+
+    expect(merged.settings?.bufferMinutes).toBe(10);
+  });
+
+  it("raakt bewaarde locaties van geen van beide kanten kwijt", () => {
+    const merged = mergePayload(
+      payload(
+        set({
+          updatedAt: "2026-09-07T11:00:00.000Z",
+          savedPlaces: [
+            {
+              id: "p1",
+              name: "Thuis",
+              location: { label: "Thuis", lat: 1, lon: 2 },
+              createdAt: "2026-09-01T00:00:00.000Z",
+            },
+          ],
+        }),
+      ),
+      payload(
+        set({
+          updatedAt: "2026-09-06T09:00:00.000Z",
+          savedPlaces: [
+            {
+              id: "p2",
+              name: "School",
+              location: { label: "School", lat: 3, lon: 4 },
+              createdAt: "2026-09-01T00:00:00.000Z",
+            },
+          ],
+        }),
+      ),
+      NU,
+    );
+
+    expect(merged.settings?.savedPlaces.map((p) => p.id).sort()).toEqual(["p1", "p2"]);
+  });
+
+  it("houdt eigen activiteitstypes van beide kanten", () => {
+    const merged = mergePayload(
+      payload(
+        set({
+          updatedAt: "2026-09-07T11:00:00.000Z",
+          customCategories: [{ id: "bijbaan", label: "Bijbaan", emoji: "\u{1F4B6}", color: "#f00" }],
+        }),
+      ),
+      payload(
+        set({
+          updatedAt: "2026-09-06T09:00:00.000Z",
+          customCategories: [{ id: "muziek", label: "Muziekles", emoji: "\u{1F3B8}", color: "#00f" }],
+        }),
+      ),
+      NU,
+    );
+
+    expect(merged.settings?.customCategories.map((c) => c.id).sort()).toEqual([
+      "bijbaan",
+      "muziek",
+    ]);
+  });
+
+  it("raakt een thuislocatie niet kwijt als de andere kant hem mist", () => {
+    const thuis = { label: "Thuis", lat: 52.37, lon: 5.21 };
+    const merged = mergePayload(
+      payload(set({ home: thuis, updatedAt: "2026-09-06T09:00:00.000Z" })),
+      payload(set({ home: null, updatedAt: "2026-09-07T11:00:00.000Z" })),
+      NU,
+    );
+
+    expect(merged.settings?.home).toEqual(thuis);
+  });
+});

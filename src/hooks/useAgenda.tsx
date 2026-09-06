@@ -547,6 +547,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setSettings((current) => ({
         ...current,
         ...(typeof patch === "function" ? patch(current) : patch),
+        // Stempel erop, zodat de sync weet welke kant recenter is.
+        updatedAt: new Date().toISOString(),
       }));
     },
     [],
