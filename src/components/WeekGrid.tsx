@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { layoutDay, timeRangeFor, type PositionedActivity } from "@/lib/agenda";
+import { computeOnward } from "@/lib/travel";
 import {
   addDaysToKey,
   calendarWeekKeys,
@@ -523,6 +524,8 @@ function GridBlock({
 
   const returnHeight =
     item.returnMinutes === null ? 0 : (item.returnMinutes - item.endMinutes) * PX_PER_MINUTE;
+  /** Ga je hierna rechtstreeks door, dan heet het blok erna anders. */
+  const onward = computeOnward(item.occurrence, null);
 
   /** Gestreepte opmaak voor reisblokken: leest als "onderweg". */
   const travelStyle = {
@@ -647,7 +650,14 @@ function GridBlock({
         <button
           type="button"
           onClick={onSelect}
-          title={t("week.homeAt", { time: minutesToTime(item.returnMinutes + endOffset) })}
+          title={
+            onward
+              ? t("week.onwardTo", {
+                  place: onward.to.label,
+                  time: minutesToTime(item.returnMinutes + endOffset),
+                })
+              : t("week.homeAt", { time: minutesToTime(item.returnMinutes + endOffset) })
+          }
           className="absolute overflow-hidden text-left"
           style={{
             top: (item.endMinutes + endOffset - rangeStart) * PX_PER_MINUTE,
@@ -665,7 +675,8 @@ function GridBlock({
               className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
-              &#8617;&#65039; {minutesToTime(item.returnMinutes + endOffset)}
+              {onward ? "⟶" : "↩️"}{" "}
+              {minutesToTime(item.returnMinutes + endOffset)}
             </span>
           ) : null}
         </button>

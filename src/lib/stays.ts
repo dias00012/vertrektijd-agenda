@@ -45,7 +45,39 @@ function gapAllowance(first: ActivityOccurrence): number {
   return 2 * minutes + WORTH_GOING_HOME_MINUTES;
 }
 
-const NO_TRAVEL: TravelRole = { outbound: false, inbound: false };
+const NO_TRAVEL: TravelRole = {
+  outbound: false,
+  inbound: false,
+  onward: null,
+  arrivesFrom: null,
+};
+
+/** Eén verblijf op één plek: de activiteiten daar, op volgorde. */
+interface Stay {
+  items: ActivityOccurrence[];
+}
+
+/**
+ * Ga je tussen deze twee verblijven naar huis?
+ *
+ * Alleen als het past: heen en terug plus een halfuur om er iets aan te hebben.
+ * Eindigt school om 17:00 en begint de sportschool om 18:30, dan haal je thuis
+ * niet eens de deur; dan rijd je er rechtstreeks heen.
+ *
+ * Weten we de reistijden nog niet, dan houden we het bij thuis. Dat is wat de
+ * app altijd deed en het is de aanname die niemand verrast.
+ */
+function goesHomeBetween(previous: Stay, next: Stay): boolean {
+  const last = previous.items[previous.items.length - 1];
+  const first = next.items[0];
+
+  const back = last.returnTravel?.durationMinutes;
+  const out = first.travel?.durationMinutes;
+  if (back === undefined || out === undefined) return true;
+
+  const gap = timeToMinutes(first.startTime) - timeToMinutes(last.endTime);
+  return gap >= back + out + WORTH_GOING_HOME_MINUTES;
+}
 
 /**
  * Geeft elke activiteit van de dag zijn plek in het verblijf waar hij bij
@@ -56,19 +88,14 @@ const NO_TRAVEL: TravelRole = { outbound: false, inbound: false };
  * betekent niet dat je naar huis ging.
  */
 export function assignTravelRoles(items: ActivityOccurrence[]): ActivityOccurrence[] {
-  const roles = new Map<string, TravelRole>();
+  const stays: Stay[] = [];
 
   let group: ActivityOccurrence[] = [];
   /** Laatste eindtijd binnen de groep; overlappende uren tellen ook mee. */
   let groupEnd = 0;
 
   function flush() {
-    group.forEach((item, index) => {
-      roles.set(item.occurrenceId, {
-        outbound: index === 0,
-        inbound: index === group.length - 1,
-      });
-    });
+    if (group.length > 0) stays.push({ items: group });
     group = [];
     groupEnd = 0;
   }
@@ -89,6 +116,30 @@ export function assignTravelRoles(items: ActivityOccurrence[]): ActivityOccurren
     groupEnd = Math.max(groupEnd, timeToMinutes(item.endTime));
   }
   flush();
+
+  const roles = new Map<string, TravelRole>();
+  for (const [index, stay] of stays.entries()) {
+    const first = stay.items[0];
+    const last = stay.items[stay.items.length - 1];
+
+    const next = stays[index + 1];
+    const direct = next && !goesHomeBetween(stay, next);
+
+    stay.items.forEach((item, position) => {
+      roles.set(item.occurrenceId, {
+        // Heen en terug blijven aan de eerste en de laatste hangen, ook bij een
+        // rechtstreekse overstap: die reistijden bepalen juist of thuiskomen
+        // past. Alleen het tónen ervan verschuift, via `onward` en `arrivesFrom`.
+        outbound: position === 0,
+        inbound: position === stay.items.length - 1,
+        onward: item === last && direct ? next.items[0].location : null,
+        arrivesFrom:
+          item === first && index > 0 && !goesHomeBetween(stays[index - 1], stay)
+            ? (stays[index - 1].items[stays[index - 1].items.length - 1].location ?? null)
+            : null,
+      });
+    });
+  }
 
   return items.map((item) => ({
     ...item,

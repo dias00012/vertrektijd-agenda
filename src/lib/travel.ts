@@ -78,14 +78,18 @@ export interface TravelPlan {
   arriveBy?: string;
   /** Vroegste vertrek voor de terugreis (ISO); alleen bij OV. */
   departAt?: string;
+  /** Waar je rechtstreeks heen gaat na afloop; leeg als je naar huis gaat. */
+  onwardTo?: GeoLocation;
+  onwardKey?: string;
 }
 
 export function travelPlanFor(
   activity: Activity,
   settings: Settings,
   now: Date = new Date(),
+  onward?: GeoLocation | null,
 ): TravelPlan | null {
-  return travelPlanForDate(activity, settings, nextOccurrenceDate(activity, now));
+  return travelPlanForDate(activity, settings, nextOccurrenceDate(activity, now), onward);
 }
 
 /**
@@ -97,6 +101,7 @@ export function travelPlanForDate(
   activity: Activity,
   settings: Settings,
   dateKey: string,
+  onward?: GeoLocation | null,
 ): TravelPlan | null {
   if (!settings.home || !activity.location) return null;
 
@@ -121,6 +126,12 @@ export function travelPlanForDate(
   const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, transitBike);
   if (!outboundKey || !returnKey) return null;
 
+  // De doorreis vertrekt op hetzelfde moment als de reis naar huis zou doen:
+  // zodra je klaar bent.
+  const onwardKey = onward
+    ? travelKey(activity.location, onward, mode, returnSlot, transitBike)
+    : null;
+
   return {
     mode,
     transitBike,
@@ -128,6 +139,8 @@ export function travelPlanForDate(
     returnKey,
     arriveBy: arriveByDate?.toISOString(),
     departAt: departAtDate?.toISOString(),
+    onwardTo: onward ?? undefined,
+    onwardKey: onwardKey ?? undefined,
   };
 }
 
@@ -139,12 +152,15 @@ export function needsTravelRefresh(
   activity: Activity,
   settings: Settings,
   now: Date = new Date(),
+  onward?: GeoLocation | null,
 ): boolean {
-  const plan = travelPlanFor(activity, settings, now);
+  const plan = travelPlanFor(activity, settings, now, onward);
   if (!plan) return false;
-  return (
-    activity.travel?.key !== plan.outboundKey || activity.returnTravel?.key !== plan.returnKey
-  );
+  if (activity.travel?.key !== plan.outboundKey) return true;
+  if (activity.returnTravel?.key !== plan.returnKey) return true;
+  // Een doorreis die er hoort te zijn maar nog niet is, of een oude die er nog
+  // staat terwijl je inmiddels gewoon naar huis gaat.
+  return (activity.onwardTravel?.key ?? null) !== (plan.onwardKey ?? null);
 }
 
 /** Minuten sinds middernacht van een ISO-tijdstip, in lokale tijd. */
@@ -175,8 +191,9 @@ export function computeDeparture(
   settings: Settings,
 ): DepartureInfo | null {
   // Zit je er al, dan valt er niet te vertrekken: de heenreis hoort bij de
-  // eerste activiteit van het verblijf, niet bij elk uur.
-  if (!activity.travelRole.outbound) return null;
+  // eerste activiteit van het verblijf, niet bij elk uur. En kom je van een
+  // andere plek, dan staat die reis daar al; hier zou hij dubbel staan.
+  if (!activity.travelRole.outbound || activity.travelRole.arrivesFrom) return null;
   if (!activity.location || !activity.travel) return null;
 
   const buffer = bufferFor(activity, settings);
@@ -218,6 +235,50 @@ export function departureDateTime(
   );
 }
 
+export interface OnwardInfo {
+  /** Waar je heen gaat. */
+  to: GeoLocation;
+  /** Hoe laat je hier vertrekt, "HH:mm". */
+  time: string;
+  /** Hoe laat je daar bent, "HH:mm". */
+  arrival: string;
+  travelMinutes: number;
+  /** true wanneer je later aankomt dan de volgende activiteit begint. */
+  late: boolean;
+}
+
+/**
+ * DOORREIS = van hier rechtstreeks naar de volgende plek.
+ *
+ * Alleen wanneer thuiskomen tussendoor niet past. Zonder dit zou de app zeggen
+ * "om 18:08 thuis" en tegelijk "om 17:48 vertrekken naar de sportschool", twee
+ * dingen die niet allebei kunnen.
+ */
+export function computeOnward(
+  activity: ActivityOccurrence,
+  nextStartTime: string | null,
+): OnwardInfo | null {
+  const to = activity.travelRole.onward;
+  if (!to || !activity.onwardTravel) return null;
+
+  const endMinutes = timeToMinutes(activity.endTime);
+  const travelMinutes = activity.onwardTravel.durationMinutes;
+  const arrivalMinutes = activity.onwardTravel.plannedArrival
+    ? localMinutes(activity.onwardTravel.plannedArrival)
+    : endMinutes + travelMinutes;
+  const departureMinutes = activity.onwardTravel.plannedDeparture
+    ? localMinutes(activity.onwardTravel.plannedDeparture)
+    : endMinutes;
+
+  return {
+    to,
+    time: minutesToTime(departureMinutes),
+    arrival: minutesToTime(arrivalMinutes),
+    travelMinutes,
+    late: nextStartTime !== null && arrivalMinutes > timeToMinutes(nextStartTime),
+  };
+}
+
 export interface ReturnInfo {
   /** Verwachte thuiskomst, "HH:mm". */
   time: string;
@@ -239,8 +300,9 @@ export function computeReturn(
   activity: ActivityOccurrence,
   settings: Settings,
 ): ReturnInfo | null {
-  // Alleen na je laatste uur op die plek ga je naar huis.
-  if (!activity.travelRole.inbound) return null;
+  // Alleen na je laatste uur op die plek ga je naar huis, en alleen als je
+  // niet rechtstreeks doorreist naar de volgende plek.
+  if (!activity.travelRole.inbound || activity.travelRole.onward) return null;
   if (!activity.location || !activity.returnTravel) return null;
   void settings;
 

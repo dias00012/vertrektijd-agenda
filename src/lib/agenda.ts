@@ -1,5 +1,12 @@
-import type { Activity, ActivityOccurrence, Settings } from "./types";
-import { computeDeparture, computeReturn, departureDateTime, nextOccurrenceDate } from "./travel";
+import type { Activity, ActivityOccurrence, Settings, TravelRole } from "./types";
+import {
+  computeDeparture,
+  computeOnward,
+  computeReturn,
+  departureDateTime,
+  nextOccurrenceDate,
+  type OnwardInfo,
+} from "./travel";
 import { addDaysToKey, timeToMinutes, toDateKey, toDateTime } from "./time";
 import { occurrencesOnDate, toOccurrence } from "./recurrence";
 import { assignTravelRoles } from "./stays";
@@ -29,11 +36,23 @@ export function travelIsRelevant(
   activities: Activity[],
   now: Date = new Date(),
 ): boolean {
+  const role = dayRoleFor(activity, activities, now);
   if (!activity.location) return false;
+  if (!role) return true;
+  return role.outbound || role.inbound;
+}
+
+/**
+ * De reisrol van deze activiteit op de eerstvolgende dag dat hij plaatsvindt.
+ * `null` wanneer die dag niets oplevert; dan telt de activiteit als losstaand.
+ */
+export function dayRoleFor(
+  activity: Activity,
+  activities: Activity[],
+  now: Date = new Date(),
+): TravelRole | null {
   const day = activitiesOnDate(activities, nextOccurrenceDate(activity, now));
-  const mine = day.find((item) => item.id === activity.id);
-  if (!mine) return true;
-  return mine.travelRole.outbound || mine.travelRole.inbound;
+  return day.find((item) => item.id === activity.id)?.travelRole ?? null;
 }
 
 /** Activiteiten binnen een reeks dagen, gegroepeerd per dag. */
@@ -93,7 +112,7 @@ export function searchActivities(
     });
 }
 
-export type TimelineKind = "departure" | "activity" | "return";
+export type TimelineKind = "departure" | "activity" | "return" | "onward";
 
 export interface TimelineEntry {
   kind: TimelineKind;
@@ -103,10 +122,17 @@ export interface TimelineEntry {
   activity: ActivityOccurrence;
   /** Alleen bij kind "return": de reistijd terug naar huis in minuten. */
   returnMinutes?: number;
+  /** Alleen bij kind "onward": waar je rechtstreeks heen gaat. */
+  onward?: OnwardInfo;
 }
 
 /** Volgorde op hetzelfde tijdstip: eerst vertrekken, dan de activiteit, dan terug. */
-const KIND_ORDER: Record<TimelineKind, number> = { departure: 0, activity: 1, return: 2 };
+const KIND_ORDER: Record<TimelineKind, number> = {
+  departure: 0,
+  activity: 1,
+  return: 2,
+  onward: 2,
+};
 
 /**
  * Dagoverzicht waarin vertrekmomenten als eigen regel tussen de activiteiten
@@ -119,8 +145,9 @@ export function buildTimeline(
   dateKey: string,
 ): TimelineEntry[] {
   const entries: TimelineEntry[] = [];
+  const day = activitiesOnDate(activities, dateKey);
 
-  for (const activity of activitiesOnDate(activities, dateKey)) {
+  for (const [index, activity] of day.entries()) {
     const departure = computeDeparture(activity, settings);
     // Een vertrek dat op de vorige dag valt hoort niet in dit dagoverzicht.
     if (departure && !departure.previousDay) {
@@ -139,6 +166,21 @@ export function buildTimeline(
       minutes: timeToMinutes(activity.startTime),
       activity,
     });
+
+    // Ga je rechtstreeks door, dan is dat één regel in plaats van thuiskomen
+    // en daarna weer vertrekken.
+    const next = day.slice(index + 1).find((item) => item.travelRole.arrivesFrom);
+    const onward = computeOnward(activity, next?.startTime ?? null);
+    if (onward) {
+      entries.push({
+        kind: "onward",
+        id: `${activity.occurrenceId}:onward`,
+        time: onward.time,
+        minutes: timeToMinutes(onward.time),
+        activity,
+        onward,
+      });
+    }
 
     const back = computeReturn(activity, settings);
     // Ben je pas na middernacht thuis, dan hoort dat niet meer in deze dag.
@@ -246,12 +288,15 @@ export function layoutDay(
   const items = activitiesOnDate(activities, dateKey).map((occurrence) => {
     const departure = computeDeparture(occurrence, settings);
     const back = computeReturn(occurrence, settings);
+    // Reis je door naar de volgende plek, dan loopt het reisblok tot je
+    // aankomst daar in plaats van tot je thuiskomst.
+    const onward = computeOnward(occurrence, null);
     return {
       occurrence,
       startMinutes: timeToMinutes(occurrence.startTime),
       endMinutes: timeToMinutes(occurrence.endTime),
       departureMinutes: departure && !departure.previousDay ? departure.minutes : null,
-      returnMinutes: back && !back.nextDay ? back.minutes : null,
+      returnMinutes: back && !back.nextDay ? back.minutes : onward ? timeToMinutes(onward.arrival) : null,
     };
   });
 

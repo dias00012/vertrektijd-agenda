@@ -74,6 +74,7 @@ export function loadActivities(): Activity[] {
       recurrence: item.recurrence ?? null,
       exceptions: Array.isArray(item.exceptions) ? item.exceptions : [],
       returnTravel: item.returnTravel ?? null,
+      onwardTravel: item.onwardTravel ?? null,
     }));
 }
 

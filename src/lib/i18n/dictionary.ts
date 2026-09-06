@@ -277,6 +277,13 @@ export const nl = {
   "schoolworkToday.deadline": "Deadline: {title} · {days}",
   "schoolworkToday.exam": "Toets {subject} · {days}",
   "timeline.leaveFor": "Vertrekken naar {title}",
+  "timeline.onwardTitle": "Door naar {place}",
+  "timeline.onward": "{duration} {verb} · om {time} daar",
+  "timeline.onwardLate": "je komt te laat",
+  "activity.onward": "Door naar {place}: {duration}, om {time} daar",
+  "next.onwardLabel": "Door naar {place}",
+  "next.onwardArrive": "om {time} daar",
+  "week.onwardTo": "Door naar {place}, om {time} daar",
   "timeline.backHomeTitle": "Terug naar huis",
 
   /* --- Activiteitkaart --------------------------------------------------- */
@@ -1039,6 +1046,13 @@ export const en: Record<TranslationKey, string> = {
   "schoolworkToday.deadline": "Deadline: {title} · {days}",
   "schoolworkToday.exam": "Test {subject} · {days}",
   "timeline.leaveFor": "Leave for {title}",
+  "timeline.onwardTitle": "On to {place}",
+  "timeline.onward": "{duration} {verb} · there at {time}",
+  "timeline.onwardLate": "you arrive late",
+  "activity.onward": "On to {place}: {duration}, there at {time}",
+  "next.onwardLabel": "On to {place}",
+  "next.onwardArrive": "there at {time}",
+  "week.onwardTo": "On to {place}, there at {time}",
   "timeline.backHomeTitle": "Head back home",
 
   "activity.past": "✓ done",

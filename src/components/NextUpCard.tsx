@@ -5,7 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
-import { computeDeparture, computeReturn } from "@/lib/travel";
+import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
 import { formatDateLabel, formatDuration } from "@/lib/time";
 import {
   hasRealTime,
@@ -38,6 +38,7 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
+  const onward = computeOnward(shown, null);
   const untilDeparture = minutesUntilDeparture(shown, settings, now);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
@@ -161,6 +162,35 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
                       style={{ color: urgent ? "var(--danger)" : "var(--ink)" }}
                     >
                       &#9200; {countdown}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : onward ? (
+              /* Je gaat hierna rechtstreeks door; dan is de aankomst daar het
+                 getal dat telt, niet je thuiskomst. */
+              <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
+                <div>
+                  <p
+                    className="text-[0.7rem] tracking-wide uppercase"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {t("next.onwardLabel", { place: onward.to.label })}
+                  </p>
+                  <p className="text-3xl leading-tight font-semibold tabular-nums">
+                    {onward.arrival}
+                  </p>
+                </div>
+                <div className="pb-1">
+                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                    &#10230; {formatDuration(onward.travelMinutes)}{" "}
+                    {t(
+                      shown.onwardTravel?.mode === "car" ? "timeline.drive" : "timeline.travel",
+                    )}
+                  </p>
+                  {onward.late ? (
+                    <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
+                      {t("timeline.onwardLate")}
                     </p>
                   ) : null}
                 </div>

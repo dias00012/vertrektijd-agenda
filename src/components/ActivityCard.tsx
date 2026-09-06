@@ -5,7 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
-import { computeDeparture, computeReturn } from "@/lib/travel";
+import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
 import { timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
 import { describeRecurrence } from "@/lib/recurrence";
@@ -49,6 +49,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
+  const onward = computeOnward(shown, null);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
   // Live informatie over de heenreis: rijdt hij, en zo ja, op tijd?
@@ -179,7 +180,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     <p className="text-xs" style={{ color: "var(--muted)" }}>
                       {t("activity.needHome")}
                     </p>
-                  ) : departure || back ? (
+                  ) : departure || back || onward ? (
                     <>
                       {/* De heenreis hoort bij de eerste activiteit van een
                           verblijf; de laatste toont alleen hoe laat je thuis
@@ -241,6 +242,22 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                         </>
                       ) : null}
 
+                      {onward ? (
+                        <p className="text-xs tabular-nums" style={{ color: "var(--muted)" }}>
+                          &#10230;{" "}
+                          {t("activity.onward", {
+                            place: onward.to.label,
+                            duration: formatDuration(onward.travelMinutes),
+                            time: onward.arrival,
+                          })}
+                          {onward.late ? (
+                            <span style={{ color: "var(--danger)" }}>
+                              {" "}
+                              · {t("timeline.onwardLate")}
+                            </span>
+                          ) : null}
+                        </p>
+                      ) : null}
                       {back ? (
                         <p className="text-xs tabular-nums" style={{ color: "var(--muted)" }}>
                           &#8617;&#65039;{" "}

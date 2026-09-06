@@ -65,6 +65,9 @@ function passedMinutesFor(entry: TimelineEntry): number {
   if (entry.kind === "return" && entry.returnMinutes !== undefined) {
     return entry.minutes + entry.returnMinutes;
   }
+  if (entry.kind === "onward" && entry.onward) {
+    return timeToMinutes(entry.onward.arrival);
+  }
   return entry.minutes;
 }
 
@@ -83,8 +86,9 @@ function TimelineRow({
   const color = activityColor(entry.activity, category);
   const isDeparture = entry.kind === "departure";
   const isReturn = entry.kind === "return";
-  // Vertrek- en terugregels zijn allebei reisregels: dezelfde ingetogen opmaak.
-  const isTravel = isDeparture || isReturn;
+  const isOnward = entry.kind === "onward";
+  // Alles wat onderweg is krijgt dezelfde ingetogen opmaak.
+  const isTravel = isDeparture || isReturn || isOnward;
 
   return (
     <button
@@ -121,6 +125,8 @@ function TimelineRow({
                   : "\u{1F697}"}{" "}
                 {t("timeline.leaveFor", { title: entry.activity.title.toLowerCase() })}
               </>
+            ) : isOnward && entry.onward ? (
+              <>&#10230; {t("timeline.onwardTitle", { place: entry.onward.to.label })}</>
             ) : (
               <>&#8617;&#65039; {t("timeline.backHomeTitle")}</>
             )}
@@ -134,6 +140,22 @@ function TimelineRow({
                 ),
                 place: entry.activity.location?.label ?? "",
               })}
+            </span>
+          ) : null}
+          {isOnward && entry.onward ? (
+            <span className="block text-xs tabular-nums" style={{ color: "var(--muted)" }}>
+              {t("timeline.onward", {
+                duration: formatDuration(entry.onward.travelMinutes),
+                verb: t(
+                  entry.activity.onwardTravel?.mode === "car"
+                    ? "timeline.drive"
+                    : "timeline.travel",
+                ),
+                time: entry.onward.arrival,
+              })}
+              {entry.onward.late ? (
+                <span style={{ color: "var(--danger)" }}> · {t("timeline.onwardLate")}</span>
+              ) : null}
             </span>
           ) : null}
           {isReturn && entry.returnMinutes !== undefined ? (

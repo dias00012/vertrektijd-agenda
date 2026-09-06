@@ -89,7 +89,7 @@ export function toOccurrence(activity: Activity, dateKey: string): ActivityOccur
     date: dateKey,
     occurrenceId: `${activity.id}:${dateKey}`,
     recurring: Boolean(activity.recurrence),
-    travelRole: { outbound: true, inbound: true },
+    travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null },
   };
 }
 

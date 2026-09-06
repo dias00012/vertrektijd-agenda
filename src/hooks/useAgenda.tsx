@@ -31,7 +31,7 @@ import {
   type ImportSummary,
 } from "@/lib/backup";
 import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
-import { travelIsRelevant } from "@/lib/agenda";
+import { dayRoleFor } from "@/lib/agenda";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -235,8 +235,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
    * verandert.
    */
   const computeTravel = useCallback(
-    async (activity: Activity, currentSettings: Settings) => {
-      const plan = travelPlanFor(activity, currentSettings);
+    async (activity: Activity, currentSettings: Settings, onward?: GeoLocation | null) => {
+      const plan = travelPlanFor(activity, currentSettings, new Date(), onward);
       if (!plan || !currentSettings.home || !activity.location) return;
       if (inFlight.current.has(activity.id)) return;
 
@@ -246,7 +246,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       try {
         // Heen en terug apart: de terugweg kan afwijken (eenrichtingsverkeer),
         // en bij OV is het een heel andere rit op een ander tijdstip.
-        const [outbound, inbound] = await Promise.all([
+        const [outbound, inbound, ahead] = await Promise.all([
           fetchTravel(currentSettings.home, activity.location, {
             mode: plan.mode,
             arriveBy: plan.arriveBy,
@@ -257,6 +257,15 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             departAt: plan.departAt,
             transitBike: plan.transitBike,
           }),
+          // Ga je hierna rechtstreeks ergens anders heen, dan is dat een derde
+          // rit: van hier naar daar, zonder tussenstop thuis.
+          plan.onwardTo
+            ? fetchTravel(activity.location, plan.onwardTo, {
+                mode: plan.mode,
+                departAt: plan.departAt,
+                transitBike: plan.transitBike,
+              })
+            : Promise.resolve(null),
         ]);
         const computedAt = new Date().toISOString();
         failedKeys.current.delete(plan.outboundKey);
@@ -289,6 +298,21 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
                     computedAt,
                     key: plan.returnKey,
                   },
+                  onwardTravel:
+                    ahead && plan.onwardKey
+                      ? {
+                          durationMinutes: ahead.durationMinutes,
+                          distanceKm: ahead.distanceKm,
+                          mode: ahead.mode,
+                          provider: ahead.provider,
+                          legs: ahead.legs,
+                          transfers: ahead.transfers,
+                          plannedDeparture: ahead.plannedDeparture,
+                          plannedArrival: ahead.plannedArrival,
+                          computedAt,
+                          key: plan.onwardKey,
+                        }
+                      : null,
                   travelError: null,
                 }
               : item,
@@ -301,7 +325,13 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         setActivities((current) =>
           current.map((item) =>
             item.id === activity.id
-              ? { ...item, travel: null, returnTravel: null, travelError: message }
+              ? {
+                  ...item,
+                  travel: null,
+                  returnTravel: null,
+                  onwardTravel: null,
+                  travelError: message,
+                }
               : item,
           ),
         );
@@ -320,14 +350,17 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     if (!hydrated || !settings.home) return;
     const now = new Date();
     for (const activity of activities) {
-      if (!needsTravelRefresh(activity, settings)) continue;
       // De uren midden op een schooldag hebben geen eigen reis: je bent er al.
       // Zonder deze regel haalt een gekoppeld rooster tientallen routes op voor
       // hetzelfde ritje van huis naar school.
-      if (!travelIsRelevant(activity, activities, now)) continue;
-      const plan = travelPlanFor(activity, settings);
+      const role = dayRoleFor(activity, activities, now);
+      if (!activity.location || (role && !role.outbound && !role.inbound)) continue;
+
+      const onward = role?.onward ?? null;
+      if (!needsTravelRefresh(activity, settings, now, onward)) continue;
+      const plan = travelPlanFor(activity, settings, now, onward);
       if (plan && failedKeys.current.has(plan.outboundKey)) continue;
-      void computeTravel(activity, settings);
+      void computeTravel(activity, settings, onward);
     }
   }, [activities, settings, hydrated, computeTravel]);
 

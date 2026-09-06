@@ -51,6 +51,11 @@ function les(
   } as ActivityOccurrence;
 }
 
+/** Reis van hier naar huis, zodat "past thuiskomen ertussen" te sturen is. */
+function terug(durationMinutes: number): TravelInfo {
+  return { ...travel(durationMinutes), key: "terug" };
+}
+
 /** Korte weergave van de rollen, zodat een verwachting leesbaar blijft. */
 function roles(items: ActivityOccurrence[]): string[] {
   return assignTravelRoles(items).map((item) => {
@@ -132,5 +137,57 @@ describe("assignTravelRoles", () => {
       les("na", "16:00", "17:00"),
     ];
     expect(roles(dag)).toEqual(["heen", "geen", "terug"]);
+  });
+});
+
+describe("rechtstreeks door naar de volgende plek", () => {
+  /** School uit, daarna sporten: het patroon waar dit voor bedoeld is. */
+  function dag(gymStart: string, heen: number, terugNaarHuis: number) {
+    return assignTravelRoles([
+      les("college", "09:00", "17:00", {
+        travel: travel(heen),
+        returnTravel: terug(terugNaarHuis),
+      }),
+      les("gym", gymStart, "19:30", {
+        location: GYM,
+        travel: travel(30),
+        returnTravel: terug(30),
+      }),
+    ]);
+  }
+
+  it("gaat rechtstreeks door als thuiskomen niet past", () => {
+    // Om 17:00 uit, 68 min naar huis, 30 min weer heen: dat is 98 minuten
+    // reizen voor een gat van 90. Dus direct.
+    const [college, gym] = dag("18:30", 69, 68);
+    expect(college.travelRole.onward?.label).toBe(GYM.label);
+    expect(college.travelRole.inbound).toBe(true);
+    expect(gym.travelRole.arrivesFrom?.label).toBe(SCHOOL.label);
+  });
+
+  it("gaat wel naar huis als het ruim past", () => {
+    // Nu een gat van vier uur bij dezelfde reistijden.
+    const [college, gym] = dag("21:00", 69, 68);
+    expect(college.travelRole.onward).toBeNull();
+    expect(gym.travelRole.arrivesFrom).toBeNull();
+  });
+
+  it("houdt het bij thuis zolang de reistijden onbekend zijn", () => {
+    // Anders zou de app een doorreis beloven die hij niet kan uitrekenen.
+    const dag = assignTravelRoles([
+      les("college", "09:00", "17:00"),
+      les("gym", "18:30", "19:30", { location: GYM }),
+    ]);
+    expect(dag[0].travelRole.onward).toBeNull();
+    expect(dag[1].travelRole.arrivesFrom).toBeNull();
+  });
+
+  it("laat een schooldag met alleen lessen ongemoeid", () => {
+    const dagje = assignTravelRoles([
+      les("uur1", "08:30", "09:10", { travel: travel(20), returnTravel: terug(20) }),
+      les("uur2", "09:10", "09:50"),
+    ]);
+    expect(dagje.map((i) => i.travelRole.onward)).toEqual([null, null]);
+    expect(dagje.map((i) => i.travelRole.arrivesFrom)).toEqual([null, null]);
   });
 });

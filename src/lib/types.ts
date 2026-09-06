@@ -177,6 +177,11 @@ export interface Activity {
   travel: TravelInfo | null;
   /** Reistijd van de bestemming terug naar huis. */
   returnTravel: TravelInfo | null;
+  /**
+   * Reistijd van hier rechtstreeks naar de volgende plek van die dag. Alleen
+   * gevuld wanneer thuiskomen tussendoor niet past; zie `TravelRole.onward`.
+   */
+  onwardTravel?: TravelInfo | null;
   /** Laatste foutmelding van de reistijdberekening, indien die faalde. */
   travelError: string | null;
   /** Per-activiteit marge; null = globale instelling gebruiken. */
@@ -221,8 +226,18 @@ export interface ActivityDraft {
  * Zie `assignTravelRoles`.
  */
 export interface TravelRole {
+  /** De reis vanaf huis hiernaartoe hoort bij deze activiteit. */
   outbound: boolean;
+  /** De reis hiervandaan naar huis hoort bij deze activiteit. */
   inbound: boolean;
+  /**
+   * Ga je hierna rechtstreeks door naar een andere plek in plaats van naar
+   * huis, dan staat die plek hier. School uit om 17:00 en sporten om 18:30 met
+   * een uur reizen naar huis: dan rijd je er direct heen.
+   */
+  onward: GeoLocation | null;
+  /** Kom je hier rechtstreeks vandaan in plaats van van huis? Dan die plek. */
+  arrivesFrom: GeoLocation | null;
 }
 
 /**
