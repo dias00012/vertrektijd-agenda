@@ -9,3 +9,5 @@ next-env.d.ts
 # wegwerp-testscripts van onderzoek; horen niet in de repo
 .probe/
 *probe*.test.ts
+__*.test.ts
+src/**/__*.test.ts
