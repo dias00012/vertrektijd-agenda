@@ -229,6 +229,27 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
     current.props.set(parsed.name, { value: parsed.value, params: parsed.params });
   }
 
+  /**
+   * Losse afwijkingen op een reeks. Een agenda meldt een afgelaste of
+   * verplaatste les niet door de reeks aan te passen, maar met een tweede
+   * VEVENT met dezelfde UID en een RECURRENCE-ID die zegt welke dag het
+   * betreft. Zonder die koppeling bleef een afgelaste les gewoon staan en
+   * kwam een verplaatste les er dubbel in: één keer op de oude dag uit de
+   * reeks, één keer op de nieuwe.
+   */
+  const overrides = new Map<string, Set<string>>();
+  for (const event of events) {
+    const marker = event.props.get("RECURRENCE-ID");
+    const uid = event.props.get("UID")?.value.trim();
+    if (!marker || !uid) continue;
+    const moment = parseDateTime(marker.value, marker.params, zone);
+    if (!moment) continue;
+    const day = localParts(moment.date, zone).date;
+    const days = overrides.get(uid) ?? new Set<string>();
+    days.add(day);
+    overrides.set(uid, days);
+  }
+
   const out: IcsEvent[] = [];
 
   for (const event of events) {
@@ -283,9 +304,14 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
     const durationMs = end ? end.date.getTime() - start.date.getTime() : 60 * 60_000;
     if (durationMs <= 0) continue;
 
+    // Dagen waarvoor een losse afwijking bestaat slaat de reeks over: die
+    // afwijking staat er zelf al, of is afgelast en hoort er niet te staan.
+    const replaced = event.props.get("RECURRENCE-ID") ? null : overrides.get(uid);
+
     for (const occurrence of expand(start.date, event, fromMs, toMs, zone)) {
       if (out.length >= max) break;
       const from = localParts(occurrence, zone);
+      if (replaced?.has(from.date)) continue;
       const to = localParts(new Date(occurrence.getTime() + durationMs), zone);
       out.push({
         uid: `${uid}@${from.date}`,
@@ -346,9 +372,8 @@ function expand(start: Date, event: RawEvent, fromMs: number, toMs: number, zone
     }),
   );
 
-  // Alleen wekelijks uitklappen. Andere frequenties komen in schoolroosters
-  // nauwelijks voor; die nemen we mee als losse afspraak.
-  if ((parts.get("FREQ") ?? "").toUpperCase() !== "WEEKLY") {
+  const freq = (parts.get("FREQ") ?? "").toUpperCase();
+  if (freq !== "WEEKLY" && freq !== "DAILY" && freq !== "MONTHLY" && freq !== "YEARLY") {
     return inWindow(start) ? [start] : [];
   }
 
@@ -377,19 +402,44 @@ function expand(start: Date, event: RawEvent, fromMs: number, toMs: number, zone
   const dates: Date[] = [];
   let produced = 0;
 
-  for (let offset = 0; offset < MAX_OCCURRENCES * 7; offset += 1) {
+  /** Doet deze kalenderdag mee volgens frequentie en interval? */
+  const matches = (dateKey: string, offset: number): boolean => {
+    if (freq === "DAILY") return offset % interval === 0;
+
+    if (freq === "WEEKLY") {
+      // Alleen elke n-de week meedoen.
+      if (Math.floor((offset + startOffset) / 7) % interval !== 0) return false;
+      const weekday = weekdayOf(dateKey);
+      if (byDay) return byDay.includes(weekday);
+      return offset % 7 === 0;
+    }
+
+    // Maandelijks en jaarlijks houden de dag van de maand aan, net als de
+    // herhalingen die je in de app zelf kunt instellen. Een maand zonder die
+    // dag (de 31e in februari) slaan we over in plaats van hem stil te
+    // verschuiven naar een dag die niemand heeft gekozen.
+    const [year, month, day] = dateKey.split("-").map(Number);
+    const [baseYear, baseMonth, baseDay] = base.date.split("-").map(Number);
+    if (day !== baseDay) return false;
+
+    if (freq === "YEARLY") {
+      return month === baseMonth && (year - baseYear) % interval === 0;
+    }
+    return ((year - baseYear) * 12 + (month - baseMonth)) % interval === 0;
+  };
+
+  // Dagelijks en wekelijks lopen hooguit een paar honderd weken door;
+  // maandelijks en jaarlijks moeten verder kunnen kijken om iets te vinden.
+  const horizon = freq === "MONTHLY" || freq === "YEARLY" ? 366 * 12 : MAX_OCCURRENCES * 7;
+
+  for (let offset = 0; offset < horizon; offset += 1) {
     const dateKey = addDays(base.date, offset);
     const candidate = at(dateKey);
     const time = candidate.getTime();
     if (time > untilMs) break;
     if (count !== null && produced >= count) break;
 
-    // Alleen elke n-de week meedoen.
-    if (Math.floor((offset + startOffset) / 7) % interval !== 0) continue;
-
-    const weekday = weekdayOf(dateKey);
-    if (byDay && !byDay.includes(weekday)) continue;
-    if (!byDay && offset % 7 !== 0) continue;
+    if (!matches(dateKey, offset)) continue;
 
     produced += 1;
     if (time < fromMs) continue;
