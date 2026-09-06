@@ -242,6 +242,12 @@ export interface ActivityDraft {
   linkedExamId?: string | null;
   /** Herkomst, bv. "leerplan". Standaard leeg. */
   source?: string | null;
+  /**
+   * Overgeslagen dagen van een reeks. Normaal niet meegestuurd — die blijven
+   * dan gewoon staan. Wel nodig wanneer de hele reeks verschuift: de dagen
+   * staan als kalenderdatum opgeslagen en moeten dan meebewegen.
+   */
+  exceptions?: string[];
 }
 
 /**

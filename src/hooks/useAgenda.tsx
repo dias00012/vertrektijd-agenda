@@ -83,11 +83,18 @@ interface AgendaContextValue {
   /** Haalt één dag uit een herhalende reeks, zonder de reeks te verwijderen. */
   removeOccurrence: (id: string, dateKey: string) => void;
   /**
+   * Verplaatst één dag uit een reeks naar een andere plek: die dag valt uit de
+   * reeks en komt er los naast te staan. Als één handeling, zodat "ongedaan
+   * maken" allebei terugdraait in plaats van een dubbele activiteit te laten
+   * staan.
+   */
+  moveOccurrence: (id: string, dateKey: string, draft: ActivityDraft) => void;
+  /**
    * De laatste verwijdering, zolang je hem nog terug kunt halen. Verwijderen
    * is het enige wat je in deze app echt kwijt kunt raken; een knop van een
    * paar seconden scheelt de schrik.
    */
-  lastRemoved: { title: string; at: number } | null;
+  lastRemoved: { title: string; at: number; kind: "removed" | "moved" } | null;
   /** Zet de laatste verwijdering terug. */
   undoRemove: () => void;
   /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
@@ -460,7 +467,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           ...item,
           ...draft,
           // Overgeslagen dagen blijven alleen relevant zolang de reeks bestaat.
-          exceptions: draft.recurrence ? item.exceptions : [],
+          // Stuurt de aanroeper ze mee, dan zijn ze verschoven met de reeks.
+          exceptions: draft.exceptions ?? (draft.recurrence ? item.exceptions : []),
           // Alleen de reistijd weggooien wanneer de bestemming echt wijzigde.
           // Een andere starttijd verschuift enkel de (afgeleide) vertrektijd.
           travel: locationChanged ? null : item.travel,
@@ -474,9 +482,20 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   /** Wat er als laatste weg is, zodat het terug kan. */
   const undoable = useRef<
-    { kind: "activity"; activity: Activity } | { kind: "occurrence"; id: string; date: string } | null
+    | { kind: "activity"; activity: Activity }
+    | { kind: "occurrence"; id: string; date: string }
+    // Eén dag uit een reeks verplaatsen is twee handelingen: de dag uit de
+    // reeks halen en er een losse kopie naast zetten. Alleen de eerste
+    // terugdraaien liet de kopie staan, dus stond alles dubbel.
+    | { kind: "move"; id: string; date: string; copyId: string }
+    | null
   >(null);
-  const [lastRemoved, setLastRemoved] = useState<{ title: string; at: number } | null>(null);
+  const [lastRemoved, setLastRemoved] = useState<{
+    title: string;
+    at: number;
+    /** Bepaalt de tekst op het balkje: verwijderd of verplaatst. */
+    kind: "removed" | "moved";
+  } | null>(null);
 
   /** Een grafsteen erbij, zodat de cloud dit niet terugstuurt. */
   const recordDeletion = useCallback((id: string) => {
@@ -494,7 +513,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const going = current.find((item) => item.id === id);
       if (going) {
         undoable.current = { kind: "activity", activity: going };
-        setLastRemoved({ title: going.title, at: Date.now() });
+        setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
       }
       return current.filter((item) => item.id !== id);
     });
@@ -518,13 +537,17 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       forgetDeletion(entry.activity.id);
       return;
     }
-    // Eén dag terugzetten betekent: de uitzondering weer weghalen.
+    // Eén dag terugzetten betekent: de uitzondering weer weghalen. Ging het om
+    // een verplaatsing, dan moet de losse kopie ook weer weg — anders staat de
+    // activiteit na "ongedaan maken" op twee plekken tegelijk.
     setActivities((current) =>
-      current.map((item) =>
-        item.id === entry.id
-          ? { ...item, exceptions: item.exceptions.filter((day) => day !== entry.date) }
-          : item,
-      ),
+      current
+        .filter((item) => entry.kind !== "move" || item.id !== entry.copyId)
+        .map((item) =>
+          item.id === entry.id
+            ? { ...item, exceptions: item.exceptions.filter((day) => day !== entry.date) }
+            : item,
+        ),
     );
   }, [forgetDeletion]);
 
@@ -538,7 +561,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const series = current.find((item) => item.id === id);
       if (series && !series.exceptions.includes(dateKey)) {
         undoable.current = { kind: "occurrence", id, date: dateKey };
-        setLastRemoved({ title: series.title, at: Date.now() });
+        setLastRemoved({ title: series.title, at: Date.now(), kind: "removed" });
       }
       return current.map((item) =>
         item.id === id && !item.exceptions.includes(dateKey)
@@ -551,6 +574,34 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       );
     });
   }, []);
+
+  /**
+   * Eén dag uit een reeks naar een andere plek slepen: die dag valt uit de
+   * reeks en komt er los naast te staan. Als één handeling, zodat "ongedaan
+   * maken" ook echt allebei terugdraait.
+   */
+  const moveOccurrence = useCallback(
+    (id: string, dateKey: string, draft: ActivityDraft) => {
+      const copy = addActivity(draft);
+      setActivities((current) => {
+        const series = current.find((item) => item.id === id);
+        if (series && !series.exceptions.includes(dateKey)) {
+          undoable.current = { kind: "move", id, date: dateKey, copyId: copy.id };
+          setLastRemoved({ title: series.title, at: Date.now(), kind: "moved" });
+        }
+        return current.map((item) =>
+          item.id === id && !item.exceptions.includes(dateKey)
+            ? {
+                ...item,
+                exceptions: [...item.exceptions, dateKey],
+                updatedAt: new Date().toISOString(),
+              }
+            : item,
+        );
+      });
+    },
+    [addActivity],
+  );
 
   const updateSettings = useCallback(
     (patch: Partial<Settings> | ((current: Settings) => Partial<Settings>)) => {
@@ -895,6 +946,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateActivity,
       removeActivity,
       removeOccurrence,
+      moveOccurrence,
       lastRemoved,
       undoRemove,
       forgetRemoved,
@@ -933,6 +985,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateActivity,
       removeActivity,
       removeOccurrence,
+      moveOccurrence,
       lastRemoved,
       undoRemove,
       forgetRemoved,

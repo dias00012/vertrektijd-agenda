@@ -20,6 +20,7 @@ import {
   pad2,
   parseDateKey,
   toDateKey,
+  timeToMinutes,
 } from "@/lib/time";
 import { useT } from "@/hooks/useLanguage";
 import { shiftRecurrence, weekdayHeadings } from "@/lib/recurrence";
@@ -101,7 +102,7 @@ function draftFrom(activity: Activity, overrides: Partial<ActivityDraft>): Activ
  */
 export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
   const dayLabels = weekdayHeadings();
-  const { activities, settings, updateActivity, addActivity, removeOccurrence, categoryFor } =
+  const { activities, settings, updateActivity, moveOccurrence, categoryFor } =
     useAgenda();
   const [editing, setEditing] = useState<ActivityOccurrence | null>(null);
   /** Een gesleepte reeks wacht hier tot je kiest: deze dag of alle dagen. */
@@ -129,18 +130,28 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
     const series = activities.find((item) => item.id === occurrence.id);
     if (!series) return;
 
+    // Slepen omzeilt de controle van het formulier, dus hier een eigen
+    // vangnet: een blok dat eindigt voordat het begint bestaat niet, en zou
+    // het hele raster onbruikbaar maken.
+    if (timeToMinutes(target.endTime) <= timeToMinutes(target.startTime)) return;
+
     if (!series.recurrence) {
       updateActivity(series.id, draftFrom(series, target));
       return;
     }
 
     if (scope === "one") {
-      removeOccurrence(series.id, occurrence.date);
-      addActivity(draftFrom(series, { ...target, recurrence: null }));
+      // Als één handeling: de dag uit de reeks halen én de losse kopie
+      // neerzetten. Twee losse aanroepen lieten "ongedaan maken" alleen het
+      // eerste terugdraaien, waarna de activiteit dubbel stond.
+      moveOccurrence(series.id, occurrence.date, draftFrom(series, { ...target, recurrence: null }));
       return;
     }
 
-    // De hele reeks schuift met dezelfde stap mee, dus ook de weekdagen.
+    // De hele reeks schuift met dezelfde stap mee, dus ook de weekdagen — en
+    // de overgeslagen dagen. Die staan als kalenderdatum opgeslagen, dus zonder
+    // meeschuiven wezen ze na de verplaatsing nergens meer naar en dook een dag
+    // die je bewust had weggehaald weer op.
     const shift = daysBetween(occurrence.date, target.date);
     updateActivity(
       series.id,
@@ -149,6 +160,7 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
         startTime: target.startTime,
         endTime: target.endTime,
         recurrence: shiftRecurrence(series.recurrence, shift),
+        exceptions: series.exceptions.map((day) => addDaysToKey(day, shift)),
       }),
     );
   }
@@ -518,13 +530,19 @@ function GridBlock({
 
     if (current.mode === "move") {
       days = Math.max(-dayIndex, Math.min(6 - dayIndex, Math.round(dx / current.columnWidth)));
-      // Niet voor middernacht beginnen en niet erna eindigen.
-      minutes = Math.max(-item.startMinutes, Math.min(MINUTES_PER_DAY - item.endMinutes, minutes));
+      // Niet voor middernacht beginnen en niet erna eindigen. Tot 23:59, niet
+      // tot 24:00: dat werd bij het opslaan "00:00", en dan lag de eindtijd
+      // vóór de begintijd. Het hele weekraster klapte daarop dicht.
+      minutes = Math.max(
+        -item.startMinutes,
+        Math.min(MINUTES_PER_DAY - 1 - item.endMinutes, minutes),
+      );
     } else {
-      // Een activiteit blijft minstens één stap lang.
+      // Een activiteit blijft minstens één stap lang, en eindigt uiterlijk
+      // om 23:59.
       minutes = Math.max(
         item.startMinutes + DRAG_SNAP_MINUTES - item.endMinutes,
-        Math.min(MINUTES_PER_DAY - item.endMinutes, minutes),
+        Math.min(MINUTES_PER_DAY - 1 - item.endMinutes, minutes),
       );
     }
 
