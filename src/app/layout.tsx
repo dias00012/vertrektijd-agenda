@@ -59,7 +59,12 @@ const themeScript = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="nl">
+    /*
+     * Het script hieronder zet de kleur op <html> voordat React begint, dus de
+     * server-HTML en de eerste client-weergave verschillen daar met opzet.
+     * Zonder deze markering meldt React dat als een fout.
+     */
+    <html lang="nl" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

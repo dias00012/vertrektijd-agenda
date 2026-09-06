@@ -19,12 +19,19 @@
 
 :root {
   color-scheme: light;
-  --canvas: #f6f7f9;
-  --surface: #ffffff;
-  --surface-soft: #f2f4f7;
+
+  /*
+   * De grijstinten zijn niet neutraal maar licht gekleurd door de gekozen
+   * accentkleur. Daardoor voelt de hele app als "jouw kleur" in plaats van
+   * alleen de knoppen. De tekstkleuren blijven bewust neutraal: die moeten
+   * leesbaar blijven, hoe fel je kleur ook is.
+   */
+  --canvas: color-mix(in srgb, var(--accent) 7%, #f6f7f9);
+  --surface: color-mix(in srgb, var(--accent) 3%, #ffffff);
+  --surface-soft: color-mix(in srgb, var(--accent) 12%, #f2f4f7);
+  --line: color-mix(in srgb, var(--accent) 16%, #e6e8ec);
   --ink: #111827;
   --muted: #6b7280;
-  --line: #e6e8ec;
   --danger: #dc2626;
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.05);
 
@@ -41,13 +48,14 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --canvas: #0d1117;
-    --surface: #161b22;
-    --surface-soft: #1c2129;
+    --accent: var(--accent-dark);
+    /* In het donker is minder tint nodig: een lichte kleur werkt daar sneller. */
+    --canvas: color-mix(in srgb, var(--accent) 7%, #0d1117);
+    --surface: color-mix(in srgb, var(--accent) 6%, #161b22);
+    --surface-soft: color-mix(in srgb, var(--accent) 12%, #1c2129);
+    --line: color-mix(in srgb, var(--accent) 18%, #262c36);
     --ink: #e9edf3;
     --muted: #9aa4b2;
-    --line: #262c36;
-    --accent: var(--accent-dark);
     --danger: #f87171;
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
   }
@@ -57,6 +65,20 @@ html,
 body {
   background: var(--canvas);
   color: var(--ink);
+}
+
+/*
+ * Een zachte gloed in je eigen kleur bovenaan de pagina. Blijft staan bij het
+ * scrollen, zodat de kleur voelt als een achtergrond en niet als een balk.
+ */
+body {
+  background-image: radial-gradient(
+    1100px 420px at 50% -180px,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent 70%
+  );
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 body {

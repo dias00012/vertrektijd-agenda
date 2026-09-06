@@ -8,6 +8,15 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.16.1
+
+- **De gekozen kleur is nu overal te zien.** Niet alleen de knoppen: de achtergrond krijgt een
+  zachte gloed in je kleur, en kaarten, randen en vlakken zijn er licht mee getint. De
+  tekstkleuren blijven neutraal, zodat alles leesbaar blijft welke kleur je ook kiest.
+- **Hydratatiewaarschuwing opgelost.** Het script dat de kleur vóór de eerste weergave zet
+  wijzigt `<html>`, waardoor React meldde dat server en browser verschilden. Dat verschil is
+  bedoeld en staat nu als zodanig gemarkeerd.
+
 ## 0.16.0
 
 - **Kies je eigen kleur.** In Instellingen staat nu "Kleur van de app" met acht kleuren: blauw,
