@@ -2,7 +2,7 @@ import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { motisPlan, toTravelLeg } from "./motis";
-import type { GeoLocation, TravelMode, TravelResult } from "../types";
+import type { GeoLocation, TravelMode, TravelResult, TransitBike } from "../types";
 
 /**
  * Routering per vervoermiddel voor de agenda: één reis van A naar B.
@@ -30,6 +30,8 @@ export interface RouteOptions {
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (gebruikt voor de terugreis met OV). */
   departAt?: string;
+  /** Fiets naar (en eventueel vanaf) de halte; alleen zinvol bij OV. */
+  transitBike?: TransitBike;
 }
 
 /** Berekent de reis tussen twee punten voor het gekozen vervoermiddel. */
@@ -44,7 +46,13 @@ export async function route(
   // Bij OV hoort de tijd bij de sleutel: een andere dag of tijd is een andere rit.
   const timePart =
     mode === "transit" ? `@${options.arriveBy ?? options.departAt ?? "now"}` : "";
-  const key = `route:${config.provider}:${mode}${timePart}:${coord(from)}>${coord(to)}`;
+  // En de fietskeuze ook: fietsen naar het station geeft een andere reis dan
+  // lopen. Zonder dit krijg je de eerder berekende looproute terug.
+  const bikePart =
+    mode === "transit" && options.transitBike && options.transitBike !== "none"
+      ? `+${options.transitBike}`
+      : "";
+  const key = `route:${config.provider}:${mode}${timePart}${bikePart}:${coord(from)}>${coord(to)}`;
 
   const cached = cacheGet<RouteResult>(key);
   if (cached) return cached;
@@ -137,6 +145,24 @@ async function planDirect(
 
 /* --- OV via MOTIS ------------------------------------------------------- */
 
+/** Zo lang mag het fietsdeel naar of vanaf een halte duren. */
+const MAX_BIKE_SECONDS = 30 * 60;
+
+/**
+ * Fietsen naar de halte, en eventueel aan de andere kant weer verder. Dat
+ * scheelt op een gemiddelde studentenreis al snel twintig minuten ten opzichte
+ * van lopen, met precies dezelfde trein.
+ */
+export function applyBikeOptions(params: URLSearchParams, bike: TransitBike | undefined): void {
+  if (!bike || bike === "none") return;
+  params.set("preTransitModes", "BIKE");
+  params.set("maxPreTransitTime", String(MAX_BIKE_SECONDS));
+  if (bike === "both") {
+    params.set("postTransitModes", "BIKE");
+    params.set("maxPostTransitTime", String(MAX_BIKE_SECONDS));
+  }
+}
+
 async function planTransit(
   from: GeoLocation,
   to: GeoLocation,
@@ -152,6 +178,7 @@ async function planTransit(
     arriveBy: String(arriveBy),
     numItineraries: "1",
   });
+  applyBikeOptions(params, options.transitBike);
 
   const data = await motisPlan(params);
   const best = data.itineraries?.[0];

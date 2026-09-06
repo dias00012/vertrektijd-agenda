@@ -14,7 +14,8 @@ import { ThemeSection } from "@/components/ThemeSection";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
-import type { GeoLocation, TravelMode } from "@/lib/types";
+import type { GeoLocation, TransitBike, TravelMode } from "@/lib/types";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 const MAX_BUFFER_MINUTES = 120;
 
@@ -25,6 +26,7 @@ export default function SettingsPage() {
   const [home, setHome] = useState<GeoLocation | null>(null);
   const [buffer, setBuffer] = useState("10");
   const [mode, setMode] = useState<TravelMode>("car");
+  const [bike, setBike] = useState<TransitBike>("none");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +35,8 @@ export default function SettingsPage() {
     setHome(settings.home);
     setBuffer(String(settings.bufferMinutes));
     setMode(settings.travelMode);
-  }, [hydrated, settings.home, settings.bufferMinutes, settings.travelMode]);
+    setBike(settings.transitBike ?? "none");
+  }, [hydrated, settings.home, settings.bufferMinutes, settings.travelMode, settings.transitBike]);
 
   const activitiesWithLocation = activities.filter((activity) => activity.location).length;
 
@@ -53,7 +56,7 @@ export default function SettingsPage() {
 
     setError(null);
     // Wijzigt de thuislocatie? Dan herberekent de store alle reistijden zelf.
-    updateSettings({ home, bufferMinutes: Math.round(parsed), travelMode: mode });
+    updateSettings({ home, bufferMinutes: Math.round(parsed), travelMode: mode, transitBike: bike });
     setSaved(true);
   }
 
@@ -152,6 +155,46 @@ export default function SettingsPage() {
             </div>
             <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
               {t("settings.modeHint")}
+            </p>
+          </fieldset>
+
+          <fieldset>
+            <legend className="label">&#128690; {t("settings.bike.title")}</legend>
+            <p className="mb-2 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+              {t("settings.bike.body")}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {(["none", "start", "both"] as const).map((option) => {
+                const active = bike === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={active}
+                    title={t(`settings.bike.${option}Hint` as TranslationKey)}
+                    onClick={() => {
+                      setBike(option);
+                      setSaved(false);
+                    }}
+                    className="rounded-xl border px-2 py-2.5 text-center text-xs font-medium transition-colors"
+                    style={{
+                      borderColor: active ? "var(--accent)" : "var(--line)",
+                      background: active
+                        ? "color-mix(in srgb, var(--accent) 12%, transparent)"
+                        : "transparent",
+                      color: active ? "var(--accent)" : "var(--muted)",
+                    }}
+                  >
+                    <span aria-hidden className="block text-base leading-none">
+                      {option === "none" ? "\u{1F6B6}" : "\u{1F6B2}"}
+                    </span>
+                    {t(`settings.bike.${option}` as TranslationKey)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+              {t(`settings.bike.${bike}Hint` as TranslationKey)}
             </p>
           </fieldset>
 

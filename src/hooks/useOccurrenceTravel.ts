@@ -126,8 +126,16 @@ export function useOccurrenceTravel(activity: Activity, settings: Settings): Occ
         ? cached.value
         : (() => {
             const value = Promise.all([
-              fetchTravel(home, destination, { mode: plan.mode, arriveBy: plan.arriveBy }),
-              fetchTravel(destination, home, { mode: plan.mode, departAt: plan.departAt }),
+              fetchTravel(home, destination, {
+                mode: plan.mode,
+                arriveBy: plan.arriveBy,
+                transitBike: plan.transitBike,
+              }),
+              fetchTravel(destination, home, {
+                mode: plan.mode,
+                departAt: plan.departAt,
+                transitBike: plan.transitBike,
+              }),
             ]).then(([outbound, inbound]) => ({ outbound, inbound }));
             cache.set(outboundKey, { at: Date.now(), value });
             // Een mislukte reis niet vasthouden: morgen mag het opnieuw.

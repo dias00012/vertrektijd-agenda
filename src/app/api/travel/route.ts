@@ -3,7 +3,7 @@ import { say } from "@/lib/server/language";
 import { route } from "@/lib/server/routing";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
-import type { GeoLocation, TravelMode } from "@/lib/types";
+import type { GeoLocation, TransitBike, TravelMode } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +18,8 @@ interface TravelRequestBody {
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
   departAt?: string;
+  /** "none" | "start" | "both": fiets naar (en vanaf) de halte. */
+  transitBike?: string;
 }
 
 /** Accepteert alleen een geldige ISO-tijd; anders negeren we het veld. */
@@ -25,6 +27,11 @@ function isoOrUndefined(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? undefined : new Date(parsed).toISOString();
+}
+
+/** Alleen de drie bekende waarden; anders gewoon lopen. */
+function bikeOrNone(value: unknown): TransitBike {
+  return value === "start" || value === "both" ? value : "none";
 }
 
 function isValidPoint(point: Partial<GeoLocation> | undefined): point is GeoLocation {
@@ -72,6 +79,7 @@ export async function POST(request: Request) {
       mode,
       arriveBy: isoOrUndefined(body.arriveBy),
       departAt: isoOrUndefined(body.departAt),
+      transitBike: bikeOrNone(body.transitBike),
     });
     return NextResponse.json(result);
   } catch (error) {

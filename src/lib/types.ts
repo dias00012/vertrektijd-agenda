@@ -25,6 +25,12 @@ export interface CustomCategory {
 /** Vervoersmiddel. Alleen "car" is in de MVP geimplementeerd. */
 export type TravelMode = "car" | "bike" | "walk" | "transit";
 
+/**
+ * Fiets in combinatie met OV: helemaal niet, alleen naar de halte, of aan
+ * beide kanten.
+ */
+export type TransitBike = "none" | "start" | "both";
+
 export interface GeoLocation {
   /** Weergavenaam zoals de gebruiker die herkent, bv. "Windesheim, Almere". */
   label: string;
@@ -234,6 +240,12 @@ export interface Settings {
   /** Veiligheidsmarge in minuten, standaard 10. */
   bufferMinutes: number;
   travelMode: TravelMode;
+  /**
+   * Hoe je bij de halte komt bij een OV-reis. Zo reist bijna elke student in
+   * Nederland: fietsen naar het station, en aan de andere kant een tweede fiets
+   * of een OV-fiets. Lopend duurt dezelfde reis al snel een half uur langer.
+   */
+  transitBike?: TransitBike;
   /**
    * Hoeveel minuten vóór je vertrektijd je een melding wilt. `null` = uit.
    * Zie `useReminders` voor wat er wel en niet kan zonder pushserver.

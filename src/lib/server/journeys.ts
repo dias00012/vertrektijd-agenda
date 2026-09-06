@@ -1,8 +1,8 @@
 import "server-only";
 import { ProviderError } from "./config";
 import { motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
-import { place } from "./routing";
-import type { GeoLocation, Journey } from "../types";
+import { applyBikeOptions, place } from "./routing";
+import type { GeoLocation, Journey, TransitBike } from "../types";
 
 /**
  * De reisplanner: meerdere reismogelijkheden naast elkaar, met live
@@ -20,6 +20,8 @@ export interface JourneySearch {
   cursor?: string;
   /** Aantal gewenste reisopties. */
   count?: number;
+  /** Fiets naar (en eventueel vanaf) de halte. */
+  transitBike?: TransitBike;
 }
 
 export interface JourneyResult {
@@ -44,6 +46,7 @@ export async function planJourneys(
     toPlace: place(to),
     numItineraries: String(count),
   });
+  applyBikeOptions(params, search.transitBike);
 
   // Bij bladeren bepaalt de cursor het tijdvenster; anders het gekozen tijdstip.
   if (search.cursor) {

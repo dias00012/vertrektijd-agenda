@@ -1,4 +1,4 @@
-import type { Activity, GeoLocation, Settings, TravelMode } from "./types";
+import type { Activity, GeoLocation, Settings, TransitBike, TravelMode } from "./types";
 import {
   MINUTES_PER_DAY,
   addDaysToKey,
@@ -23,11 +23,15 @@ export function travelKey(
   destination: GeoLocation | null,
   mode: TravelMode,
   timeSlot?: string | null,
+  transitBike?: TransitBike,
 ): string | null {
   if (!home || !destination) return null;
   const round = (n: number) => n.toFixed(5);
   const slot = mode === "transit" && timeSlot ? `@${timeSlot}` : "";
-  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}`;
+  // De fietskeuze hoort bij de sleutel: zet je hem om, dan moet de reis
+  // opnieuw berekend worden in plaats van de oude looptijd te blijven tonen.
+  const bike = mode === "transit" && transitBike && transitBike !== "none" ? `+${transitBike}` : "";
+  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bike}`;
 }
 
 /** Hoe ver vooruit we zoeken naar de eerstvolgende dag van een reeks. */
@@ -59,6 +63,8 @@ export function bufferFor(activity: Activity, settings: Settings): number {
  */
 export interface TravelPlan {
   mode: TravelMode;
+  /** Fiets naar (en eventueel vanaf) de halte; alleen bij OV. */
+  transitBike: TransitBike;
   outboundKey: string;
   returnKey: string;
   /** Uiterlijke aankomst voor de heenreis (ISO); alleen bij OV. */
@@ -103,12 +109,14 @@ export function travelPlanForDate(
   const outboundSlot = arriveByDate ? `${dateKey}T${activity.startTime}` : null;
   const returnSlot = departAtDate ? `${dateKey}T${activity.endTime}` : null;
 
-  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot);
-  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot);
+  const transitBike = settings.transitBike ?? "none";
+  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, transitBike);
+  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, transitBike);
   if (!outboundKey || !returnKey) return null;
 
   return {
     mode,
+    transitBike,
     outboundKey,
     returnKey,
     arriveBy: arriveByDate?.toISOString(),

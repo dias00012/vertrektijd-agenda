@@ -240,10 +240,12 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           fetchTravel(currentSettings.home, activity.location, {
             mode: plan.mode,
             arriveBy: plan.arriveBy,
+            transitBike: plan.transitBike,
           }),
           fetchTravel(activity.location, currentSettings.home, {
             mode: plan.mode,
             departAt: plan.departAt,
+            transitBike: plan.transitBike,
           }),
         ]);
         const computedAt = new Date().toISOString();

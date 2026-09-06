@@ -671,6 +671,16 @@ export const nl = {
   "theme.green": "Groen",
   "theme.teal": "Turquoise",
   "geocode.stop": "Halte of station",
+
+  /* --- Fiets en OV ------------------------------------------------------- */
+  "settings.bike.title": "Fiets en OV",
+  "settings.bike.body": "Zo reist bijna elke student: fietsen naar het station in plaats van lopen. Dat scheelt op een gewone reis al snel twintig minuten, met precies dezelfde trein.",
+  "settings.bike.none": "Lopen",
+  "settings.bike.noneHint": "Naar de halte en er weer vandaan",
+  "settings.bike.start": "Fiets heen",
+  "settings.bike.startHint": "Fietsen naar de halte, daarna lopen",
+  "settings.bike.both": "Fiets beide",
+  "settings.bike.bothHint": "Ook een fiets bij je bestemming",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1307,6 +1317,15 @@ export const en: Record<TranslationKey, string> = {
   "theme.green": "Green",
   "theme.teal": "Teal",
   "geocode.stop": "Stop or station",
+
+  "settings.bike.title": "Bike and transit",
+  "settings.bike.body": "This is how most students travel: cycling to the station instead of walking. On a normal journey that easily saves twenty minutes, with exactly the same train.",
+  "settings.bike.none": "Walk",
+  "settings.bike.noneHint": "To the stop and away from it",
+  "settings.bike.start": "Bike there",
+  "settings.bike.startHint": "Cycle to the stop, then walk",
+  "settings.bike.both": "Bike both ends",
+  "settings.bike.bothHint": "A bike at your destination too",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

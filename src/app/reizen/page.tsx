@@ -83,6 +83,7 @@ export default function TravelPlannerPage() {
                 arriveBy: when === "arrive",
               }),
           count: 5,
+          transitBike: settings.transitBike ?? "none",
         });
         setJourneys(result.journeys);
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
@@ -94,7 +95,7 @@ export default function TravelPlannerPage() {
         setLoading(false);
       }
     },
-    [from, to, when, dateTime, t],
+    [from, to, when, dateTime, t, settings.transitBike],
   );
 
   function useMyLocation() {

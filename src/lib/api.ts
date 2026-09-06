@@ -1,7 +1,14 @@
 "use client";
 
 import { getLanguage } from "./i18n/locale";
-import type { GeocodeResult, GeoLocation, Journey, TravelMode, TravelResult } from "./types";
+import type {
+  GeocodeResult,
+  GeoLocation,
+  Journey,
+  TransitBike,
+  TravelMode,
+  TravelResult,
+} from "./types";
 
 /**
  * De server kent de gekozen taal niet uit zichzelf; die staat in de browser.
@@ -45,6 +52,8 @@ export async function searchLocations(
 
 export interface TravelRequestOptions {
   mode: TravelMode;
+  /** Fiets naar (en eventueel vanaf) de halte; alleen zinvol bij OV. */
+  transitBike?: TransitBike;
   /** ISO-tijd: uiterlijk aankomen (heenreis met OV). */
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
@@ -72,6 +81,8 @@ export async function fetchTravel(
 export interface JourneySearchOptions {
   /** ISO-tijd; standaard nu. */
   time?: string;
+  /** Fiets naar (en eventueel vanaf) de halte. */
+  transitBike?: TransitBike;
   /** true = "uiterlijk aankomen om", false = "vertrekken vanaf". */
   arriveBy?: boolean;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */
