@@ -283,6 +283,12 @@ export interface ActivityOccurrence extends Activity {
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring: boolean;
   /**
+   * De startdatum van de reeks zelf. `date` is bij een herhaling de dag die je
+   * bekijkt, niet de dag waarop de reeks begint. Wie dat verwarde schreef de
+   * bekeken dag terug als startdatum, waarna alle eerdere dagen verdwenen.
+   */
+  seriesDate: string;
+  /**
    * Hoort deze dag bij iets dat meer dagen duurt, dan staat hier het geheel:
    * de eerste en laatste dag, en de hoeveelste dag dit is. `null` bij het
    * gewone geval van één dag.

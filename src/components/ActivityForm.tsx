@@ -17,6 +17,7 @@ import type {
   GeoLocation,
   Recurrence,
   Settings,
+  ActivityOccurrence,
 } from "@/lib/types";
 
 interface Props {
@@ -46,6 +47,12 @@ interface FormErrors {
 
 const DEFAULT_DURATION_MINUTES = 60;
 
+/** De startdatum van de reeks; bij een losse activiteit zijn eigen datum. */
+function seriesStart(activity: Activity): string {
+  const occurrence = activity as Partial<ActivityOccurrence>;
+  return occurrence.seriesDate ?? activity.date;
+}
+
 function initialDraft(
   settings: Settings,
   activity?: Activity,
@@ -55,7 +62,11 @@ function initialDraft(
     return {
       category: activity.category,
       title: activity.title,
-      date: activity.date,
+      // Bij een reeks de startdatum van de reeks, niet de dag die je toevallig
+      // aanklikte. Opslaan schrijft dit veld terug als startdatum, dus met de
+      // aangeklikte dag erin verdween alles wat daarvóór lag — ook als je
+      // alleen de kleur veranderde.
+      date: seriesStart(activity),
       startTime: activity.startTime,
       endTime: activity.endTime,
       location: activity.location,

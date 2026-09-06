@@ -134,6 +134,7 @@ export function toOccurrence(activity: Activity, dateKey: string): ActivityOccur
     date: dateKey,
     occurrenceId: `${activity.id}:${dateKey}`,
     recurring: Boolean(activity.recurrence),
+    seriesDate: activity.date,
     span:
       total > 1
         ? {

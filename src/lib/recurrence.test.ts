@@ -322,3 +322,26 @@ describe("lastDayOf bij een reeks met een oude einddatum", () => {
     expect(toOccurrence(vakantie, "2026-10-21").span).toMatchObject({ index: 2, total: 5 });
   });
 });
+
+describe("toOccurrence en de startdatum van de reeks", () => {
+  it("houdt de startdatum apart van de dag die je bekijkt", () => {
+    // Het formulier schrijft `date` terug als startdatum van de reeks. Stond
+    // daar de aangeklikte dag in, dan verdween alles wat daarvóór lag — ook
+    // als je alleen de kleur veranderde.
+    const reeks = activity({
+      date: "2026-09-14",
+      recurrence: { freq: "weekly", weekdays: [1, 3], until: null },
+    });
+
+    const woensdag = toOccurrence(reeks, "2026-09-16");
+
+    expect(woensdag.date).toBe("2026-09-16");
+    expect(woensdag.seriesDate).toBe("2026-09-14");
+  });
+
+  it("geeft bij een losse activiteit gewoon dezelfde datum", () => {
+    const los = toOccurrence(activity({ date: "2026-09-14" }), "2026-09-14");
+
+    expect(los.seriesDate).toBe("2026-09-14");
+  });
+});
