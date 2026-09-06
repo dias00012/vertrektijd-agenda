@@ -99,6 +99,24 @@ aantoonbaar faalt op de vorige versie.
 - **De laatste dag van een vakantie viel eraf** als de zomertijd binnen die
   periode eindigde: die dag duurt 25 uur, en de app rekende met 24.
 
+**Agenda en weekraster**
+
+- **"Eerstvolgende" liet een vrije dag de echte afspraak verdringen.** Iets dat
+  de hele dag duurt heeft geen tijdstip en dus geen vertrektijd, maar stond wel
+  bovenaan — dus "Herfstvakantie" in plaats van de tandarts van 10:00.
+- **Een maandelijkse reeks viel buiten beeld.** De kaart keek drie weken
+  vooruit; huur op de 1e is vanaf 7 september 24 dagen wachten. Nu twee maanden.
+- **Slepen tot onder aan het scherm** gaf eindtijd 00:00, en daar klapte het
+  hele weekraster op dicht. Nu kun je tot 23:59.
+- **Een hele reeks verslepen liet de overgeslagen dagen achter** op hun oude
+  datum, waarna een dag die je bewust had weggehaald weer opdook.
+- **Eén dag uit een reeks slepen** toonde "verwijderd — ongedaan maken". Klikte
+  je daarop, dan stond de activiteit dubbel. Verplaatsen is nu één handeling,
+  en het balkje zegt wat het doet.
+- **Zoeken naar een afgelopen reeks** gaf de eerste keer in plaats van de
+  laatste: "wanneer was dat practicum ook alweer" wees naar februari terwijl
+  het in juni ophield.
+
 **Meldingen**
 
 - **Een vertrek verder dan zes uur weg werd nooit alsnog ingepland.** Liet je de
@@ -134,7 +152,7 @@ aantoonbaar faalt op de vorige versie.
 - `scripts/reis-check.mjs` laat zien wat de OV-planner echt teruggeeft, met
   varianten naast elkaar. Bedoeld om een verschil met 9292 te herleiden tot de
   gegevens of tot een instelling.
-- Van 152 naar 204 tests.
+- Van 152 naar 213 tests.
 
 ## 0.28.0
 
