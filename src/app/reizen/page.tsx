@@ -61,7 +61,7 @@ export default function TravelPlannerPage() {
         setDateTime(toLocalInput(parsed));
       }
     }
-  }, [hydrated]);
+  }, [hydrated, t]);
 
   const search = useCallback(
     async (cursor?: string) => {
@@ -94,7 +94,7 @@ export default function TravelPlannerPage() {
         setLoading(false);
       }
     },
-    [from, to, when, dateTime],
+    [from, to, when, dateTime, t],
   );
 
   function useMyLocation() {

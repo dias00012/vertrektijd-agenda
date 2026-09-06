@@ -7,7 +7,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { defaultRecurrence, sortWeekdays, weekdays } from "@/lib/recurrence";
 import { placeChoices, placeForCategory } from "@/lib/places";
-import { travelModeMeta, travelModes } from "@/lib/travelModes";
+import { travelModes } from "@/lib/travelModes";
 import { LocationInput } from "./LocationInput";
 import type {
   Activity,
@@ -31,8 +31,6 @@ interface Props {
    * vanuit een opdracht leertijd inplant. Wordt genegeerd bij bewerken.
    */
   preset?: Partial<ActivityDraft>;
-  /** Koppelt de nieuwe activiteit aan een opdracht of toets. */
-  link?: { taskId?: string; examId?: string };
   onClose: () => void;
 }
 
@@ -85,7 +83,7 @@ function initialDraft(
 }
 
 /** Modale sheet voor het toevoegen en bewerken van een activiteit. */
-export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }: Props) {
+export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Props) {
   const {
     addActivity,
     updateActivity,
@@ -170,7 +168,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
       }
     }
     return next;
-  }, [draft]);
+  }, [draft, t]);
 
   function patch(update: Partial<ActivityDraft>) {
     setDraft((current) => {

@@ -6,6 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { layoutDay, timeRangeFor, type PositionedActivity } from "@/lib/agenda";
 import { calendarWeekKeys, minutesToTime, pad2, parseDateKey, toDateKey } from "@/lib/time";
 import { useT } from "@/hooks/useLanguage";
+import { weekdayHeadings } from "@/lib/recurrence";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -15,7 +16,6 @@ const PX_PER_MINUTE = HOUR_HEIGHT / 60;
 /** Onder deze hoogte past er geen tekst meer in een blok. */
 const COMPACT_BLOCK_HEIGHT = 34;
 
-const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 
 /**
  * Weekraster: zeven dagen naast elkaar op een tijdas. De reistijd staat als
@@ -23,6 +23,7 @@ const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
  * ziet wanneer je de deur uit moet.
  */
 export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
+  const dayLabels = weekdayHeadings();
   const { activities, settings } = useAgenda();
   const [editing, setEditing] = useState<ActivityOccurrence | null>(null);
 
@@ -64,7 +65,7 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
                   className="text-[0.65rem] font-semibold uppercase"
                   style={{ color: "var(--muted)" }}
                 >
-                  {DAY_LABELS[(parseDateKey(dateKey).getDay() + 6) % 7]}
+                  {dayLabels[(parseDateKey(dateKey).getDay() + 6) % 7]}
                 </div>
                 <div
                   className="mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm font-semibold tabular-nums"

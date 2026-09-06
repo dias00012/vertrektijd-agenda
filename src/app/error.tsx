@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { reportError } from "@/lib/monitoring";
 import { useT } from "@/hooks/useLanguage";
 
@@ -34,9 +35,9 @@ export default function Error({
         <button type="button" className="btn btn-primary" onClick={reset}>
           {t("common.retry")}
         </button>
-        <a href="/" className="btn btn-ghost">
+        <Link href="/" className="btn btn-ghost">
           {t("error.toToday")}
-        </a>
+        </Link>
       </div>
       {error.digest ? (
         <p className="mt-4 text-[0.7rem]" style={{ color: "var(--muted)" }}>

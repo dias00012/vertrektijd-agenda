@@ -2,11 +2,11 @@
 
 import { activityColor } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
+import { weekdayHeadings } from "@/lib/recurrence";
 import { useAgenda } from "@/hooks/useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
 import { isSameMonth, monthGridKeys, parseDateKey, toDateKey } from "@/lib/time";
 
-const DAY_LABELS = ["ma", "di", "wo", "do", "vr", "za", "zo"];
 /** Meer stippen dan dit passen niet in een dagvakje. */
 const MAX_DOTS = 4;
 
@@ -28,13 +28,14 @@ export function MonthGrid({
 }) {
   const { activities, settings, categoryFor } = useAgenda();
   const t = useT();
+  const dayLabels = weekdayHeadings();
   const dateKeys = monthGridKeys(month);
   const today = toDateKey(now);
 
   return (
     <div className="card overflow-hidden">
       <div className="grid grid-cols-7">
-        {DAY_LABELS.map((label) => (
+        {dayLabels.map((label) => (
           <div
             key={label}
             className="border-b py-2 text-center text-[0.65rem] font-semibold uppercase"

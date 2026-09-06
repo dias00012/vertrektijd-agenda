@@ -65,7 +65,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
     if (kind === "task" && !title.trim()) next.title = t("swForm.needTitle");
     if (!date) next.date = kind === "task" ? t("swForm.needDeadline") : t("swForm.needDate");
     return next;
-  }, [subject, title, date, kind]);
+  }, [subject, title, date, kind, t]);
 
   const shown = submitted ? errors : {};
 

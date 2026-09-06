@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { say } from "@/lib/server/language";
+import { requestLanguage, say } from "@/lib/server/language";
 import { geocode } from "@/lib/server/geocoding";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await geocode(query, 5, includeStops);
+    const results = await geocode(query, 5, includeStops, requestLanguage(request));
     return NextResponse.json({ results });
   } catch (error) {
     if (error instanceof ProviderError) {

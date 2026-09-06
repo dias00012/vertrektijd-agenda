@@ -27,6 +27,14 @@ export function weekdays(): { value: number; short: string; long: string }[] {
 /** Vaste volgorde (ma t/m zo), zonder namen. */
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
+/**
+ * Korte weekdagnamen voor de koppen van het week- en maandraster, van maandag
+ * tot zondag. Volgt de taal, dus geen vaste lijst in de componenten zelf.
+ */
+export function weekdayHeadings(): string[] {
+  return WEEK_ORDER.map((value) => word(`weekdayShort.${value}` as TranslationKey));
+}
+
 const WORKWEEK = [1, 2, 3, 4, 5];
 
 /** Weekdagen op vaste (ma-eerst) volgorde, zonder duplicaten. */

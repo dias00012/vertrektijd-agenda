@@ -11,7 +11,9 @@
  *  - pagina's      eerst het netwerk (verse code), anders de cache, anders offline.
  */
 
-const VERSION = "v1";
+// Ophogen zodra de voorgeladen bestanden veranderen; oude caches worden dan
+// opgeruimd bij het activeren.
+const VERSION = "v2";
 const SHELL_CACHE = `vertrektijd-shell-${VERSION}`;
 const PAGE_CACHE = `vertrektijd-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -20,7 +22,18 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL_CACHE)
-      .then((cache) => cache.addAll([OFFLINE_URL, "/manifest.webmanifest", "/icon.svg"]))
+      .then((cache) =>
+        cache.addAll([
+          OFFLINE_URL,
+          "/manifest.webmanifest",
+          "/icon.svg",
+          // Zonder deze staat er een leeg vlak op je beginscherm als je de app
+          // installeert terwijl je geen bereik hebt.
+          "/icon-192.png",
+          "/icon-512.png",
+          "/apple-touch-icon.png",
+        ]),
+      )
       // Lukt het voorladen niet, dan is de app nog steeds bruikbaar; installeer door.
       .catch(() => undefined)
       .then(() => self.skipWaiting()),

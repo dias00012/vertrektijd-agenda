@@ -680,7 +680,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     return () => {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, user, hydrated, activities, tasks, exams, settings]);
 
   const value = useMemo<AgendaContextValue>(

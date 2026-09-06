@@ -93,7 +93,7 @@ export function LocationInput({
       controller.abort();
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, includeStops, t]);
 
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {

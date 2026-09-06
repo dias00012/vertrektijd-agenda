@@ -8,6 +8,30 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.16.2
+
+Een ronde langs de app op zoek naar fouten en losse eindjes.
+
+- **Rooster over de tijdswissel.** Een wekelijkse les van 09:00 werd na het einde
+  van de zomertijd 08:00: de herhaling rekende in blokken van 24 uur, maar die
+  nacht duurt er 25. De herhaling telt nu kalenderdagen en zet de kloktijd
+  daarna terug. Met een test erbij.
+- **Weekdagen in het week- en maandraster** stonden nog vast in het Nederlands en
+  bleven "ma di wo" in de Engelse app.
+- **Zoeksuggesties in het Engels.** De omschrijving "Halte of station" en de
+  plaatsnamen kwamen altijd in het Nederlands terug; nu volgen ze je taal
+  ("Stop or station", "North Holland").
+- **Live verversen alleen wanneer het telt.** Een OV-rit van vandaag werd de hele
+  dag elke twee minuten ververst, ook uren nadat de les voorbij was. Dat gebeurt
+  nu vanaf drie uur voor de start tot het einde. Twee kaarten van dezelfde
+  activiteit delen bovendien één aanvraag in plaats van er allebei een te doen.
+- **ESLint werkt weer.** `npm run lint` opende een installatievraag in plaats van
+  te controleren. Nu draait het echt, en de elf punten die het vond zijn opgelost:
+  een volledige paginaherlaad op de foutpagina, een dode import, een ongebruikte
+  prop, en formulierfouten die na het wisselen van taal in de oude taal bleven staan.
+- **App-icoon offline.** De service worker laadde de nieuwe PNG-iconen niet voor,
+  waardoor installeren zonder bereik een leeg vlak op je beginscherm gaf.
+
 ## 0.16.1
 
 - **De gekozen kleur is nu overal te zien.** Niet alleen de knoppen: de achtergrond krijgt een

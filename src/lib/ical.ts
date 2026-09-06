@@ -275,9 +275,28 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
 /** Zo ver klappen we een herhaling maximaal uit. */
 const MAX_OCCURRENCES = 400;
 
+/** Kalenderdagen optellen bij "YYYY-MM-DD", los van welke tijdzone dan ook. */
+function addDays(dateKey: string, days: number): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const moment = new Date(Date.UTC(y, m - 1, d));
+  moment.setUTCDate(moment.getUTCDate() + days);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${moment.getUTCFullYear()}-${pad(moment.getUTCMonth() + 1)}-${pad(moment.getUTCDate())}`;
+}
+
+/** Weekdag van een kalenderdag (0 = zondag), zonder tijdzone-invloed. */
+function weekdayOf(dateKey: string): number {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
 /**
  * Alle dagen waarop dit item valt binnen het venster. Zonder RRULE is dat de
  * dag zelf; met een wekelijkse RRULE de gekozen weekdagen.
+ *
+ * We tellen in kalenderdagen en zetten de kloktijd er daarna weer op, niet in
+ * blokken van 24 uur. Anders schuift een les van 09:00 naar 08:00 zodra de
+ * zomertijd eindigt: die nacht duurt 25 uur.
  */
 function expand(start: Date, event: RawEvent, fromMs: number, toMs: number, zone: string): Date[] {
   const rule = event.props.get("RRULE")?.value;
@@ -309,38 +328,41 @@ function expand(start: Date, event: RawEvent, fromMs: number, toMs: number, zone
     if (parsed) untilMs = Math.min(untilMs, parsed.date.getTime());
   }
 
+  // De kloktijd van de eerste keer; die houden we vast op elke volgende dag.
+  const base = localParts(start, zone);
+  const [hours, minutes] = base.time.split(":").map(Number);
+  const at = (dateKey: string) => {
+    const [y, m, d] = dateKey.split("-").map(Number);
+    return zonedTimeToUtc(y, m, d, hours, minutes, zone);
+  };
+
+  // Weken tellen vanaf maandag, zoals iCalendar standaard doet.
+  const startOffset = (weekdayOf(base.date) + 6) % 7;
+
   const dates: Date[] = [];
-  const dayMs = 86_400_000;
-  const startWeek = Math.floor(start.getTime() / (7 * dayMs));
   let produced = 0;
 
   for (let offset = 0; offset < MAX_OCCURRENCES * 7; offset += 1) {
-    const candidate = new Date(start.getTime() + offset * dayMs);
+    const dateKey = addDays(base.date, offset);
+    const candidate = at(dateKey);
     const time = candidate.getTime();
     if (time > untilMs) break;
     if (count !== null && produced >= count) break;
 
     // Alleen elke n-de week meedoen.
-    const week = Math.floor(time / (7 * dayMs));
-    if ((week - startWeek) % interval !== 0) continue;
+    if (Math.floor((offset + startOffset) / 7) % interval !== 0) continue;
 
-    const weekday = Number(localWeekday(candidate, zone));
+    const weekday = weekdayOf(dateKey);
     if (byDay && !byDay.includes(weekday)) continue;
     if (!byDay && offset % 7 !== 0) continue;
 
     produced += 1;
     if (time < fromMs) continue;
-    if (event.exdates.includes(localParts(candidate, zone).date)) continue;
+    if (event.exdates.includes(dateKey)) continue;
 
     dates.push(candidate);
     if (dates.length >= MAX_OCCURRENCES) break;
   }
 
   return dates;
-}
-
-/** Weekdag (0 = zondag) van een moment, gezien vanuit de gekozen zone. */
-function localWeekday(date: Date, zone: string): number {
-  const name = new Intl.DateTimeFormat("en-US", { timeZone: zone, weekday: "short" }).format(date);
-  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(name);
 }

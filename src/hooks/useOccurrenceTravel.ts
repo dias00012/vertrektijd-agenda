@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchTravel } from "@/lib/api";
 import { travelModeFor, travelPlanForDate } from "@/lib/travel";
-import { toDateKey } from "@/lib/time";
+import { toDateKey, toDateTime } from "@/lib/time";
 import type { Activity, Settings, TravelInfo, TravelResult } from "@/lib/types";
 
 /**
@@ -29,8 +29,12 @@ interface OccurrenceTravel {
 /** Zo ver vooruit publiceren vervoerders hun dienstregeling betrouwbaar. */
 const MAX_LOOKAHEAD_DAYS = 21;
 const CACHE_TTL_MS = 5 * 60 * 1000;
-/** Hoe vaak we een rit van vandaag opnieuw ophalen voor actuele vertragingen. */
+/** Hoe vaak we een rit opnieuw ophalen voor actuele vertragingen. */
 const REFRESH_MS = 2 * 60 * 1000;
+/** Zo lang voor de start begint het verversen; eerder heeft het geen zin. */
+const REFRESH_WINDOW_MS = 3 * 60 * 60 * 1000;
+/** Bij een verversing hergebruiken we alleen een heel verse uitkomst. */
+const FRESH_MS = 20 * 1000;
 
 interface CacheEntry {
   at: number;
@@ -73,13 +77,23 @@ export function useOccurrenceTravel(activity: Activity, settings: Settings): Occ
   const outboundKey = plan?.outboundKey ?? null;
 
   /*
-   * Vertragingen veranderen. Voor een OV-rit van vandaag halen we daarom
-   * regelmatig opnieuw op, en meteen wanneer je de app weer voor je neus haalt
-   * — dat laatste is het moment waarop je écht wilt weten of je trein rijdt.
+   * Vertragingen veranderen, dus halen we een OV-rit regelmatig opnieuw op, en
+   * meteen wanneer je de app weer voor je neus haalt: dat is het moment waarop
+   * je écht wilt weten of je trein rijdt.
+   *
+   * Maar alleen wanneer de reis er nog toe doet: vanaf een paar uur voor de
+   * start tot het einde van de activiteit. Daarbuiten kost het alleen verkeer
+   * naar de gratis OV-dienst zonder dat iemand kijkt; je les van vanochtend
+   * hoeft om acht uur 's avonds niet meer bijgewerkt.
    */
-  const isToday = offset === 0;
+  const nowMs = Date.now();
+  const startsAt = toDateTime(activity.date, activity.startTime).getTime();
+  const endsAt = toDateTime(activity.date, activity.endTime).getTime();
+  const worthRefreshing =
+    offset === 0 && nowMs >= startsAt - REFRESH_WINDOW_MS && nowMs <= endsAt;
+
   useEffect(() => {
-    if (!isTransit || !isToday) return;
+    if (!isTransit || !worthRefreshing) return;
 
     const refresh = () => setReloadAt(Date.now());
     const timer = setInterval(refresh, REFRESH_MS);
@@ -92,21 +106,23 @@ export function useOccurrenceTravel(activity: Activity, settings: Settings): Occ
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [isTransit, isToday]);
+  }, [isTransit, worthRefreshing]);
 
   useEffect(() => {
     if (!shouldFetch || !plan || !outboundKey || !settings.home || !activity.location) return;
     if (fetched?.key === outboundKey && reloadAt === 0) return;
-    // Bij een verversing willen we juist geen cache: dat is het hele punt.
-    if (reloadAt > 0) cache.delete(outboundKey);
 
     const home = settings.home;
     const destination = activity.location;
     let active = true;
 
+    // Bij een verversing accepteren we alleen een heel verse uitkomst. Zo delen
+    // twee kaarten van dezelfde activiteit (dashboard en dagoverzicht) één
+    // aanvraag in plaats van er allebei een te doen.
+    const maxAge = reloadAt > 0 ? FRESH_MS : CACHE_TTL_MS;
     const cached = cache.get(outboundKey);
     const request =
-      cached && Date.now() - cached.at < CACHE_TTL_MS
+      cached && Date.now() - cached.at < maxAge
         ? cached.value
         : (() => {
             const value = Promise.all([

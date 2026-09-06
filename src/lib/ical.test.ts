@@ -232,3 +232,35 @@ describe("parseIcs", () => {
     expect(parseIcs("dit is gewoon tekst", WINDOW)).toEqual([]);
   });
 });
+
+describe("herhaling over de tijdswissel", () => {
+  it("houdt dezelfde kloktijd aan als de zomertijd eindigt", () => {
+    // In NL gaat de klok in de nacht van 24 op 25 oktober 2026 een uur terug.
+    // Een wekelijkse les van 09:00 moet daarna nog steeds om 09:00 beginnen.
+    const events = parseIcs(
+      [
+        "BEGIN:VCALENDAR",
+        "BEGIN:VEVENT",
+        "UID:les-dst",
+        "SUMMARY:Wiskunde",
+        "DTSTART;TZID=Europe/Amsterdam:20261019T090000",
+        "DTEND;TZID=Europe/Amsterdam:20261019T100000",
+        "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n"),
+      {
+        from: new Date("2026-10-01T00:00:00Z"),
+        to: new Date("2026-11-30T00:00:00Z"),
+        zone: "Europe/Amsterdam",
+      },
+    );
+
+    expect(events.map((e) => `${e.date} ${e.startTime}-${e.endTime}`)).toEqual([
+      "2026-10-19 09:00-10:00",
+      "2026-10-26 09:00-10:00",
+      "2026-11-02 09:00-10:00",
+      "2026-11-09 09:00-10:00",
+    ]);
+  });
+});

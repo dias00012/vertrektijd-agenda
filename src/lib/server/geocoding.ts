@@ -3,6 +3,8 @@ import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { motisGeocode } from "./motis";
 import type { GeocodeResult } from "../types";
+import type { Language } from "../i18n/locale";
+import { translate } from "../i18n/dictionary";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -43,23 +45,26 @@ export async function geocode(
   query: string,
   limit = 5,
   includeStops = false,
+  language: Language = "nl",
 ): Promise<GeocodeResult[]> {
   const trimmed = query.trim();
   if (trimmed.length < 3) return [];
 
   const config = getProviderConfig();
-  const cacheKey = `geocode:${config.provider}:${limit}:${includeStops}:${trimmed.toLowerCase()}`;
+  // De taal hoort bij de sleutel: dezelfde zoekopdracht levert in het Engels
+  // andere plaatsnamen en omschrijvingen op.
+  const cacheKey = `geocode:${config.provider}:${language}:${limit}:${includeStops}:${trimmed.toLowerCase()}`;
   const cached = cacheGet<GeocodeResult[]>(cacheKey);
   if (cached) return cached;
 
   const addresses =
     config.provider === "ors"
       ? await geocodeOrs(trimmed, limit)
-      : await geocodeNominatim(trimmed, limit);
+      : await geocodeNominatim(trimmed, limit, language);
 
   let results = addresses;
   if (includeStops) {
-    const stops = await geocodeStops(trimmed, limit);
+    const stops = await geocodeStops(trimmed, limit, language);
     // Haltes eerst: in een reisplanner is dat vrijwel altijd de bedoeling.
     results = [...stops, ...addresses].slice(0, limit * 2);
   }
@@ -69,7 +74,11 @@ export async function geocode(
 }
 
 /** Haltes en stations via MOTIS, in hetzelfde formaat als de adres-resultaten. */
-async function geocodeStops(query: string, limit: number): Promise<GeocodeResult[]> {
+async function geocodeStops(
+  query: string,
+  limit: number,
+  language: Language,
+): Promise<GeocodeResult[]> {
   try {
     const stops = await motisGeocode(query);
     return stops
@@ -78,7 +87,7 @@ async function geocodeStops(query: string, limit: number): Promise<GeocodeResult
       .map((stop) => ({
         label: stop.name,
         name: stop.name,
-        context: "Halte of station",
+        context: translate(language, "geocode.stop"),
         lat: stop.lat,
         lon: stop.lon,
       }));
@@ -88,14 +97,19 @@ async function geocodeStops(query: string, limit: number): Promise<GeocodeResult
   }
 }
 
-async function geocodeNominatim(query: string, limit: number): Promise<GeocodeResult[]> {
+async function geocodeNominatim(
+  query: string,
+  limit: number,
+  language: Language,
+): Promise<GeocodeResult[]> {
   const config = getProviderConfig();
   const url = new URL(`${config.nominatimBaseUrl}/search`);
   url.searchParams.set("q", query);
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("addressdetails", "1");
   url.searchParams.set("limit", String(limit));
-  url.searchParams.set("accept-language", "nl");
+  // Plaatsnamen in de taal van de gebruiker: "The Hague" of "Den Haag".
+  url.searchParams.set("accept-language", language);
   // Voorkeur voor Nederlandse resultaten zonder ze af te dwingen.
   url.searchParams.set("countrycodes", "nl,be,de");
 

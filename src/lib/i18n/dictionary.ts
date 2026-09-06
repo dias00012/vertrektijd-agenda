@@ -670,6 +670,7 @@ export const nl = {
   "theme.orange": "Oranje",
   "theme.green": "Groen",
   "theme.teal": "Turquoise",
+  "geocode.stop": "Halte of station",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1305,6 +1306,7 @@ export const en: Record<TranslationKey, string> = {
   "theme.orange": "Orange",
   "theme.green": "Green",
   "theme.teal": "Teal",
+  "geocode.stop": "Stop or station",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };
