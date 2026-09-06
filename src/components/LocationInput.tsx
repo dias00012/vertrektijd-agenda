@@ -135,7 +135,10 @@ export function LocationInput({
         <input
           id={listId}
           type="text"
-          className="field pr-10"
+          className="field"
+          // Ruimte voor het icoon rechts. Als klasse zou `.field` met zijn
+          // padding-shorthand ertegenin gaan, dus inline.
+          style={{ paddingRight: "2.5rem" }}
           placeholder={placeholder ?? t("location.placeholder")}
           value={query}
           autoComplete="off"

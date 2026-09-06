@@ -141,7 +141,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
               {activity.recurrence ? (
                 <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                  &#128257; {describeRecurrence(activity.recurrence)}
+                  &#128257; {describeRecurrence(activity.recurrence, activity.date)}
                 </p>
               ) : null}
 

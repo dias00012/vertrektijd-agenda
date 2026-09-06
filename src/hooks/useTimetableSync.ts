@@ -3,96 +3,160 @@
 import { useEffect, useRef } from "react";
 import { useAgenda } from "./useAgenda";
 import { parseIcs } from "@/lib/ical";
-import type { ActivityDraft } from "@/lib/types";
+import type { ActivityDraft, CalendarSubscription, Settings } from "@/lib/types";
 
 /**
- * Houdt je gekoppelde rooster bij.
+ * Houdt je gekoppelde agenda's bij: je lesrooster en de agenda's waarop je je
+ * hebt geabonneerd.
  *
  * Een rooster verandert: een les vervalt, een uur verschuift, er komt een toets
  * bij. Zonder dit zou je dat elke keer zelf moeten ophalen, en precies dan is
  * de kans het grootst dat je vertrektijd niet meer klopt.
  *
- * Bewust stil op de achtergrond en hoogstens één keer per dag: het is een
- * extraatje, geen reden om de app te laten wachten of de roosterserver te
- * belasten. Mislukt het, dan blijft je bestaande rooster gewoon staan.
+ * Bewust stil op de achtergrond en hoogstens één keer per dag per agenda: het
+ * is een extraatje, geen reden om de app te laten wachten of een server te
+ * belasten. Mislukt het, dan blijft staan wat er al stond.
  */
 
-/** Alles wat via het gekoppelde rooster binnenkomt krijgt deze herkomst. */
-const SOURCE = "rooster";
-/** Zo ver vooruit halen we lessen op; gelijk aan het importscherm. */
+/** Herkomst van alles wat via het gekoppelde lesrooster binnenkomt. */
+const TIMETABLE_SOURCE = "rooster";
+/** Herkomst per geabonneerde agenda; het id houdt ze uit elkaar. */
+export function subscriptionSource(id: string): string {
+  return `agenda:${id}`;
+}
+/** Zo ver vooruit halen we afspraken op; gelijk aan het importscherm. */
 const WEEKS_AHEAD = 8;
 /** Niet vaker dan dit; een rooster verandert hooguit een paar keer per week. */
 const MIN_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
+/** Eén agenda die opgehaald kan worden, ongeacht waar hij vandaan komt. */
+interface Feed {
+  source: string;
+  url: string;
+  category: string;
+  location: CalendarSubscription["location"];
+  syncedAt: string | null;
+}
+
+/** Het rooster en je eigen agenda's, in dezelfde vorm. */
+function feedsOf(settings: Settings): Feed[] {
+  const feeds: Feed[] = [];
+  if (settings.timetable?.url) {
+    feeds.push({
+      source: TIMETABLE_SOURCE,
+      url: settings.timetable.url,
+      category: settings.timetable.category,
+      location: settings.timetable.location,
+      syncedAt: settings.timetable.syncedAt,
+    });
+  }
+  for (const calendar of settings.calendars ?? []) {
+    if (!calendar.url) continue;
+    feeds.push({
+      source: subscriptionSource(calendar.id),
+      url: calendar.url,
+      category: calendar.category,
+      location: calendar.location,
+      syncedAt: calendar.syncedAt,
+    });
+  }
+  return feeds;
+}
+
+/** Is deze agenda toe aan een verversing? */
+function isDue(feed: Feed): boolean {
+  const last = feed.syncedAt ? Date.parse(feed.syncedAt) : 0;
+  return !Number.isFinite(last) || Date.now() - last >= MIN_INTERVAL_MS;
+}
+
 export function useTimetableSync(): void {
   const { settings, hydrated, activities, replaceActivities, updateSettings } = useAgenda();
-  /** Voorkomt dat een tweede weergave dezelfde verversing nog eens start. */
-  const running = useRef(false);
+  /** Bronnen die op dit moment al opgehaald worden. */
+  const running = useRef(new Set<string>());
 
-  const timetable = settings.timetable;
+  // Alleen de links en tijdstippen als afhankelijkheid: `activities` verandert
+  // door deze verversing zelf en zou hem anders meteen opnieuw starten.
+  const fingerprint = feedsOf(settings)
+    .map((feed) => `${feed.source}|${feed.url}|${feed.syncedAt ?? ""}`)
+    .join("\n");
 
   useEffect(() => {
-    if (!hydrated || !timetable?.url || running.current) return;
+    if (!hydrated) return;
 
-    const last = timetable.syncedAt ? Date.parse(timetable.syncedAt) : 0;
-    if (Number.isFinite(last) && Date.now() - last < MIN_INTERVAL_MS) return;
+    const due = feedsOf(settings).filter((feed) => isDue(feed) && !running.current.has(feed.source));
+    if (due.length === 0) return;
 
-    running.current = true;
     let active = true;
 
-    (async () => {
-      try {
-        const response = await fetch("/api/rooster", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: timetable.url }),
-        });
-        if (!response.ok) return;
+    for (const feed of due) {
+      running.current.add(feed.source);
 
-        const payload = (await response.json()) as { text?: string };
-        if (!payload.text || !active) return;
+      void (async () => {
+        try {
+          const response = await fetch("/api/rooster", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: feed.url }),
+          });
+          if (!response.ok) return;
 
-        const from = new Date();
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(from.getTime() + WEEKS_AHEAD * 7 * 86_400_000);
-        const found = parseIcs(payload.text, { from, to });
-        // Een leeg rooster is verdacht (vakantie, of een link die stukging).
-        // Dan liever niets doen dan alles weggooien.
-        if (found.length === 0 || !active) return;
+          const payload = (await response.json()) as { text?: string };
+          if (!payload.text || !active) return;
 
-        const drafts: ActivityDraft[] = found.map((event) => ({
-          category: timetable.category,
-          title: event.location ? `${event.title} (${event.location})` : event.title,
-          date: event.date,
-          startTime: event.startTime,
-          endTime: event.endTime,
-          location: timetable.location,
-          color: null,
-          travelMode: null,
-          recurrence: null,
-          source: SOURCE,
-        }));
+          const from = new Date();
+          from.setHours(0, 0, 0, 0);
+          const to = new Date(from.getTime() + WEEKS_AHEAD * 7 * 86_400_000);
+          const found = parseIcs(payload.text, { from, to });
+          // Een lege agenda is verdacht (vakantie, of een link die stukging).
+          // Dan liever niets doen dan alles weggooien.
+          if (found.length === 0 || !active) return;
 
-        replaceActivities({
-          remove: activities.filter((item) => item.source === SOURCE).map((item) => item.id),
-          add: drafts,
-          source: SOURCE,
-        });
-      } catch {
-        // Geen bereik of een haperende roosterserver: morgen weer een dag.
-      } finally {
-        if (active) {
-          updateSettings({ timetable: { ...timetable, syncedAt: new Date().toISOString() } });
+          const drafts: ActivityDraft[] = found.map((event) => ({
+            category: feed.category,
+            title: event.location ? `${event.title} (${event.location})` : event.title,
+            date: event.date,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            location: feed.location,
+            color: null,
+            travelMode: null,
+            recurrence: null,
+            source: feed.source,
+          }));
+
+          replaceActivities({
+            remove: activities.filter((item) => item.source === feed.source).map((item) => item.id),
+            add: drafts,
+            source: feed.source,
+          });
+        } catch {
+          // Geen bereik of een haperende server: morgen weer een dag.
+        } finally {
+          if (active) markSynced(feed.source);
+          running.current.delete(feed.source);
         }
-        running.current = false;
+      })();
+    }
+
+    /** Zet het tijdstip weg waarop deze agenda voor het laatst is geprobeerd. */
+    function markSynced(source: string) {
+      const now = new Date().toISOString();
+      if (source === TIMETABLE_SOURCE) {
+        if (settings.timetable) {
+          updateSettings({ timetable: { ...settings.timetable, syncedAt: now } });
+        }
+        return;
       }
-    })();
+      updateSettings({
+        calendars: (settings.calendars ?? []).map((calendar) =>
+          subscriptionSource(calendar.id) === source ? { ...calendar, syncedAt: now } : calendar,
+        ),
+      });
+    }
 
     return () => {
       active = false;
     };
-    // Alleen op de link en het tijdstip reageren: `activities` verandert door
-    // deze verversing zelf, en zou hem anders meteen opnieuw starten.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hydrated, timetable?.url, timetable?.syncedAt]);
+  }, [hydrated, fingerprint]);
 }

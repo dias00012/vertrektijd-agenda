@@ -128,11 +128,21 @@ export interface TravelInfo {
 }
 
 /**
- * Herhaalpatroon van een activiteit. Nu alleen wekelijks; `freq` staat er zodat
- * er later dagelijks/maandelijks bij kan zonder het opgeslagen model te breken.
+ * Hoe vaak een reeks terugkomt.
+ *
+ * "biweekly" is er voor het practicum dat om de week valt, "monthly" voor wat
+ * op een vaste dag van de maand staat. Bij maandelijks tellen de weekdagen
+ * niet mee: dan geldt de dag van de maand van de startdatum.
+ */
+export type RecurrenceFreq = "weekly" | "biweekly" | "monthly";
+
+/**
+ * Herhaalpatroon van een activiteit. De activiteit gebruikt zijn eigen `date`
+ * als startdatum: die bepaalt bij "biweekly" welke weken meedoen en bij
+ * "monthly" de dag van de maand.
  */
 export interface Recurrence {
-  freq: "weekly";
+  freq: RecurrenceFreq;
   /** Weekdagen volgens Date#getDay(): 0 = zondag ... 6 = zaterdag. */
   weekdays: number[];
   /** Laatste dag van de reeks (YYYY-MM-DD), of null voor onbepaalde tijd. */
@@ -227,6 +237,27 @@ export interface TimetableLink {
   syncedAt: string | null;
 }
 
+/**
+ * Een agenda waarop je geabonneerd bent: je eigen Google-, Apple- of
+ * Outlook-agenda als ical-link. Anders dan het rooster mag hier meer dan één
+ * van bestaan en is een plek optioneel: veel afspraken zijn thuis of online.
+ *
+ * De link zelf is net zo persoonlijk als je agenda: hij blijft op je apparaat
+ * staan en gaat alleen naar onze eigen server om hem op te halen.
+ */
+export interface CalendarSubscription {
+  id: string;
+  /** Zelfgekozen naam, bv. "Mijn Google-agenda". */
+  name: string;
+  url: string;
+  /** Als welk activiteitstype de afspraken binnenkomen. */
+  category: CategoryId;
+  /** Vaste plek voor deze afspraken; null = geen plek, dus geen reistijd. */
+  location: GeoLocation | null;
+  /** Wanneer deze agenda voor het laatst is opgehaald (ISO). */
+  syncedAt: string | null;
+}
+
 /** Een locatie die de gebruiker heeft bewaard om te hergebruiken. */
 export interface SavedPlace {
   id: string;
@@ -263,6 +294,11 @@ export interface Settings {
    * gegevens zou je na elke roosterwijziging opnieuw alles moeten invullen.
    */
   timetable?: TimetableLink | null;
+  /**
+   * Je eigen agenda's erbij, als ical-abonnement. Zo staat wat je in Google of
+   * Apple hebt gezet ook in je vertrektijden, zonder alles opnieuw in te typen.
+   */
+  calendars?: CalendarSubscription[];
   /**
    * Hoeveel minuten vóór je vertrektijd je een melding wilt. `null` = uit.
    * Zie `useReminders` voor wat er wel en niet kan zonder pushserver.

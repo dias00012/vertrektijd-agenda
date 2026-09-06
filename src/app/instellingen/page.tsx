@@ -9,6 +9,7 @@ import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { RemindersSection } from "@/components/RemindersSection";
 import { TimetableImport } from "@/components/TimetableImport";
+import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
 import { LanguageSection } from "@/components/LanguageSection";
 import { ThemeSection } from "@/components/ThemeSection";
 import { useIntro } from "@/hooks/useIntro";
@@ -224,6 +225,7 @@ export default function SettingsPage() {
       )}
 
       {hydrated ? <TimetableImport /> : null}
+      {hydrated ? <CalendarSubscriptions /> : null}
       {hydrated ? <RemindersSection /> : null}
       {hydrated ? <SavedPlaces /> : null}
       {hydrated ? <BackupSection /> : null}

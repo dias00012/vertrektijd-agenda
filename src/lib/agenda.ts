@@ -1,7 +1,7 @@
 import type { Activity, ActivityOccurrence, Settings } from "./types";
-import { computeDeparture, computeReturn, departureDateTime } from "./travel";
+import { computeDeparture, computeReturn, departureDateTime, nextOccurrenceDate } from "./travel";
 import { addDaysToKey, timeToMinutes, toDateKey, toDateTime } from "./time";
-import { occurrencesOnDate } from "./recurrence";
+import { occurrencesOnDate, toOccurrence } from "./recurrence";
 
 /** Activiteiten van één dag (herhalingen meegerekend), op starttijd gesorteerd. */
 export function activitiesOnDate(activities: Activity[], dateKey: string): ActivityOccurrence[] {
@@ -16,6 +16,45 @@ export function groupByDate(
   dateKeys: string[],
 ): { dateKey: string; items: ActivityOccurrence[] }[] {
   return dateKeys.map((dateKey) => ({ dateKey, items: activitiesOnDate(activities, dateKey) }));
+}
+
+/**
+ * Zoeken in je agenda.
+ *
+ * Zoekt in de reeks, niet in losse dagen: een wekelijks college is één
+ * resultaat en niet honderd. Van een herhaling tonen we de eerstvolgende keer,
+ * want daar gaat je vraag bijna altijd over.
+ *
+ * `categoryLabel` komt van buiten omdat eigen types alleen de app zelf kent;
+ * zo kun je ook op "werk" of "bijbaan" zoeken.
+ */
+export function searchActivities(
+  activities: Activity[],
+  query: string,
+  now: Date,
+  categoryLabel: (id: string) => string,
+): ActivityOccurrence[] {
+  const needle = query.trim().toLowerCase();
+  if (needle.length < 2) return [];
+
+  const today = toDateKey(now);
+  return activities
+    .filter((activity) =>
+      [activity.title, activity.location?.label ?? "", categoryLabel(activity.category)].some(
+        (field) => field.toLowerCase().includes(needle),
+      ),
+    )
+    .map((activity) => toOccurrence(activity, nextOccurrenceDate(activity, now)))
+    .sort((a, b) => {
+      // Wat nog komt eerst, oplopend; daarna wat geweest is, met het meest
+      // recente bovenaan. Zo staat het antwoord op "wanneer is dat ook alweer"
+      // altijd boven.
+      const aPast = a.date < today;
+      const bPast = b.date < today;
+      if (aPast !== bPast) return aPast ? 1 : -1;
+      if (a.date !== b.date) return aPast ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    });
 }
 
 export type TimelineKind = "departure" | "activity" | "return";

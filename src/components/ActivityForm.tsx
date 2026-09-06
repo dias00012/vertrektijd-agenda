@@ -5,10 +5,11 @@ import { activityColor, activityColors, resolveCategory } from "@/lib/categories
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
-import { defaultRecurrence, sortWeekdays, weekdays } from "@/lib/recurrence";
+import { defaultRecurrence, monthDayLabel, sortWeekdays, weekdays } from "@/lib/recurrence";
 import { placeChoices, placeForCategory } from "@/lib/places";
 import { travelModes } from "@/lib/travelModes";
 import { LocationInput } from "./LocationInput";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 import type {
   Activity,
   ActivityDraft,
@@ -161,7 +162,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
       next.endTime = t("form.endAfterStart");
     }
     if (draft.recurrence) {
-      if (draft.recurrence.weekdays.length === 0) {
+      // Bij maandelijks tellen de weekdagen niet mee: dan geldt de dag van de
+      // maand van de startdatum.
+      if (draft.recurrence.freq !== "monthly" && draft.recurrence.weekdays.length === 0) {
         next.recurrence = t("form.needWeekday");
       } else if (draft.recurrence.until && draft.recurrence.until < draft.date) {
         next.recurrence = t("form.untilBeforeStart");
@@ -568,6 +571,40 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
             {repeats && draft.recurrence ? (
               <div className="mt-3 space-y-3">
                 <div>
+                  <span className="label">{t("form.freq")}</span>
+                  <div
+                    className="flex rounded-xl border p-0.5"
+                    style={{ borderColor: "var(--line)" }}
+                    role="group"
+                    aria-label={t("form.freq")}
+                  >
+                    {(["weekly", "biweekly", "monthly"] as const).map((option) => {
+                      const active = draft.recurrence!.freq === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => patchRecurrence({ freq: option })}
+                          className="flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors"
+                          style={{
+                            background: active ? "var(--surface-soft)" : "transparent",
+                            color: active ? "var(--ink)" : "var(--muted)",
+                          }}
+                        >
+                          {t(`form.freq.${option}` as TranslationKey)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {draft.recurrence.freq === "monthly" ? (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>
+                    {t("form.monthlyHint", { day: monthDayLabel(draft.date) })}
+                  </p>
+                ) : (
+                <div>
                   <span className="label">{t("form.onDays")}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {weekdays().map((day) => {
@@ -594,6 +631,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     })}
                   </div>
                 </div>
+                )}
 
                 <div>
                   <label className="label" htmlFor="activity-until">

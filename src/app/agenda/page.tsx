@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
-import { activitiesOnDate, groupByDate } from "@/lib/agenda";
+import { activitiesOnDate, groupByDate, searchActivities } from "@/lib/agenda";
 import {
   addDaysToKey,
   addMonthsToKey,
@@ -45,6 +45,20 @@ export default function AgendaPage() {
   const [weekLayout, setWeekLayout] = useState<"raster" | "lijst">("raster");
   const [month, setMonth] = useState(today);
   const [selectedDay, setSelectedDay] = useState(today);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const searchField = useRef<HTMLInputElement>(null);
+
+  const needle = query.trim();
+
+  useEffect(() => {
+    if (searchOpen) searchField.current?.focus();
+  }, [searchOpen]);
+
+  const closeSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery("");
+  }, []);
 
   const goToToday = useCallback(() => {
     setWeekStart(startOfWeekKey(today));
@@ -94,6 +108,13 @@ export default function AgendaPage() {
         case "arrowright":
           step(1);
           break;
+        case "/":
+          setSearchOpen(true);
+          break;
+        case "escape":
+          if (!searchOpen) return;
+          closeSearch();
+          break;
         default:
           return;
       }
@@ -102,14 +123,66 @@ export default function AgendaPage() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [goToToday, step]);
+  }, [goToToday, step, searchOpen, closeSearch]);
 
   return (
     <div>
-      <header className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("nav.agenda")}</h1>
+      <header className="mb-4 flex items-center gap-2">
+        {searchOpen ? (
+          <>
+            <div className="relative flex-1">
+              <span aria-hidden className="absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                &#128269;
+              </span>
+              <input
+                ref={searchField}
+                type="text"
+                className="field"
+                // `.field` zet zijn padding met de shorthand, dus een
+                // pl-klasse verliest het. Inline wint hij wel.
+                style={{ paddingLeft: "2.35rem" }}
+                placeholder={t("search.placeholder")}
+                aria-label={t("search.open")}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") closeSearch();
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost shrink-0 px-3 py-2 text-sm"
+              onClick={closeSearch}
+            >
+              {t("common.close")}
+            </button>
+          </>
+        ) : (
+          <>
+            <h1 className="flex-1 text-2xl font-semibold tracking-tight">{t("nav.agenda")}</h1>
+            <button
+              type="button"
+              aria-label={t("search.open")}
+              className="btn btn-ghost shrink-0 px-3 py-2 text-sm"
+              onClick={() => setSearchOpen(true)}
+            >
+              <span aria-hidden>&#128269;</span>
+            </button>
+          </>
+        )}
       </header>
 
+      {searchOpen ? (
+        needle.length < 2 ? (
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            {t("search.hint")}
+          </p>
+        ) : (
+          <SearchResults query={needle} now={now} />
+        )
+      ) : (
+        <>
       <div
         className="mb-4 grid grid-cols-4 gap-1 rounded-2xl border p-1"
         role="tablist"
@@ -186,6 +259,10 @@ export default function AgendaPage() {
               <p className="mt-3 text-center text-xs" style={{ color: "var(--muted)" }}>
                 {t("agenda.travelHint")}
               </p>
+              {/* Slepen kan alleen met een muis, dus alleen daar de uitleg. */}
+              <p className="mt-1 hidden text-center text-xs lg:block" style={{ color: "var(--muted)" }}>
+                {t("week.dragHint")}
+              </p>
             </>
           ) : (
             <WeekList weekStart={weekStart} now={now} />
@@ -211,6 +288,8 @@ export default function AgendaPage() {
             <DayList dateKey={selectedDay} now={now} compactEmpty />
           </section>
         </div>
+      )}
+        </>
       )}
 
       {/* Alleen op een laptop: op een telefoon is er geen toetsenbord. */}
@@ -279,6 +358,46 @@ function PeriodNav({
         ) : null}
         {extra}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Zoekresultaten: één kaart per reeks, met de datum erboven. Bewust geen
+ * tabbladen eromheen; als je zoekt wil je alleen de treffers zien.
+ */
+function SearchResults({ query, now }: { query: string; now: Date }) {
+  const { activities, categoryFor } = useAgenda();
+  const t = useT();
+
+  const matches = useMemo(
+    () => searchActivities(activities, query, now, (id) => categoryFor(id).label),
+    [activities, query, now, categoryFor],
+  );
+
+  if (matches.length === 0) {
+    return (
+      <EmptyState
+        icon="🔍"
+        title={t("search.empty.title")}
+        description={t("search.empty.body", { query })}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs" style={{ color: "var(--muted)" }}>
+        {matches.length === 1 ? t("search.countOne") : t("search.count", { count: matches.length })}
+      </p>
+      {matches.map((activity) => (
+        <section key={activity.occurrenceId} aria-label={formatDateLabel(activity.date, now)}>
+          <h2 className="mb-1.5 text-xs font-semibold" style={{ color: "var(--muted)" }}>
+            {formatDateLabel(activity.date, now)}
+          </h2>
+          <ActivityCard activity={activity} now={now} />
+        </section>
+      ))}
     </div>
   );
 }

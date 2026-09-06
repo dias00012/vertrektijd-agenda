@@ -33,6 +33,7 @@ import {
 import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabase } from "@/lib/supabase";
 import { mergePayload, pullData, pushData } from "@/lib/sync";
 import type {
@@ -181,6 +182,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   const { user } = useAuth();
+  const { language } = useLanguage();
   const supabase = getSupabase();
   const [syncStatus, setSyncStatus] = useState<"off" | "idle" | "syncing" | "error">("off");
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -455,9 +457,15 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   /* --- Activiteitstypes --------------------------------------------------- */
 
+  // De namen van de ingebouwde types komen uit het woordenboek, dus ze horen
+  // opnieuw berekend te worden zodra je van taal wisselt. Zonder `language`
+  // hier bleef er "Werk" en "Koken" staan in de Engelse app.
   const categories = useMemo(
     () => allCategories(settings.customCategories),
-    [settings.customCategories],
+    // De taal staat niet in de body maar bepaalt wel de uitkomst: `allCategories`
+    // leest hem uit de module-brede taalstand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [settings.customCategories, language],
   );
 
   const categoryFor = useCallback(

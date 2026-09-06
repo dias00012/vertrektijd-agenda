@@ -140,6 +140,14 @@ export function isoWeekNumber(dateKey: string): number {
   return 1 + Math.round((thursday.getTime() - firstThursday.getTime()) / (7 * 86_400_000));
 }
 
+/** Hele dagen tussen twee dagsleutels; negatief als `toKey` eerder ligt. */
+export function daysBetween(fromKey: string, toKey: string): number {
+  // Afronden vangt het uur op dat de zomertijd erin of eruit haalt.
+  return Math.round(
+    (parseDateKey(toKey).getTime() - parseDateKey(fromKey).getTime()) / 86_400_000,
+  );
+}
+
 /** De zeven dagen (ma t/m zo) van de kalenderweek rond deze dag. */
 export function calendarWeekKeys(dateKey: string): string[] {
   const start = startOfWeekKey(dateKey);

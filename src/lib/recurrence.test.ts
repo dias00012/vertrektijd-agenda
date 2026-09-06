@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { describeRecurrence, occurrencesOnDate, occursOn, sortWeekdays } from "./recurrence";
-import type { Activity } from "./types";
+import {
+  describeRecurrence,
+  occurrencesOnDate,
+  occursOn,
+  shiftRecurrence,
+  sortWeekdays,
+} from "./recurrence";
+import type { Activity, Recurrence } from "./types";
 
 /** Kale activiteit; per test overschrijven we alleen wat ertoe doet. */
 function activity(patch: Partial<Activity> = {}): Activity {
@@ -119,5 +125,121 @@ describe("describeRecurrence", () => {
     expect(describeRecurrence({ freq: "weekly", weekdays: [1], until: "2026-12-31" })).toBe(
       "Elke maandag, t/m 31-12-2026",
     );
+  });
+});
+
+describe("om de week", () => {
+  const practicum = activity({
+    date: "2026-09-07", // maandag
+    recurrence: { freq: "biweekly", weekdays: [1], until: null },
+  });
+
+  it("slaat de tussenliggende week over", () => {
+    expect(occursOn(practicum, "2026-09-07")).toBe(true);
+    expect(occursOn(practicum, "2026-09-14")).toBe(false);
+    expect(occursOn(practicum, "2026-09-21")).toBe(true);
+    expect(occursOn(practicum, "2026-09-28")).toBe(false);
+  });
+
+  it("blijft in het ritme over de zomertijdgrens heen", () => {
+    // De klok gaat op 25 oktober 2026 een uur terug.
+    expect(occursOn(practicum, "2026-10-19")).toBe(true);
+    expect(occursOn(practicum, "2026-11-02")).toBe(true);
+    expect(occursOn(practicum, "2026-10-26")).toBe(false);
+  });
+
+  it("telt de weken vanaf de startweek, ook op een andere weekdag", () => {
+    const woensdag = activity({
+      date: "2026-09-07", // maandag: de reeks begint in deze week
+      recurrence: { freq: "biweekly", weekdays: [3], until: null },
+    });
+    expect(occursOn(woensdag, "2026-09-09")).toBe(true);
+    expect(occursOn(woensdag, "2026-09-16")).toBe(false);
+    expect(occursOn(woensdag, "2026-09-23")).toBe(true);
+  });
+});
+
+describe("elke maand", () => {
+  const huur = activity({
+    date: "2026-09-12",
+    recurrence: { freq: "monthly", weekdays: [], until: null },
+  });
+
+  it("valt elke maand op dezelfde dag van de maand", () => {
+    expect(occursOn(huur, "2026-09-12")).toBe(true);
+    expect(occursOn(huur, "2026-10-12")).toBe(true);
+    expect(occursOn(huur, "2026-12-12")).toBe(true);
+    expect(occursOn(huur, "2026-10-13")).toBe(false);
+  });
+
+  it("slaat maanden over die deze dag niet hebben", () => {
+    const laat = activity({
+      date: "2026-01-31",
+      recurrence: { freq: "monthly", weekdays: [], until: null },
+    });
+    expect(occursOn(laat, "2026-01-31")).toBe(true);
+    expect(occursOn(laat, "2026-03-31")).toBe(true);
+    expect(occursOn(laat, "2026-02-28")).toBe(false);
+  });
+
+  it("houdt zich aan de einddatum", () => {
+    const tot = activity({
+      date: "2026-09-12",
+      recurrence: { freq: "monthly", weekdays: [], until: "2026-11-30" },
+    });
+    expect(occursOn(tot, "2026-11-12")).toBe(true);
+    expect(occursOn(tot, "2026-12-12")).toBe(false);
+  });
+});
+
+describe("describeRecurrence voor de nieuwe patronen", () => {
+  it("schrijft om de week met de dagnamen erbij", () => {
+    expect(describeRecurrence({ freq: "biweekly", weekdays: [1], until: null })).toBe(
+      "Om de week op maandag",
+    );
+    expect(describeRecurrence({ freq: "biweekly", weekdays: [1, 3], until: null })).toBe(
+      "Om de week op ma, wo",
+    );
+    expect(describeRecurrence({ freq: "biweekly", weekdays: [1, 2, 3, 4, 5], until: null })).toBe(
+      "Om de week op werkdagen",
+    );
+  });
+
+  it("schrijft de dag van de maand uit", () => {
+    expect(describeRecurrence({ freq: "monthly", weekdays: [], until: null }, "2026-09-12")).toBe(
+      "Elke maand op de 12e",
+    );
+  });
+
+  it("zet de einddatum er ook bij de nieuwe patronen achter", () => {
+    expect(
+      describeRecurrence({ freq: "monthly", weekdays: [], until: "2026-12-31" }, "2026-09-12"),
+    ).toBe("Elke maand op de 12e, t/m 31-12-2026");
+  });
+});
+
+describe("shiftRecurrence", () => {
+  it("verschuift elke weekdag mee", () => {
+    const week: Recurrence = { freq: "weekly", weekdays: [1, 3], until: null };
+    expect(shiftRecurrence(week, 1).weekdays).toEqual([2, 4]);
+  });
+
+  it("loopt netjes om het weekeinde heen", () => {
+    const vrijdag: Recurrence = { freq: "weekly", weekdays: [5], until: null };
+    expect(shiftRecurrence(vrijdag, 2).weekdays).toEqual([0]);
+    const zondag: Recurrence = { freq: "weekly", weekdays: [0], until: null };
+    expect(shiftRecurrence(zondag, -1).weekdays).toEqual([6]);
+  });
+
+  it("houdt de rest van het patroon ongemoeid", () => {
+    const omDeWeek: Recurrence = { freq: "biweekly", weekdays: [1], until: "2026-12-31" };
+    const verschoven = shiftRecurrence(omDeWeek, 1);
+    expect(verschoven.freq).toBe("biweekly");
+    expect(verschoven.until).toBe("2026-12-31");
+  });
+
+  it("laat een maandelijkse reeks met rust: die hangt aan de startdatum", () => {
+    const maand: Recurrence = { freq: "monthly", weekdays: [], until: null };
+    expect(shiftRecurrence(maand, 3)).toEqual(maand);
   });
 });

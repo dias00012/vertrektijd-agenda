@@ -1,6 +1,6 @@
 "use client";
 
-import type { Activity, Exam, Settings, Task } from "./types";
+import type { Activity, CalendarSubscription, Exam, Settings, Task } from "./types";
 
 /**
  * Persistente opslag. Voor de MVP is dit localStorage: de app werkt daarmee
@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: Settings = {
   travelMode: "car",
   transitBike: "none",
   timetable: null,
+  calendars: [],
   reminderMinutes: null,
 };
 
@@ -116,6 +117,12 @@ export function loadSettings(): Settings {
     savedPlaces: Array.isArray(stored.savedPlaces) ? stored.savedPlaces : [],
     categoryPlaces: stored.categoryPlaces ?? {},
     customCategories: Array.isArray(stored.customCategories) ? stored.customCategories : [],
+    calendars: Array.isArray(stored.calendars)
+      ? stored.calendars.filter(
+          (item): item is CalendarSubscription =>
+            !!item && typeof item.id === "string" && typeof item.url === "string",
+        )
+      : [],
     bufferMinutes:
       typeof stored.bufferMinutes === "number" && stored.bufferMinutes >= 0
         ? stored.bufferMinutes
