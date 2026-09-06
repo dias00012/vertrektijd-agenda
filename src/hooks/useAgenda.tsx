@@ -17,8 +17,10 @@ import {
   DEFAULT_SETTINGS,
   loadActivities,
   loadExams,
+  loadOwner,
   loadSettings,
   loadTasks,
+  saveOwner,
   saveActivities,
   saveExams,
   saveSettings,
@@ -745,19 +747,38 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         const remote = await pullData(supabase, user.id);
         if (cancelled) return;
 
+        // Van wie is wat hier lokaal staat? Uitloggen wist de agenda niet, dus
+        // zonder deze controle werd de agenda van de vorige gebruiker — met
+        // thuisadres en al — samengevoegd en naar dit account gepusht.
+        const owner = loadOwner();
+        const someoneElses = owner !== null && owner !== user.id;
+
         // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
-        // en niets wordt overschreven.
+        // en niets wordt overschreven. Tenzij het lokale spul van een ander
+        // account is: dan is de cloud de waarheid en blijft de agenda van die
+        // ander waar hij hoort, in zijn eigen account.
         const local = { settings, activities, tasks, exams };
-        const merged = remote ? mergePayload(local, remote) : local;
+        const merged = someoneElses
+          ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
+          : remote
+            ? mergePayload(local, remote)
+            : local;
 
         setActivities(merged.activities);
         setTasks(merged.tasks);
         setExams(merged.exams);
-        if (merged.settings) setSettings((current) => ({ ...current, ...merged.settings }));
+        if (someoneElses) {
+          // Ook de instellingen horen bij die ander. Zonder deze regel bleef
+          // zijn thuisadres staan onder het account van de nieuwe gebruiker.
+          setSettings({ ...DEFAULT_SETTINGS, ...(merged.settings ?? {}) });
+        } else if (merged.settings) {
+          setSettings((current) => ({ ...current, ...merged.settings }));
+        }
 
         // Schrijf het samengevoegde resultaat terug, zodat beide kanten gelijk zijn.
         await pushData(supabase, user.id, merged);
         if (cancelled) return;
+        saveOwner(user.id);
         setLastSyncedAt(new Date().toISOString());
         setSyncStatus("idle");
       } catch (error) {

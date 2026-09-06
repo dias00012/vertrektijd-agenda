@@ -325,6 +325,26 @@ describe("travelPlanForDate", () => {
     expect(monday?.outboundKey).toBe(wednesday?.outboundKey);
   });
 
+  it("verandert de sleutel als je de marge aanpast", () => {
+    // Bij OV komt de vertrektijd uit de rit die "uiterlijk aankomen om
+    // starttijd min marge" oplevert. Zit de marge niet in de sleutel, dan
+    // vindt de app de oude uitkomst nog geldig en verandert er niets op het
+    // scherm terwijl je hem net van 10 naar 30 minuten hebt gezet.
+    const tien = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", bufferMinutes: 10 }),
+      "2026-09-07",
+    );
+    const dertig = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", bufferMinutes: 30 }),
+      "2026-09-07",
+    );
+
+    expect(tien?.arriveBy).not.toBe(dertig?.arriveBy);
+    expect(tien?.outboundKey).not.toBe(dertig?.outboundKey);
+  });
+
   it("zet de fiets heen aan het begin en terug aan het eind", () => {
     // Je fiets staat thuis: op de heenreis is dat het eerste stuk, op de
     // terugreis het laatste. Een doorreis komt niet langs huis.

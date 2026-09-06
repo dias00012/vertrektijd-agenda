@@ -13,6 +13,13 @@ const ACTIVITIES_KEY = "agenda.activities.v1";
 const SETTINGS_KEY = "agenda.settings.v1";
 const TASKS_KEY = "agenda.tasks.v1";
 const EXAMS_KEY = "agenda.exams.v1";
+/**
+ * Van wie de gegevens op dit apparaat zijn. Uitloggen wist de agenda niet uit
+ * het geheugen, dus logde daarna iemand anders in, dan werd andermans agenda
+ * — thuisadres incluis — naar dat account gepusht. Met deze sleutel ziet de
+ * app dat de gegevens van een ander zijn en neemt hij de cloud als waarheid.
+ */
+const OWNER_KEY = "agenda.owner.v1";
 
 /**
  * Schema-versie van de opgeslagen data. Wordt meegegeven bij export en gebruikt
@@ -54,6 +61,16 @@ function write(key: string, value: unknown): void {
   } catch (error) {
     console.warn(`Kon ${key} niet opslaan in localStorage`, error);
   }
+}
+
+/** Het account waar de opgeslagen gegevens bij horen; null = nog nooit gesynct. */
+export function loadOwner(): string | null {
+  const stored = read<string | null>(OWNER_KEY, null);
+  return typeof stored === "string" && stored ? stored : null;
+}
+
+export function saveOwner(userId: string | null): void {
+  write(OWNER_KEY, userId);
 }
 
 export function loadActivities(): Activity[] {

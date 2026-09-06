@@ -128,8 +128,12 @@ export function travelPlanForDate(
       : null;
   const departAtDate = mode === "transit" ? toDateTime(dateKey, activity.endTime) : null;
 
-  const outboundSlot = arriveByDate ? `${dateKey}T${activity.startTime}` : null;
-  const returnSlot = departAtDate ? `${dateKey}T${activity.endTime}` : null;
+  // Het tijdstip dat we de planner echt vragen, niet de starttijd op het
+  // rooster. Anders zit de marge er niet in: zet je hem van 10 op 30 minuten,
+  // dan vraagt de app een andere rit op maar vindt hij de oude uitkomst nog
+  // geldig, en verandert er niets op het scherm.
+  const outboundSlot = arriveByDate ? arriveByDate.toISOString() : null;
+  const returnSlot = departAtDate ? departAtDate.toISOString() : null;
 
   const bike = settings.transitBike ?? "none";
   // Dezelfde keuze, per rit de andere kant op. "start" betekent: mijn fiets
