@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { PRIORITY_META, STATUS_META, STATUS_ORDER } from "@/lib/schoolwork";
 import { todayKey } from "@/lib/time";
@@ -25,6 +26,7 @@ const PRIORITIES: SchoolworkPriority[] = ["high", "medium", "low", "later"];
 /** Opdracht of toets toevoegen en bewerken. */
 export function SchoolworkForm({ task, exam, onClose }: Props) {
   const { addTask, updateTask, removeTask, addExam, updateExam, removeExam } = useAgenda();
+  const t = useT();
 
   const isEdit = Boolean(task || exam);
   const [kind, setKind] = useState<Kind>(exam ? "exam" : "task");
@@ -59,9 +61,9 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
 
   const errors = useMemo(() => {
     const next: { subject?: string; title?: string; date?: string } = {};
-    if (!subject.trim()) next.subject = "Vul het vak in.";
-    if (kind === "task" && !title.trim()) next.title = "Geef de opdracht een naam.";
-    if (!date) next.date = kind === "task" ? "Kies een deadline." : "Kies een datum.";
+    if (!subject.trim()) next.subject = t("swForm.needSubject");
+    if (kind === "task" && !title.trim()) next.title = t("swForm.needTitle");
+    if (!date) next.date = kind === "task" ? t("swForm.needDeadline") : t("swForm.needDate");
     return next;
   }, [subject, title, date, kind]);
 
@@ -129,7 +131,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
       role="dialog"
       aria-modal="true"
-      aria-label={isEdit ? "Schoolwerk bewerken" : "Schoolwerk toevoegen"}
+      aria-label={isEdit ? t("swForm.editTitle") : t("swForm.addTitle")}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -145,12 +147,12 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           style={{ borderColor: "var(--line)" }}
         >
           <h2 className="text-base font-semibold">
-            {isEdit ? "Schoolwerk bewerken" : "Schoolwerk toevoegen"}
+            {isEdit ? t("swForm.editTitle") : t("swForm.addTitle")}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Sluiten"
+            aria-label={t("common.close")}
             className="rounded-lg px-2 py-1 text-lg leading-none"
             style={{ color: "var(--muted)" }}
           >
@@ -164,12 +166,12 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
               className="flex rounded-xl border p-0.5"
               style={{ borderColor: "var(--line)" }}
               role="group"
-              aria-label="Soort"
+              aria-label={t("swForm.kind")}
             >
               {(
                 [
-                  { id: "task", label: "📘 Opdracht" },
-                  { id: "exam", label: "📝 Toets" },
+                  { id: "task", key: "swForm.task" },
+                  { id: "exam", key: "swForm.exam" },
                 ] as const
               ).map((option) => (
                 <button
@@ -183,7 +185,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                     color: kind === option.id ? "var(--ink)" : "var(--muted)",
                   }}
                 >
-                  {option.label}
+                  {t(option.key)}
                 </button>
               ))}
             </div>
@@ -191,12 +193,12 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
 
           <div>
             <label className="label" htmlFor="sw-subject">
-              Vak
+              {t("swForm.subject")}
             </label>
             <input
               id="sw-subject"
               className="field"
-              placeholder="Bijv. Wiskunde"
+              placeholder={t("swForm.subjectPlaceholder")}
               value={subject}
               aria-invalid={shown.subject ? "true" : undefined}
               onChange={(e) => setSubject(e.target.value)}
@@ -210,13 +212,13 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
 
           <div>
             <label className="label" htmlFor="sw-title">
-              {kind === "task" ? "Wat moet je doen?" : "Titel"}
+              {kind === "task" ? t("swForm.taskTitle") : t("swForm.examTitle")}
               {kind === "exam" ? <span style={{ fontWeight: 400 }}> · optioneel</span> : null}
             </label>
             <input
               id="sw-title"
               className="field"
-              placeholder={kind === "task" ? "Bijv. Opgaven H3 maken" : "Bijv. Toets hoofdstuk 3"}
+              placeholder={kind === "task" ? t("swForm.taskPlaceholder") : t("swForm.examPlaceholder")}
               value={title}
               aria-invalid={shown.title ? "true" : undefined}
               onChange={(e) => setTitle(e.target.value)}
@@ -231,13 +233,14 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           {kind === "task" ? (
             <div>
               <label className="label" htmlFor="sw-desc">
-                Toelichting <span style={{ fontWeight: 400 }}>· optioneel</span>
+                {t("swForm.description")}{" "}
+                <span style={{ fontWeight: 400 }}>· {t("common.optional")}</span>
               </label>
               <textarea
                 id="sw-desc"
                 className="field"
                 rows={2}
-                placeholder="Extra details, bladzijden, eisen…"
+                placeholder={t("swForm.descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -245,12 +248,13 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           ) : (
             <div>
               <label className="label" htmlFor="sw-topics">
-                Onderwerpen <span style={{ fontWeight: 400 }}>· komma&apos;s ertussen</span>
+                {t("swForm.topics")}{" "}
+                <span style={{ fontWeight: 400 }}>· {t("swForm.topicsHint")}</span>
               </label>
               <input
                 id="sw-topics"
                 className="field"
-                placeholder="Kwadraten, Ontbinden, Wortels"
+                placeholder={t("swForm.topicsPlaceholder")}
                 value={topics}
                 onChange={(e) => setTopics(e.target.value)}
               />
@@ -260,7 +264,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label" htmlFor="sw-date">
-                {kind === "task" ? "Deadline" : "Datum"}
+                {kind === "task" ? t("swForm.deadline") : t("swForm.date")}
               </label>
               <input
                 id="sw-date"
@@ -278,7 +282,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
             </div>
             <div>
               <label className="label" htmlFor="sw-minutes">
-                {kind === "task" ? "Geschatte tijd" : "Leertijd"}
+                {kind === "task" ? t("swForm.estimate") : t("swForm.studyTime")}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -299,7 +303,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           </div>
 
           <fieldset>
-            <legend className="label">Prioriteit</legend>
+            <legend className="label">{t("swForm.priority")}</legend>
             <div className="grid grid-cols-4 gap-2">
               {PRIORITIES.map((id) => {
                 const meta = PRIORITY_META[id];
@@ -330,7 +334,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           </fieldset>
 
           <fieldset>
-            <legend className="label">Status</legend>
+            <legend className="label">{t("schoolwork.status")}</legend>
             <div className="flex rounded-xl border p-0.5" style={{ borderColor: "var(--line)" }}>
               {STATUS_ORDER.map((id) => {
                 const meta = STATUS_META[id];
@@ -358,7 +362,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
 
           {kind === "task" ? (
             <fieldset>
-              <legend className="label">Stappen</legend>
+              <legend className="label">{t("swForm.steps")}</legend>
               <p className="mb-2 text-xs" style={{ color: "var(--muted)" }}>
                 Hak een grote opdracht op in behapbare stukken. Optioneel.
               </p>
@@ -367,7 +371,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                   <li key={step.id} className="flex items-center gap-2">
                     <input
                       className="field flex-1"
-                      placeholder={`Stap ${index + 1}`}
+                      placeholder={t("swForm.step", { number: index + 1 })}
                       value={step.title}
                       onChange={(e) =>
                         setSteps((current) =>
@@ -383,7 +387,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                       min={0}
                       step={5}
                       className="field w-20"
-                      placeholder="min"
+                      placeholder={t("swForm.minutes")}
                       value={step.estimatedMinutes ?? ""}
                       onChange={(e) =>
                         setSteps((current) =>
@@ -402,7 +406,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                     />
                     <button
                       type="button"
-                      aria-label={`Stap ${index + 1} verwijderen`}
+                      aria-label={t("swForm.removeStep", { number: index + 1 })}
                       onClick={() =>
                         setSteps((current) => current.filter((s) => s.id !== step.id))
                       }
@@ -424,7 +428,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                   ])
                 }
               >
-                + Stap toevoegen
+                {t("swForm.addStep")}
               </button>
             </fieldset>
           ) : null}
@@ -436,15 +440,15 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
         >
           {isEdit ? (
             <button type="button" className="btn btn-danger" onClick={handleDelete}>
-              {confirmDelete ? "Zeker weten?" : "Verwijderen"}
+              {confirmDelete ? t("swForm.confirmDelete") : t("common.delete")}
             </button>
           ) : null}
           <div className="ml-auto flex gap-2">
             <button type="button" className="btn btn-ghost" onClick={onClose}>
-              Annuleren
+              {t("common.cancel")}
             </button>
             <button type="submit" className="btn btn-primary">
-              {isEdit ? "Opslaan" : "Toevoegen"}
+              {isEdit ? t("common.save") : t("common.add")}
             </button>
           </div>
         </footer>

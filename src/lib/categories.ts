@@ -70,18 +70,20 @@ export function resolveCategory(id: CategoryId, custom: CustomCategory[] = []): 
 }
 
 /** Keuzepalet voor een eigen kleur per activiteit. */
-export const ACTIVITY_COLORS: { value: string; label: string }[] = [
-  { value: "#3b82f6", label: "Blauw" },
-  { value: "#6366f1", label: "Indigo" },
-  { value: "#a855f7", label: "Paars" },
-  { value: "#ec4899", label: "Roze" },
-  { value: "#ef4444", label: "Rood" },
-  { value: "#f97316", label: "Oranje" },
-  { value: "#eab308", label: "Geel" },
-  { value: "#22c55e", label: "Groen" },
-  { value: "#14b8a6", label: "Turquoise" },
-  { value: "#64748b", label: "Grijsblauw" },
-];
+export function activityColors(): { value: string; label: string }[] {
+  return [
+    { value: "#3b82f6", label: word("color.blue") },
+    { value: "#6366f1", label: word("color.indigo") },
+    { value: "#a855f7", label: word("color.purple") },
+    { value: "#ec4899", label: word("color.pink") },
+    { value: "#ef4444", label: word("color.red") },
+    { value: "#f97316", label: word("color.orange") },
+    { value: "#eab308", label: word("color.yellow") },
+    { value: "#22c55e", label: word("color.green") },
+    { value: "#14b8a6", label: word("color.turquoise") },
+    { value: "#64748b", label: word("color.slate") },
+  ];
+}
 
 /**
  * De kleur waarmee een activiteit getoond wordt: de eigen kleur van de

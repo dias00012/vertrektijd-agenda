@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ACTIVITY_COLORS, activityColor, resolveCategory } from "@/lib/categories";
+import { activityColor, activityColors, resolveCategory } from "@/lib/categories";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { defaultRecurrence, sortWeekdays, weekdays } from "@/lib/recurrence";
@@ -96,6 +97,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
     categoryFor,
     addCustomCategory,
   } = useAgenda();
+  const t = useT();
   const [draft, setDraft] = useState<ActivityDraft>(() =>
     initialDraft(settings, activity, preset),
   );
@@ -106,7 +108,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
   const [creatingType, setCreatingType] = useState(false);
   const [newTypeLabel, setNewTypeLabel] = useState("");
   const [newTypeEmoji, setNewTypeEmoji] = useState("");
-  const [newTypeColor, setNewTypeColor] = useState(ACTIVITY_COLORS[0].value);
+  const [newTypeColor, setNewTypeColor] = useState("#3b82f6");
   const [typeError, setTypeError] = useState<string | null>(null);
   /** Heeft de gebruiker de kleur zelf gekozen? Zo niet, dan volgt hij het type. */
   const colorTouched = useRef(Boolean(activity?.color));
@@ -149,22 +151,22 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
 
   const errors = useMemo<FormErrors>(() => {
     const next: FormErrors = {};
-    if (!draft.title.trim()) next.title = "Geef de activiteit een naam.";
-    if (!draft.date) next.date = "Kies een datum.";
-    if (!draft.startTime) next.startTime = "Kies een starttijd.";
-    if (!draft.endTime) next.endTime = "Kies een eindtijd.";
+    if (!draft.title.trim()) next.title = t("form.needName");
+    if (!draft.date) next.date = t("form.needDate");
+    if (!draft.startTime) next.startTime = t("form.needStart");
+    if (!draft.endTime) next.endTime = t("form.needEnd");
     if (
       draft.startTime &&
       draft.endTime &&
       timeToMinutes(draft.endTime) <= timeToMinutes(draft.startTime)
     ) {
-      next.endTime = "De eindtijd moet na de starttijd liggen.";
+      next.endTime = t("form.endAfterStart");
     }
     if (draft.recurrence) {
       if (draft.recurrence.weekdays.length === 0) {
-        next.recurrence = "Kies minstens één dag van de week.";
+        next.recurrence = t("form.needWeekday");
       } else if (draft.recurrence.until && draft.recurrence.until < draft.date) {
-        next.recurrence = "De einddatum ligt voor de startdatum.";
+        next.recurrence = t("form.untilBeforeStart");
       }
     }
     return next;
@@ -211,7 +213,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
       return;
     }
     if (!emoji) {
-      setTypeError("Kies een emoji als icoon.");
+      setTypeError(t("form.needEmoji"));
       return;
     }
 
@@ -277,7 +279,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
       role="dialog"
       aria-modal="true"
-      aria-label={isEdit ? "Activiteit bewerken" : "Activiteit toevoegen"}
+      aria-label={isEdit ? t("form.editTitle") : t("form.addTitle")}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -293,12 +295,12 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
           style={{ borderColor: "var(--line)" }}
         >
           <h2 className="text-base font-semibold">
-            {isEdit ? "Activiteit bewerken" : "Activiteit toevoegen"}
+            {isEdit ? t("form.editTitle") : t("form.addTitle")}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Sluiten"
+            aria-label={t("common.close")}
             className="rounded-lg px-2 py-1 text-lg leading-none"
             style={{ color: "var(--muted)" }}
           >
@@ -354,7 +356,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                 <span aria-hidden className="text-base leading-none">
                   ➕
                 </span>
-                Eigen
+                {t("form.own")}
               </button>
             </div>
 
@@ -364,14 +366,14 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                 style={{ borderColor: "var(--line)", background: "var(--surface-soft)" }}
               >
                 <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  Maak je eigen type. Kies een emoji met de emoji-toets van je toetsenbord
-                  (Windows: <strong>Win + .</strong> · Mac: <strong>Ctrl + Cmd + spatie</strong>).
+                  {t("form.ownHelp")}{" "}
+                  {t("form.ownHelpKeys", { win: "Win + .", mac: "Ctrl + Cmd + space" })}
                 </p>
 
                 <div className="flex gap-2">
                   <div className="w-16 shrink-0">
                     <label className="label" htmlFor="new-type-emoji">
-                      Icoon
+                      {t("form.icon")}
                     </label>
                     <input
                       id="new-type-emoji"
@@ -379,27 +381,27 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                       value={newTypeEmoji}
                       onChange={(e) => setNewTypeEmoji(e.target.value.slice(0, 8))}
                       placeholder="🎸"
-                      aria-label="Emoji voor je eigen type"
+                      aria-label={t("form.iconLabel")}
                     />
                   </div>
                   <div className="min-w-0 flex-1">
                     <label className="label" htmlFor="new-type-label">
-                      Naam
+                      {t("form.name")}
                     </label>
                     <input
                       id="new-type-label"
                       className="field"
                       value={newTypeLabel}
                       onChange={(e) => setNewTypeLabel(e.target.value)}
-                      placeholder="Bijv. Bijbaan"
+                      placeholder={t("form.namePlaceholder")}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <span className="label">Kleur</span>
+                  <span className="label">{t("form.color")}</span>
                   <div className="flex flex-wrap gap-2">
-                    {ACTIVITY_COLORS.map((option) => (
+                    {activityColors().map((option) => (
                       <button
                         key={option.value}
                         type="button"
@@ -427,14 +429,14 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
 
                 <div className="flex gap-2">
                   <button type="button" className="btn btn-primary px-3 py-1.5 text-xs" onClick={createType}>
-                    Type toevoegen
+                    {t("form.addType")}
                   </button>
                   <button
                     type="button"
                     className="btn btn-ghost px-3 py-1.5 text-xs"
                     onClick={() => setCreatingType(false)}
                   >
-                    Annuleren
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
@@ -443,7 +445,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
 
           <div>
             <label className="label" htmlFor="activity-title">
-              Naam
+              {t("form.name")}
             </label>
             <input
               id="activity-title"
@@ -461,9 +463,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
           </div>
 
           <fieldset>
-            <legend className="label">Kleur</legend>
+            <legend className="label">{t("form.color")}</legend>
             <div className="flex flex-wrap items-center gap-2">
-              {ACTIVITY_COLORS.map((option) => {
+              {activityColors().map((option) => {
                 const active = draft.color === option.value;
                 return (
                   <button
@@ -493,7 +495,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
 
           <div>
             <label className="label" htmlFor="activity-date">
-              {repeats ? "Startdatum" : "Datum"}
+              {repeats ? t("form.startDate") : t("form.date")}
             </label>
             <input
               id="activity-date"
@@ -513,7 +515,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label" htmlFor="activity-start">
-                Starttijd
+                {t("form.startTime")}
               </label>
               <input
                 id="activity-start"
@@ -531,7 +533,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
             </div>
             <div>
               <label className="label" htmlFor="activity-end">
-                Eindtijd
+                {t("form.endTime")}
               </label>
               <input
                 id="activity-end"
@@ -554,7 +556,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
             style={{ borderColor: "var(--line)" }}
           >
             <label className="flex cursor-pointer items-center justify-between gap-3">
-              <span className="text-sm font-semibold">&#128257; Herhalen</span>
+              <span className="text-sm font-semibold">&#128257; {t("form.repeat")}</span>
               <input
                 type="checkbox"
                 className="h-5 w-5 accent-[var(--accent)]"
@@ -568,7 +570,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
             {repeats && draft.recurrence ? (
               <div className="mt-3 space-y-3">
                 <div>
-                  <span className="label">Op deze dagen</span>
+                  <span className="label">{t("form.onDays")}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {weekdays().map((day) => {
                       const active = draft.recurrence!.weekdays.includes(day.value);
@@ -597,7 +599,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
 
                 <div>
                   <label className="label" htmlFor="activity-until">
-                    Tot en met <span style={{ fontWeight: 400 }}>· optioneel</span>
+                    {t("form.until")} <span style={{ fontWeight: 400 }}>· {t("common.optional")}</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -614,12 +616,12 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                         className="btn btn-ghost shrink-0 px-3 py-2 text-xs"
                         onClick={() => patchRecurrence({ until: null })}
                       >
-                        Wissen
+                        {t("form.clear")}
                       </button>
                     ) : null}
                   </div>
                   <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-                    Laat leeg om te blijven herhalen.
+                    {t("form.repeatForever")}
                   </p>
                 </div>
 
@@ -634,7 +636,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
 
           <div>
             <LocationInput
-              label="Locatie"
+              label={t("form.location")}
               value={draft.location}
               onChange={(location: GeoLocation | null) => {
                 autoFilled.current = false;
@@ -644,8 +646,8 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
               places={savedPlaces}
               hint={
                 settings.home
-                  ? "Laat leeg voor activiteiten thuis. Dan toont de app geen reistijd."
-                  : "Stel eerst je thuislocatie in om reistijden te kunnen berekenen."
+                  ? t("form.locationHint")
+                  : t("form.needHomeFirst")
               }
             />
 
@@ -658,20 +660,21 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                   onChange={(event) => setRemember(event.target.checked)}
                 />
                 <span style={{ color: "var(--muted)" }}>
-                  Onthouden als vaste locatie voor {category.emoji} {category.label}. Dan staat
-                  hij de volgende keer meteen ingevuld.
+                  {category.emoji}{" "}
+                  {t("form.remember", { category: category.label })}
                 </span>
               </label>
             ) : alreadyDefault ? (
               <p className="mt-2.5 text-xs" style={{ color: "var(--muted)" }}>
-                &#128278; Dit is je vaste locatie voor {category.emoji} {category.label}.
+                &#128278; {category.emoji}{" "}
+                {t("form.alreadyDefault", { category: category.label })}
               </p>
             ) : null}
           </div>
 
           {draft.location ? (
             <fieldset>
-              <legend className="label">Hoe reis je hierheen?</legend>
+              <legend className="label">{t("form.howTravel")}</legend>
               <div className="grid grid-cols-3 gap-2">
                 {travelModes().map((item) => {
                   const active = draft.travelMode === item.id;
@@ -700,8 +703,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                 })}
               </div>
               <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-                Bij OV zoekt de app een echte rit die je op tijd laat aankomen, inclusief
-                overstappen en spoor.
+                {t("form.transitHintFull")}
               </p>
             </fieldset>
           ) : null}
@@ -710,22 +712,22 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
         <footer className="border-t px-5 py-4" style={{ borderColor: "var(--line)" }}>
           {deleteMode === "choose" && editingSeries ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Wat wil je verwijderen?</p>
+              <p className="text-sm font-medium">{t("form.deleteWhat")}</p>
               <div className="flex flex-wrap gap-2">
                 {occurrenceDate ? (
                   <button type="button" className="btn btn-ghost" onClick={deleteThisDay}>
-                    Alleen deze dag
+                    {t("form.deleteDay")}
                   </button>
                 ) : null}
                 <button type="button" className="btn btn-danger" onClick={deleteSeries}>
-                  Hele reeks
+                  {t("form.deleteSeries")}
                 </button>
                 <button
                   type="button"
                   className="btn btn-ghost"
                   onClick={() => setDeleteMode("idle")}
                 >
-                  Annuleren
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -741,15 +743,15 @@ export function ActivityForm({ activity, occurrenceDate, preset, link, onClose }
                     else setDeleteMode("confirm");
                   }}
                 >
-                  {deleteMode === "confirm" ? "Zeker weten?" : "Verwijderen"}
+                  {deleteMode === "confirm" ? t("form.confirmDelete") : t("common.delete")}
                 </button>
               ) : null}
               <div className="ml-auto flex gap-2">
                 <button type="button" className="btn btn-ghost" onClick={onClose}>
-                  Annuleren
+                  {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {isEdit ? "Opslaan" : "Toevoegen"}
+                  {isEdit ? t("common.save") : t("common.add")}
                 </button>
               </div>
             </div>
