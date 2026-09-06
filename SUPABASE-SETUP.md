@@ -190,6 +190,72 @@ Open de app → **Instellingen → Herinneringen** → kies een aantal minuten e
 Op een iPhone werkt dit alleen wanneer de app op je beginscherm staat: Safari →
 delen → "Zet op beginscherm". Dat is een regel van Apple, niet van deze app.
 
+## 9. Weten of iemand de app gebruikt (optioneel)
+
+Zonder cijfers weet je niet of iemand hem opent, of je iets verbeterd of stuk
+gemaakt hebt, en heb je niets om aan iemand te laten zien. Deze tellers draaien
+in je eigen Supabase: geen extern statistiekenbedrijf, geen cookies, en niets
+dat naar een persoon te herleiden is.
+
+**Wat er opgeslagen wordt:** één rij per dag per gebeurtenis, met een getal
+erbij. Meer niet. Geen apparaat-id, geen ip-adres, niets over agenda's. Dat
+"aantal mensen" toch klopt komt doordat de app `dag_geopend` hooguit één keer
+per dag verstuurt; dat houdt de browser zelf bij.
+
+**SQL Editor** → nieuwe query → plakken → **Run**:
+
+```sql
+create table if not exists public.app_events (
+  day date not null,
+  name text not null,
+  count integer not null default 0,
+  primary key (day, name)
+);
+
+alter table public.app_events enable row level security;
+-- Bewust zonder policies: alleen de service-sleutel schrijft, en die staat
+-- uitsluitend op de server.
+
+-- Ophogen in één stap, zodat twee gelijktijdige bezoekers elkaar niet wegdrukken.
+create or replace function public.bump_app_event(event_name text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.app_events (day, name, count)
+  values (current_date, event_name, 1)
+  on conflict (day, name) do update set count = public.app_events.count + 1;
+$$;
+```
+
+Er is geen extra instelling nodig: zodra `SUPABASE_SERVICE_ROLE_KEY` er staat
+(stap 5) telt hij mee. Staat die er niet, dan doet `/api/stats` niets.
+
+### Aflezen
+
+**Table Editor → app_events**, of in de SQL Editor:
+
+```sql
+-- De laatste twee weken, per dag
+select day, name, count
+from public.app_events
+where day > current_date - 14
+order by day desc, count desc;
+
+-- Hoeveel mensen openden de app per dag
+select day, count
+from public.app_events
+where name = 'dag_geopend'
+order by day desc;
+```
+
+De gebeurtenissen die geteld worden: `dag_geopend`, `activiteit_toegevoegd`,
+`rooster_gekoppeld`, `agenda_gekoppeld`, `meldingen_aan`,
+`meldingen_achtergrond_aan`, `reis_gezocht`, `rondleiding_gestart` en
+`rooster_gewijzigd`. Andere namen weigert de server, zodat niemand de tabel kan
+volschrijven.
+
 ## Klaar
 
 Open de app → **Instellingen → Account & synchronisatie** → maak een account aan of

@@ -3,6 +3,10 @@
 import { useEffect, useRef } from "react";
 import { useAgenda } from "./useAgenda";
 import { parseIcs } from "@/lib/ical";
+import { compareTimetable } from "@/lib/timetableChanges";
+import { saveChanges } from "@/lib/changeLog";
+import { track } from "@/lib/stats";
+import { todayKey } from "@/lib/time";
 import type { ActivityDraft, CalendarSubscription, Settings } from "@/lib/types";
 
 /**
@@ -126,8 +130,18 @@ export function useTimetableSync(): void {
             source: feed.source,
           }));
 
+          // Vergelijken vóór vervangen: dit is het enige moment waarop de app
+          // iets weet dat jij nog niet weet. Een vervallen eerste uur meldt
+          // Magister zelf niet.
+          const mine = activities.filter((item) => item.source === feed.source);
+          const changes = compareTimetable(mine, drafts, todayKey());
+          if (changes.length > 0) {
+            saveChanges(changes);
+            track("rooster_gewijzigd");
+          }
+
           replaceActivities({
-            remove: activities.filter((item) => item.source === feed.source).map((item) => item.id),
+            remove: mine.map((item) => item.id),
             add: drafts,
             source: feed.source,
           });

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { IntroContext } from "@/hooks/useIntro";
 import { ActivityForm } from "./ActivityForm";
 import { Onboarding } from "./Onboarding";
@@ -12,6 +12,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
 import { useTimetableSync } from "@/hooks/useTimetableSync";
 import { usePushQueue } from "@/hooks/usePushQueue";
+import { track } from "@/lib/stats";
 import { useT } from "@/hooks/useLanguage";
 
 const NAV = [
@@ -46,8 +47,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   // En de meldingen die met de app dicht moeten komen klaarzetten.
   usePushQueue();
 
+  // Eén telling per dag, zodat je kunt zien of iemand de app gebruikt.
+  useEffect(() => {
+    track("dag_geopend", { oncePerDay: true });
+  }, []);
+
   const introValue = useMemo(
-    () => ({ open: () => setIntroOpen(true), openTour: () => setTourOpen(true) }),
+    () => ({
+      open: () => setIntroOpen(true),
+      openTour: () => {
+        track("rondleiding_gestart");
+        setTourOpen(true);
+      },
+    }),
     [],
   );
 

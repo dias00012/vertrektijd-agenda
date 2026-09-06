@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { disablePush, enablePush, pushEnabled, pushSupported } from "@/lib/push";
+import { track } from "@/lib/stats";
 
 const CHOICES = [5, 10, 15, 30];
 
@@ -53,6 +54,7 @@ export function RemindersSection() {
       }
       const ok = await enablePush();
       setBackground(ok);
+      if (ok) track("meldingen_achtergrond_aan");
       if (!ok) setBackgroundError(t("reminders.backgroundFailed"));
     } catch {
       setBackgroundError(t("reminders.backgroundFailed"));
@@ -79,7 +81,10 @@ export function RemindersSection() {
           ? "granted"
           : await Notification.requestPermission();
       setPermission(result);
-      if (result === "granted") updateSettings({ reminderMinutes: value });
+      if (result === "granted") {
+        updateSettings({ reminderMinutes: value });
+        track("meldingen_aan");
+      }
     } finally {
       setBusy(false);
     }

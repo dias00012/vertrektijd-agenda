@@ -54,8 +54,17 @@ export function PrivacyStatement() {
           <p className="mt-2">{t("privacy.outside.note")}</p>
         </Section>
 
+        <Section title={`📅 ${t("privacy.calendars.title")}`}>
+          <p>{t("privacy.calendars.body")}</p>
+        </Section>
+
+        <Section title={`🔔 ${t("privacy.push.title")}`}>
+          <p>{t("privacy.push.body")}</p>
+        </Section>
+
         <Section title={`📊 ${t("privacy.tracking.title")}`}>
           <p>{t("privacy.tracking.body")}</p>
+          <p className="mt-2">{t("privacy.tracking.counters")}</p>
         </Section>
 
         <Section title={`⏳ ${t("privacy.retention.title")}`}>

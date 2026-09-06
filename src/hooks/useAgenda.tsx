@@ -32,6 +32,7 @@ import {
 } from "@/lib/backup";
 import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
 import { dayRoleFor } from "@/lib/agenda";
+import { track } from "@/lib/stats";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -375,6 +376,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   }, [activities, settings, hydrated, computeTravel]);
 
   const addActivity = useCallback((draft: ActivityDraft): Activity => {
+    // Alleen wat je zelf toevoegt telt; een geïmporteerd rooster zou de teller
+    // met honderden tegelijk laten oplopen en niets zeggen.
+    if (!draft.source) track("activiteit_toegevoegd");
     const now = new Date().toISOString();
     const activity: Activity = {
       id: createId(),

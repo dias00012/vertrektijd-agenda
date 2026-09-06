@@ -6,6 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { parseIcs } from "@/lib/ical";
 import { formatDateLabel } from "@/lib/time";
 import { placeChoices } from "@/lib/places";
+import { track } from "@/lib/stats";
 import { subscriptionSource } from "@/hooks/useTimetableSync";
 import { LocationInput } from "./LocationInput";
 import { Spinner } from "./ui";
@@ -105,6 +106,7 @@ export function CalendarSubscriptions() {
 
       replaceActivities({ remove: [], add: drafts, source: subscriptionSource(subscription.id) });
       updateSettings({ calendars: [...calendars, subscription] });
+      track("agenda_gekoppeld");
       setDone(
         found.length === 1
           ? t("calendars.addedOne", { name: subscription.name })

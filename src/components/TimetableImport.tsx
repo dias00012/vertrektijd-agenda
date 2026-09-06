@@ -7,6 +7,7 @@ import { parseIcs, type IcsEvent } from "@/lib/ical";
 import { addDaysToKey, formatDateLabel, todayKey } from "@/lib/time";
 import { LocationInput } from "./LocationInput";
 import { placeChoices } from "@/lib/places";
+import { track } from "@/lib/stats";
 import { Spinner } from "./ui";
 import type { ActivityDraft, GeoLocation } from "@/lib/types";
 
@@ -118,6 +119,7 @@ export function TimetableImport() {
     replaceActivities({ remove: existing.map((item) => item.id), add: drafts, source: SOURCE });
 
     // De link onthouden, zodat de app het rooster daarna zelf kan bijhouden.
+    track("rooster_gekoppeld");
     if (fromUrl && keepLinked && location) {
       updateSettings({
         timetable: {

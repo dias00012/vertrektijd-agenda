@@ -5,6 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { fetchJourneys } from "@/lib/api";
 import { placeChoices } from "@/lib/places";
+import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
 import { JourneyCard } from "@/components/JourneyCard";
 import { EmptyState, Spinner } from "@/components/ui";
@@ -86,6 +87,7 @@ export default function TravelPlannerPage() {
           transitBike: settings.transitBike ?? "none",
         });
         setJourneys(result.journeys);
+        track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
       } catch (err) {
         setJourneys([]);
