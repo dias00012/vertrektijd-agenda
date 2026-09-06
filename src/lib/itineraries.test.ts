@@ -143,6 +143,28 @@ describe("tidyItineraries", () => {
     expect(list).toHaveLength(2);
   });
 
+  it("gooit de nachtrit weg die vier uur duurt naast ritten van een uur", () => {
+    const list = tidyItineraries([
+      option("01:00", "05:28", { transfers: 1 }), // vroegste aankomst, maar 4u28
+      option("06:11", "07:08", { transfers: 1 }),
+      option("06:41", "07:38", { transfers: 1 }),
+    ]);
+
+    expect(list.map((item) => item.startTime)).toEqual([
+      "2026-09-07T06:11:00.000Z",
+      "2026-09-07T06:41:00.000Z",
+    ]);
+  });
+
+  it("houdt een lange rit als er niets korters is", () => {
+    const list = tidyItineraries([
+      option("01:00", "05:28", { transfers: 1 }),
+      option("02:00", "06:40", { transfers: 1 }),
+    ]);
+
+    expect(list).toHaveLength(2);
+  });
+
   it("houdt een even snelle rit met minder overstappen", () => {
     const list = tidyItineraries([
       option("08:12", "08:54", { transfers: 2 }),

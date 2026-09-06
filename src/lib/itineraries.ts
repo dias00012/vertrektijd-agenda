@@ -133,11 +133,33 @@ function dominates(a: ItineraryLike, b: ItineraryLike): boolean {
 }
 
 /**
- * De lijst voor de reisplanner: onbruikbare en overbodige opties eruit, en op
- * vertrektijd gesorteerd zoals op een vertrekbord.
+ * Hoeveel langer dan de snelste rit een optie mag duren voordat hij uit de
+ * lijst valt. De nachttrein die om 01:00 vertrekt en pas om 05:28 aankomt is
+ * formeel de vroegste aankomst, maar niemand wacht vier uur op een station:
+ * als optie naast een rit van 57 minuten is het geen keuze maar ruis.
+ */
+const MAX_DURATION_FACTOR = 2;
+
+/** Ritten die veel langer duren dan de snelste zijn geen echte keuze. */
+function withoutDetours<T extends ItineraryLike>(items: T[]): T[] {
+  if (items.length < 2) return items;
+  const fastest = items.reduce(
+    (shortest, item) => Math.min(shortest, item.duration as number),
+    Infinity,
+  );
+  const filtered = items.filter(
+    (item) => (item.duration as number) <= fastest * MAX_DURATION_FACTOR,
+  );
+  // Nooit alles weggooien: liever een omweg tonen dan een lege lijst.
+  return filtered.length > 0 ? filtered : items;
+}
+
+/**
+ * De lijst voor de reisplanner: onbruikbare, overbodige en veel te lange
+ * opties eruit, en op vertrektijd gesorteerd zoals op een vertrekbord.
  */
 export function tidyItineraries<T extends ItineraryLike>(items: readonly T[]): T[] {
-  const usable = items.filter(isUsable);
+  const usable = withoutDetours(items.filter(isUsable));
   return usable
     .filter((item) => !usable.some((other) => dominates(other, item)))
     .sort(

@@ -29,6 +29,10 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   een andere valt weg, net als dezelfde trein die twee keer verschijnt met een net ander looppad.
   De lijst staat op vertrektijd zoals een vertrekbord, en de kortste rit krijgt het merkje
   *snelste*, want die hoeft niet bovenaan te staan.
+- **De nachtrit van vier uur staat er niet meer bij.** Een rit die om 01:00 vertrekt en om 05:28
+  aankomt is formeel de vroegste aankomst, dus die bleef bovenaan staan naast ritten van 57
+  minuten. Niemand wacht vier uur op een station: opties die meer dan twee keer zo lang duren
+  als de snelste vallen weg.
 - **Rijdt er niets, dan volgt de loop- of fietsroute.** Voor een bestemming zonder OV in de buurt
   zei de app "geen verbinding"; nu krijg je gewoon de directe route, tot drie kwartier.
 
