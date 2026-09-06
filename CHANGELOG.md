@@ -8,6 +8,12 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.16.4
+
+- **Ook de donkere achtergrond kleurt nu echt mee.** Die bleef bijna zwart met een vleugje kleur;
+  kies je groen, dan is de achtergrond nu donkergroen. Elke laag krijgt dezelfde tint op een
+  lichtere ondergrond, zodat achtergrond, kaarten en vlakken van elkaar te onderscheiden blijven.
+
 ## 0.16.3
 
 - **Echte achtergrondkleur in plaats van een gloed.** De kleurwaas over het scherm is weg; de

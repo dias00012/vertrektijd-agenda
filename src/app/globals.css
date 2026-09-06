@@ -49,11 +49,15 @@
   :root {
     color-scheme: dark;
     --accent: var(--accent-dark);
-    /* In het donker is minder tint nodig: een lichte kleur werkt daar sneller. */
-    --canvas: color-mix(in srgb, var(--accent) 10%, #0b0e14);
-    --surface: color-mix(in srgb, var(--accent) 5%, #161b22);
-    --surface-soft: color-mix(in srgb, var(--accent) 12%, #1c2129);
-    --line: color-mix(in srgb, var(--accent) 18%, #262c36);
+    /*
+     * Ook in het donker een echte kleur, geen bijna-zwart met een vleugje. Elke
+     * laag krijgt dezelfde tint maar een lichtere ondergrond, zodat de volgorde
+     * klopt: achtergrond het donkerst, dan de kaarten, dan de vlakken erop.
+     */
+    --canvas: color-mix(in srgb, var(--accent) 20%, #0a0d12);
+    --surface: color-mix(in srgb, var(--accent) 20%, #1b222e);
+    --surface-soft: color-mix(in srgb, var(--accent) 26%, #222a38);
+    --line: color-mix(in srgb, var(--accent) 30%, #2b3444);
     --ink: #e9edf3;
     --muted: #9aa4b2;
     --danger: #f87171;
