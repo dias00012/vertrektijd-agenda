@@ -1,5 +1,5 @@
 import type { Activity, ActivityOccurrence, Recurrence } from "./types";
-import { daysBetween, parseDateKey, startOfWeekKey } from "./time";
+import { addDaysToKey, daysBetween, parseDateKey, startOfWeekKey } from "./time";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -95,6 +95,27 @@ export function occursOn(activity: Activity, dateKey: string): boolean {
   }
 
   return true;
+}
+
+/** Zo ver kijken we terug naar het laatste voorkomen van een afgelopen reeks. */
+const LOOKBACK_DAYS = 400;
+
+/**
+ * De laatste dag waarop deze activiteit viel, op of vóór `before`.
+ *
+ * Nodig zodra een reeks voorbij is: de vraag is dan "wanneer was dat ook
+ * alweer", en dan hoort de laatste keer erbij en niet de allereerste.
+ */
+export function lastOccurrenceDate(activity: Activity, before: string): string | null {
+  const until = activity.recurrence?.until;
+  const from = until && until < before ? until : before;
+
+  for (let offset = 0; offset <= LOOKBACK_DAYS; offset += 1) {
+    const dateKey = addDaysToKey(from, -offset);
+    if (dateKey < activity.date) return null;
+    if (occursOn(activity, dateKey)) return dateKey;
+  }
+  return null;
 }
 
 /**

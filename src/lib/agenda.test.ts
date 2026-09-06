@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findNextActivity } from "./agenda";
+import { findNextActivity, searchActivities } from "./agenda";
 import type { Activity, Settings } from "./types";
 
 /**
@@ -116,5 +116,59 @@ describe("findNextActivity", () => {
 
   it("geeft niets terug als er echt niets is", () => {
     expect(findNextActivity([], settings(), NU)).toBeNull();
+  });
+});
+
+describe("searchActivities", () => {
+  const NU = new Date(2026, 8, 6, 12, 0);
+
+  it("toont bij een afgelopen reeks de laatste keer, niet de eerste", () => {
+    // "Wanneer was dat practicum ook alweer?" — dat was 29 juni, niet
+    // 2 februari. De app gaf de startdatum van de reeks.
+    const resultaten = searchActivities(
+      [
+        activity({
+          title: "Practicum scheikunde",
+          date: "2026-02-02",
+          startTime: "13:00",
+          endTime: "17:00",
+          recurrence: { freq: "weekly", weekdays: [1], until: "2026-06-29" },
+        }),
+      ],
+      "practicum",
+      NU,
+      (id) => id,
+    );
+
+    expect(resultaten).toHaveLength(1);
+    expect(resultaten[0]?.date).toBe("2026-06-29");
+  });
+
+  it("houdt bij een lopende reeks de eerstvolgende keer", () => {
+    const resultaten = searchActivities(
+      [
+        activity({
+          title: "College",
+          date: "2026-02-02",
+          recurrence: { freq: "weekly", weekdays: [1], until: null },
+        }),
+      ],
+      "college",
+      NU,
+      (id) => id,
+    );
+
+    expect(resultaten[0]?.date).toBe("2026-09-07");
+  });
+
+  it("laat een losse activiteit uit het verleden op zijn eigen dag staan", () => {
+    const resultaten = searchActivities(
+      [activity({ title: "Tandarts", date: "2026-08-12" })],
+      "tandarts",
+      NU,
+      (id) => id,
+    );
+
+    expect(resultaten[0]?.date).toBe("2026-08-12");
   });
 });
