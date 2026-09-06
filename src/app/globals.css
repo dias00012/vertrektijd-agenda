@@ -64,12 +64,12 @@
  * donker iets zachter, omdat een lichte kleur daar harder naar voren springt.
  */
 :root[data-tint="on"] {
-  --canvas: color-mix(in srgb, var(--accent) 10%, #eef0f4);
+  --canvas: color-mix(in srgb, var(--accent) 16%, #eef0f4);
 }
 
 @media (prefers-color-scheme: dark) {
   :root[data-tint="on"] {
-    --canvas: color-mix(in srgb, var(--accent) 14%, #0a0d12);
+    --canvas: color-mix(in srgb, var(--accent) 22%, #080b10);
   }
 }
 

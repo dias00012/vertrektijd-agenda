@@ -36,9 +36,9 @@ export const THEME_KEY = "agenda.theme.v1";
 /**
  * Kleurt de achtergrond mee met je thema, of blijft die neutraal?
  *
- * Standaard uit: een gekleurde achtergrond is smaak, en wie er last van heeft
- * moet er niet eerst een instelling voor hoeven zoeken. De accentkleur van
- * knoppen en markeringen staat er los van en geldt altijd.
+ * Standaard aan: dat is het punt van een kleur kiezen. De kaarten blijven er
+ * hoe dan ook buiten, want zodra die meekleuren ligt de tint over alles wat je
+ * leest in plaats van erachter.
  */
 export const TINT_KEY = "agenda.themeTint.v1";
 
@@ -48,11 +48,11 @@ export function applyTint(on: boolean): void {
 }
 
 export function storedTint(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
   try {
-    return window.localStorage.getItem(TINT_KEY) === "on";
+    return window.localStorage.getItem(TINT_KEY) !== "off";
   } catch {
-    return false;
+    return true;
   }
 }
 

@@ -22,7 +22,7 @@ import type { TranslationKey } from "@/lib/i18n/dictionary";
 export function ThemeSection() {
   const t = useT();
   const [theme, setTheme] = useState(THEMES[0].id);
-  const [tint, setTint] = useState(false);
+  const [tint, setTint] = useState(true);
 
   // Pas na het aankoppelen: op de server is er geen opgeslagen keuze.
   useEffect(() => {

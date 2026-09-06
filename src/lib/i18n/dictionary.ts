@@ -698,7 +698,7 @@ export const nl = {
   "share.copied": "Gekopieerd naar je klembord.",
   "share.failed": "Delen lukte niet. Probeer het nog eens.",
   "theme.tint": "Achtergrond meekleuren",
-  "theme.tintHint": "Uit: een neutrale achtergrond met alleen gekleurde knoppen. Aan: de achtergrond krijgt ook een vleugje van je kleur.",
+  "theme.tintHint": "Aan: de achtergrond krijgt je kleur, de kaarten blijven neutraal. Uit: een neutrale achtergrond met alleen gekleurde knoppen.",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1360,7 +1360,7 @@ export const en: Record<TranslationKey, string> = {
   "share.copied": "Copied to your clipboard.",
   "share.failed": "Sharing did not work. Please try again.",
   "theme.tint": "Tint the background too",
-  "theme.tintHint": "Off: a neutral background with coloured buttons only. On: the background picks up a hint of your colour.",
+  "theme.tintHint": "On: the background takes your colour and the cards stay neutral. Off: a neutral background with coloured buttons only.",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

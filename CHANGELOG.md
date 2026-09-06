@@ -10,11 +10,12 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 
 ## 0.17.1
 
-- **Kleur ligt niet meer als een waas over je scherm.** Kaarten, vlakken en randen waren mee
-  getint, waardoor alles wat je leest de kleur van je thema kreeg. Die blijven nu neutraal.
-- **De achtergrond meekleuren is een keuze geworden, en staat standaard uit.** Je thema bepaalt
-  voortaan alleen de knoppen en markeringen; wil je de achtergrond er ook in, dan zet je dat aan
-  bij Instellingen → Kleur van de app.
+- **De hele achtergrond krijgt je kleur, de kaarten niet.** Eerst waren ook de kaarten, vlakken
+  en randen getint, waardoor de kleur als een waas over alles lag wat je leest. Nu verandert
+  alleen de achtergrond: kies je roze, dan is de donkere achtergrond donkerroze en blijven je
+  kaarten neutraal grijs.
+- **Uit te zetten** bij Instellingen → Kleur van de app, voor wie liever een neutrale achtergrond
+  met alleen gekleurde knoppen heeft.
 
 ## 0.17.0
 

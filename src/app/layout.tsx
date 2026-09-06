@@ -52,7 +52,7 @@ const themeScript = `
     document.documentElement.style.setProperty("--accent-dark", tint[1]);
     document.documentElement.dataset.theme = id;
     document.documentElement.dataset.tint =
-      localStorage.getItem(${JSON.stringify(TINT_KEY)}) === "on" ? "on" : "off";
+      localStorage.getItem(${JSON.stringify(TINT_KEY)}) === "off" ? "off" : "on";
   } catch (error) {
     // Privémodus of geblokkeerde opslag: dan geldt gewoon de standaardkleur.
   }
