@@ -92,7 +92,14 @@ interface AgendaContextValue {
   undoRemove: () => void;
   /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
   forgetRemoved: () => void;
-  updateSettings: (patch: Partial<Settings>) => void;
+  /**
+   * Wijzigt instellingen. Geef een functie mee wanneer de nieuwe waarde van de
+   * huidige afhangt: twee agenda's die tegelijk klaar zijn met synchroniseren
+   * zouden elkaars tijdstip anders overschrijven.
+   */
+  updateSettings: (
+    patch: Partial<Settings> | ((current: Settings) => Partial<Settings>),
+  ) => void;
   /**
    * Bewaart een locatie voor hergebruik en maakt hem, als er een categorie
    * bij zit, de vaste locatie voor die categorie.
@@ -533,11 +540,17 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const updateSettings = useCallback((patch: Partial<Settings>) => {
-    // Nieuwe thuislocatie betekent: alle eerdere mislukkingen mogen opnieuw.
-    failedKeys.current.clear();
-    setSettings((current) => ({ ...current, ...patch }));
-  }, []);
+  const updateSettings = useCallback(
+    (patch: Partial<Settings> | ((current: Settings) => Partial<Settings>)) => {
+      // Nieuwe thuislocatie betekent: alle eerdere mislukkingen mogen opnieuw.
+      failedKeys.current.clear();
+      setSettings((current) => ({
+        ...current,
+        ...(typeof patch === "function" ? patch(current) : patch),
+      }));
+    },
+    [],
+  );
 
   const rememberPlace = useCallback((location: GeoLocation, category: CategoryId | null) => {
     setSettings((current) => {
