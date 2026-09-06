@@ -269,6 +269,46 @@ describe("computeReturn", () => {
     expect(result?.nextDay).toBe(true);
   });
 
+  it("valt terug op de thuisreis als de doorreis nog niet berekend is", () => {
+    // De doorreis wordt alleen opgehaald voor de eerstvolgende dag dat een
+    // activiteit valt. Kijk je vooruit naar een dag waarop je wél doorreist,
+    // dan is die er nog niet — en dan verdween ook het antwoord op "hoe laat
+    // ben ik thuis". Liever de thuisreis dan helemaal niets.
+    const result = computeReturn(
+      activity({
+        returnTravel: travel({ durationMinutes: 68 }),
+        onwardTravel: null,
+        travelRole: {
+          outbound: true,
+          inbound: true,
+          arrivesFrom: null,
+          onward: { label: "Sportschool", lat: 52.4, lon: 5.3 },
+        },
+      }),
+      settings(),
+    );
+
+    expect(result?.time).toBe("18:08");
+  });
+
+  it("laat de thuisreis weg zodra de doorreis er wel is", () => {
+    const result = computeReturn(
+      activity({
+        returnTravel: travel({ durationMinutes: 68 }),
+        onwardTravel: travel({ durationMinutes: 20 }),
+        travelRole: {
+          outbound: true,
+          inbound: true,
+          arrivesFrom: null,
+          onward: { label: "Sportschool", lat: 52.4, lon: 5.3 },
+        },
+      }),
+      settings(),
+    );
+
+    expect(result).toBeNull();
+  });
+
   it("neemt bij OV de aankomst uit de dienstregeling", () => {
     const result = computeReturn(
       activity({

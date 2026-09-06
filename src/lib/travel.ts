@@ -345,9 +345,14 @@ export function computeReturn(
   activity: ActivityOccurrence,
   settings: Settings,
 ): ReturnInfo | null {
-  // Alleen na je laatste uur op die plek ga je naar huis, en alleen als je
-  // niet rechtstreeks doorreist naar de volgende plek.
-  if (!activity.travelRole.inbound || activity.travelRole.onward) return null;
+  // Alleen na je laatste uur op die plek ga je naar huis.
+  if (!activity.travelRole.inbound) return null;
+  // Reis je rechtstreeks door naar de volgende plek, dan is er geen thuisreis.
+  // Tenzij die doorreis nog niet berekend is: dat gebeurt zodra je vooruit
+  // kijkt naar een dag die nog niet aan de beurt was. Dan stond er noch een
+  // doorreis noch een thuisreis, en verdween de vraag "hoe laat ben ik thuis"
+  // helemaal van het scherm. Iets tonen is dan beter dan niets.
+  if (activity.travelRole.onward && activity.onwardTravel) return null;
   if (!activity.location || !activity.returnTravel) return null;
   void settings;
 
