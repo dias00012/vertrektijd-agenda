@@ -699,6 +699,15 @@ export const nl = {
   "share.failed": "Delen lukte niet. Probeer het nog eens.",
   "theme.tint": "Achtergrond meekleuren",
   "theme.tintHint": "Aan: de achtergrond krijgt je kleur, de kaarten blijven neutraal. Uit: een neutrale achtergrond met alleen gekleurde knoppen.",
+
+  /* --- Status van een rit ------------------------------------------------ */
+  "status.cancelled": "Uitgevallen",
+  "status.cancelledLong": "Deze rit is uitgevallen",
+  "status.delayed": "{count} min vertraging",
+  "status.onTime": "Op tijd",
+  "status.live": "live",
+  "status.scheduled": "Volgens dienstregeling",
+  "status.noLive": "Geen live informatie voor deze rit",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1361,6 +1370,14 @@ export const en: Record<TranslationKey, string> = {
   "share.failed": "Sharing did not work. Please try again.",
   "theme.tint": "Tint the background too",
   "theme.tintHint": "On: the background takes your colour and the cards stay neutral. Off: a neutral background with coloured buttons only.",
+
+  "status.cancelled": "Cancelled",
+  "status.cancelledLong": "This service is cancelled",
+  "status.delayed": "{count} min delay",
+  "status.onTime": "On time",
+  "status.live": "live",
+  "status.scheduled": "Scheduled time",
+  "status.noLive": "No live information for this service",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

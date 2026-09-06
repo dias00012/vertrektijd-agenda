@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatDuration } from "@/lib/time";
 import { LEG_EMOJI, describeLeg, legTime } from "@/lib/travelModes";
 import { useT } from "@/hooks/useLanguage";
+import { JourneyStatus } from "./JourneyStatus";
 import type { Journey, TravelLeg } from "@/lib/types";
 
 /**
@@ -52,27 +53,12 @@ export function JourneyCard({ journey }: { journey: Journey }) {
           </span>
         </div>
 
-        {journey.cancelled ? (
-          <p className="mt-1 text-xs font-semibold" style={{ color: "var(--danger)" }}>
-            &#9888;&#65039; {t("journey.cancelled")}
-          </p>
-        ) : delayed ? (
-          <p className="mt-1 text-xs font-semibold" style={{ color: "#f97316" }}>
-            &#9200; {t("journey.delay", { count: journey.delayMinutes })}
-            <span className="ml-1 font-normal" style={{ color: "var(--muted)" }}>
-              {" ("}
-              {t("journey.scheduled", {
-                time:
-                  legTime(journey.legs.find((l) => l.scheduledDeparture)?.scheduledDeparture) ?? "",
-              })}
-              {")"}
-            </span>
-          </p>
-        ) : journey.realTime ? (
-          <p className="mt-1 text-xs" style={{ color: "#22c55e" }}>
-            &#9679; {t("journey.onTime")} &middot; {t("journey.live")}
-          </p>
-        ) : null}
+        <JourneyStatus
+          cancelled={journey.cancelled}
+          delayMinutes={journey.delayMinutes}
+          realTime={journey.realTime}
+          scheduledDeparture={journey.legs.find((leg) => leg.scheduledDeparture)?.scheduledDeparture}
+        />
 
         {/* Compacte route: welke vervoermiddelen je pakt */}
         <div className="mt-2 flex flex-wrap items-center gap-1">

@@ -11,11 +11,11 @@ import {
   hasRealTime,
   isCancelled,
   journeyDelay,
-  legTime,
   scheduledDeparture,
   travelModeMeta,
 } from "@/lib/travelModes";
 import { JourneyDetails } from "./JourneyDetails";
+import { JourneyStatus } from "./JourneyStatus";
 import { Spinner } from "./ui";
 import type { Activity } from "@/lib/types";
 
@@ -45,7 +45,6 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
   const delay = journeyDelay(legs);
   const live = hasRealTime(legs);
   const cancelled = isCancelled(legs);
-  const plannedTime = legTime(scheduledDeparture(legs));
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
@@ -127,23 +126,13 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                   >
                     {departure.time}
                   </p>
-                  {cancelled ? (
-                    <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
-                      &#9888;&#65039; {t("next.cancelledShort")}
-                    </p>
-                  ) : delay > 0 ? (
-                    <p className="text-xs font-semibold" style={{ color: "#f97316" }}>
-                      &#9200; {t("next.later", { count: delay })}
-                      {plannedTime ? (
-                        <span className="ml-1 font-normal line-through" style={{ color: "var(--muted)" }}>
-                          {plannedTime}
-                        </span>
-                      ) : null}
-                    </p>
-                  ) : live ? (
-                    <p className="text-xs" style={{ color: "#22c55e" }}>
-                      &#9679; {t("next.onTime")} &middot; {t("journey.live")}
-                    </p>
+                  {shown.travel.mode === "transit" ? (
+                    <JourneyStatus
+                      cancelled={cancelled}
+                      delayMinutes={delay}
+                      realTime={live}
+                      scheduledDeparture={scheduledDeparture(legs)}
+                    />
                   ) : null}
                 </div>
                 <div className="pb-1">

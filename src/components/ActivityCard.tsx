@@ -19,6 +19,7 @@ import {
 } from "@/lib/travelModes";
 import { ActivityForm } from "./ActivityForm";
 import { JourneyDetails } from "./JourneyDetails";
+import { JourneyStatus } from "./JourneyStatus";
 import { ErrorNote, Spinner } from "./ui";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -217,18 +218,16 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                         ) : null}
                       </p>
 
-                      {cancelled ? (
-                        <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
-                          &#9888;&#65039; {t("activity.cancelledFull")}
-                        </p>
-                      ) : delay > 0 ? (
-                        <p className="text-xs font-semibold" style={{ color: "#f97316" }}>
-                          &#9200; {t("journey.delay", { count: delay })} &middot; {t("journey.live")}
-                        </p>
-                      ) : live ? (
-                        <p className="text-xs" style={{ color: "#22c55e" }}>
-                          &#9679; {t("journey.onTime")} &middot; {t("journey.live")}
-                        </p>
+                      {/* Alleen bij OV: bij auto en fiets bestaat er geen rit
+                          die kan uitvallen of vertraagd raken. */}
+                      {shown.travel.mode === "transit" ? (
+                        <JourneyStatus
+                          cancelled={cancelled}
+                          delayMinutes={delay}
+                          realTime={live}
+                          scheduledDeparture={scheduledDeparture(legs)}
+                          long
+                        />
                       ) : null}
                       {back ? (
                         <p className="text-xs tabular-nums" style={{ color: "var(--muted)" }}>
