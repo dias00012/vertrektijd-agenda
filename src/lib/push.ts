@@ -18,6 +18,27 @@ import { getLanguage } from "./i18n/locale";
 /** Onder deze sleutel staat het willekeurige id van dit apparaat. */
 const DEVICE_KEY = "agenda.push.device.v1";
 
+/**
+ * Zo lang wachten we op de service worker.
+ *
+ * `serviceWorker.ready` lost nooit op wanneer registreren mislukt, en tijdens
+ * ontwikkelen registreren we hem bewust niet. Zonder deze grens blijft de
+ * schakelaar in de instellingen eindeloos op "bezig" staan, zonder uitleg.
+ */
+const READY_TIMEOUT_MS = 5000;
+
+/** De actieve service worker, of null als hij er binnen redelijke tijd niet is. */
+async function readyRegistration(): Promise<ServiceWorkerRegistration | null> {
+  try {
+    return await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), READY_TIMEOUT_MS)),
+    ]);
+  } catch {
+    return null;
+  }
+}
+
 /** Een id voor dit apparaat; puur willekeurig, aan niets anders gekoppeld. */
 export function deviceId(): string {
   try {
@@ -77,7 +98,9 @@ export async function enablePush(): Promise<boolean> {
     if (answer !== "granted") return false;
   }
 
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await readyRegistration();
+  if (!registration) return false;
+
   const existing = await registration.pushManager.getSubscription();
   const subscription =
     existing ??
@@ -97,8 +120,8 @@ export async function enablePush(): Promise<boolean> {
 /** Meldt dit apparaat af en gooit de wachtrij weg. */
 export async function disablePush(): Promise<void> {
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const registration = await readyRegistration();
+    const subscription = await registration?.pushManager.getSubscription();
     await subscription?.unsubscribe();
   } catch {
     // Alsnog afmelden bij de server: dan komt er in elk geval niets meer.
@@ -114,8 +137,9 @@ export async function disablePush(): Promise<void> {
 export async function pushEnabled(): Promise<boolean> {
   if (!pushSupported()) return false;
   if (Notification.permission !== "granted") return false;
+  const registration = await readyRegistration();
+  if (!registration) return false;
   try {
-    const registration = await navigator.serviceWorker.ready;
     return Boolean(await registration.pushManager.getSubscription());
   } catch {
     return false;
