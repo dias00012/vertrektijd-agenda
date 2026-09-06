@@ -6,7 +6,7 @@ import type {
   GeocodeResult,
   GeoLocation,
   Journey,
-  TransitBike,
+  BikeEnds,
   TravelMode,
   TravelResult,
 } from "./types";
@@ -58,8 +58,8 @@ export async function searchLocations(
 
 export interface TravelRequestOptions {
   mode: TravelMode;
-  /** Fiets naar (en eventueel vanaf) de halte; alleen zinvol bij OV. */
-  transitBike?: TransitBike;
+  /** Aan welke kant van deze rit een fiets staat; alleen zinvol bij OV. */
+  bike?: BikeEnds;
   /** ISO-tijd: uiterlijk aankomen (heenreis met OV). */
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
@@ -87,8 +87,8 @@ export async function fetchTravel(
 export interface JourneySearchOptions {
   /** ISO-tijd; standaard nu. */
   time?: string;
-  /** Fiets naar (en eventueel vanaf) de halte. */
-  transitBike?: TransitBike;
+  /** Aan welke kant van de rit een fiets staat. */
+  bike?: BikeEnds;
   /** true = "uiterlijk aankomen om", false = "vertrekken vanaf". */
   arriveBy?: boolean;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */

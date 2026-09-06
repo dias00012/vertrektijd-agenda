@@ -1,9 +1,9 @@
 import type {
   Activity,
   ActivityOccurrence,
+  BikeEnds,
   GeoLocation,
   Settings,
-  TransitBike,
   TravelMode,
 } from "./types";
 import {
@@ -30,15 +30,15 @@ export function travelKey(
   destination: GeoLocation | null,
   mode: TravelMode,
   timeSlot?: string | null,
-  transitBike?: TransitBike,
+  bike?: BikeEnds,
 ): string | null {
   if (!home || !destination) return null;
   const round = (n: number) => n.toFixed(5);
   const slot = mode === "transit" && timeSlot ? `@${timeSlot}` : "";
   // De fietskeuze hoort bij de sleutel: zet je hem om, dan moet de reis
   // opnieuw berekend worden in plaats van de oude looptijd te blijven tonen.
-  const bike = mode === "transit" && transitBike && transitBike !== "none" ? `+${transitBike}` : "";
-  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bike}`;
+  const bikePart = mode === "transit" && bike && bike !== "none" ? `+${bike}` : "";
+  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bikePart}`;
 }
 
 /** Hoe ver vooruit we zoeken naar de eerstvolgende dag van een reeks. */
@@ -70,8 +70,12 @@ export function bufferFor(activity: Activity, settings: Settings): number {
  */
 export interface TravelPlan {
   mode: TravelMode;
-  /** Fiets naar (en eventueel vanaf) de halte; alleen bij OV. */
-  transitBike: TransitBike;
+  /** Aan welke kant van de heenreis je fiets staat. */
+  outboundBike: BikeEnds;
+  /** En van de terugreis — dat is de andere kant van dezelfde rit. */
+  returnBike: BikeEnds;
+  /** En van een doorreis, die thuis niet aandoet. */
+  onwardBike: BikeEnds;
   outboundKey: string;
   returnKey: string;
   /** Uiterlijke aankomst voor de heenreis (ISO); alleen bij OV. */
@@ -124,20 +128,31 @@ export function travelPlanForDate(
   const outboundSlot = arriveByDate ? `${dateKey}T${activity.startTime}` : null;
   const returnSlot = departAtDate ? `${dateKey}T${activity.endTime}` : null;
 
-  const transitBike = settings.transitBike ?? "none";
-  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, transitBike);
-  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, transitBike);
+  const bike = settings.transitBike ?? "none";
+  // Dezelfde keuze, per rit de andere kant op. "start" betekent: mijn fiets
+  // staat thuis — dus aan het begin van de heenreis en aan het eind van de
+  // terugreis. Een doorreis komt niet langs huis, dus daar staat hij niet.
+  // "both" (een tweede fiets of een OV-fiets) geldt overal aan beide kanten.
+  const outboundBike: BikeEnds = bike === "both" ? "both" : bike === "start" ? "origin" : "none";
+  const returnBike: BikeEnds =
+    bike === "both" ? "both" : bike === "start" ? "destination" : "none";
+  const onwardBike: BikeEnds = bike === "both" ? "both" : "none";
+
+  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, outboundBike);
+  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, returnBike);
   if (!outboundKey || !returnKey) return null;
 
   // De doorreis vertrekt op hetzelfde moment als de reis naar huis zou doen:
   // zodra je klaar bent.
   const onwardKey = onward
-    ? travelKey(activity.location, onward, mode, returnSlot, transitBike)
+    ? travelKey(activity.location, onward, mode, returnSlot, onwardBike)
     : null;
 
   return {
     mode,
-    transitBike,
+    outboundBike,
+    returnBike,
+    onwardBike,
     outboundKey,
     returnKey,
     arriveBy: arriveByDate?.toISOString(),

@@ -261,12 +261,12 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           fetchTravel(currentSettings.home, activity.location, {
             mode: plan.mode,
             arriveBy: plan.arriveBy,
-            transitBike: plan.transitBike,
+            bike: plan.outboundBike,
           }),
           fetchTravel(activity.location, currentSettings.home, {
             mode: plan.mode,
             departAt: plan.departAt,
-            transitBike: plan.transitBike,
+            bike: plan.returnBike,
           }),
           // Ga je hierna rechtstreeks ergens anders heen, dan is dat een derde
           // rit: van hier naar daar, zonder tussenstop thuis.
@@ -274,7 +274,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             ? fetchTravel(activity.location, plan.onwardTo, {
                 mode: plan.mode,
                 departAt: plan.departAt,
-                transitBike: plan.transitBike,
+                bike: plan.onwardBike,
               })
             : Promise.resolve(null),
         ]);

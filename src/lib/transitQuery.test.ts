@@ -45,13 +45,27 @@ describe("transitParams", () => {
   it("laat met een fiets zowel lopen als fietsen toe", () => {
     // Alleen BIKE zou de halte om de hoek uitsluiten en je naar een verder
     // station sturen; de planner moet per rit kunnen kiezen.
-    const start = ask({ bike: "start" });
-    expect(start.get("preTransitModes")).toBe("WALK,BIKE");
-    expect(start.get("postTransitModes")).toBe("WALK");
+    const params = ask({ bike: "origin" });
+    expect(params.get("preTransitModes")).toBe("WALK,BIKE");
+  });
 
-    const both = ask({ bike: "both" });
-    expect(both.get("preTransitModes")).toBe("WALK,BIKE");
-    expect(both.get("postTransitModes")).toBe("WALK,BIKE");
+  it("zet de fiets op de heenreis aan het begin", () => {
+    const params = ask({ bike: "origin" });
+    expect(params.get("preTransitModes")).toBe("WALK,BIKE");
+    expect(params.get("maxPreTransitTime")).toBe(String(30 * 60));
+    expect(params.get("postTransitModes")).toBe("WALK");
+    expect(params.get("maxPostTransitTime")).toBe(String(20 * 60));
+  });
+
+  it("zet dezelfde fiets op de terugreis aan het eind", () => {
+    // Je fiets staat thuis. Naar huis toe is dat het laatste stuk, niet het
+    // eerste. Zonder dat onderscheid mocht je heen een half uur fietsen maar
+    // terug alleen twintig minuten lopen, en viel je huis buiten bereik.
+    const params = ask({ bike: "destination" });
+    expect(params.get("preTransitModes")).toBe("WALK");
+    expect(params.get("maxPreTransitTime")).toBe(String(20 * 60));
+    expect(params.get("postTransitModes")).toBe("WALK,BIKE");
+    expect(params.get("maxPostTransitTime")).toBe(String(30 * 60));
   });
 
   it("rekt de looptijd naar de halte op tot twintig minuten", () => {
@@ -61,8 +75,10 @@ describe("transitParams", () => {
     expect(params.get("maxPostTransitTime")).toBe(String(20 * 60));
   });
 
-  it("geeft het fietsdeel een halfuur", () => {
+  it("geeft het fietsdeel aan beide kanten een halfuur", () => {
     const params = ask({ bike: "both" });
+    expect(params.get("preTransitModes")).toBe("WALK,BIKE");
+    expect(params.get("postTransitModes")).toBe("WALK,BIKE");
     expect(params.get("maxPreTransitTime")).toBe(String(30 * 60));
     expect(params.get("maxPostTransitTime")).toBe(String(30 * 60));
   });

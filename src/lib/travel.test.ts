@@ -303,6 +303,46 @@ describe("travelPlanForDate", () => {
     expect(monday?.outboundKey).toBe(wednesday?.outboundKey);
   });
 
+  it("zet de fiets heen aan het begin en terug aan het eind", () => {
+    // Je fiets staat thuis: op de heenreis is dat het eerste stuk, op de
+    // terugreis het laatste. Een doorreis komt niet langs huis.
+    const plan = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", transitBike: "start" }),
+      "2026-09-07",
+      { label: "Sportschool", lat: 52.4, lon: 5.3 },
+    );
+
+    expect(plan?.outboundBike).toBe("origin");
+    expect(plan?.returnBike).toBe("destination");
+    expect(plan?.onwardBike).toBe("none");
+  });
+
+  it("geldt bij een fiets aan beide kanten voor elke rit", () => {
+    const plan = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", transitBike: "both" }),
+      "2026-09-07",
+      { label: "Sportschool", lat: 52.4, lon: 5.3 },
+    );
+
+    expect(plan?.outboundBike).toBe("both");
+    expect(plan?.returnBike).toBe("both");
+    expect(plan?.onwardBike).toBe("both");
+  });
+
+  it("geeft heen en terug een andere sleutel zodra er een fiets in het spel is", () => {
+    // Anders zou de terugreis de heenreis-uitkomst kunnen hergebruiken.
+    const plan = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", transitBike: "start" }),
+      "2026-09-07",
+    );
+
+    expect(plan?.outboundKey).toContain("+origin");
+    expect(plan?.returnKey).toContain("+destination");
+  });
+
   it("geeft niets terug zonder thuislocatie", () => {
     expect(travelPlanForDate(activity(), settings({ home: null }), "2026-09-07")).toBeNull();
   });

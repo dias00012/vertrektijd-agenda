@@ -31,6 +31,16 @@ export type TravelMode = "car" | "bike" | "walk" | "transit";
  */
 export type TransitBike = "none" | "start" | "both";
 
+/**
+ * Aan welke kant van één rit een fiets staat. `TransitBike` is de keuze van de
+ * gebruiker ("ik heb thuis een fiets"); dit is wat dat voor een concrete rit
+ * betekent. Op de heenreis staat je fiets aan het begin, op de terugreis aan
+ * het eind — dezelfde keuze, de andere kant van de rit. Zonder dat onderscheid
+ * mocht je heen een half uur naar het station fietsen maar terug alleen lopen,
+ * en viel je thuisadres buiten bereik.
+ */
+export type BikeEnds = "none" | "origin" | "destination" | "both";
+
 export interface GeoLocation {
   /** Weergavenaam zoals de gebruiker die herkent, bv. "Windesheim, Almere". */
   label: string;

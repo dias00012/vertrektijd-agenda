@@ -1,4 +1,4 @@
-import type { GeoLocation, TransitBike } from "./types";
+import type { BikeEnds, GeoLocation } from "./types";
 
 /**
  * De vraag die we aan de OV-planner (MOTIS/transitous) stellen.
@@ -41,8 +41,8 @@ export interface TransitQuery {
   time?: string;
   /** true = "uiterlijk aankomen om", false = "vertrekken vanaf". */
   arriveBy?: boolean;
-  /** Fiets naar (en eventueel vanaf) de halte. */
-  bike?: TransitBike;
+  /** Aan welke kant van deze rit een fiets staat. */
+  bike?: BikeEnds;
   /** Gewenst aantal opties; alleen zinvol bij `shape: "timetable"`. */
   options?: number;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */
@@ -62,14 +62,14 @@ export function place(point: Pick<GeoLocation, "lat" | "lon">): string {
  * twintig minuten scheelt met precies dezelfde trein. De planner mag zelf per
  * rit kiezen wat sneller is.
  */
-function applyStreetOptions(params: URLSearchParams, bike: TransitBike | undefined): void {
-  const bikeToStop = bike === "start" || bike === "both";
-  params.set("preTransitModes", bikeToStop ? "WALK,BIKE" : "WALK");
-  params.set("maxPreTransitTime", String(bikeToStop ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
+function applyStreetOptions(params: URLSearchParams, bike: BikeEnds | undefined): void {
+  const bikeAtStart = bike === "origin" || bike === "both";
+  params.set("preTransitModes", bikeAtStart ? "WALK,BIKE" : "WALK");
+  params.set("maxPreTransitTime", String(bikeAtStart ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
 
-  const bikeFromStop = bike === "both";
-  params.set("postTransitModes", bikeFromStop ? "WALK,BIKE" : "WALK");
-  params.set("maxPostTransitTime", String(bikeFromStop ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
+  const bikeAtEnd = bike === "destination" || bike === "both";
+  params.set("postTransitModes", bikeAtEnd ? "WALK,BIKE" : "WALK");
+  params.set("maxPostTransitTime", String(bikeAtEnd ? MAX_BIKE_SECONDS : MAX_WALK_SECONDS));
 }
 
 export function transitParams(query: TransitQuery): URLSearchParams {

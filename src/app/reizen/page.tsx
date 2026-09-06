@@ -102,7 +102,14 @@ export default function TravelPlannerPage() {
                 arriveBy: when === "arrive",
               }),
           count: 5,
-          transitBike: settings.transitBike ?? "none",
+          // In de reisplanner kies je zelf van en naar; het vertrekpunt staat
+          // standaard op thuis, dus daar staat je fiets.
+          bike:
+            settings.transitBike === "both"
+              ? "both"
+              : settings.transitBike === "start"
+                ? "origin"
+                : "none",
         });
         setJourneys(result.journeys);
         track("reis_gezocht");
