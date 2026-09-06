@@ -215,6 +215,18 @@ export interface ActivityOccurrence extends Activity {
   recurring: boolean;
 }
 
+/** Het gekoppelde schoolrooster: waar het vandaan komt en hoe het is ingelezen. */
+export interface TimetableLink {
+  /** De iCal-link. Persoonlijk, dus behandelen als je agenda zelf. */
+  url: string;
+  /** Waar de lessen plaatsvinden; nodig voor de reistijd. */
+  location: GeoLocation;
+  /** Als welk activiteitstype de lessen worden gezet. */
+  category: CategoryId;
+  /** Wanneer het rooster voor het laatst is opgehaald (ISO). */
+  syncedAt: string | null;
+}
+
 /** Een locatie die de gebruiker heeft bewaard om te hergebruiken. */
 export interface SavedPlace {
   id: string;
@@ -246,6 +258,11 @@ export interface Settings {
    * of een OV-fiets. Lopend duurt dezelfde reis al snel een half uur langer.
    */
   transitBike?: TransitBike;
+  /**
+   * Je gekoppelde rooster, zodat de app het zelf bij kan houden. Zonder deze
+   * gegevens zou je na elke roosterwijziging opnieuw alles moeten invullen.
+   */
+  timetable?: TimetableLink | null;
   /**
    * Hoeveel minuten vóór je vertrektijd je een melding wilt. `null` = uit.
    * Zie `useReminders` voor wat er wel en niet kan zonder pushserver.

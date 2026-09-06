@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferMinutes: 10,
   travelMode: "car",
   transitBike: "none",
+  timetable: null,
   reminderMinutes: null,
 };
 

@@ -9,6 +9,7 @@ import { Onboarding } from "./Onboarding";
 import { Tour } from "./Tour";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
+import { useTimetableSync } from "@/hooks/useTimetableSync";
 import { useT } from "@/hooks/useLanguage";
 
 const NAV = [
@@ -38,6 +39,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
   useReminders();
+  // Een gekoppeld rooster stil bijwerken, hoogstens een keer per dag.
+  useTimetableSync();
 
   const introValue = useMemo(
     () => ({ open: () => setIntroOpen(true), openTour: () => setTourOpen(true) }),

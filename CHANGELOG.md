@@ -8,6 +8,21 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.17.0
+
+- **Fietsen naar het station.** De app liet je altijd lopen naar de halte, terwijl vrijwel elke
+  student fietst. Op Almere naar Zwolle scheelt dat **90 tegen 66 minuten** met precies dezelfde
+  trein: je vertrektijd stond dus bijna een half uur te vroeg. In Instellingen kies je tussen
+  lopen, fiets heen, of een fiets aan beide kanten (je tweede fiets of een OV-fiets). Zowel je
+  agenda als de reisplanner volgt die keuze.
+- **Je rooster houdt zichzelf bij.** Koppel je het via een link, dan haalt de app het hoogstens
+  een keer per dag stil opnieuw op. Verschoven en uitgevallen uren kloppen daarmee vanzelf,
+  zonder dat je eraan hoeft te denken. Levert het rooster niets op, dan blijft je bestaande
+  agenda staan in plaats van leeg te lopen. De koppeling is met een knop te verbreken.
+- **Je dag delen.** Eén knop op Vandaag stuurt je planning met vertrektijden naar WhatsApp of wat
+  je verder gebruikt: "09:00-17:00 College (vertrek 07:41)". Op een laptop gaat het naar je
+  klembord. Bij activiteiten thuis staat er geen vertrektijd, want die is er niet.
+
 ## 0.16.4
 
 - **Ook de donkere achtergrond kleurt nu echt mee.** Die bleef bijna zwart met een vleugje kleur;

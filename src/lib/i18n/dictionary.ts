@@ -681,6 +681,22 @@ export const nl = {
   "settings.bike.startHint": "Fietsen naar de halte, daarna lopen",
   "settings.bike.both": "Fiets beide",
   "settings.bike.bothHint": "Ook een fiets bij je bestemming",
+  "timetable.linked": "Je rooster is gekoppeld en wordt automatisch bijgehouden. Laatst opgehaald: {when}.",
+  "timetable.never": "nog niet",
+  "timetable.unlink": "Koppeling verbreken",
+  "timetable.unlinked": "De koppeling is verbroken. Je lessen blijven in je agenda staan.",
+  "timetable.keepLink": "Rooster gekoppeld houden en automatisch bijwerken",
+
+  /* --- Delen ------------------------------------------------------------- */
+  "share.button": "Delen",
+  "share.today": "Mijn dag delen",
+  "share.title": "Mijn dag",
+  "share.leaveAt": "Ik vertrek om {time}",
+  "share.line": "{start}-{end} {title}",
+  "share.lineLeave": "{start}-{end} {title} (vertrek {leave})",
+  "share.nothing": "Niets gepland",
+  "share.copied": "Gekopieerd naar je klembord.",
+  "share.failed": "Delen lukte niet. Probeer het nog eens.",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1326,6 +1342,21 @@ export const en: Record<TranslationKey, string> = {
   "settings.bike.startHint": "Cycle to the stop, then walk",
   "settings.bike.both": "Bike both ends",
   "settings.bike.bothHint": "A bike at your destination too",
+  "timetable.linked": "Your timetable is connected and kept up to date automatically. Last fetched: {when}.",
+  "timetable.never": "not yet",
+  "timetable.unlink": "Disconnect",
+  "timetable.unlinked": "Disconnected. Your lessons stay in your calendar.",
+  "timetable.keepLink": "Keep the timetable connected and update it automatically",
+
+  "share.button": "Share",
+  "share.today": "Share my day",
+  "share.title": "My day",
+  "share.leaveAt": "I leave at {time}",
+  "share.line": "{start}-{end} {title}",
+  "share.lineLeave": "{start}-{end} {title} (leave {leave})",
+  "share.nothing": "Nothing planned",
+  "share.copied": "Copied to your clipboard.",
+  "share.failed": "Sharing did not work. Please try again.",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

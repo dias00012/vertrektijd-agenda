@@ -8,6 +8,7 @@ import { formatDateShort, todayKey } from "@/lib/time";
 import { DayTimeline } from "@/components/DayTimeline";
 import { NextUpCard } from "@/components/NextUpCard";
 import { SchoolworkTodayCard } from "@/components/SchoolworkTodayCard";
+import { ShareDay } from "@/components/ShareDay";
 import { EmptyState, Spinner } from "@/components/ui";
 import { useT } from "@/hooks/useLanguage";
 
@@ -23,12 +24,15 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("today.title")}</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          {formatDateShort(today)}
-          {settings.home ? ` · ${t("today.from", { place: settings.home.label })}` : ""}
-        </p>
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("today.title")}</h1>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>
+            {formatDateShort(today)}
+            {settings.home ? ` · ${t("today.from", { place: settings.home.label })}` : ""}
+          </p>
+        </div>
+        {hydrated ? <ShareDay dateKey={today} now={now} /> : null}
       </header>
 
       {!hydrated ? (

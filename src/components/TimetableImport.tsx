@@ -26,13 +26,17 @@ const WEEKS_AHEAD = 8;
  * het rooster ("A1.23") is geen adres waar een routeplanner iets mee kan.
  */
 export function TimetableImport() {
-  const { settings, replaceActivities, activities, categories } = useAgenda();
+  const { settings, replaceActivities, activities, categories, updateSettings } = useAgenda();
   const t = useT();
 
   const [url, setUrl] = useState("");
   const [events, setEvents] = useState<IcsEvent[] | null>(null);
   const [location, setLocation] = useState<GeoLocation | null>(null);
   const [category, setCategory] = useState("school");
+  /** Alleen zinvol bij een link: een los bestand kan de app niet zelf ophalen. */
+  const [keepLinked, setKeepLinked] = useState(true);
+  /** Onthoudt of deze lessen uit een link kwamen of uit een bestand. */
+  const [fromUrl, setFromUrl] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -70,6 +74,7 @@ export function TimetableImport() {
         setError(payload.error ?? t("timetable.fetchFailed"));
         return;
       }
+      setFromUrl(true);
       read(payload.text);
     } catch {
       setError(t("timetable.offline"));
@@ -82,6 +87,7 @@ export function TimetableImport() {
     setError(null);
     setDone(null);
     try {
+      setFromUrl(false);
       read(await file.text());
     } catch {
       setError(t("timetable.readFailed"));
@@ -108,6 +114,18 @@ export function TimetableImport() {
     // Alles van een eerdere import vervangen: zo verdwijnen uitgevallen lessen
     // en verschoven uren vanzelf, in plaats van dubbel te komen staan.
     replaceActivities({ remove: existing.map((item) => item.id), add: drafts, source: SOURCE });
+
+    // De link onthouden, zodat de app het rooster daarna zelf kan bijhouden.
+    if (fromUrl && keepLinked && location) {
+      updateSettings({
+        timetable: {
+          url: url.trim(),
+          location,
+          category,
+          syncedAt: new Date().toISOString(),
+        },
+      });
+    }
 
     setDone(
       (drafts.length === 1
@@ -251,6 +269,18 @@ export function TimetableImport() {
             </p>
           ) : null}
 
+          {fromUrl ? (
+            <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                checked={keepLinked}
+                onChange={(event) => setKeepLinked(event.target.checked)}
+              />
+              <span style={{ color: "var(--muted)" }}>{t("timetable.keepLink")}</span>
+            </label>
+          ) : null}
+
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -269,6 +299,32 @@ export function TimetableImport() {
               {t("timetable.needPlace")}
             </p>
           ) : null}
+        </div>
+      ) : null}
+
+      {settings.timetable?.url && !events ? (
+        <div
+          className="mt-3 rounded-xl px-3 py-2.5 text-xs"
+          style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
+        >
+          <p>
+            &#128260;{" "}
+            {t("timetable.linked", {
+              when: settings.timetable.syncedAt
+                ? formatDateLabel(settings.timetable.syncedAt.slice(0, 10), new Date())
+                : t("timetable.never"),
+            })}
+          </p>
+          <button
+            type="button"
+            className="mt-2 underline"
+            onClick={() => {
+              updateSettings({ timetable: null });
+              setDone(t("timetable.unlinked"));
+            }}
+          >
+            {t("timetable.unlink")}
+          </button>
         </div>
       ) : null}
 
