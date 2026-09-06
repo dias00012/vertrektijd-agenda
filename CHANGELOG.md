@@ -8,6 +8,118 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.29.0
+
+Een ronde langs de hele app op zoek naar stille rekenfouten: antwoorden die er
+geloofwaardig uitzagen en niet klopten. Aanleiding was de reisplanner die 57
+minuten gaf waar 9292 er 42 gaf. Alles hieronder is met een test vastgelegd die
+aantoonbaar faalt op de vorige versie.
+
+**Vertrektijden**
+
+- **Een OV-rit die voor middernacht vertrok stond een dag mis.** Begint er iets
+  om 00:30 en haal je daar de laatste trein van 23:50 voor, dan rekende de app
+  24 uur de verkeerde kant op. Dat moment stuurt je meldingen: de herinnering
+  kwam een dag te laat.
+- **In de nacht van de tijdswissel klopte je vertrektijd een uur niet.** De app
+  rekende in milliseconden terug vanaf de starttijd, terwijl die nacht 23 of 25
+  uur duurt. Het scherm zei 22:50, de melding ging om 23:50.
+- **Rijdt er niets dat op tijd aankomt**, dan toont de app de eerstvolgende rit
+  daarna. Die gold als "de dag ervoor", waardoor de vertrekregel uit de dag
+  verdween en er geen melding kwam. Nu staat hij er gewoon.
+- **De veiligheidsmarge deed bij OV niets.** Die marge bepaalt welke rit je
+  krijgt, maar zat niet in de sleutel waarmee de app bepaalt of een berekende
+  reis nog geldig is. Van 10 naar 30 minuten veranderde er niets op het scherm.
+- **Een stage of vakantie plande zijn rit altijd op de eerste dag.** In oktober
+  vroeg de app nog de dienstregeling van 1 september op — een datum in het
+  verleden.
+- **Een gewijzigde eindtijd haalde de terugreis niet opnieuw op.** De oude
+  thuiskomsttijd bleef staan, en dan ook nog zonder het bijschrift dat het om
+  een reis van een andere dag ging.
+- **Op een dag waarop je doorreist naar de sportschool** stond soms noch de
+  doorreis noch de thuisreis: de kaart zweeg over de hele rest van de dag.
+
+**Reisplanner**
+
+- **De app kiest zelf de beste rit** in plaats van de eerste die de planner
+  teruggeeft. Op een heenreis was dat vaak de vroegste vertrektijd met de
+  langste route. Bij "uiterlijk aankomen om" wint nu de laatste vertrektijd die
+  het haalt, bij een terugreis de vroegste aankomst, en een overstap weegt mee
+  als vijf minuten.
+- **Lopen kan altijd, ook met een fiets.** Stond "fiets naar de halte" aan, dan
+  viel de halte om de hoek af en kwam je op een verder station uit.
+- **De fiets staat nu aan de goede kant van de rit.** Je fiets staat thuis: heen
+  is dat het eerste stuk, terug het laatste. De app zette hem altijd vooraan,
+  dus naar huis toe mocht je een half uur fietsen vanaf school en maar twintig
+  minuten lopen vanaf je eigen station.
+- **Twintig minuten naar het station lopen mag**; de planner hield het uit
+  zichzelf op een kwartier en stuurde je anders om met een extra bus.
+- **Live vertraging is weer live.** De server bewaarde een OV-uitkomst tien
+  minuten terwijl de app elke twee minuten ververst. "Op tijd" bleef staan voor
+  een trein die allang negen minuten te laat was.
+- **Doorbladeren voorbij de laatste rit** wist de hele lijst en beide knoppen.
+  Nu blijft je lijst staan met "Verder rijdt er vandaag niets meer".
+- **Rijdt er niets**, dan volgt de directe loop- of fietsroute in plaats van
+  "geen verbinding".
+- **Haperde het zoeken naar haltes**, dan werd dat halve antwoord 24 uur lang
+  bewaard: "Almere Centrum" gaf dan de wijk in plaats van het station, en
+  opnieuw zoeken hielp niet.
+
+**Je gegevens**
+
+- **De agenda van de vorige gebruiker belandde in het volgende account.**
+  Uitloggen wiste de agenda niet uit het geheugen; logde daarna iemand anders
+  in op hetzelfde apparaat, dan werd alles — thuisadres incluis — naar diens
+  account gepusht.
+- **Wat je weggooit blijft weg.** Samenvoegen met de cloud was een unie: alles
+  wat je op het ene apparaat weggooide kwam terug zodra het andere het nog
+  kende. Ongedaan maken werkt gewoon.
+- **Wat je offline aan je instellingen wijzigde blijft staan.** De cloud won
+  altijd, dus je marge sprong terug.
+- **Een zelfgemaakt activiteitstype werd stil "School"** — bij import, maar ook
+  bij elke keer dat de app je agenda uit de cloud haalde.
+
+**Rooster en agenda's koppelen**
+
+- **Een afgelaste les bleef staan en een verplaatste les kwam dubbel.** De
+  koppeling waarmee een agenda zo'n wijziging meldt werd genegeerd.
+- **Dagelijkse, maandelijkse en jaarlijkse herhalingen** werden één losse
+  afspraak. Je eigen agenda erbij koppelen zit er vol mee.
+- **Twee gekoppelde agenda's overschreven elkaars sync-tijdstip**, waarna de
+  eerste bij elke tik opnieuw het net op ging.
+
+**Meldingen**
+
+- **Een vertrek verder dan zes uur weg werd nooit alsnog ingepland.** Liet je de
+  app 's ochtends openstaan, dan kwam de melding voor 17:00 gewoon niet.
+- **Twee wijzigingen binnen vijf minuten**: de tweede bereikte de server nooit,
+  dus stonden er verkeerde meldingen klaar.
+
+**Beveiliging**
+
+- **Een IPv4-adres vermomd als IPv6 glipte volledig langs de controle** op een
+  agenda-link. Het metadata-adres van de cloudprovider was zo gewoon op te
+  vragen.
+- **Elke hostnaam die met "fc" of "fd" begint** werd geweigerd als privé-adres;
+  fd.nl kon dus geen agenda-link zijn.
+- **Alleen de naam werd gecontroleerd, nooit waar die naam heen wijst.** De
+  server zoekt de naam nu op en weigert elk adres dat naar binnen wijst, ook bij
+  elke omleiding.
+- **De 4MB-grens telde pas nadat het hele bestand in het geheugen stond**, en
+  alleen als de bron een lengte meestuurde.
+
+**Onder de motorkap**
+
+- `src/lib/transitQuery.ts` bouwt de vraag aan de OV-planner op, met de
+  standaardwaarden van MOTIS erbij gedocumenteerd en onder test. Die parameters
+  bepalen het antwoord meer dan welke code dan ook.
+- De tests draaien in Europe/Amsterdam in plaats van UTC: in UTC komt de nacht
+  van de tijdswissel nooit langs.
+- `scripts/reis-check.mjs` laat zien wat de OV-planner echt teruggeeft, met
+  varianten naast elkaar. Bedoeld om een verschil met 9292 te herleiden tot de
+  gegevens of tot een instelling.
+- Van 152 naar 192 tests.
+
 ## 0.28.0
 
 - **De app kiest nu zelf de beste rit.** De reisplanner geeft meerdere opties terug die elk

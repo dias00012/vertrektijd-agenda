@@ -55,6 +55,7 @@ function describe(leg) {
     `          ${leg.from?.name ?? "?"} → ${leg.to?.name ?? "?"}`;
 }
 
+/** Dezelfde parameters als src/lib/transitQuery.ts opbouwt. */
 async function plan(from, to, extra = {}) {
   const params = new URLSearchParams({
     fromPlace: `${from.lat},${from.lon}`,
@@ -104,6 +105,31 @@ console.log(`Van : ${from.label}\n      ${from.lat}, ${from.lon}`);
 console.log(`Naar: ${to.label}\n      ${to.lat}, ${to.lon}`);
 console.log(`Tijd: ${TIME.toISOString()}`);
 
-report("Zoals de app het nu vraagt", await plan(from, to));
-report("Met overstappen over straat berekend", await plan(from, to, { useRoutedTransfers: "true" }));
+// 1. Precies zoals de reisplanner in de app het vraagt.
+report("Zoals de reisplanner het vraagt", await plan(from, to));
+
+// 2. Zoals de agenda het vraagt: één beste rit in plaats van een vertrekbord.
+report(
+  "Zoals de agenda het vraagt (timetableView=false)",
+  await plan(from, to, { timetableView: "false", numItineraries: "1" }),
+);
+
+// 3. Met overstappen over de straat berekend in plaats van uit vaste
+//    looppaden. Als hier ineens wél de snelle bus staat, weten we genoeg.
+report(
+  "Met overstappen over straat berekend",
+  await plan(from, to, { useRoutedTransfers: "true" }),
+);
+
+// 4. Zonder grens op het laatste stuk lopen: staat de goede halte er dan wel
+//    bij, dan lag het aan die grens.
+report(
+  "Met een half uur lopen toegestaan aan beide kanten",
+  await plan(from, to, {
+    maxPreTransitTime: String(30 * 60),
+    maxPostTransitTime: String(30 * 60),
+  }),
+);
+
 await stopsNearby("Palazzo, Lelystad");
+await stopsNearby("Lelystad Centrum");
