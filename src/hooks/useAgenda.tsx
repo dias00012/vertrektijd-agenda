@@ -223,6 +223,22 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
    * als je herlaadde en je werk weg was.
    */
   const [storageFull, setStorageFull] = useState(false);
+  /**
+   * Spiegel van de gegevens zoals ze nú zijn. De sync doet netwerkverkeer, en
+   * in die seconden kun je gewoon doortypen. Rekende hij daarna met de
+   * momentopname van het begin, dan werd wat je in dat venster invoerde
+   * overschreven — en omdat het push-effect ondertussen stilstond, was het ook
+   * nooit naar de cloud gegaan.
+   */
+  const latestData = useRef({
+    settings: DEFAULT_SETTINGS,
+    activities: [] as Activity[],
+    tasks: [] as Task[],
+    exams: [] as Exam[],
+    deletions: [] as Deletion[],
+  });
+  /** Loopt op zodra een sync klaar is, zodat het push-effect alsnog draait. */
+  const [pushNonce, setPushNonce] = useState(0);
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   const { user } = useAuth();
@@ -263,6 +279,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated && !saveTasks(tasks)) setStorageFull(true);
   }, [tasks, hydrated]);
+
+  // Zonder dep-lijst: na elke render, zodat de spiegel nooit achterloopt.
+  useEffect(() => {
+    latestData.current = { settings, activities, tasks, exams, deletions };
+  });
 
   useEffect(() => {
     if (hydrated && !saveExams(exams)) setStorageFull(true);
@@ -867,7 +888,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // en niets wordt overschreven. Tenzij het lokale spul van een ander
         // account is: dan is de cloud de waarheid en blijft de agenda van die
         // ander waar hij hoort, in zijn eigen account.
-        const local = { settings, activities, tasks, exams, deletions };
+        // De gegevens zoals ze nú zijn, niet zoals ze waren toen deze ronde
+        // begon: tijdens het netwerkverkeer kan er van alles bij gekomen zijn.
+        const local = latestData.current;
         const merged = someoneElses
           ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
           : remote
@@ -901,6 +924,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // niet meteen opnieuw triggert.
         setTimeout(() => {
           applyingRemote.current = false;
+          // Het push-effect stond deze hele ronde stil. Wat je ondertussen
+          // wijzigde is dus nog nergens heen; zet hem nu alsnog aan.
+          setPushNonce((value) => value + 1);
         }, 150);
       }
     })();
@@ -909,8 +935,12 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
     // Alleen opnieuw draaien wanneer de gebruiker wisselt of na hydratatie.
+    // Op user.id en niet op het hele object: Supabase vernieuwt zijn token
+    // periodiek en geeft dan een nieuw object voor dezelfde gebruiker terug.
+    // Dat startte elke keer een volledige ronde ophalen, samenvoegen en
+    // wegschrijven.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, user, hydrated]);
+  }, [supabase, user?.id, hydrated]);
 
   // Terwijl je bent ingelogd: schrijf wijzigingen (debounced) naar de cloud.
   useEffect(() => {
@@ -933,7 +963,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     return () => {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
-  }, [supabase, user, hydrated, activities, tasks, exams, settings, deletions]);
+  }, [supabase, user, hydrated, activities, tasks, exams, settings, deletions, pushNonce]);
 
   const value = useMemo<AgendaContextValue>(
     () => ({
