@@ -77,6 +77,16 @@ interface AgendaContextValue {
   removeActivity: (id: string) => void;
   /** Haalt één dag uit een herhalende reeks, zonder de reeks te verwijderen. */
   removeOccurrence: (id: string, dateKey: string) => void;
+  /**
+   * De laatste verwijdering, zolang je hem nog terug kunt halen. Verwijderen
+   * is het enige wat je in deze app echt kwijt kunt raken; een knop van een
+   * paar seconden scheelt de schrik.
+   */
+  lastRemoved: { title: string; at: number } | null;
+  /** Zet de laatste verwijdering terug. */
+  undoRemove: () => void;
+  /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
+  forgetRemoved: () => void;
   updateSettings: (patch: Partial<Settings>) => void;
   /**
    * Bewaart een locatie voor hergebruik en maakt hem, als er een categorie
@@ -428,18 +438,69 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  /** Wat er als laatste weg is, zodat het terug kan. */
+  const undoable = useRef<
+    { kind: "activity"; activity: Activity } | { kind: "occurrence"; id: string; date: string } | null
+  >(null);
+  const [lastRemoved, setLastRemoved] = useState<{ title: string; at: number } | null>(null);
+
   const removeActivity = useCallback((id: string) => {
-    setActivities((current) => current.filter((item) => item.id !== id));
+    setActivities((current) => {
+      const going = current.find((item) => item.id === id);
+      if (going) {
+        undoable.current = { kind: "activity", activity: going };
+        setLastRemoved({ title: going.title, at: Date.now() });
+      }
+      return current.filter((item) => item.id !== id);
+    });
   }, []);
 
-  const removeOccurrence = useCallback((id: string, dateKey: string) => {
+  const undoRemove = useCallback(() => {
+    const entry = undoable.current;
+    undoable.current = null;
+    setLastRemoved(null);
+    if (!entry) return;
+
+    if (entry.kind === "activity") {
+      setActivities((current) =>
+        current.some((item) => item.id === entry.activity.id)
+          ? current
+          : [...current, entry.activity],
+      );
+      return;
+    }
+    // Eén dag terugzetten betekent: de uitzondering weer weghalen.
     setActivities((current) =>
       current.map((item) =>
-        item.id === id && !item.exceptions.includes(dateKey)
-          ? { ...item, exceptions: [...item.exceptions, dateKey], updatedAt: new Date().toISOString() }
+        item.id === entry.id
+          ? { ...item, exceptions: item.exceptions.filter((day) => day !== entry.date) }
           : item,
       ),
     );
+  }, []);
+
+  const forgetRemoved = useCallback(() => {
+    undoable.current = null;
+    setLastRemoved(null);
+  }, []);
+
+  const removeOccurrence = useCallback((id: string, dateKey: string) => {
+    setActivities((current) => {
+      const series = current.find((item) => item.id === id);
+      if (series && !series.exceptions.includes(dateKey)) {
+        undoable.current = { kind: "occurrence", id, date: dateKey };
+        setLastRemoved({ title: series.title, at: Date.now() });
+      }
+      return current.map((item) =>
+        item.id === id && !item.exceptions.includes(dateKey)
+          ? {
+              ...item,
+              exceptions: [...item.exceptions, dateKey],
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      );
+    });
   }, []);
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
@@ -749,6 +810,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateActivity,
       removeActivity,
       removeOccurrence,
+      lastRemoved,
+      undoRemove,
+      forgetRemoved,
       updateSettings,
       rememberPlace,
       renamePlace,
@@ -783,6 +847,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateActivity,
       removeActivity,
       removeOccurrence,
+      lastRemoved,
+      undoRemove,
+      forgetRemoved,
       updateSettings,
       rememberPlace,
       renamePlace,

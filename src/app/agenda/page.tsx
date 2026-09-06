@@ -22,6 +22,7 @@ import { MonthGrid } from "@/components/MonthGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { EmptyState, Spinner } from "@/components/ui";
 import { useT } from "@/hooks/useLanguage";
+import { useSwipe } from "@/hooks/useSwipe";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 type View = "vandaag" | "morgen" | "week" | "maand";
@@ -73,6 +74,12 @@ export default function AgendaPage() {
       if (view === "maand") setMonth((current) => addMonthsToKey(current, delta));
     },
     [view],
+  );
+
+  /** Vegen bladert door de weken of maanden, net als in andere agenda's. */
+  const swipe = useSwipe(
+    () => step(-1),
+    () => step(1),
   );
 
   /**
@@ -218,7 +225,7 @@ export default function AgendaPage() {
       ) : view === "vandaag" || view === "morgen" ? (
         <DayList dateKey={view === "vandaag" ? today : addDaysToKey(today, 1)} now={now} />
       ) : view === "week" ? (
-        <div>
+        <div {...swipe}>
           <PeriodNav
             label={formatRangeLabel(weekStart, addDaysToKey(weekStart, 6))}
             note={t("agenda.weekNumber", { number: isoWeekNumber(weekStart) })}
@@ -269,7 +276,7 @@ export default function AgendaPage() {
           )}
         </div>
       ) : (
-        <div>
+        <div {...swipe}>
           <PeriodNav
             label={formatMonthLabel(month)}
             onPrevious={() => setMonth(addMonthsToKey(month, -1))}

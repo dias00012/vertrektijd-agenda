@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { IntroContext } from "@/hooks/useIntro";
 import { ActivityForm } from "./ActivityForm";
 import { Onboarding } from "./Onboarding";
+import { UndoBar } from "./UndoBar";
 import { Tour } from "./Tour";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
@@ -172,6 +173,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </div>
+
+      <UndoBar />
 
       <Onboarding
         onStartTour={() => setTourOpen(true)}

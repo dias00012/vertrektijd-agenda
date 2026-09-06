@@ -102,6 +102,11 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
   );
   const [submitted, setSubmitted] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"idle" | "choose" | "confirm">("idle");
+  /**
+   * Bezig met dupliceren: het formulier staat nog open op dezelfde gegevens,
+   * maar slaat straks een nieuwe activiteit op in plaats van deze bij te werken.
+   */
+  const [duplicating, setDuplicating] = useState(false);
 
   // Eigen activiteitstype maken (naam + emoji van je eigen toetsenbord).
   const [creatingType, setCreatingType] = useState(false);
@@ -131,7 +136,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
 
   const category = categoryFor(draft.category);
   const accent = activityColor(draft, category);
-  const isEdit = Boolean(activity);
+  // Tijdens dupliceren gedraagt het formulier zich als "toevoegen": geen
+  // verwijderknop, en opslaan maakt een nieuwe activiteit.
+  const isEdit = Boolean(activity) && !duplicating;
   const repeats = draft.recurrence !== null;
   // Alleen zinvol als de opgeslagen activiteit al een reeks is.
   const editingSeries = Boolean(activity?.recurrence);
@@ -255,8 +262,8 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     if (payload.location && remember && !alreadyDefault) {
       rememberPlace(payload.location, payload.category);
     }
-    if (activity) updateActivity(activity.id, payload);
-    else addActivity(payload);
+    if (activity && !duplicating) updateActivity(activity.id, payload);
+    else addActivity({ ...payload, source: null });
     onClose();
   }
 
@@ -770,24 +777,39 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
           ) : (
             <div className="flex items-center gap-2">
               {isEdit ? (
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={() => {
-                    if (editingSeries) setDeleteMode("choose");
-                    else if (deleteMode === "confirm") deleteSeries();
-                    else setDeleteMode("confirm");
-                  }}
-                >
-                  {deleteMode === "confirm" ? t("form.confirmDelete") : t("common.delete")}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => {
+                      if (editingSeries) setDeleteMode("choose");
+                      else if (deleteMode === "confirm") deleteSeries();
+                      else setDeleteMode("confirm");
+                    }}
+                  >
+                    {deleteMode === "confirm" ? t("form.confirmDelete") : t("common.delete")}
+                  </button>
+                  {/* Hetzelfde nog een keer, met een andere dag of tijd. Het
+                      formulier blijft open zodat je meteen kunt aanpassen. */}
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => {
+                      setDuplicating(true);
+                      setDeleteMode("idle");
+                      patch({ title: t("form.copyOf", { title: draft.title }) });
+                    }}
+                  >
+                    {t("form.duplicate")}
+                  </button>
+                </>
               ) : null}
               <div className="ml-auto flex gap-2">
                 <button type="button" className="btn btn-ghost" onClick={onClose}>
                   {t("common.cancel")}
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {isEdit ? t("common.save") : t("common.add")}
+                  {duplicating ? t("form.saveCopy") : isEdit ? t("common.save") : t("common.add")}
                 </button>
               </div>
             </div>
