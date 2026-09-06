@@ -16,12 +16,14 @@ import { translate, type TranslationKey } from "@/lib/i18n/dictionary";
 import {
   DEFAULT_SETTINGS,
   loadActivities,
+  loadDeletions,
   loadExams,
   loadOwner,
   loadSettings,
   loadTasks,
   saveOwner,
   saveActivities,
+  saveDeletions,
   saveExams,
   saveSettings,
   saveTasks,
@@ -39,7 +41,7 @@ import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categor
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabase } from "@/lib/supabase";
-import { mergePayload, pullData, pushData } from "@/lib/sync";
+import { mergePayload, pullData, pushData, type Deletion } from "@/lib/sync";
 import type {
   Activity,
   ActivityDraft,
@@ -193,6 +195,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  // Wat je weggooide, zodat het niet terugkomt bij de eerstvolgende sync.
+  const [deletions, setDeletions] = useState<Deletion[]>([]);
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   const { user } = useAuth();
@@ -211,6 +215,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setActivities(loadActivities());
+    setDeletions(loadDeletions());
     setSettings(loadSettings());
     setTasks(loadTasks());
     setExams(loadExams());
@@ -220,6 +225,10 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydrated) saveActivities(activities);
   }, [activities, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveDeletions(deletions);
+  }, [deletions, hydrated]);
 
   useEffect(() => {
     if (hydrated) saveSettings(settings);
@@ -450,6 +459,17 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   >(null);
   const [lastRemoved, setLastRemoved] = useState<{ title: string; at: number } | null>(null);
 
+  /** Een grafsteen erbij, zodat de cloud dit niet terugstuurt. */
+  const recordDeletion = useCallback((id: string) => {
+    const at = new Date().toISOString();
+    setDeletions((current) => [...current.filter((entry) => entry.id !== id), { id, at }]);
+  }, []);
+
+  /** En weer weg bij ongedaan maken; anders wist de sync het teruggehaalde. */
+  const forgetDeletion = useCallback((id: string) => {
+    setDeletions((current) => current.filter((entry) => entry.id !== id));
+  }, []);
+
   const removeActivity = useCallback((id: string) => {
     setActivities((current) => {
       const going = current.find((item) => item.id === id);
@@ -459,7 +479,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       }
       return current.filter((item) => item.id !== id);
     });
-  }, []);
+    recordDeletion(id);
+  }, [recordDeletion]);
 
   const undoRemove = useCallback(() => {
     const entry = undoable.current;
@@ -473,6 +494,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           ? current
           : [...current, entry.activity],
       );
+      // De grafsteen moet mee weg, anders wist de eerstvolgende sync precies
+      // wat je net hebt teruggehaald: hij is jonger dan de activiteit zelf.
+      forgetDeletion(entry.activity.id);
       return;
     }
     // Eén dag terugzetten betekent: de uitzondering weer weghalen.
@@ -483,7 +507,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           : item,
       ),
     );
-  }, []);
+  }, [forgetDeletion]);
 
   const forgetRemoved = useCallback(() => {
     undoable.current = null;
@@ -621,9 +645,13 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const removeTask = useCallback((id: string) => {
-    setTasks((current) => current.filter((task) => task.id !== id));
-  }, []);
+  const removeTask = useCallback(
+    (id: string) => {
+      setTasks((current) => current.filter((task) => task.id !== id));
+      recordDeletion(id);
+    },
+    [recordDeletion],
+  );
 
   const setTaskStatus = useCallback((id: string, status: Task["status"]) => {
     setTasks((current) =>
@@ -659,9 +687,13 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const removeExam = useCallback((id: string) => {
-    setExams((current) => current.filter((exam) => exam.id !== id));
-  }, []);
+  const removeExam = useCallback(
+    (id: string) => {
+      setExams((current) => current.filter((exam) => exam.id !== id));
+      recordDeletion(id);
+    },
+    [recordDeletion],
+  );
 
   const setExamStatus = useCallback((id: string, status: Exam["status"]) => {
     setExams((current) =>
@@ -757,7 +789,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // en niets wordt overschreven. Tenzij het lokale spul van een ander
         // account is: dan is de cloud de waarheid en blijft de agenda van die
         // ander waar hij hoort, in zijn eigen account.
-        const local = { settings, activities, tasks, exams };
+        const local = { settings, activities, tasks, exams, deletions };
         const merged = someoneElses
           ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
           : remote
@@ -767,6 +799,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         setActivities(merged.activities);
         setTasks(merged.tasks);
         setExams(merged.exams);
+        setDeletions(merged.deletions ?? []);
         if (someoneElses) {
           // Ook de instellingen horen bij die ander. Zonder deze regel bleef
           // zijn thuisadres staan onder het account van de nieuwe gebruiker.
@@ -809,7 +842,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     pushTimer.current = setTimeout(async () => {
       setSyncStatus("syncing");
       try {
-        await pushData(supabase, user.id, { settings, activities, tasks, exams });
+        await pushData(supabase, user.id, { settings, activities, tasks, exams, deletions });
         setLastSyncedAt(new Date().toISOString());
         setSyncStatus("idle");
         setSyncError(null);
@@ -822,7 +855,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     return () => {
       if (pushTimer.current) clearTimeout(pushTimer.current);
     };
-  }, [supabase, user, hydrated, activities, tasks, exams, settings]);
+  }, [supabase, user, hydrated, activities, tasks, exams, settings, deletions]);
 
   const value = useMemo<AgendaContextValue>(
     () => ({

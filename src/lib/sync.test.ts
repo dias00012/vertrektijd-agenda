@@ -122,3 +122,91 @@ describe("mergePayload", () => {
     expect(merged.settings?.categoryPlaces).toEqual({ school: "p1", gym: "p2" });
   });
 });
+
+describe("mergePayload met grafstenen", () => {
+  const NU = "2026-09-07T12:00:00.000Z";
+
+  function payload(patch: Partial<SyncPayload> = {}): SyncPayload {
+    return { settings: null, activities: [], tasks: [], exams: [], ...patch };
+  }
+
+  it("laat iets dat je weggooide niet terugkomen van het andere apparaat", () => {
+    const weg = act("a1", "College", "2026-09-01T10:00:00.000Z");
+
+    const merged = mergePayload(
+      payload({ deletions: [{ id: "a1", at: "2026-09-02T10:00:00.000Z" }] }),
+      payload({ activities: [weg] }),
+      NU,
+    );
+
+    expect(merged.activities).toHaveLength(0);
+  });
+
+  it("brengt iets wel terug als het na het weggooien nog is aangepast", () => {
+    // Op het andere apparaat heb je hem daarna nog verzet. Die wijziging is
+    // jonger dan het weggooien, dus die wint: liever iets terug dan iets kwijt.
+    const aangepast = act("a1", "College (verzet)", "2026-09-03T10:00:00.000Z");
+
+    const merged = mergePayload(
+      payload({ deletions: [{ id: "a1", at: "2026-09-02T10:00:00.000Z" }] }),
+      payload({ activities: [aangepast] }),
+      NU,
+    );
+
+    expect(merged.activities).toHaveLength(1);
+    expect(merged.activities[0]?.title).toBe("College (verzet)");
+  });
+
+  it("werkt ook andersom: het andere apparaat gooide weg", () => {
+    const merged = mergePayload(
+      payload({ activities: [act("a1", "College", "2026-09-01T10:00:00.000Z")] }),
+      payload({ deletions: [{ id: "a1", at: "2026-09-02T10:00:00.000Z" }] }),
+      NU,
+    );
+
+    expect(merged.activities).toHaveLength(0);
+  });
+
+  it("houdt de grafstenen van beide kanten bij elkaar", () => {
+    const merged = mergePayload(
+      payload({ deletions: [{ id: "a1", at: "2026-09-02T10:00:00.000Z" }] }),
+      payload({ deletions: [{ id: "a2", at: "2026-09-03T10:00:00.000Z" }] }),
+      NU,
+    );
+
+    expect(merged.deletions?.map((d) => d.id).sort()).toEqual(["a1", "a2"]);
+  });
+
+  it("ruimt grafstenen op die ouder zijn dan een half jaar", () => {
+    const merged = mergePayload(
+      payload({ deletions: [{ id: "oud", at: "2025-01-01T00:00:00.000Z" }] }),
+      payload({ deletions: [{ id: "vers", at: "2026-09-01T00:00:00.000Z" }] }),
+      NU,
+    );
+
+    expect(merged.deletions?.map((d) => d.id)).toEqual(["vers"]);
+  });
+
+  it("raakt niets kwijt zonder grafstenen", () => {
+    const merged = mergePayload(
+      payload({ activities: [act("a1", "College", "2026-09-01T10:00:00.000Z")] }),
+      payload({ activities: [act("a2", "Sport", "2026-09-01T10:00:00.000Z")] }),
+      NU,
+    );
+
+    expect(merged.activities).toHaveLength(2);
+  });
+
+  it("negeert rommel in de grafstenenlijst", () => {
+    const merged = mergePayload(
+      payload({
+        activities: [act("a1", "College", "2026-09-01T10:00:00.000Z")],
+        deletions: [{ id: "", at: "x" }, null as never, { id: "a1" } as never],
+      }),
+      payload(),
+      NU,
+    );
+
+    expect(merged.activities).toHaveLength(1);
+  });
+});

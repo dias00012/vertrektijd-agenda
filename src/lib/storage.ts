@@ -1,6 +1,7 @@
 "use client";
 
 import type { Activity, CalendarSubscription, Exam, Settings, Task } from "./types";
+import type { Deletion } from "./sync";
 
 /**
  * Persistente opslag. Voor de MVP is dit localStorage: de app werkt daarmee
@@ -20,6 +21,12 @@ const EXAMS_KEY = "agenda.exams.v1";
  * app dat de gegevens van een ander zijn en neemt hij de cloud als waarheid.
  */
 const OWNER_KEY = "agenda.owner.v1";
+/**
+ * Wat je hebt weggegooid. Zonder dit spoor is samenvoegen met de cloud een
+ * unie en komt alles wat je weggooide terug zodra een ander apparaat het nog
+ * kent.
+ */
+const DELETIONS_KEY = "agenda.deletions.v1";
 
 /**
  * Schema-versie van de opgeslagen data. Wordt meegegeven bij export en gebruikt
@@ -71,6 +78,19 @@ export function loadOwner(): string | null {
 
 export function saveOwner(userId: string | null): void {
   write(OWNER_KEY, userId);
+}
+
+export function loadDeletions(): Deletion[] {
+  const stored = read<Deletion[]>(DELETIONS_KEY, []);
+  if (!Array.isArray(stored)) return [];
+  return stored.filter(
+    (item): item is Deletion =>
+      !!item && typeof item.id === "string" && typeof item.at === "string",
+  );
+}
+
+export function saveDeletions(deletions: Deletion[]): void {
+  write(DELETIONS_KEY, deletions);
 }
 
 export function loadActivities(): Activity[] {
