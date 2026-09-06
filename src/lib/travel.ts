@@ -204,12 +204,15 @@ export function computeDeparture(
   const startMinutes = timeToMinutes(activity.startTime);
 
   if (activity.travel.plannedDeparture) {
-    const clockMinutes = localMinutes(activity.travel.plannedDeparture);
-    // Vertrek later op de klok dan de starttijd betekent: de dag ervoor. Dat
-    // tellen we van de kloktijd af, zodat `minutes` net als bij de rekensom
-    // hieronder negatief is bij een vertrek voor middernacht. Zonder dat
-    // verschil zag `departureDateTime` de avond ervoor aan voor de avond erna.
-    const previousDay = clockMinutes > startMinutes;
+    const departure = new Date(activity.travel.plannedDeparture);
+    const clockMinutes = departure.getHours() * 60 + departure.getMinutes();
+    // Uit de datum van de rit zelf, niet uit een vergelijking van kloktijden.
+    // Anders geldt elke rit die later vertrekt dan de activiteit begint als
+    // "de dag ervoor" — en dat gebeurt echt, want als er niets op tijd rijdt
+    // toont de app de eerstvolgende rit daarna. Die verdween dan uit de dag.
+    const previousDay = toDateKey(departure) < activity.date;
+    // Bij een vertrek de dag ervoor telt `minutes` negatief door, net als bij
+    // de rekensom hieronder; daar rekent `departureDateTime` mee.
     const minutes = previousDay ? clockMinutes - MINUTES_PER_DAY : clockMinutes;
     return {
       time: minutesToTime(minutes),

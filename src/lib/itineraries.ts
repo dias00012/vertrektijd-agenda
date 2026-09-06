@@ -133,33 +133,17 @@ function dominates(a: ItineraryLike, b: ItineraryLike): boolean {
 }
 
 /**
- * Hoeveel langer dan de snelste rit een optie mag duren voordat hij uit de
- * lijst valt. De nachttrein die om 01:00 vertrekt en pas om 05:28 aankomt is
- * formeel de vroegste aankomst, maar niemand wacht vier uur op een station:
- * als optie naast een rit van 57 minuten is het geen keuze maar ruis.
- */
-const MAX_DURATION_FACTOR = 2;
-
-/** Ritten die veel langer duren dan de snelste zijn geen echte keuze. */
-function withoutDetours<T extends ItineraryLike>(items: T[]): T[] {
-  if (items.length < 2) return items;
-  const fastest = items.reduce(
-    (shortest, item) => Math.min(shortest, item.duration as number),
-    Infinity,
-  );
-  const filtered = items.filter(
-    (item) => (item.duration as number) <= fastest * MAX_DURATION_FACTOR,
-  );
-  // Nooit alles weggooien: liever een omweg tonen dan een lege lijst.
-  return filtered.length > 0 ? filtered : items;
-}
-
-/**
- * De lijst voor de reisplanner: onbruikbare, overbodige en veel te lange
- * opties eruit, en op vertrektijd gesorteerd zoals op een vertrekbord.
+ * De lijst voor de reisplanner: onbruikbare en overbodige opties eruit, en op
+ * vertrektijd gesorteerd zoals op een vertrekbord.
+ *
+ * Bewust geen grens op reisduur. Die stond er even, om een nachtrit van vier
+ * uur weg te houden, maar reisduur zegt niets over wanneer je aankomt: een
+ * langere rit die nu vertrekt kan je eerder op je bestemming zetten dan een
+ * korte rit een uur later. Zo'n rit weggooien is erger dan een lange tonen —
+ * en die nachtrit is, als hij als eerste aankomt, gewoon een echte optie.
  */
 export function tidyItineraries<T extends ItineraryLike>(items: readonly T[]): T[] {
-  const usable = withoutDetours(items.filter(isUsable));
+  const usable = items.filter(isUsable);
   return usable
     .filter((item) => !usable.some((other) => dominates(other, item)))
     .sort(

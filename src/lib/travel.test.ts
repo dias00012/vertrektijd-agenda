@@ -65,6 +65,48 @@ function activity(patch: Partial<ActivityOccurrence> = {}): ActivityOccurrence {
   } as ActivityOccurrence;
 }
 
+describe("computeDeparture bij een rit die de starttijd niet haalt", () => {
+  it("houdt de vertrektijd op de dag zelf staan", () => {
+    // Zondagse bijbaan om 09:00 op een slecht bereikbare plek: er rijdt niets
+    // dat op tijd aankomt, de eerste bus gaat pas om 09:32. Die vertrektijd
+    // hoort gewoon op de dag zelf te staan, niet als "dag ervoor".
+    const result = computeDeparture(
+      activity({
+        startTime: "09:00",
+        endTime: "14:00",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 62,
+          plannedDeparture: new Date(2026, 8, 7, 9, 32).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(result?.time).toBe("09:32");
+    expect(result?.previousDay).toBe(false);
+    expect(result?.minutes).toBe(9 * 60 + 32);
+  });
+
+  it("zet hem wel op de dag ervoor als de rit echt de vorige dag vertrekt", () => {
+    const result = computeDeparture(
+      activity({
+        startTime: "00:30",
+        endTime: "04:00",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 34,
+          plannedDeparture: new Date(2026, 8, 6, 23, 50).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(result?.time).toBe("23:50");
+    expect(result?.previousDay).toBe(true);
+  });
+});
+
 describe("departureDateTime", () => {
   it("zet een gewone vertrektijd op dezelfde dag", () => {
     const moment = departureDateTime(activity({ travel: travel() }), settings());

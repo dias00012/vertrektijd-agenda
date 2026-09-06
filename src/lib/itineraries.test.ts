@@ -143,26 +143,31 @@ describe("tidyItineraries", () => {
     expect(list).toHaveLength(2);
   });
 
-  it("gooit de nachtrit weg die vier uur duurt naast ritten van een uur", () => {
+  it("houdt een langere rit die je juist het eerst op je bestemming zet", () => {
+    // De bus doet er 22 minuten over maar is er om 08:42; de trein duurt 8
+    // minuten en is er pas om 09:00. Op reisduur filteren zou de bus wissen.
     const list = tidyItineraries([
-      option("01:00", "05:28", { transfers: 1 }), // vroegste aankomst, maar 4u28
-      option("06:11", "07:08", { transfers: 1 }),
-      option("06:41", "07:38", { transfers: 1 }),
-    ]);
-
-    expect(list.map((item) => item.startTime)).toEqual([
-      "2026-09-07T06:11:00.000Z",
-      "2026-09-07T06:41:00.000Z",
-    ]);
-  });
-
-  it("houdt een lange rit als er niets korters is", () => {
-    const list = tidyItineraries([
-      option("01:00", "05:28", { transfers: 1 }),
-      option("02:00", "06:40", { transfers: 1 }),
+      option("08:20", "08:42"),
+      option("08:52", "09:00"),
     ]);
 
     expect(list).toHaveLength(2);
+  });
+
+  it("houdt de laatste rit van de dag, hoe lang die ook duurt", () => {
+    const list = tidyItineraries([
+      option("22:05", "22:47"),
+      option("22:35", "23:17"),
+      // Anderhalf uur en pas na middernacht thuis, maar het is de laatste rit.
+      {
+        startTime: "2026-09-07T23:20:00.000Z",
+        endTime: "2026-09-08T00:55:00.000Z",
+        duration: 95 * 60,
+        transfers: 1,
+      },
+    ]);
+
+    expect(list).toHaveLength(3);
   });
 
   it("houdt een even snelle rit met minder overstappen", () => {
