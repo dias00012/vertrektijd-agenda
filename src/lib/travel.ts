@@ -14,7 +14,7 @@ import {
   toDateKey,
   toDateTime,
 } from "./time";
-import { occursOn } from "./recurrence";
+import { occursOn, spansDays } from "./recurrence";
 
 /** Het vervoermiddel voor deze activiteit: eigen keuze, anders de standaard. */
 export function travelModeFor(activity: Activity, settings: Settings): TravelMode {
@@ -50,7 +50,10 @@ const OCCURRENCE_LOOKAHEAD_DAYS = 60;
  * we op die dag, zodat de dienstregeling klopt.
  */
 export function nextOccurrenceDate(activity: Activity, now: Date = new Date()): string {
-  if (!activity.recurrence) return activity.date;
+  // Eén dag, één antwoord. Maar een reeks valt op meer dagen, en iets met een
+  // einddatum (een stage, een vakantie) ook — zonder dat onderscheid vroeg de
+  // app in oktober nog de dienstregeling van de eerste stagedag in september.
+  if (!activity.recurrence && !spansDays(activity)) return activity.date;
 
   const today = toDateKey(now);
   for (let offset = 0; offset <= OCCURRENCE_LOOKAHEAD_DAYS; offset += 1) {

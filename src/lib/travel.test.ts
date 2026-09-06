@@ -256,6 +256,28 @@ describe("computeReturn", () => {
 });
 
 describe("nextOccurrenceDate", () => {
+  it("pakt bij iets dat meer dagen duurt de dag van vandaag", () => {
+    // Stage van 1 september t/m 19 december: op 15 oktober wil je de
+    // dienstregeling van 15 oktober, niet die van anderhalve maand geleden.
+    const stage = activity({
+      date: "2026-09-01",
+      endDate: "2026-12-19",
+      recurrence: null,
+    });
+
+    expect(nextOccurrenceDate(stage, new Date(2026, 9, 15, 8, 0))).toBe("2026-10-15");
+  });
+
+  it("houdt bij zoiets de eerste dag aan zolang die nog moet komen", () => {
+    const stage = activity({
+      date: "2026-09-01",
+      endDate: "2026-12-19",
+      recurrence: null,
+    });
+
+    expect(nextOccurrenceDate(stage, new Date(2026, 7, 20, 8, 0))).toBe("2026-09-01");
+  });
+
   it("geeft bij een losse activiteit gewoon zijn eigen datum", () => {
     expect(nextOccurrenceDate(activity(), new Date(2026, 8, 1))).toBe("2026-09-07");
   });

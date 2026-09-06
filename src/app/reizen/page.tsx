@@ -51,6 +51,8 @@ export default function TravelPlannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  // Losstaand van `error`: het einde van de dienstregeling is geen storing.
+  const [notice, setNotice] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
 
   const places = hydrated ? placeChoices(settings) : [];
@@ -83,13 +85,14 @@ export default function TravelPlannerPage() {
   }, [hydrated, t]);
 
   const search = useCallback(
-    async (cursor?: string) => {
+    async (cursor?: string, direction: "next" | "previous" = "next") => {
       if (!from || !to) {
         setError(t("travel.needBoth"));
         return;
       }
       setLoading(true);
       setError(null);
+      setNotice(null);
       setSearched(true);
 
       try {
@@ -111,12 +114,23 @@ export default function TravelPlannerPage() {
                 ? "origin"
                 : "none",
         });
-        setJourneys(result.journeys);
         track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
+
+        // Voorbij de laatste rit van de dag geeft de planner een lege pagina
+        // terug. Die niet tonen als "geen verbinding" en vooral: de lijst die
+        // er staat laten staan, zodat je niet opnieuw hoeft te zoeken.
+        if (cursor && result.journeys.length === 0) {
+          setNotice(t(direction === "previous" ? "travel.noEarlier" : "travel.noLater"));
+          return;
+        }
+        setJourneys(result.journeys);
       } catch (err) {
-        setJourneys([]);
-        setCursors({});
+        // Mislukt het bladeren, dan blijft staan wat je al had.
+        if (!cursor) {
+          setJourneys([]);
+          setCursors({});
+        }
         setError(err instanceof Error ? err.message : t("travel.failed"));
       } finally {
         setLoading(false);
@@ -280,7 +294,7 @@ export default function TravelPlannerPage() {
             <button
               type="button"
               className="btn btn-ghost mb-2.5 w-full text-xs"
-              onClick={() => void search(cursors.previous)}
+              onClick={() => void search(cursors.previous, "previous")}
               disabled={loading}
             >
               &#8593; {t("travel.earlier")}
@@ -306,6 +320,12 @@ export default function TravelPlannerPage() {
             >
               &#8595; {t("travel.later")}
             </button>
+          ) : null}
+
+          {notice ? (
+            <p className="mt-2.5 text-center text-xs" style={{ color: "var(--muted)" }}>
+              {notice}
+            </p>
           ) : null}
         </section>
       ) : searched && !error ? (

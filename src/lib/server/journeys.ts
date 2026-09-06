@@ -62,6 +62,17 @@ export async function planJourneys(
   const itineraries = tidyItineraries(found);
 
   if (itineraries.length === 0) {
+    // Bij bladeren is een lege pagina geen fout maar het einde van de
+    // dienstregeling. Een fout zou de client de hele lijst en beide cursors
+    // laten weggooien, en dan sta je na drie keer "later" met een leeg scherm
+    // dat je niet eens terug kunt bladeren.
+    if (search.cursor) {
+      return {
+        journeys: [],
+        previousCursor: data.previousPageCursor,
+        nextCursor: data.nextPageCursor,
+      };
+    }
     throw new ProviderError("api.noConnection", 422);
   }
 
