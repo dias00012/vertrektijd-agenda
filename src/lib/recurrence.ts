@@ -53,6 +53,12 @@ export function sortWeekdays(days: number[]): number[] {
 
 /** De laatste dag van een activiteit; gelijk aan de eerste bij één dag. */
 export function lastDayOf(activity: Activity): string {
+  // Een herhaling en een einddatum sluiten elkaar uit: bij een reeks bepaalt
+  // `until` waar hij ophoudt, niet `endDate`. Bleef er een oude einddatum
+  // staan (het formulier verbergt het veld maar wiste hem niet), dan telde de
+  // app die dagen alsnog mee en stond er "dag 8 van 5" op de kaart.
+  if (activity.recurrence) return activity.date;
+
   const end = activity.endDate;
   return end && end > activity.date ? end : activity.date;
 }

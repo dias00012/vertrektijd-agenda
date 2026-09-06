@@ -634,7 +634,14 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                 className="h-5 w-5 accent-[var(--accent)]"
                 checked={repeats}
                 onChange={(event) =>
-                  patch({ recurrence: event.target.checked ? defaultRecurrence(draft.date) : null })
+                  // Einddatum meteen wissen: een reeks houdt op bij `until`,
+                  // niet bij een einddatum. Bleef die staan (het veld wordt
+                  // alleen verborgen), dan telde de app die dagen alsnog mee.
+                  patch(
+                    event.target.checked
+                      ? { recurrence: defaultRecurrence(draft.date), endDate: null }
+                      : { recurrence: null },
+                  )
                 }
               />
             </label>

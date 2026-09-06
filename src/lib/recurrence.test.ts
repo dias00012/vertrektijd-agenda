@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   describeRecurrence,
+  lastDayOf,
   occurrencesOnDate,
   occursOn,
   shiftRecurrence,
+  spansDays,
   toOccurrence,
   sortWeekdays,
 } from "./recurrence";
@@ -288,5 +290,35 @@ describe("meerdaagse activiteiten", () => {
 
   it("geeft een activiteit van één dag geen reeks-informatie", () => {
     expect(toOccurrence(activity(), "2026-09-07").span).toBeNull();
+  });
+});
+
+describe("lastDayOf bij een reeks met een oude einddatum", () => {
+  it("negeert de einddatum zodra er een herhaling is", () => {
+    // Het formulier verbergt het einddatum-veld bij een herhaling maar wiste
+    // hem niet, dus bleef er een oude waarde staan. Die telde alsnog mee:
+    // de kaart toonde "dag 8 van 5", en dagen 2 t/m 5 van de oorspronkelijke
+    // werkweek verdwenen zonder melding.
+    const werkweek = activity({
+      date: "2026-10-19",
+      endDate: "2026-10-23",
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+
+    expect(lastDayOf(werkweek)).toBe("2026-10-19");
+    expect(spansDays(werkweek)).toBe(false);
+    expect(toOccurrence(werkweek, "2026-10-26").span).toBeNull();
+  });
+
+  it("laat een echte meerdaagse activiteit met rust", () => {
+    const vakantie = activity({
+      date: "2026-10-19",
+      endDate: "2026-10-23",
+      recurrence: null,
+    });
+
+    expect(lastDayOf(vakantie)).toBe("2026-10-23");
+    expect(spansDays(vakantie)).toBe(true);
+    expect(toOccurrence(vakantie, "2026-10-21").span).toMatchObject({ index: 2, total: 5 });
   });
 });
