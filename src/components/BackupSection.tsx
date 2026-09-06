@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
+import { getLanguage } from "@/lib/i18n/locale";
+import { translate } from "@/lib/i18n/dictionary";
 import { useAgenda } from "@/hooks/useAgenda";
 import { parseBackup, type ImportMode, type ImportSummary } from "@/lib/backup";
 
@@ -11,6 +14,7 @@ import { parseBackup, type ImportMode, type ImportSummary } from "@/lib/backup";
  */
 export function BackupSection() {
   const { exportData, importData } = useAgenda();
+  const t = useT();
   const fileInput = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<ImportMode>("merge");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
@@ -42,13 +46,13 @@ export function BackupSection() {
     try {
       text = await file.text();
     } catch {
-      setError("Kon het bestand niet lezen.");
+      setError(t("backup.readFailed"));
       return;
     }
 
     const parsed = parseBackup(text);
     if (!parsed.ok || !parsed.data) {
-      setError(parsed.error ?? "Het bestand kon niet worden ingelezen.");
+      setError(parsed.error ?? t("backup.parseFailed"));
       return;
     }
 
@@ -57,25 +61,23 @@ export function BackupSection() {
 
   return (
     <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128260; Back-up &amp; synchronisatie</h2>
+      <h2 className="text-base font-semibold">&#128260; {t("backup.title")}</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        Exporteer je hele agenda (instellingen, activiteiten, taken en toetsen) als
-        één JSON-bestand, of importeer een bestand van je planner. Zo werken app en planner met
-        precies dezelfde gegevens.
+        {t("backup.body")}
       </p>
 
       <div className="mt-4">
-        <p className="label">Importmodus</p>
+        <p className="label">{t("backup.mode")}</p>
         <div
           className="flex rounded-xl border p-0.5"
           style={{ borderColor: "var(--line)" }}
           role="group"
-          aria-label="Importmodus"
+          aria-label={t("backup.mode")}
         >
           {(
             [
-              { id: "merge", label: "Samenvoegen" },
-              { id: "replace", label: "Vervangen" },
+              { id: "merge", key: "backup.merge" },
+              { id: "replace", key: "backup.replace" },
             ] as const
           ).map((option) => (
             <button
@@ -89,27 +91,27 @@ export function BackupSection() {
                 color: mode === option.id ? "var(--ink)" : "var(--muted)",
               }}
             >
-              {option.label}
+              {t(option.key)}
             </button>
           ))}
         </div>
         <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
           {mode === "merge"
-            ? "Samenvoegen werkt bestaande items met hetzelfde id bij en voegt nieuwe toe."
-            : "Vervangen zet je hele agenda gelijk aan de inhoud van het bestand."}
+            ? t("backup.mergeHint")
+            : t("backup.replaceHint")}
         </p>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" className="btn btn-primary" onClick={handleExport}>
-          &#11015;&#65039; Exporteren
+          &#11015;&#65039; {t("backup.export")}
         </button>
         <button
           type="button"
           className="btn btn-ghost"
           onClick={() => fileInput.current?.click()}
         >
-          &#11014;&#65039; Importeren
+          &#11014;&#65039; {t("backup.import")}
         </button>
         <input
           ref={fileInput}
@@ -129,13 +131,13 @@ export function BackupSection() {
       {summary ? (
         <div className="mt-3 rounded-xl px-3 py-2.5 text-sm" style={{ background: "var(--surface-soft)" }}>
           <p className="font-medium" style={{ color: "var(--accent)" }}>
-            &#10003; Import gelukt ({summary.mode === "replace" ? "vervangen" : "samengevoegd"}).
+            &#10003; {t(summary.mode === "replace" ? "backup.doneReplace" : "backup.doneMerge")}
           </p>
           <ul className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-            <li>{describeCount("activiteiten", summary.activities, summary.mode)}</li>
-            <li>{describeCount("taken", summary.tasks, summary.mode)}</li>
-            <li>{describeCount("toetsen", summary.exams, summary.mode)}</li>
-            {summary.settingsReplaced ? <li>Instellingen bijgewerkt.</li> : null}
+            <li>{describeCount(t("backup.activities"), summary.activities, summary.mode)}</li>
+            <li>{describeCount(t("backup.tasks"), summary.tasks, summary.mode)}</li>
+            <li>{describeCount(t("backup.exams"), summary.exams, summary.mode)}</li>
+            {summary.settingsReplaced ? <li>{t("backup.settingsUpdated")}</li> : null}
           </ul>
         </div>
       ) : null}
@@ -148,6 +150,13 @@ function describeCount(
   count: { added: number; updated: number },
   mode: ImportMode,
 ): string {
-  if (mode === "replace") return `${count.added} ${noun} geladen.`;
-  return `${count.added} ${noun} toegevoegd, ${count.updated} bijgewerkt.`;
+  const language = getLanguage();
+  if (mode === "replace") {
+    return translate(language, "backup.loaded", { count: count.added, noun });
+  }
+  return translate(language, "backup.upserted", {
+    added: count.added,
+    updated: count.updated,
+    noun,
+  });
 }

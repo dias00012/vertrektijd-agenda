@@ -1,4 +1,6 @@
 import { resolveCategory } from "./categories";
+import { getLanguage } from "./i18n/locale";
+import { translate } from "./i18n/dictionary";
 import type { CategoryId, GeoLocation, SavedPlace, Settings } from "./types";
 
 /** Bewaarde locaties, meest recent bewaarde eerst. */
@@ -67,7 +69,7 @@ export function placeChoices(settings: Settings, limit = 6): PlaceChoice[] {
     choices.push({
       id: "home",
       emoji: "\u{1F3E0}",
-      name: "Thuis",
+      name: translate(getLanguage(), "places.home"),
       address: settings.home.label,
       location: settings.home,
     });

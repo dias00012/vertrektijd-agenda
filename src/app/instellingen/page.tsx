@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces } from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
@@ -19,6 +20,7 @@ const MAX_BUFFER_MINUTES = 120;
 /** Instellingen: thuislocatie en veiligheidsmarge. */
 export default function SettingsPage() {
   const { settings, hydrated, updateSettings, activities } = useAgenda();
+  const t = useT();
   const [home, setHome] = useState<GeoLocation | null>(null);
   const [buffer, setBuffer] = useState("10");
   const [mode, setMode] = useState<TravelMode>("car");
@@ -39,12 +41,12 @@ export default function SettingsPage() {
     setSaved(false);
 
     if (!home) {
-      setError("Kies een locatie uit de suggesties, zodat de app het adres kan vinden.");
+      setError(t("settings.needSuggestion"));
       return;
     }
     const parsed = Number(buffer);
     if (!Number.isFinite(parsed) || parsed < 0 || parsed > MAX_BUFFER_MINUTES) {
-      setError(`Vul een marge in tussen 0 en ${MAX_BUFFER_MINUTES} minuten.`);
+      setError(t("settings.bufferRange", { max: MAX_BUFFER_MINUTES }));
       return;
     }
 
@@ -57,9 +59,9 @@ export default function SettingsPage() {
   return (
     <div>
       <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">Instellingen</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Vanaf deze plek worden alle reistijden berekend.
+          {t("settings.subtitle")}
         </p>
       </header>
 
@@ -68,28 +70,28 @@ export default function SettingsPage() {
 
       {!hydrated ? (
         <div className="card mt-4 px-5 py-10 text-center">
-          <Spinner size={18} label="Instellingen laden…" />
+          <Spinner size={18} label={t("settings.loading")} />
         </div>
       ) : (
         <form onSubmit={handleSubmit} noValidate className="card mt-4 space-y-5 px-5 py-5">
           <div>
-            <h2 className="mb-3 text-base font-semibold">&#127968; Mijn thuislocatie</h2>
+            <h2 className="mb-3 text-base font-semibold">&#127968; {t("settings.home")}</h2>
             <LocationInput
-              label="Adres of plaats"
+              label={t("settings.homeLabel")}
               value={home}
               onChange={(value) => {
                 setHome(value);
                 setSaved(false);
               }}
               required
-              placeholder="Bijv. Stationsplein 1, Almere"
-              hint="Typ je adres en kies een van de suggesties."
+              placeholder={t("settings.homePlaceholder")}
+              hint={t("settings.homeHint")}
             />
           </div>
 
           <div>
             <label className="label" htmlFor="buffer">
-              Veiligheidsmarge
+              {t("settings.buffer")}
             </label>
             <div className="flex items-center gap-2">
               <input
@@ -106,16 +108,16 @@ export default function SettingsPage() {
                 }}
               />
               <span className="text-sm" style={{ color: "var(--muted)" }}>
-                minuten extra voor vertrek
+                {t("settings.bufferUnit")}
               </span>
             </div>
             <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-              Vertrektijd = starttijd &minus; reistijd &minus; marge.
+              {t("settings.formula")}
             </p>
           </div>
 
           <fieldset>
-            <legend className="label">Standaard vervoermiddel</legend>
+            <legend className="label">{t("settings.defaultMode")}</legend>
             <div className="grid grid-cols-3 gap-2">
               {travelModes().map((item) => {
                 const active = mode === item.id;
@@ -147,7 +149,7 @@ export default function SettingsPage() {
               })}
             </div>
             <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-              Geldt voor nieuwe activiteiten; per activiteit kun je hiervan afwijken.
+              {t("settings.modeHint")}
             </p>
           </fieldset>
 
@@ -159,17 +161,19 @@ export default function SettingsPage() {
 
           {saved ? (
             <p className="text-sm" style={{ color: "var(--accent)" }} role="status">
-              &#10003; Opgeslagen.
+              &#10003; {t("settings.saved")}
               {activitiesWithLocation > 0
-                ? ` De reistijden van ${activitiesWithLocation} ${
-                    activitiesWithLocation === 1 ? "activiteit" : "activiteiten"
-                  } worden opnieuw berekend.`
+                ? ` ${
+                    activitiesWithLocation === 1
+                      ? t("settings.recalcOne")
+                      : t("settings.recalc", { count: activitiesWithLocation })
+                  }`
                 : ""}
             </p>
           ) : null}
 
           <button type="submit" className="btn btn-primary w-full sm:w-auto">
-            Opslaan
+            {t("common.save")}
           </button>
         </form>
       )}
@@ -181,11 +185,9 @@ export default function SettingsPage() {
       <IntroSection />
 
       <section className="card mt-4 px-5 py-4">
-        <h2 className="text-sm font-semibold">Over de reistijden</h2>
+        <h2 className="text-sm font-semibold">{t("settings.aboutTitle")}</h2>
         <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-          Reistijden worden op de server berekend. Auto en fiets gaan via een routeservice, zonder
-          rekening te houden met actuele drukte. Bij OV komt je vertrektijd uit de echte
-          dienstregeling, inclusief overstappen en vertragingen.
+          {t("settings.aboutBody")}
         </p>
       </section>
     </div>
@@ -198,22 +200,21 @@ export default function SettingsPage() {
  */
 function IntroSection() {
   const intro = useIntro();
+  const t = useT();
   if (!intro) return null;
 
   return (
     <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128075; Uitleg &amp; rondleiding</h2>
+      <h2 className="text-base font-semibold">&#128075; {t("settings.intro.title")}</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        De rondleiding loopt met je langs elk tabblad en legt uit wat je daar ziet. Je
-        blijft gewoon in de app, dus je kijkt naar het echte scherm. De introductie begint bij de
-        instelvragen; je huidige antwoorden staan er al in.
+        {t("settings.intro.body")}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" className="btn btn-primary" onClick={intro.openTour}>
-          &#128506;&#65039; Start de rondleiding
+          &#128506;&#65039; {t("settings.intro.startTour")}
         </button>
         <button type="button" className="btn btn-ghost" onClick={intro.open}>
-          Introductie opnieuw
+          {t("settings.intro.again")}
         </button>
       </div>
     </section>
@@ -223,6 +224,7 @@ function IntroSection() {
 /** Overzicht van bewaarde locaties, met de categorieën die ze als vaste plek gebruiken. */
 function SavedPlaces() {
   const { settings, forgetPlace, renamePlace, categoryFor } = useAgenda();
+  const t = useT();
   const places = sortedPlaces(settings);
   /** De locatie waarvan je op dit moment de naam aanpast. */
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -230,16 +232,14 @@ function SavedPlaces() {
 
   return (
     <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128205; Opgeslagen locaties</h2>
+      <h2 className="text-base font-semibold">&#128205; {t("places.title")}</h2>
       <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-        Locaties die je bij een activiteit bewaart, verschijnen hier onder de naam van waar je
-        heen gaat, niet onder het adres. Met &#9998; geef je ze een eigen naam.
+        {t("places.body")}
       </p>
 
       {places.length === 0 ? (
         <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>
-          Nog geen locaties bewaard. Vink bij een activiteit &ldquo;Onthouden als vaste
-          locatie&rdquo; aan.
+          {t("places.empty")}
         </p>
       ) : (
         <ul className="mt-4 space-y-2">
@@ -265,12 +265,12 @@ function SavedPlaces() {
                         className="field py-1.5 text-sm"
                         value={draftName}
                         autoFocus
-                        placeholder="Bijv. Werk"
-                        aria-label="Naam van deze locatie"
+                        placeholder={t("places.namePlaceholder")}
+                        aria-label={t("places.nameLabel")}
                         onChange={(event) => setDraftName(event.target.value)}
                       />
                       <button type="submit" className="btn btn-primary shrink-0 px-3 py-1.5 text-xs">
-                        Opslaan
+                        {t("common.save")}
                       </button>
                     </form>
                   ) : (
@@ -283,7 +283,7 @@ function SavedPlaces() {
                           setDraftName(place.customName ?? "");
                           setRenaming(place.id);
                         }}
-                        aria-label="Naam aanpassen"
+                        aria-label={t("places.rename")}
                         className="shrink-0 text-xs"
                         style={{ color: "var(--muted)" }}
                       >
@@ -307,14 +307,15 @@ function SavedPlaces() {
                               color: category.color,
                             }}
                           >
-                            Vast voor {category.emoji} {category.label}
+                            {category.emoji}{" "}
+                            {t("places.fixedFor", { category: category.label })}
                           </span>
                         );
                       })}
                     </p>
                   ) : (
                     <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
-                      Alleen als snelkeuze
+                      {t("places.quickOnly")}
                     </p>
                   )}
                 </div>
@@ -322,7 +323,7 @@ function SavedPlaces() {
                 <button
                   type="button"
                   onClick={() => forgetPlace(place.id)}
-                  aria-label={`${placeDisplayName(place, settings)} verwijderen`}
+                  aria-label={t("places.remove", { name: placeDisplayName(place, settings) })}
                   className="shrink-0 rounded-lg px-2 py-1 text-sm"
                   style={{ color: "var(--danger)" }}
                 >

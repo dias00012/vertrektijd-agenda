@@ -5,6 +5,8 @@ import { useAgenda } from "./useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
 import { computeDeparture, departureDateTime } from "@/lib/travel";
 import { todayKey } from "@/lib/time";
+import { getLanguage } from "@/lib/i18n/locale";
+import { translate } from "@/lib/i18n/dictionary";
 
 /**
  * Herinneringen: "over 15 minuten vertrekken".
@@ -56,11 +58,19 @@ export function useReminders(): void {
         setTimeout(() => {
           announced.current.add(key);
           try {
-            new Notification(`Vertrek om ${departure.time}`, {
-              body: `${occurrence.title} begint om ${occurrence.startTime}. Over ${minutesBefore} minuten moet je weg.`,
+            const language = getLanguage();
+            new Notification(
+              translate(language, "reminders.notification.title", { time: departure.time }),
+              {
+              body: translate(language, "reminders.notification.body", {
+                title: occurrence.title,
+                start: occurrence.startTime,
+                count: minutesBefore,
+              }),
               tag: occurrence.occurrenceId,
-              icon: "/icon.svg",
-            });
+              icon: "/icon-192.png",
+              },
+            );
           } catch {
             // Sommige browsers staan een losse Notification alleen via de
             // service worker toe; dan valt de melding stil weg.

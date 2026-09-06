@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 
 const CHOICES = [5, 10, 15, 30];
@@ -12,6 +13,7 @@ const CHOICES = [5, 10, 15, 30];
  */
 export function RemindersSection() {
   const { settings, updateSettings, hydrated } = useAgenda();
+  const t = useT();
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">(
     "unsupported",
   );
@@ -44,20 +46,18 @@ export function RemindersSection() {
 
   return (
     <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128276; Herinneringen</h2>
+      <h2 className="text-base font-semibold">&#128276; {t("reminders.title")}</h2>
       <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        Krijg een melding vlak voordat je moet vertrekken, met de tijd van dat moment,
-        inclusief vertraging.
+        {t("reminders.body")}
       </p>
 
       {permission === "unsupported" ? (
         <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
-          Deze browser ondersteunt geen meldingen.
+          {t("reminders.unsupported")}
         </p>
       ) : permission === "denied" ? (
         <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
-          Je hebt meldingen geblokkeerd voor deze app. Zet ze weer aan in de instellingen van je
-          browser (bij het slotje in de adresbalk) en kom hier terug.
+          {t("reminders.denied")}
         </p>
       ) : (
         <>
@@ -76,7 +76,7 @@ export function RemindersSection() {
                     enabled && minutes === value ? "var(--surface-soft)" : "transparent",
                 }}
               >
-                {value} min
+                {t("reminders.minutes", { count: value })}
               </button>
             ))}
           </div>
@@ -87,16 +87,14 @@ export function RemindersSection() {
               className="btn btn-ghost mt-3"
               onClick={() => updateSettings({ reminderMinutes: null })}
             >
-              Herinneringen uitzetten
+              {t("reminders.off")}
             </button>
           ) : null}
         </>
       )}
 
       <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-        <strong>Let op:</strong> meldingen komen binnen zolang de app open staat, ook op de
-        achtergrond. Sluit je hem helemaal af, dan hoor je niets. Installeer de app op je
-        beginscherm en laat hem draaien voor de beste kans dat je het seintje krijgt.
+        <strong>{t("reminders.noteLabel")}</strong> {t("reminders.note")}
       </p>
     </section>
   );

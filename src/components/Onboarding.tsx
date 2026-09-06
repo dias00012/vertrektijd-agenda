@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { LocationInput } from "./LocationInput";
 import { travelModes } from "@/lib/travelModes";
@@ -44,6 +45,7 @@ export function Onboarding({
   onClose?: () => void;
 }) {
   const { settings, hydrated, updateSettings } = useAgenda();
+  const t = useT();
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -97,7 +99,7 @@ export function Onboarding({
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Welkom bij Vertrektijd"
+      aria-label={t("intro.label")}
     >
       <div className="card animate-sheet-in max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-b-none px-5 py-6 sm:rounded-2xl">
         {/* Voortgang: drie stappen, zodat je weet hoe lang dit duurt. */}
@@ -116,38 +118,36 @@ export function Onboarding({
             <p aria-hidden className="text-3xl">
               🕐
             </p>
-            <h2 className="mt-2 text-xl font-semibold">Je hebt om 09:00 school.</h2>
+            <h2 className="mt-2 text-xl font-semibold">{t("intro.pitch1")}</h2>
             <p className="mt-1 text-xl font-semibold" style={{ color: "var(--accent)" }}>
-              Je moet om 08:23 vertrekken.
+              {t("intro.pitch2")}
             </p>
             <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
-              Dat is het hele idee. Jij zet erin wat je gaat doen en waar; de app rekent uit hoe
-              laat je de deur uit moet, met de auto, de fiets of het OV, inclusief overstappen en
-              vertragingen.
+              {t("intro.body")}
             </p>
             <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
-              Twee vragen en je kunt beginnen.
+              {t("intro.twoQuestions")}
             </p>
           </>
         ) : step === 1 ? (
           <>
-            <h2 className="text-lg font-semibold">Waar vertrek je vandaan?</h2>
+            <h2 className="text-lg font-semibold">{t("intro.whereFrom")}</h2>
             <p className="mt-1 mb-4 text-sm" style={{ color: "var(--muted)" }}>
-              Meestal je huis. Vanaf dit punt worden al je reistijden berekend.
+              {t("intro.whereFromBody")}
             </p>
             <LocationInput
-              label="Thuisadres"
+              label={t("intro.homeAddress")}
               value={home}
               onChange={setHome}
               required
-              placeholder="Straat en huisnummer, of plaats"
+              placeholder={t("intro.homePlaceholder")}
             />
           </>
         ) : (
           <>
-            <h2 className="text-lg font-semibold">Hoe reis je meestal?</h2>
+            <h2 className="text-lg font-semibold">{t("intro.howTravel")}</h2>
             <p className="mt-1 mb-4 text-sm" style={{ color: "var(--muted)" }}>
-              Per activiteit kun je hier altijd van afwijken.
+              {t("intro.howTravelBody")}
             </p>
 
             <div className="grid grid-cols-3 gap-2">
@@ -173,7 +173,7 @@ export function Onboarding({
 
             <div className="mt-4">
               <label className="label" htmlFor="onboard-buffer">
-                Hoeveel minuten wil je speling?
+                {t("intro.buffer")}
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -186,11 +186,11 @@ export function Onboarding({
                   onChange={(event) => setBuffer(event.target.value)}
                 />
                 <span className="shrink-0 text-xs" style={{ color: "var(--muted)" }}>
-                  minuten extra
+                  {t("intro.bufferUnit")}
                 </span>
               </div>
               <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
-                Die tijd wordt van je vertrektijd afgehaald, zodat je niet op het randje aankomt.
+                {t("intro.bufferBody")}
               </p>
             </div>
           </>
@@ -199,7 +199,7 @@ export function Onboarding({
         <div className="mt-6 flex items-center gap-2">
           {step > 0 ? (
             <button type="button" className="btn btn-ghost" onClick={() => setStep(step - 1)}>
-              Terug
+              {t("common.back")}
             </button>
           ) : (
             <button
@@ -208,7 +208,7 @@ export function Onboarding({
               style={{ color: "var(--muted)" }}
               onClick={skip}
             >
-              {reopen ? "Sluiten" : "Overslaan"}
+              {reopen ? t("common.close") : t("common.skip")}
             </button>
           )}
 
@@ -220,11 +220,11 @@ export function Onboarding({
                 onClick={() => setStep(step + 1)}
                 disabled={step === 1 && !home}
               >
-                {step === 0 ? "Beginnen" : "Volgende"}
+                {step === 0 ? t("intro.start") : t("common.next")}
               </button>
             ) : (
               <button type="button" className="btn btn-primary" onClick={() => finish(true)}>
-                Laat de app zien
+                {t("intro.showApp")}
               </button>
             )}
           </div>
@@ -232,7 +232,7 @@ export function Onboarding({
 
         {step === 1 && !home ? (
           <p className="mt-2 text-right text-xs" style={{ color: "var(--muted)" }}>
-            Kies een suggestie uit de lijst om verder te gaan.
+            {t("intro.pickSuggestion")}
           </p>
         ) : null}
         {step === 2 ? (
@@ -242,7 +242,7 @@ export function Onboarding({
             style={{ color: "var(--muted)" }}
             onClick={() => finish(false)}
           >
-            Opslaan en zelf rondkijken, zonder rondleiding
+            {t("intro.saveOnly")}
           </button>
         ) : null}
       </div>
