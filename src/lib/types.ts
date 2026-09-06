@@ -153,8 +153,20 @@ export interface Activity {
   id: string;
   category: CategoryId;
   title: string;
-  /** YYYY-MM-DD */
+  /** YYYY-MM-DD. Bij een activiteit over meer dagen: de eerste dag. */
   date: string;
+  /**
+   * Laatste dag (YYYY-MM-DD), voor iets dat meer dan één dag duurt: een
+   * vakantie, een toetsweek, een weekend weg. Leeg of gelijk aan `date` voor
+   * het gewone geval van één dag.
+   */
+  endDate?: string | null;
+  /**
+   * Duurt de hele dag, zoals een studiedag of een vakantie. Dan zeggen begin-
+   * en eindtijd niets en is er ook geen vertrektijd: er is geen moment om
+   * naartoe te reizen.
+   */
+  allDay?: boolean;
   /** HH:mm */
   startTime: string;
   /** HH:mm */
@@ -201,6 +213,10 @@ export interface ActivityDraft {
   category: CategoryId;
   title: string;
   date: string;
+  /** Laatste dag; leeg voor één dag. */
+  endDate?: string | null;
+  /** Duurt de hele dag; dan tellen de tijden niet mee. */
+  allDay?: boolean;
   startTime: string;
   endTime: string;
   location: GeoLocation | null;
@@ -250,6 +266,12 @@ export interface ActivityOccurrence extends Activity {
   occurrenceId: string;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring: boolean;
+  /**
+   * Hoort deze dag bij iets dat meer dagen duurt, dan staat hier het geheel:
+   * de eerste en laatste dag, en de hoeveelste dag dit is. `null` bij het
+   * gewone geval van één dag.
+   */
+  span: { start: string; end: string; index: number; total: number } | null;
   /** Welke reizen bij deze activiteit horen, gezien de rest van de dag. */
   travelRole: TravelRole;
 }

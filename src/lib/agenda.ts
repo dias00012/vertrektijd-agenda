@@ -19,9 +19,12 @@ import { assignTravelRoles } from "./stays";
  */
 export function activitiesOnDate(activities: Activity[], dateKey: string): ActivityOccurrence[] {
   return assignTravelRoles(
-    occurrencesOnDate(activities, dateKey).sort(
-      (a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime),
-    ),
+    occurrencesOnDate(activities, dateKey).sort((a, b) => {
+      // Wat de hele dag duurt staat bovenaan: dat is de context waarbinnen de
+      // rest van je dag valt, geen moment op de klok.
+      if (Boolean(a.allDay) !== Boolean(b.allDay)) return a.allDay ? -1 : 1;
+      return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+    }),
   );
 }
 
@@ -285,7 +288,9 @@ export function layoutDay(
   settings: Settings,
   dateKey: string,
 ): PositionedActivity[] {
-  const items = activitiesOnDate(activities, dateKey).map((occurrence) => {
+  const items = activitiesOnDate(activities, dateKey)
+    .filter((occurrence) => !occurrence.allDay)
+    .map((occurrence) => {
     const departure = computeDeparture(occurrence, settings);
     const back = computeReturn(occurrence, settings);
     // Reis je door naar de volgende plek, dan loopt het reisblok tot je

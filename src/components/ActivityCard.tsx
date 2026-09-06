@@ -137,7 +137,16 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
               </div>
 
               <p className="mt-0.5 text-sm tabular-nums" style={{ color: "var(--muted)" }}>
-                {activity.startTime} &ndash; {activity.endTime}
+                {activity.allDay ? t("activity.allDay") : `${activity.startTime} – ${activity.endTime}`}
+                {activity.span ? (
+                  <span className="ml-1.5 font-normal" style={{ color: "var(--muted)" }}>
+                    ·{" "}
+                    {t("activity.dayOf", {
+                      index: activity.span.index + 1,
+                      total: activity.span.total,
+                    })}
+                  </span>
+                ) : null}
               </p>
 
               {activity.recurrence ? (

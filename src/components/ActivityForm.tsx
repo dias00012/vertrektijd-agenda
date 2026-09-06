@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { activityColor, activityColors, resolveCategory } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
+import { addDaysToKey, minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { defaultRecurrence, monthDayLabel, sortWeekdays, weekdays } from "@/lib/recurrence";
 import { placeChoices, placeForCategory } from "@/lib/places";
 import { travelModes } from "@/lib/travelModes";
@@ -38,6 +38,7 @@ interface Props {
 interface FormErrors {
   title?: string;
   date?: string;
+  endDate?: string;
   startTime?: string;
   endTime?: string;
   recurrence?: string;
@@ -140,6 +141,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
   // verwijderknop, en opslaan maakt een nieuwe activiteit.
   const isEdit = Boolean(activity) && !duplicating;
   const repeats = draft.recurrence !== null;
+  const allDay = draft.allDay === true;
+  /** Loopt deze activiteit over meer dan één dag? */
+  const multiDay = Boolean(draft.endDate && draft.endDate > draft.date);
   // Alleen zinvol als de opgeslagen activiteit al een reeks is.
   const editingSeries = Boolean(activity?.recurrence);
 
@@ -162,11 +166,15 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     if (!draft.startTime) next.startTime = t("form.needStart");
     if (!draft.endTime) next.endTime = t("form.needEnd");
     if (
+      !draft.allDay &&
       draft.startTime &&
       draft.endTime &&
       timeToMinutes(draft.endTime) <= timeToMinutes(draft.startTime)
     ) {
       next.endTime = t("form.endAfterStart");
+    }
+    if (draft.endDate && draft.endDate < draft.date) {
+      next.endDate = t("form.endDateBeforeStart");
     }
     if (draft.recurrence) {
       // Bij maandelijks tellen de weekdagen niet mee: dan geldt de dag van de
@@ -501,25 +509,80 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
             </div>
           </fieldset>
 
-          <div>
-            <label className="label" htmlFor="activity-date">
-              {repeats ? t("form.startDate") : t("form.date")}
-            </label>
+          {/* Hele dag: dan zeggen tijden niets en is er geen vertrektijd. Een
+              studiedag of een vakantie hoort wel in je agenda, maar je reist er
+              niet naartoe op een moment. */}
+          <label className="flex cursor-pointer items-center justify-between gap-3">
+            <span className="text-sm font-medium">&#128197; {t("form.allDay")}</span>
             <input
-              id="activity-date"
-              type="date"
-              className="field"
-              value={draft.date}
-              aria-invalid={shown.date ? "true" : undefined}
-              onChange={(event) => patch({ date: event.target.value })}
+              type="checkbox"
+              className="h-5 w-5 accent-[var(--accent)]"
+              checked={allDay}
+              onChange={(event) => patch({ allDay: event.target.checked })}
             />
-            {shown.date ? (
-              <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
-                {shown.date}
-              </p>
+          </label>
+
+          <div className={multiDay || allDay ? "grid grid-cols-2 gap-3" : undefined}>
+            <div>
+              <label className="label" htmlFor="activity-date">
+                {repeats ? t("form.startDate") : multiDay || allDay ? t("form.from") : t("form.date")}
+              </label>
+              <input
+                id="activity-date"
+                type="date"
+                className="field"
+                value={draft.date}
+                aria-invalid={shown.date ? "true" : undefined}
+                onChange={(event) => patch({ date: event.target.value })}
+              />
+              {shown.date ? (
+                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
+                  {shown.date}
+                </p>
+              ) : null}
+            </div>
+
+            {/* De einddatum verschijnt zodra hij ergens toe kan dienen. Bij een
+                herhaling niet: "elke week, drie dagen lang" is geen patroon dat
+                deze app kent, en hem stilletjes negeren is erger dan hem
+                weglaten. */}
+            {(multiDay || allDay) && !repeats ? (
+              <div>
+                <label className="label" htmlFor="activity-end-date">
+                  {t("form.until")}
+                </label>
+                <input
+                  id="activity-end-date"
+                  type="date"
+                  className="field"
+                  min={draft.date}
+                  value={draft.endDate ?? draft.date}
+                  aria-invalid={shown.endDate ? "true" : undefined}
+                  onChange={(event) =>
+                    patch({ endDate: event.target.value || null })
+                  }
+                />
+                {shown.endDate ? (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
+                    {shown.endDate}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
 
+          {!multiDay && !allDay && !repeats ? (
+            <button
+              type="button"
+              className="text-xs underline"
+              style={{ color: "var(--muted)" }}
+              onClick={() => patch({ endDate: addDaysToKey(draft.date, 1) })}
+            >
+              {t("form.moreDays")}
+            </button>
+          ) : null}
+
+          {allDay ? null : (
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label" htmlFor="activity-start">
@@ -558,6 +621,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               ) : null}
             </div>
           </div>
+          )}
 
           <fieldset
             className="rounded-2xl border px-3.5 py-3"

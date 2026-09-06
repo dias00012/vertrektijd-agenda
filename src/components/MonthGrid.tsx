@@ -116,9 +116,11 @@ export function MonthGrid({
                         style={{ background: color }}
                       />
                       <span className="truncate">
-                        <span className="tabular-nums" style={{ color: "var(--muted)" }}>
-                          {activity.startTime}
-                        </span>{" "}
+                        {activity.allDay ? null : (
+                          <span className="tabular-nums" style={{ color: "var(--muted)" }}>
+                            {activity.startTime}{" "}
+                          </span>
+                        )}
                         {activity.title}
                       </span>
                     </span>

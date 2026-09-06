@@ -101,7 +101,7 @@ function TimelineRow({
         className="w-14 shrink-0 pt-3 text-right text-sm font-semibold tabular-nums"
         style={{ color: isTravel ? "var(--muted)" : "var(--ink)" }}
       >
-        {entry.time}
+        {entry.activity.allDay && entry.kind === "activity" ? "" : entry.time}
       </span>
 
       <span className="relative flex w-3 shrink-0 justify-center" aria-hidden>
@@ -192,7 +192,9 @@ function TimelineRow({
             ) : null}
           </span>
           <span className="mt-0.5 block text-xs tabular-nums" style={{ color: "var(--muted)" }}>
-            {entry.activity.startTime} &ndash; {entry.activity.endTime}
+            {entry.activity.allDay
+              ? t("activity.allDay")
+              : `${entry.activity.startTime} – ${entry.activity.endTime}`}
             {entry.activity.location ? ` · ${entry.activity.location.label}` : ""}
           </span>
         </span>

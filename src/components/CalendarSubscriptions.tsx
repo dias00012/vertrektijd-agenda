@@ -92,6 +92,8 @@ export function CalendarSubscriptions() {
         category,
         title: event.location ? `${event.title} (${event.location})` : event.title,
         date: event.date,
+        endDate: event.endDate,
+        allDay: event.allDay,
         startTime: event.startTime,
         endTime: event.endTime,
         location,

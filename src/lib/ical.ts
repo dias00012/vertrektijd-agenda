@@ -21,6 +21,10 @@ export interface IcsEvent {
   endTime: string;
   /** Lokaal of zaal zoals het in het rooster staat; puur ter informatie. */
   location: string | null;
+  /** Duurt de hele dag: een vakantiedag, studiedag of mededeling. */
+  allDay: boolean;
+  /** Laatste dag bij iets dat meer dagen duurt; anders gelijk aan `date`. */
+  endDate: string;
 }
 
 interface RawEvent {
@@ -240,15 +244,44 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
 
     const endProp = event.props.get("DTEND");
     const end = endProp ? parseDateTime(endProp.value, endProp.params, zone) : null;
-    // Zonder eindtijd: een uur aannemen. Een hele dag slaan we over; dat is een
-    // vrije dag of een mededeling, geen les waar je naartoe moet.
-    if (start.allDay) continue;
-    const durationMs = end ? end.date.getTime() - start.date.getTime() : 60 * 60_000;
-    if (durationMs <= 0) continue;
 
     const title = unescapeText(event.props.get("SUMMARY")?.value ?? "") || "Les";
     const location = unescapeText(event.props.get("LOCATION")?.value ?? "") || null;
     const uid = event.props.get("UID")?.value.trim() || `${title}-${startProp.value}`;
+
+    // Hele dagen: vakanties, studiedagen, roostervrije weken. Die hebben geen
+    // tijdstip en dus geen vertrektijd, maar horen wel gewoon in je agenda.
+    // In ics is DTEND bij een hele dag exclusief: een vrije dag op de 20e
+    // krijgt DTEND 21, dus die dag telt er niet meer bij.
+    //
+    // Een herhaling nemen we hier niet mee: een terugkerende vrije dag komt in
+    // roosters nauwelijks voor, en de eerste keer staat er in elk geval.
+    if (start.allDay) {
+      // Alleen wat binnen het gevraagde venster valt. Een vakantie die pas
+      // volgend jaar begint hoeft nu niet in je agenda te staan.
+      const spanEndMs = end ? end.date.getTime() : start.date.getTime() + 86_400_000;
+      if (start.date.getTime() > toMs || spanEndMs <= fromMs) continue;
+
+      const from = localParts(start.date, zone);
+      const lastDay = end
+        ? localParts(new Date(end.date.getTime() - 86_400_000), zone).date
+        : from.date;
+      out.push({
+        uid: `${uid}@${from.date}`,
+        title,
+        date: from.date,
+        endDate: lastDay >= from.date ? lastDay : from.date,
+        allDay: true,
+        startTime: "00:00",
+        endTime: "23:59",
+        location,
+      });
+      continue;
+    }
+
+    // Zonder eindtijd: een uur aannemen.
+    const durationMs = end ? end.date.getTime() - start.date.getTime() : 60 * 60_000;
+    if (durationMs <= 0) continue;
 
     for (const occurrence of expand(start.date, event, fromMs, toMs, zone)) {
       if (out.length >= max) break;
@@ -258,6 +291,8 @@ export function parseIcs(text: string, options: ParseOptions): IcsEvent[] {
         uid: `${uid}@${from.date}`,
         title,
         date: from.date,
+        endDate: from.date,
+        allDay: false,
         startTime: from.time,
         // Loopt de les over middernacht, dan kappen we hem op 23:59 af: de
         // agenda werkt per dag en een les die dat doet bestaat niet.

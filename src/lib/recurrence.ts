@@ -1,5 +1,5 @@
 import type { Activity, ActivityOccurrence, Recurrence } from "./types";
-import { parseDateKey, startOfWeekKey } from "./time";
+import { daysBetween, parseDateKey, startOfWeekKey } from "./time";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -51,9 +51,24 @@ export function sortWeekdays(days: number[]): number[] {
   return [...new Set(days)].sort((a, b) => WEEK_ORDER.indexOf(a) - WEEK_ORDER.indexOf(b));
 }
 
+/** De laatste dag van een activiteit; gelijk aan de eerste bij één dag. */
+export function lastDayOf(activity: Activity): string {
+  const end = activity.endDate;
+  return end && end > activity.date ? end : activity.date;
+}
+
+/** Duurt deze activiteit meer dan één dag? */
+export function spansDays(activity: Activity): boolean {
+  return lastDayOf(activity) > activity.date;
+}
+
 /** Valt deze activiteit op de opgegeven dag? */
 export function occursOn(activity: Activity, dateKey: string): boolean {
-  if (!activity.recurrence) return activity.date === dateKey;
+  // Iets dat meer dagen duurt staat op elke dag ertussen, niet alleen op de
+  // eerste. Een vakantie hoort de hele week in je agenda te staan.
+  if (!activity.recurrence) {
+    return dateKey >= activity.date && dateKey <= lastDayOf(activity);
+  }
 
   // Vóór de startdatum of na de einddatum bestaat de reeks niet.
   if (dateKey < activity.date) return false;
@@ -84,11 +99,23 @@ export function occursOn(activity: Activity, dateKey: string): boolean {
  * `assignTravelRoles` de reizen over de eerste en de laatste.
  */
 export function toOccurrence(activity: Activity, dateKey: string): ActivityOccurrence {
+  const end = lastDayOf(activity);
+  const total = daysBetween(activity.date, end) + 1;
+
   return {
     ...activity,
     date: dateKey,
     occurrenceId: `${activity.id}:${dateKey}`,
     recurring: Boolean(activity.recurrence),
+    span:
+      total > 1
+        ? {
+            start: activity.date,
+            end,
+            index: daysBetween(activity.date, dateKey),
+            total,
+          }
+        : null,
     travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null },
   };
 }

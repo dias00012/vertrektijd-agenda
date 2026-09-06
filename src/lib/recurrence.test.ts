@@ -4,6 +4,7 @@ import {
   occurrencesOnDate,
   occursOn,
   shiftRecurrence,
+  toOccurrence,
   sortWeekdays,
 } from "./recurrence";
 import type { Activity, Recurrence } from "./types";
@@ -241,5 +242,51 @@ describe("shiftRecurrence", () => {
   it("laat een maandelijkse reeks met rust: die hangt aan de startdatum", () => {
     const maand: Recurrence = { freq: "monthly", weekdays: [], until: null };
     expect(shiftRecurrence(maand, 3)).toEqual(maand);
+  });
+});
+
+describe("meerdaagse activiteiten", () => {
+  const vakantie = activity({
+    title: "Herfstvakantie",
+    date: "2026-10-19",
+    endDate: "2026-10-23",
+    allDay: true,
+  });
+
+  it("staat op elke dag ertussen, niet alleen op de eerste", () => {
+    expect(occursOn(vakantie, "2026-10-19")).toBe(true);
+    expect(occursOn(vakantie, "2026-10-21")).toBe(true);
+    expect(occursOn(vakantie, "2026-10-23")).toBe(true);
+  });
+
+  it("houdt op na de laatste dag", () => {
+    expect(occursOn(vakantie, "2026-10-18")).toBe(false);
+    expect(occursOn(vakantie, "2026-10-24")).toBe(false);
+  });
+
+  it("laat een gewone activiteit van één dag met rust", () => {
+    const les = activity({ date: "2026-09-07" });
+    expect(occursOn(les, "2026-09-07")).toBe(true);
+    expect(occursOn(les, "2026-09-08")).toBe(false);
+  });
+
+  it("negeert een einddatum die voor de begindatum ligt", () => {
+    const raar = activity({ date: "2026-09-07", endDate: "2026-09-01" });
+    expect(occursOn(raar, "2026-09-07")).toBe(true);
+    expect(occursOn(raar, "2026-09-01")).toBe(false);
+  });
+
+  it("vertelt bij elke dag de hoeveelste het is", () => {
+    const dagen = ["2026-10-19", "2026-10-21", "2026-10-23"].map((d) =>
+      toOccurrence(vakantie, d),
+    );
+    expect(dagen.map((d) => d.span?.index)).toEqual([0, 2, 4]);
+    expect(dagen.map((d) => d.span?.total)).toEqual([5, 5, 5]);
+    expect(dagen[0].span?.start).toBe("2026-10-19");
+    expect(dagen[0].span?.end).toBe("2026-10-23");
+  });
+
+  it("geeft een activiteit van één dag geen reeks-informatie", () => {
+    expect(toOccurrence(activity(), "2026-09-07").span).toBeNull();
   });
 });

@@ -153,7 +153,7 @@ describe("parseIcs", () => {
     expect(events).toHaveLength(0);
   });
 
-  it("laat hele dagen weg: dat is geen les om naartoe te reizen", () => {
+  it("neemt een vakantie over als hele dagen, met de laatste dag erbij", () => {
     const events = parseIcs(
       ics(
         [
@@ -161,13 +161,75 @@ describe("parseIcs", () => {
           "UID:vrij",
           "SUMMARY:Herfstvakantie",
           "DTSTART;VALUE=DATE:20261019",
+          // In ics is DTEND bij een hele dag exclusief: de 24e telt niet mee.
           "DTEND;VALUE=DATE:20261024",
           "END:VEVENT",
         ].join("\r\n"),
       ),
       WINDOW,
     );
+    expect(events).toHaveLength(1);
+    expect(events[0].title).toBe("Herfstvakantie");
+    expect(events[0].allDay).toBe(true);
+    expect(events[0].date).toBe("2026-10-19");
+    expect(events[0].endDate).toBe("2026-10-23");
+  });
+
+  it("neemt een vrije dag van één dag over", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:studiedag",
+          "SUMMARY:Studiedag",
+          "DTSTART;VALUE=DATE:20261019",
+          "DTEND;VALUE=DATE:20261020",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0].allDay).toBe(true);
+    expect(events[0].date).toBe("2026-10-19");
+    expect(events[0].endDate).toBe("2026-10-19");
+  });
+
+  it("laat een hele dag ver buiten het venster staan", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:kerst",
+          "SUMMARY:Kerstvakantie",
+          "DTSTART;VALUE=DATE:20271220",
+          "DTEND;VALUE=DATE:20280104",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
     expect(events).toHaveLength(0);
+  });
+
+  it("houdt een les gewoon een les: niet ineens een hele dag", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:les",
+          "SUMMARY:Wiskunde",
+          "DTSTART;TZID=Europe/Amsterdam:20261019T090000",
+          "DTEND;TZID=Europe/Amsterdam:20261019T100000",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0].allDay).toBe(false);
+    expect(events[0].startTime).toBe("09:00");
+    expect(events[0].endDate).toBe(events[0].date);
   });
 
   it("negeert lessen buiten het gevraagde venster", () => {

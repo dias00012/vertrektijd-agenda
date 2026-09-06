@@ -101,7 +101,10 @@ export function assignTravelRoles(items: ActivityOccurrence[]): ActivityOccurren
   }
 
   for (const item of items) {
-    if (!item.location) continue;
+    // Zonder plek of zonder tijdstip valt er niets te reizen, en het zegt ook
+    // niets over waar je bent: een studiedag in je agenda betekent niet dat je
+    // tussen twee lessen door naar huis ging.
+    if (!item.location || item.allDay) continue;
 
     const previous = group[group.length - 1];
     const fits =

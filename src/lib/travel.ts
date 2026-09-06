@@ -103,6 +103,9 @@ export function travelPlanForDate(
   dateKey: string,
   onward?: GeoLocation | null,
 ): TravelPlan | null {
+  // Iets dat de hele dag duurt heeft geen moment om naartoe te reizen; een
+  // vertrektijd voor "herfstvakantie" zou nergens op slaan.
+  if (activity.allDay) return null;
   if (!settings.home || !activity.location) return null;
 
   const mode = travelModeFor(activity, settings);

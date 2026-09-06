@@ -157,6 +157,8 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
       : "school") as Activity["category"],
     title: str(raw.title, "Activiteit"),
     date: str(raw.date, now.slice(0, 10)),
+    endDate: typeof raw.endDate === "string" ? raw.endDate : null,
+    allDay: raw.allDay === true,
     startTime: str(raw.startTime, "09:00"),
     endTime: str(raw.endTime, "10:00"),
     location: isRecord(raw.location) ? (raw.location as unknown as Activity["location"]) : null,

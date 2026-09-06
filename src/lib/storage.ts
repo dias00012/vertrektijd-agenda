@@ -75,6 +75,8 @@ export function loadActivities(): Activity[] {
       exceptions: Array.isArray(item.exceptions) ? item.exceptions : [],
       returnTravel: item.returnTravel ?? null,
       onwardTravel: item.onwardTravel ?? null,
+      endDate: typeof item.endDate === "string" ? item.endDate : null,
+      allDay: item.allDay === true,
     }));
 }
 

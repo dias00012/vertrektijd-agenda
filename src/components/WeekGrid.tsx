@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
-import { layoutDay, timeRangeFor, type PositionedActivity } from "@/lib/agenda";
+import {
+  activitiesOnDate,
+  layoutDay,
+  timeRangeFor,
+  type PositionedActivity,
+} from "@/lib/agenda";
 import { computeOnward } from "@/lib/travel";
 import {
   addDaysToKey,
@@ -96,7 +101,8 @@ function draftFrom(activity: Activity, overrides: Partial<ActivityDraft>): Activ
  */
 export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
   const dayLabels = weekdayHeadings();
-  const { activities, settings, updateActivity, addActivity, removeOccurrence } = useAgenda();
+  const { activities, settings, updateActivity, addActivity, removeOccurrence, categoryFor } =
+    useAgenda();
   const [editing, setEditing] = useState<ActivityOccurrence | null>(null);
   /** Een gesleepte reeks wacht hier tot je kiest: deze dag of alle dagen. */
   const [asking, setAsking] = useState<{
@@ -157,6 +163,10 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
 
   const dateKeys = calendarWeekKeys(weekStart);
   const days = dateKeys.map((dateKey) => layoutDay(activities, settings, dateKey));
+  // Wat de hele dag duurt staat niet op de tijdas maar in een eigen rij erboven.
+  const allDayDays = dateKeys.map((dateKey) =>
+    activitiesOnDate(activities, dateKey).filter((item) => item.allDay),
+  );
   const range = timeRangeFor(days);
   const totalHeight = ((range.end - range.start) / 60) * HOUR_HEIGHT;
 
@@ -222,6 +232,51 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
               </div>
             );
           })}
+
+          {/* Rij voor wat de hele dag duurt. Vakanties en studiedagen hebben
+              geen plek op de tijdas, maar horen wel boven je week te staan als
+              de context waarbinnen de rest valt. Alleen zichtbaar als er die
+              week iets is. */}
+          {allDayDays.some((items) => items.length > 0) ? (
+            <>
+              <div
+                className="sticky left-0 z-10 border-r border-b px-1 py-1 text-right text-[0.6rem] leading-tight"
+                style={{
+                  background: "var(--surface)",
+                  borderColor: "var(--line)",
+                  color: "var(--muted)",
+                }}
+              >
+                {t("week.allDay")}
+              </div>
+              {dateKeys.map((dateKey, index) => (
+                <div
+                  key={`allday-${dateKey}`}
+                  className="flex flex-col gap-0.5 border-b border-l px-0.5 py-1"
+                  style={{ borderColor: "var(--line)" }}
+                >
+                  {allDayDays[index].map((item) => {
+                    const color = activityColor(item, categoryFor(item.category));
+                    return (
+                      <button
+                        key={item.occurrenceId}
+                        type="button"
+                        onClick={() => setEditing(item)}
+                        title={item.title}
+                        className="truncate rounded px-1 text-left text-[0.6rem] leading-tight font-medium"
+                        style={{
+                          background: `color-mix(in srgb, ${color} 20%, var(--surface))`,
+                          borderLeft: `3px solid ${color}`,
+                        }}
+                      >
+                        {item.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
+          ) : null}
 
           {/* Tijdas */}
           {/* De rand houdt de tijdas gescheiden van de dagen die eronderdoor
