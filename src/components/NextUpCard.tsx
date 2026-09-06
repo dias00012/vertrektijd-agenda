@@ -1,6 +1,7 @@
 "use client";
 
 import { activityColor } from "@/lib/categories";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
@@ -24,6 +25,7 @@ import type { Activity } from "@/lib/types";
  */
 export function NextUpCard({ activity, now }: { activity: Activity; now: Date }) {
   const { settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
+  const t = useT();
   const category = categoryFor(activity.category);
   const color = activityColor(activity, category);
   // De rit van déze dag: bij OV rijdt er morgen een andere trein dan vandaag.
@@ -54,10 +56,10 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
     untilDeparture === null || untilDeparture > COUNTDOWN_HORIZON_MINUTES
       ? null
       : untilDeparture > 0
-        ? `Over ${formatDuration(untilDeparture)} vertrekken`
+        ? t("next.leaveIn", { duration: formatDuration(untilDeparture) })
         : untilDeparture > -5
-          ? "Nu vertrekken"
-          : "Vertrektijd is verstreken";
+          ? t("next.leaveNow")
+          : t("next.leavePassed");
 
   const urgent = untilDeparture !== null && untilDeparture <= 15;
 
@@ -68,14 +70,14 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
         borderColor: `color-mix(in srgb, ${color} 35%, var(--line))`,
         background: `linear-gradient(180deg, color-mix(in srgb, ${color} 9%, var(--surface)), var(--surface))`,
       }}
-      aria-label="Eerstvolgende activiteit"
+      aria-label={t("next.title")}
     >
       <div className="px-5 py-4">
         <p
           className="text-[0.7rem] font-semibold uppercase tracking-wider"
           style={{ color: "var(--muted)" }}
         >
-          Eerstvolgende activiteit
+          {t("next.title")}
         </p>
 
         <div className="mt-2 flex items-start gap-3">
@@ -90,11 +92,11 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
             </p>
             {linkedTask ? (
               <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
-                &#128218; Voor opdracht: {linkedTask.title}
+                &#128218; {t("next.forTask", { title: linkedTask.title })}
               </p>
             ) : linkedExam ? (
               <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
-                &#128221; Leren voor: {linkedExam.title ?? linkedExam.subject}
+                &#128221; {t("next.forExam", { title: linkedExam.title ?? linkedExam.subject })}
               </p>
             ) : null}
             {activity.location ? (
@@ -108,7 +110,7 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
         {activity.location ? (
           <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--line)" }}>
             {calculating ? (
-              <Spinner size={14} label="Reistijd berekenen…" />
+              <Spinner size={14} label={t("activity.calculating")} />
             ) : activity.travelError ? (
               <p className="text-sm" style={{ color: "var(--danger)" }}>
                 &#9888;&#65039; {activity.travelError}
@@ -117,7 +119,7 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
               <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
                 <div>
                   <p className="text-[0.7rem] uppercase tracking-wide" style={{ color: "var(--muted)" }}>
-                    Vertrek om
+                    {t("next.leaveAt")}
                   </p>
                   <p
                     className="text-3xl font-semibold tabular-nums leading-tight"
@@ -127,11 +129,11 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                   </p>
                   {cancelled ? (
                     <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
-                      &#9888;&#65039; rit uitgevallen
+                      &#9888;&#65039; {t("next.cancelledShort")}
                     </p>
                   ) : delay > 0 ? (
                     <p className="text-xs font-semibold" style={{ color: "#f97316" }}>
-                      &#9200; {delay} min later
+                      &#9200; {t("next.later", { count: delay })}
                       {plannedTime ? (
                         <span className="ml-1 font-normal line-through" style={{ color: "var(--muted)" }}>
                           {plannedTime}
@@ -140,7 +142,7 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                     </p>
                   ) : live ? (
                     <p className="text-xs" style={{ color: "#22c55e" }}>
-                      &#9679; op tijd &middot; live
+                      &#9679; {t("next.onTime")} &middot; {t("journey.live")}
                     </p>
                   ) : null}
                 </div>
@@ -148,18 +150,20 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
                   <p className="text-sm" style={{ color: "var(--muted)" }}>
                     {travelModeMeta(shown.travel.mode).emoji}{" "}
                     {formatDuration(shown.travel.durationMinutes)}{" "}
-                    {shown.travel.mode === "car" ? "rijden" : "reizen"}
+                    {t(shown.travel.mode === "car" ? "timeline.drive" : "timeline.travel")}
                     <span className="opacity-70">
                       {shown.travel.mode === "transit"
                         ? ` · ${shown.travel.transfers ?? 0} ${
-                            (shown.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
+                            (shown.travel.transfers ?? 0) === 1
+                              ? t("journey.transfer")
+                              : t("journey.transfers")
                           }`
-                        : ` + ${departure.bufferMinutes} min marge`}
+                        : ` ${t("next.buffer", { count: departure.bufferMinutes })}`}
                     </span>
                   </p>
                   {back ? (
                     <p className="text-sm tabular-nums" style={{ color: "var(--muted)" }}>
-                      &#8617;&#65039; Terug thuis om {back.time}
+                      &#8617;&#65039; {t("next.homeAt", { time: back.time })}
                     </p>
                   ) : null}
                   {countdown ? (
@@ -174,19 +178,20 @@ export function NextUpCard({ activity, now }: { activity: Activity; now: Date })
               </div>
             ) : !settings.home ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Stel je thuislocatie in om de vertrektijd te zien.
+                {t("next.needHome")}
               </p>
             ) : null}
 
             {/* Je eerstvolgende reis staat open: dít is wat je nu wilt weten. */}
             {shown.travel?.legs?.length ? (
-              <JourneyDetails travel={shown.travel} label="🚆 Je reis" defaultOpen />
+              <JourneyDetails travel={shown.travel} label={`🚆 ${t("journey.yours")}`} defaultOpen />
             ) : null}
           </div>
         ) : (
           <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
-            &#9201;&#65039; Begint om <strong style={{ color: "var(--ink)" }}>{activity.startTime}</strong>
-            {linkedTask || linkedExam ? ". Thuis, dus geen reistijd." : ". Geen locatie, dus geen reistijd."}
+            &#9201;&#65039; {t("next.startsAt")}{" "}
+            <strong style={{ color: "var(--ink)" }}>{activity.startTime}</strong>
+            {linkedTask || linkedExam ? t("next.atHome") : t("next.noLocation")}
           </p>
         )}
       </div>

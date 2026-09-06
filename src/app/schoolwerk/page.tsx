@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/hooks/useLanguage";
+import { getLanguage } from "@/lib/i18n/locale";
+import { translate } from "@/lib/i18n/dictionary";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
 import { SchoolworkForm } from "@/components/SchoolworkForm";
@@ -24,6 +27,7 @@ import type { ActivityDraft, Exam, SchoolworkStatus, Task } from "@/lib/types";
 /** Schoolwerk: opdrachten op deadline en toetsen op datum, met status en stappen. */
 export default function SchoolworkPage() {
   const { tasks, exams, hydrated } = useAgenda();
+  const t = useT();
   const now = useNow(60_000);
 
   const [adding, setAdding] = useState(false);
@@ -46,9 +50,9 @@ export default function SchoolworkPage() {
     <div>
       <header className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Schoolwerk</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("schoolwork.title")}</h1>
           <p className="text-sm" style={{ color: "var(--muted)" }}>
-            Je opdrachten en toetsen.
+            {t("schoolwork.subtitle")}
           </p>
         </div>
         <button
@@ -56,34 +60,34 @@ export default function SchoolworkPage() {
           className="btn btn-primary shrink-0 px-3 py-2 text-sm"
           onClick={() => setAdding(true)}
         >
-          + Toevoegen
+          {t("schoolwork.addShort")}
         </button>
       </header>
 
       {!hydrated ? (
         <div className="card px-5 py-10 text-center">
-          <Spinner size={18} label="Schoolwerk laden…" />
+          <Spinner size={18} label={t("schoolwork.loading")} />
         </div>
       ) : tasks.length === 0 && exams.length === 0 ? (
         <EmptyState
           icon="📚"
-          title="Nog geen schoolwerk"
-          description="Voeg zelf een opdracht of toets toe, of importeer een bestand van je planner via Instellingen → Back-up & synchronisatie."
+          title={t("schoolwork.empty.title")}
+          description={t("schoolwork.empty.body")}
           action={
             <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
-              + Opdracht of toets toevoegen
+              {t("schoolwork.empty.action")}
             </button>
           }
         />
       ) : (
         <div className="space-y-8">
-          <section aria-label="Opdrachten">
+          <section aria-label={t("schoolwork.tasks")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              Opdrachten ({sortedTasks.length})
+              {t("schoolwork.tasks")} ({sortedTasks.length})
             </h2>
             {sortedTasks.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Geen opdrachten.
+                {t("schoolwork.noTasks")}
               </p>
             ) : (
               <div className="space-y-2.5">
@@ -100,13 +104,13 @@ export default function SchoolworkPage() {
             )}
           </section>
 
-          <section aria-label="Toetsen">
+          <section aria-label={t("schoolwork.exams")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              Toetsen ({sortedExams.length})
+              {t("schoolwork.exams")} ({sortedExams.length})
             </h2>
             {sortedExams.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
-                Geen toetsen.
+                {t("schoolwork.noExams")}
               </p>
             ) : (
               <div className="space-y-2.5">
@@ -165,7 +169,9 @@ function studyPreset(item: Task | Exam): Partial<ActivityDraft> {
   const start = 15 * 60;
   return {
     category: "school",
-    title: exam ? `Leren voor ${item.subject}` : `Werken aan ${item.title}`,
+    title: exam
+      ? translate(getLanguage(), "schoolwork.studyForExam", { subject: item.subject })
+      : translate(getLanguage(), "schoolwork.workOn", { title: item.title }),
     date,
     startTime: minutesToTime(start),
     endTime: minutesToTime(start + Math.min(minutes, 8 * 60)),
@@ -184,12 +190,13 @@ function StatusControl({
   value: SchoolworkStatus;
   onChange: (status: SchoolworkStatus) => void;
 }) {
+  const t = useT();
   return (
     <div
       className="flex rounded-lg border p-0.5"
       style={{ borderColor: "var(--line)" }}
       role="group"
-      aria-label="Status"
+      aria-label={t("schoolwork.status")}
     >
       {STATUS_ORDER.map((status) => {
         const active = value === status;
@@ -216,6 +223,7 @@ function StatusControl({
 
 /** Balkje: hoeveel leertijd al is ingepland t.o.v. de schatting. */
 function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: number; estimateMinutes?: number }) {
+  const t = useT();
   const { planned, estimate, pct, enough } = plannedProgress(plannedMinutes, estimateMinutes);
   if (estimate === 0 && planned === 0) return null;
 
@@ -223,8 +231,10 @@ function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: numbe
   return (
     <div className="mt-2">
       <p className="text-xs" style={{ color: "var(--muted)" }}>
-        &#128203; Ingepland: {formatDuration(planned)}
-        {estimate > 0 ? ` van ${formatDuration(estimate)}` : " (geen schatting)"}
+        &#128203; {t("schoolwork.planned", { duration: formatDuration(planned) })}
+        {estimate > 0
+          ? ` ${t("schoolwork.plannedOf", { duration: formatDuration(estimate) })}`
+          : ` ${t("schoolwork.noEstimate")}`}
         {enough ? " ✓" : ""}
       </p>
       {estimate > 0 ? (
@@ -255,6 +265,7 @@ function TaskCard({
   onPlan: () => void;
 }) {
   const { activities, setTaskStatus, toggleTaskStep } = useAgenda();
+  const t = useT();
   const plannedMinutes = plannedMinutesForTask(activities, task.id);
   const priority = PRIORITY_META[task.priority];
   const progress = taskProgress(task);
@@ -267,7 +278,7 @@ function TaskCard({
       style={{ borderLeft: `4px solid ${priority.color}`, opacity: done ? 0.7 : 1 }}
     >
       <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-0.5 text-base leading-none" title={`Prioriteit: ${priority.label}`}>
+        <span aria-hidden className="mt-0.5 text-base leading-none" title={t("schoolwork.priorityLabel", { label: priority.label })}>
           {priority.emoji}
         </span>
 
@@ -285,7 +296,7 @@ function TaskCard({
             <button
               type="button"
               onClick={onEdit}
-              aria-label={`${task.title} bewerken`}
+              aria-label={t("schoolwork.editTask", { title: task.title })}
               className="ml-auto shrink-0 rounded-lg px-2 py-0.5 text-xs"
               style={{ color: "var(--muted)" }}
             >
@@ -353,7 +364,7 @@ function TaskCard({
                 className="btn btn-ghost px-3 py-1.5 text-xs"
                 onClick={onPlan}
               >
-                &#128197; Leertijd inplannen
+                &#128197; {t("schoolwork.planStudy")}
               </button>
             ) : null}
           </div>
@@ -375,6 +386,7 @@ function ExamCard({
   onPlan: () => void;
 }) {
   const { activities, setExamStatus } = useAgenda();
+  const t = useT();
   const plannedMinutes = plannedMinutesForExam(activities, exam.id);
   const priority = PRIORITY_META[exam.priority];
   const days = describeDaysUntil(exam.date, now);
@@ -387,7 +399,7 @@ function ExamCard({
       style={{ borderLeft: `4px solid ${priority.color}`, opacity: done ? 0.7 : 1 }}
     >
       <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-0.5 text-base leading-none" title={`Prioriteit: ${priority.label}`}>
+        <span aria-hidden className="mt-0.5 text-base leading-none" title={t("schoolwork.priorityLabel", { label: priority.label })}>
           &#128221;
         </span>
 
@@ -397,7 +409,7 @@ function ExamCard({
               className="text-[0.95rem] font-semibold"
               style={{ textDecoration: done ? "line-through" : "none" }}
             >
-              {exam.title ?? `Toets ${exam.subject}`}
+              {exam.title ?? t("schoolwork.examTitle", { subject: exam.subject })}
             </h3>
             <span className="text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
               {exam.subject}
@@ -405,7 +417,7 @@ function ExamCard({
             <button
               type="button"
               onClick={onEdit}
-              aria-label={`Toets ${exam.subject} bewerken`}
+              aria-label={t("schoolwork.editExam", { subject: exam.subject })}
               className="ml-auto shrink-0 rounded-lg px-2 py-0.5 text-xs"
               style={{ color: "var(--muted)" }}
             >
@@ -416,7 +428,7 @@ function ExamCard({
           <p className="mt-1.5 text-xs tabular-nums" style={{ color: soon ? "var(--danger)" : "var(--muted)" }}>
             &#128197; {formatDateLabel(exam.date, now)} &middot; {days}
             {exam.prepMinutes ? (
-              <span> &middot; &#9201;&#65039; {formatDuration(exam.prepMinutes)} leren</span>
+              <span> &middot; &#9201;&#65039; {t("schoolwork.study", { duration: formatDuration(exam.prepMinutes) })}</span>
             ) : null}
           </p>
 
@@ -444,7 +456,7 @@ function ExamCard({
                 className="btn btn-ghost px-3 py-1.5 text-xs"
                 onClick={onPlan}
               >
-                &#128197; Leertijd inplannen
+                &#128197; {t("schoolwork.planStudy")}
               </button>
             ) : null}
           </div>

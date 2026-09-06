@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { fetchJourneys } from "@/lib/api";
 import { placeChoices } from "@/lib/places";
@@ -22,6 +23,7 @@ function toLocalInput(date: Date): string {
 /** Reisplanner: zoek een rit met trein, bus, tram of metro. */
 export default function TravelPlannerPage() {
   const { settings, hydrated } = useAgenda();
+  const t = useT();
 
   const [from, setFrom] = useState<GeoLocation | null>(null);
   const [to, setTo] = useState<GeoLocation | null>(null);
@@ -50,7 +52,7 @@ export default function TravelPlannerPage() {
     const lon = Number(params.get("toLon"));
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) return;
 
-    setTo({ label: params.get("toLabel") ?? "Bestemming", lat, lon });
+    setTo({ label: params.get("toLabel") ?? t("travel.destination"), lat, lon });
     const arriveBy = params.get("arriveBy");
     if (arriveBy) {
       const parsed = new Date(arriveBy);
@@ -64,7 +66,7 @@ export default function TravelPlannerPage() {
   const search = useCallback(
     async (cursor?: string) => {
       if (!from || !to) {
-        setError("Kies een vertrekpunt en een bestemming.");
+        setError(t("travel.needBoth"));
         return;
       }
       setLoading(true);
@@ -87,7 +89,7 @@ export default function TravelPlannerPage() {
       } catch (err) {
         setJourneys([]);
         setCursors({});
-        setError(err instanceof Error ? err.message : "De reis kon niet worden gepland.");
+        setError(err instanceof Error ? err.message : t("travel.failed"));
       } finally {
         setLoading(false);
       }
@@ -97,21 +99,21 @@ export default function TravelPlannerPage() {
 
   function useMyLocation() {
     if (!navigator.geolocation) {
-      setError("Je browser ondersteunt locatiebepaling niet.");
+      setError(t("travel.noGeolocation"));
       return;
     }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setFrom({
-          label: "Mijn locatie",
+          label: t("travel.myLocation"),
           lat: position.coords.latitude,
           lon: position.coords.longitude,
         });
         setLocating(false);
       },
       () => {
-        setError("Kon je locatie niet bepalen. Geef de app toestemming of vul een adres in.");
+        setError(t("travel.locationFailed"));
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10_000 },
@@ -126,21 +128,21 @@ export default function TravelPlannerPage() {
   return (
     <div>
       <header className="mb-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Reisplanner</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("travel.title")}</h1>
         <p className="text-sm" style={{ color: "var(--muted)" }}>
-          Plan je rit met trein, bus, tram of metro, inclusief live vertragingen.
+          {t("travel.subtitle")}
         </p>
       </header>
 
-      <section className="card space-y-4 px-5 py-5" aria-label="Reis zoeken">
+      <section className="card space-y-4 px-5 py-5" aria-label={t("travel.search")}>
         <LocationInput
-          label="Van"
+          label={t("travel.from")}
           value={from}
           onChange={setFrom}
           required
           includeStops
           places={places}
-          placeholder="Station, halte of adres"
+          placeholder={t("travel.placeholder")}
           extraActions={
             // Thuis, gym en school staan al bij de snelkeuzes hieronder.
             <button
@@ -150,7 +152,7 @@ export default function TravelPlannerPage() {
               className="rounded-full border px-2.5 py-1 text-xs transition-colors"
               style={{ borderColor: "var(--line)", color: "var(--muted)" }}
             >
-              {locating ? "Zoeken…" : "\u{1F4CD} Mijn locatie"}
+              {locating ? t("travel.locating") : `📍 ${t("travel.myLocation")}`}
             </button>
           }
         />
@@ -159,7 +161,7 @@ export default function TravelPlannerPage() {
           <button
             type="button"
             onClick={swap}
-            aria-label="Vertrek en bestemming omwisselen"
+            aria-label={t("travel.swap")}
             className="rounded-full border px-3 py-1 text-sm"
             style={{ borderColor: "var(--line)", color: "var(--muted)" }}
           >
@@ -168,28 +170,28 @@ export default function TravelPlannerPage() {
         </div>
 
         <LocationInput
-          label="Naar"
+          label={t("travel.to")}
           value={to}
           onChange={setTo}
           required
           includeStops
           places={places}
-          placeholder="Station, halte of adres"
+          placeholder={t("travel.placeholder")}
         />
 
         <div>
-          <span className="label">Wanneer</span>
+          <span className="label">{t("travel.when")}</span>
           <div
             className="flex rounded-xl border p-0.5"
             style={{ borderColor: "var(--line)" }}
             role="group"
-            aria-label="Tijdstip"
+            aria-label={t("travel.time")}
           >
             {(
               [
-                { id: "now", label: "Nu" },
-                { id: "depart", label: "Vertrek" },
-                { id: "arrive", label: "Aankomst" },
+                { id: "now", key: "travel.now" },
+                { id: "depart", key: "travel.depart" },
+                { id: "arrive", key: "travel.arrive" },
               ] as const
             ).map((option) => (
               <button
@@ -203,7 +205,7 @@ export default function TravelPlannerPage() {
                   color: when === option.id ? "var(--ink)" : "var(--muted)",
                 }}
               >
-                {option.label}
+                {t(option.key)}
               </button>
             ))}
           </div>
@@ -230,16 +232,16 @@ export default function TravelPlannerPage() {
           onClick={() => void search()}
           disabled={loading || !from || !to}
         >
-          {loading ? <Spinner size={16} /> : "Zoek reis"}
+          {loading ? <Spinner size={16} /> : t("travel.go")}
         </button>
       </section>
 
       {loading && journeys.length === 0 ? (
         <div className="card mt-4 px-5 py-10 text-center">
-          <Spinner size={18} label="Ritten zoeken…" />
+          <Spinner size={18} label={t("travel.searching")} />
         </div>
       ) : journeys.length > 0 ? (
-        <section className="mt-4" aria-label="Reismogelijkheden">
+        <section className="mt-4" aria-label={t("journey.options")}>
           {cursors.previous ? (
             <button
               type="button"
@@ -247,7 +249,7 @@ export default function TravelPlannerPage() {
               onClick={() => void search(cursors.previous)}
               disabled={loading}
             >
-              &#8593; Eerdere ritten
+              &#8593; {t("travel.earlier")}
             </button>
           ) : null}
 
@@ -264,7 +266,7 @@ export default function TravelPlannerPage() {
               onClick={() => void search(cursors.next)}
               disabled={loading}
             >
-              &#8595; Latere ritten
+              &#8595; {t("travel.later")}
             </button>
           ) : null}
         </section>
@@ -272,8 +274,8 @@ export default function TravelPlannerPage() {
         <div className="mt-4">
           <EmptyState
             icon="🚉"
-            title="Geen ritten gevonden"
-            description="Probeer een ander tijdstip, of een halte in de buurt."
+            title={t("travel.empty.title")}
+            description={t("travel.empty.body")}
           />
         </div>
       ) : null}

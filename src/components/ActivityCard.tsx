@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
@@ -31,6 +32,7 @@ import type { ActivityOccurrence } from "@/lib/types";
 export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; now?: Date }) {
   const { settings, calculatingIds, retryTravel, tasks, exams, categoryFor } = useAgenda();
   const [editing, setEditing] = useState(false);
+  const t = useT();
 
   const category = categoryFor(activity.category);
   const color = activityColor(activity, category);
@@ -75,7 +77,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
           type="button"
           onClick={() => setEditing(true)}
           className="w-full px-4 py-3.5 text-left"
-          aria-label={`${category.label}: ${activity.title} bewerken`}
+          aria-label={t("activity.editLabel", { category: category.label, title: activity.title })}
         >
           <div className="flex items-start gap-3">
             <span aria-hidden className="mt-0.5 text-lg leading-none">
@@ -96,21 +98,21 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
                   >
-                    ✓ geweest
+                    {t("activity.past")}
                   </span>
                 ) : isNow ? (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
                     style={{ background: `color-mix(in srgb, ${color} 20%, transparent)`, color }}
                   >
-                    ● bezig
+                    {t("activity.now")}
                   </span>
                 ) : null}
                 {linkedTask ? (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
-                    title={`Leerblok voor: ${linkedTask.subject}, ${linkedTask.title}`}
+                    title={t("activity.studyFor", { subject: linkedTask.subject, title: linkedTask.title })}
                   >
                     📚 {linkedTask.subject}
                   </span>
@@ -118,7 +120,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
-                    title={`Leren voor toets: ${linkedExam.subject}`}
+                    title={t("activity.studyForExam", { subject: linkedExam.subject })}
                   >
                     📝 {linkedExam.subject}
                   </span>
@@ -127,7 +129,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
                   >
-                    📚 leerplan
+                    📚 {t("activity.planTag")}
                   </span>
                 ) : null}
               </div>
@@ -144,11 +146,11 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
               {linkedTask ? (
                 <p className="mt-1 truncate text-xs" style={{ color: "var(--muted)" }}>
-                  &#8618; Voor opdracht: {linkedTask.title}
+                  &#8618; {t("activity.forTask", { title: linkedTask.title })}
                 </p>
               ) : linkedExam ? (
                 <p className="mt-1 truncate text-xs" style={{ color: "var(--muted)" }}>
-                  &#8618; Leren voor: {linkedExam.title ?? linkedExam.subject}
+                  &#8618; {t("activity.forExam", { title: linkedExam.title ?? linkedExam.subject })}
                 </p>
               ) : null}
 
@@ -162,7 +164,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                 <div className="mt-2 space-y-1">
                   {calculating ? (
                     <p className="text-xs" style={{ color: "var(--muted)" }}>
-                      <Spinner size={12} label="Reistijd berekenen…" />
+                      <Spinner size={12} label={t("activity.calculating")} />
                     </p>
                   ) : activity.travelError ? (
                     <ErrorNote
@@ -174,23 +176,27 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     </ErrorNote>
                   ) : !settings.home ? (
                     <p className="text-xs" style={{ color: "var(--muted)" }}>
-                      Stel je thuislocatie in voor de vertrektijd.
+                      {t("activity.needHome")}
                     </p>
                   ) : departure && shown.travel ? (
                     <>
                       <p className="text-xs" style={{ color: "var(--muted)" }}>
-                        {travelModeMeta(shown.travel.mode).emoji} Reistijd:{" "}
-                        {formatDuration(shown.travel.durationMinutes)}
+                        {travelModeMeta(shown.travel.mode).emoji}{" "}
+                        {t("activity.travelTime", {
+                          duration: formatDuration(shown.travel.durationMinutes),
+                        })}
                         <span className="opacity-70">
                           {shown.travel.mode === "transit"
                             ? ` · ${shown.travel.transfers ?? 0} ${
-                                (shown.travel.transfers ?? 0) === 1 ? "overstap" : "overstappen"
+                                (shown.travel.transfers ?? 0) === 1
+                                  ? t("journey.transfer")
+                                  : t("journey.transfers")
                               }`
                             : ` · ${formatDistance(shown.travel.distanceKm)}`}
                         </span>
                       </p>
                       <p className="text-sm font-semibold tabular-nums">
-                        &#127968; Vertrekken om{" "}
+                        &#127968; {t("activity.leaveAt")}{" "}
                         <span style={delay > 0 ? { color: "#f97316" } : undefined}>
                           {departure.time}
                         </span>
@@ -206,29 +212,32 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                         ) : null}
                         {departure.previousDay ? (
                           <span className="ml-1 text-xs font-normal" style={{ color: "var(--muted)" }}>
-                            (dag ervoor)
+                            {t("activity.previousDay")}
                           </span>
                         ) : null}
                       </p>
 
                       {cancelled ? (
                         <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
-                          &#9888;&#65039; Deze rit is uitgevallen. Zoek een andere reis.
+                          &#9888;&#65039; {t("activity.cancelledFull")}
                         </p>
                       ) : delay > 0 ? (
                         <p className="text-xs font-semibold" style={{ color: "#f97316" }}>
-                          &#9200; {delay} min vertraging &middot; live
+                          &#9200; {t("journey.delay", { count: delay })} &middot; {t("journey.live")}
                         </p>
                       ) : live ? (
                         <p className="text-xs" style={{ color: "#22c55e" }}>
-                          &#9679; Op tijd &middot; live
+                          &#9679; {t("journey.onTime")} &middot; {t("journey.live")}
                         </p>
                       ) : null}
                       {back ? (
                         <p className="text-xs tabular-nums" style={{ color: "var(--muted)" }}>
-                          &#8617;&#65039; Terug: {formatDuration(back.travelMinutes)} &middot; thuis om{" "}
-                          {back.time}
-                          {back.nextDay ? " (volgende dag)" : ""}
+                          &#8617;&#65039;{" "}
+                          {t("activity.back", {
+                            duration: formatDuration(back.travelMinutes),
+                            time: back.time,
+                          })}
+                          {back.nextDay ? ` ${t("activity.nextDay")}` : ""}
                         </p>
                       ) : null}
                     </>
@@ -243,15 +252,14 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
         {shown.travel?.legs?.length || shown.returnTravel?.legs?.length ? (
           <div className="px-4 pb-3.5">
             {shown.travel ? (
-              <JourneyDetails travel={shown.travel} label="🚆 Heenreis" defaultOpen={isNow} />
+              <JourneyDetails travel={shown.travel} label={`🚆 ${t("journey.outbound")}`} defaultOpen={isNow} />
             ) : null}
             {shown.returnTravel ? (
-              <JourneyDetails travel={shown.returnTravel} label="↩️ Terugreis" />
+              <JourneyDetails travel={shown.returnTravel} label={`↩️ ${t("journey.return")}`} />
             ) : null}
             {!dayTravel.exact && !dayTravel.loading ? (
               <p className="mt-1.5 text-[0.7rem]" style={{ color: "var(--muted)" }}>
-                &#8505;&#65039; Deze tijden komen van een andere dag; open de app op de dag zelf
-                voor de actuele rit.
+                &#8505;&#65039; {t("journey.otherDay")}
               </p>
             ) : null}
           </div>
