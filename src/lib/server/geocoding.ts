@@ -7,6 +7,13 @@ import type { Language } from "../i18n/locale";
 import { translate } from "../i18n/dictionary";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Een half antwoord bewaren we kort. Haperde de haltezoeker even, dan zou een
+ * etmaal lang "Almere Centrum" alleen de wijk opleveren en niet het station —
+ * ook als de dienst allang weer draait, en zonder dat de gebruiker begrijpt
+ * waarom herhalen niet helpt.
+ */
+const PARTIAL_CACHE_TTL_MS = 60 * 1000;
 
 interface NominatimAddress {
   road?: string;
@@ -63,22 +70,29 @@ export async function geocode(
       : await geocodeNominatim(trimmed, limit, language);
 
   let results = addresses;
+  let complete = true;
   if (includeStops) {
     const stops = await geocodeStops(trimmed, limit, language);
+    complete = stops !== null;
     // Haltes eerst: in een reisplanner is dat vrijwel altijd de bedoeling.
-    results = [...stops, ...addresses].slice(0, limit * 2);
+    results = [...(stops ?? []), ...addresses].slice(0, limit * 2);
   }
 
-  cacheSet(cacheKey, results, CACHE_TTL_MS);
+  cacheSet(cacheKey, results, complete ? CACHE_TTL_MS : PARTIAL_CACHE_TTL_MS);
   return results;
 }
 
-/** Haltes en stations via MOTIS, in hetzelfde formaat als de adres-resultaten. */
+/**
+ * Haltes en stations via MOTIS, in hetzelfde formaat als de adres-resultaten.
+ *
+ * `null` betekent: de aanroep is mislukt. Een lege lijst betekent: gezocht,
+ * niets gevonden. Dat verschil bepaalt hoe lang we het antwoord bewaren.
+ */
 async function geocodeStops(
   query: string,
   limit: number,
   language: Language,
-): Promise<GeocodeResult[]> {
+): Promise<GeocodeResult[] | null> {
   try {
     const stops = await motisGeocode(query);
     return stops
@@ -93,7 +107,7 @@ async function geocodeStops(
       }));
   } catch {
     // Haltezoeken is een extraatje: valt dit weg, dan blijven adressen werken.
-    return [];
+    return null;
   }
 }
 

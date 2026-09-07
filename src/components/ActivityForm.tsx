@@ -17,6 +17,7 @@ import type {
   GeoLocation,
   Recurrence,
   Settings,
+  ActivityOccurrence,
 } from "@/lib/types";
 
 interface Props {
@@ -46,6 +47,12 @@ interface FormErrors {
 
 const DEFAULT_DURATION_MINUTES = 60;
 
+/** De startdatum van de reeks; bij een losse activiteit zijn eigen datum. */
+function seriesStart(activity: Activity): string {
+  const occurrence = activity as Partial<ActivityOccurrence>;
+  return occurrence.seriesDate ?? activity.date;
+}
+
 function initialDraft(
   settings: Settings,
   activity?: Activity,
@@ -55,7 +62,16 @@ function initialDraft(
     return {
       category: activity.category,
       title: activity.title,
-      date: activity.date,
+      // Bij een reeks de startdatum van de reeks, niet de dag die je toevallig
+      // aanklikte. Opslaan schrijft dit veld terug als startdatum, dus met de
+      // aangeklikte dag erin verdween alles wat daarvóór lag — ook als je
+      // alleen de kleur veranderde.
+      date: seriesStart(activity),
+      // Zonder deze twee klopte het formulier bij bewerken toevallig nog wel
+      // (updateActivity laat ontbrekende velden staan), maar dupliceren maakte
+      // van een vakantie van vijf dagen stil één dag van 09:00 tot 10:00.
+      allDay: activity.allDay ?? false,
+      endDate: activity.endDate ?? null,
       startTime: activity.startTime,
       endTime: activity.endTime,
       location: activity.location,
@@ -634,7 +650,14 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                 className="h-5 w-5 accent-[var(--accent)]"
                 checked={repeats}
                 onChange={(event) =>
-                  patch({ recurrence: event.target.checked ? defaultRecurrence(draft.date) : null })
+                  // Einddatum meteen wissen: een reeks houdt op bij `until`,
+                  // niet bij een einddatum. Bleef die staan (het veld wordt
+                  // alleen verborgen), dan telde de app die dagen alsnog mee.
+                  patch(
+                    event.target.checked
+                      ? { recurrence: defaultRecurrence(draft.date), endDate: null }
+                      : { recurrence: null },
+                  )
                 }
               />
             </label>

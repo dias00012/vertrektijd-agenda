@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { say } from "@/lib/server/language";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
 import { checkPublicUrl } from "@/lib/safeUrl";
+import { readTextCapped, resolvesToPrivateAddress } from "@/lib/server/network";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,8 +16,9 @@ export const dynamic = "force-dynamic";
  *
  * Deze route haalt een adres op dat de gebruiker aanlevert, en dat is precies
  * het soort route waarmee je een server kunt laten rondneuzen in zijn eigen
- * netwerk. Daarom: alleen http(s), geen adressen binnen een netwerk, geen
- * omleidingen die daar alsnog heen wijzen, en een harde grens op de omvang.
+ * netwerk. Daarom: alleen http(s), geen adressen binnen een netwerk, ook niet
+ * via een naam die daarheen wijst, geen omleidingen die daar alsnog heen
+ * wijzen, en een harde grens op de omvang die al tijdens het lezen geldt.
  */
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -39,6 +41,9 @@ export async function POST(request: Request) {
 
   let target = checkPublicUrl(body.url);
   if (!target.ok) return NextResponse.json({ error: say(request, target.error) }, { status: 400 });
+  if (await resolvesToPrivateAddress(target.url.hostname)) {
+    return NextResponse.json({ error: say(request, "api.privateHost") }, { status: 400 });
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15_000);
@@ -67,6 +72,10 @@ export async function POST(request: Request) {
       if (!resolved.ok) {
         return NextResponse.json({ error: say(request, resolved.error) }, { status: 400 });
       }
+      // Ook elke tussenstap kan een naam zijn die naar binnen wijst.
+      if (await resolvesToPrivateAddress(resolved.url.hostname)) {
+        return NextResponse.json({ error: say(request, "api.privateHost") }, { status: 400 });
+      }
       target = resolved;
       response = null;
     }
@@ -92,8 +101,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: say(request, "api.fileTooBig") }, { status: 400 });
     }
 
-    const text = await response.text();
-    if (text.length > MAX_BYTES) {
+    // Tijdens het lezen aftellen: een `content-length` meesturen is
+    // vrijwillig, dus een bron die blijft zenden kwam er anders mee weg.
+    const text = await readTextCapped(response, MAX_BYTES);
+    if (text === null) {
       return NextResponse.json({ error: say(request, "api.fileTooBig") }, { status: 400 });
     }
     if (!text.includes("BEGIN:VCALENDAR")) {

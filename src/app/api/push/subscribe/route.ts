@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isPrivateHost } from "@/lib/safeUrl";
 import { say } from "@/lib/server/language";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
 import { DEVICES_TABLE, QUEUE_TABLE, adminClient, isDeviceId } from "@/lib/server/push";
@@ -18,6 +19,50 @@ export const dynamic = "force-dynamic";
 interface Body {
   device?: unknown;
   subscription?: { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } };
+}
+
+/**
+ * De pushdiensten van de browsers. Je meldt je hier aan met een adres dat je
+ * browser aanlevert, en dit adres gaat de server later zelf aanroepen. Zonder
+ * lijst kon iemand er elk https-adres inzetten en de server namens zichzelf
+ * berichten laten versturen; met alleen een https-controle stond ook het eigen
+ * netwerk open.
+ *
+ * Komt er een browser bij met een eigen dienst, dan kan die er via
+ * PUSH_ENDPOINT_HOSTS bij zonder dat de code verandert.
+ */
+const PUSH_HOSTS = [
+  "fcm.googleapis.com",
+  "android.googleapis.com",
+  "updates.push.services.mozilla.com",
+  "web.push.apple.com",
+  ".push.services.mozilla.com",
+  ".notify.windows.com",
+  ".push.apple.com",
+];
+
+function allowedHosts(): string[] {
+  const extra = (process.env.PUSH_ENDPOINT_HOSTS ?? "")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+  return [...PUSH_HOSTS, ...extra];
+}
+
+function isPushEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  if (isPrivateHost(url.hostname)) return false;
+
+  const host = url.hostname.toLowerCase();
+  return allowedHosts().some((allowed) =>
+    allowed.startsWith(".") ? host.endsWith(allowed) : host === allowed,
+  );
 }
 
 export async function POST(request: Request) {
@@ -51,8 +96,8 @@ export async function POST(request: Request) {
   if (
     !isDeviceId(body.device) ||
     typeof endpoint !== "string" ||
-    !/^https:\/\//.test(endpoint) ||
     endpoint.length > 1000 ||
+    !isPushEndpoint(endpoint) ||
     typeof p256dh !== "string" ||
     typeof auth !== "string"
   ) {

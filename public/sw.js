@@ -9,34 +9,57 @@
  *  - /api/*        nooit uit de cache. Verouderde reistijden zijn erger dan geen.
  *  - /_next/static hashed bestanden, dus veilig cache-first en voor altijd geldig.
  *  - pagina's      eerst het netwerk (verse code), anders de cache, anders offline.
+ *
+ * De pagina's van de app staan in de voorlaadlijst. Zonder dat kwamen ze daar
+ * alleen in als je ze ooit met een harde paginalading had geopend: binnen de
+ * app wisselt een tab namelijk zonder echte navigatie, en dan ziet deze worker
+ * er niets van. Wie zijn agenda altijd via het menu opende, kreeg zonder bereik
+ * dus de offline-pagina te zien terwijl zijn gegevens gewoon op het apparaat
+ * stonden.
  */
 
 // Ophogen zodra de voorgeladen bestanden veranderen; oude caches worden dan
 // opgeruimd bij het activeren.
-const VERSION = "v3";
+const VERSION = "v4";
 const SHELL_CACHE = `vertrektijd-shell-${VERSION}`;
 const PAGE_CACHE = `vertrektijd-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
 
+/** De schermen van de app; gelijk aan het menu in AppShell. */
+const ROUTES = ["/", "/agenda", "/reizen", "/schoolwerk", "/instellingen"];
+
+const SHELL_FILES = [
+  OFFLINE_URL,
+  "/manifest.webmanifest",
+  "/icon.svg",
+  // Zonder deze staat er een leeg vlak op je beginscherm als je de app
+  // installeert terwijl je geen bereik hebt.
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
+];
+
+/**
+ * Eén voor één voorladen in plaats van in één keer.
+ *
+ * `cache.addAll` is alles-of-niets: mislukte er één van de zes, dan werd er
+ * niets bewaard, en omdat de browser deze worker pas opnieuw installeert als
+ * het bestand zelf verandert bleef die lege cache staan. Zo houdt een hapering
+ * bij één bestand de rest niet tegen.
+ */
+async function precache(cache, urls) {
+  await Promise.allSettled(urls.map((url) => cache.add(url)));
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(SHELL_CACHE)
-      .then((cache) =>
-        cache.addAll([
-          OFFLINE_URL,
-          "/manifest.webmanifest",
-          "/icon.svg",
-          // Zonder deze staat er een leeg vlak op je beginscherm als je de app
-          // installeert terwijl je geen bereik hebt.
-          "/icon-192.png",
-          "/icon-512.png",
-          "/apple-touch-icon.png",
-        ]),
-      )
-      // Lukt het voorladen niet, dan is de app nog steeds bruikbaar; installeer door.
-      .catch(() => undefined)
-      .then(() => self.skipWaiting()),
+    (async () => {
+      const shell = await caches.open(SHELL_CACHE);
+      await precache(shell, SHELL_FILES);
+      const pages = await caches.open(PAGE_CACHE);
+      await precache(pages, ROUTES);
+      await self.skipWaiting();
+    })(),
   );
 });
 
@@ -51,9 +74,30 @@ self.addEventListener("activate", (event) => {
             .map((key) => caches.delete(key)),
         ),
       )
-      .then(() => self.clients.claim()),
+      .then(async () => {
+        // Ontbreekt de offline-pagina alsnog (een hapering bij het
+        // installeren), dan hem nu alsnog halen: hij is het laatste redmiddel.
+        const cache = await caches.open(SHELL_CACHE);
+        if (!(await cache.match(OFFLINE_URL))) {
+          await cache.add(OFFLINE_URL).catch(() => undefined);
+        }
+        await self.clients.claim();
+      }),
   );
 });
+
+/**
+ * Mag dit antwoord de cache in?
+ *
+ * Zonder deze controle belandde een 404 tijdens een uitrol, een 502, of — heel
+ * gewoon op schoolwifi — de inlogpagina van een captive portal (status 200, maar
+ * HTML in plaats van JavaScript) in de cache. Voor de gebouwde bestanden is de
+ * strategie cache-first zonder hercontrole, dus dat bleef staan tot de volgende
+ * versie: de app deed het daarna gewoon niet meer.
+ */
+function worthCaching(response) {
+  return Boolean(response) && response.ok && response.status === 200 && response.type === "basic";
+}
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
@@ -71,6 +115,7 @@ self.addEventListener("fetch", (event) => {
         (hit) =>
           hit ??
           fetch(request).then((response) => {
+            if (!worthCaching(response)) return response;
             const copy = response.clone();
             caches.open(SHELL_CACHE).then((cache) => cache.put(request, copy));
             return response;
@@ -84,6 +129,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
+          if (!worthCaching(response)) return response;
           const copy = response.clone();
           caches.open(PAGE_CACHE).then((cache) => cache.put(request, copy));
           return response;
@@ -126,14 +172,27 @@ self.addEventListener("push", (event) => {
   );
 });
 
+/*
+ * De browser mag een pushabonnement vernieuwen (pushsubscriptionchange). Dat
+ * afvangen kan hier niet zinnig: /api/push/subscribe wil het apparaat-id, en
+ * dat staat in localStorage waar een worker niet bij kan. In plaats daarvan
+ * meldt de app zichzelf opnieuw aan zodra hij zijn wachtrij bijwerkt
+ * (`refreshSubscription` in src/lib/push.ts). Tussen het vernieuwen en de
+ * eerstvolgende keer dat je de app opent kan dus een melding wegvallen; dat is
+ * bewust, want half aanmelden is erger dan wachten tot je hem opent.
+ */
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      // Staat de app al open, dan die naar voren halen in plaats van een
-      // tweede venster openen.
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clients) => {
+      // Staat de app al open, dan die naar voren halen én naar het
+      // dagoverzicht sturen. Alleen focussen liet je kijken naar welk scherm er
+      // toevallig openstond, terwijl je op een vertrekmelding tikte.
       for (const client of clients) {
-        if (client.url.includes(self.location.origin)) return client.focus();
+        const focused = await client.focus();
+        if ("navigate" in client) await client.navigate("/").catch(() => undefined);
+        return focused;
       }
       return self.clients.openWindow("/");
     }),

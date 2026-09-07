@@ -78,18 +78,31 @@ export async function PUT(request: Request) {
 
   // Alles wat nog niet verstuurd is vervangen; wat al weg is blijft staan voor
   // de opruimtaak.
-  const { error: clearError } = await admin
+  //
+  // Volgorde met opzet: eerst de nieuwe erin, dan pas de oude eruit. Andersom
+  // stond de wachtrij leeg zodra het invoegen mislukte, en dan kreeg je die dag
+  // geen enkele melding — terwijl de oude, iets verouderde tijden nog altijd
+  // beter zijn dan niets. Even dubbel staan kan; helemaal niets staan niet.
+  const { data: previous, error: readError } = await admin
     .from(QUEUE_TABLE)
-    .delete()
+    .select("id")
     .eq("device_id", body.device)
     .is("sent_at", null);
-  if (clearError) {
+  if (readError) {
     return NextResponse.json({ error: say(request, "api.pushStoreFailed") }, { status: 502 });
   }
 
   if (rows.length > 0) {
     const { error } = await admin.from(QUEUE_TABLE).insert(rows);
     if (error) {
+      return NextResponse.json({ error: say(request, "api.pushStoreFailed") }, { status: 502 });
+    }
+  }
+
+  const stale = (previous ?? []).map((row) => (row as { id: string }).id);
+  if (stale.length > 0) {
+    const { error: clearError } = await admin.from(QUEUE_TABLE).delete().in("id", stale);
+    if (clearError) {
       return NextResponse.json({ error: say(request, "api.pushStoreFailed") }, { status: 502 });
     }
   }

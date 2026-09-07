@@ -21,6 +21,21 @@ function toLocalInput(date: Date): string {
   )}:${pad(date.getMinutes())}`;
 }
 
+/**
+ * De id van de kortste rit, of null als alle opties even lang duren: dan zegt
+ * een merkje "snelste" niets en is het alleen maar ruis.
+ */
+function fastestJourneyId(journeys: Journey[]): string | null {
+  if (journeys.length < 2) return null;
+  const fastest = journeys.reduce((best, journey) =>
+    journey.durationMinutes < best.durationMinutes ? journey : best,
+  );
+  const shared = journeys.every(
+    (journey) => journey.durationMinutes === fastest.durationMinutes,
+  );
+  return shared ? null : fastest.id;
+}
+
 /** Reisplanner: zoek een rit met trein, bus, tram of metro. */
 export default function TravelPlannerPage() {
   const { settings, hydrated } = useAgenda();
@@ -36,9 +51,14 @@ export default function TravelPlannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  // Losstaand van `error`: het einde van de dienstregeling is geen storing.
+  const [notice, setNotice] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
 
   const places = hydrated ? placeChoices(settings) : [];
+  // De lijst staat op vertrektijd; de snelste rit hoeft dus niet bovenaan te
+  // staan. Alleen merken als er echt iets te kiezen valt.
+  const fastestId = fastestJourneyId(journeys);
 
   // Vertrekpunt standaard op thuis: dat is bijna altijd waar je vandaan gaat.
   useEffect(() => {
@@ -65,13 +85,14 @@ export default function TravelPlannerPage() {
   }, [hydrated, t]);
 
   const search = useCallback(
-    async (cursor?: string) => {
+    async (cursor?: string, direction: "next" | "previous" = "next") => {
       if (!from || !to) {
         setError(t("travel.needBoth"));
         return;
       }
       setLoading(true);
       setError(null);
+      setNotice(null);
       setSearched(true);
 
       try {
@@ -84,14 +105,32 @@ export default function TravelPlannerPage() {
                 arriveBy: when === "arrive",
               }),
           count: 5,
-          transitBike: settings.transitBike ?? "none",
+          // In de reisplanner kies je zelf van en naar; het vertrekpunt staat
+          // standaard op thuis, dus daar staat je fiets.
+          bike:
+            settings.transitBike === "both"
+              ? "both"
+              : settings.transitBike === "start"
+                ? "origin"
+                : "none",
         });
-        setJourneys(result.journeys);
         track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
+
+        // Voorbij de laatste rit van de dag geeft de planner een lege pagina
+        // terug. Die niet tonen als "geen verbinding" en vooral: de lijst die
+        // er staat laten staan, zodat je niet opnieuw hoeft te zoeken.
+        if (cursor && result.journeys.length === 0) {
+          setNotice(t(direction === "previous" ? "travel.noEarlier" : "travel.noLater"));
+          return;
+        }
+        setJourneys(result.journeys);
       } catch (err) {
-        setJourneys([]);
-        setCursors({});
+        // Mislukt het bladeren, dan blijft staan wat je al had.
+        if (!cursor) {
+          setJourneys([]);
+          setCursors({});
+        }
         setError(err instanceof Error ? err.message : t("travel.failed"));
       } finally {
         setLoading(false);
@@ -255,7 +294,7 @@ export default function TravelPlannerPage() {
             <button
               type="button"
               className="btn btn-ghost mb-2.5 w-full text-xs"
-              onClick={() => void search(cursors.previous)}
+              onClick={() => void search(cursors.previous, "previous")}
               disabled={loading}
             >
               &#8593; {t("travel.earlier")}
@@ -264,7 +303,11 @@ export default function TravelPlannerPage() {
 
           <div className="space-y-2.5">
             {journeys.map((journey) => (
-              <JourneyCard key={journey.id} journey={journey} />
+              <JourneyCard
+                key={journey.id}
+                journey={journey}
+                fastest={journey.id === fastestId}
+              />
             ))}
           </div>
 
@@ -277,6 +320,12 @@ export default function TravelPlannerPage() {
             >
               &#8595; {t("travel.later")}
             </button>
+          ) : null}
+
+          {notice ? (
+            <p className="mt-2.5 text-center text-xs" style={{ color: "var(--muted)" }}>
+              {notice}
+            </p>
           ) : null}
         </section>
       ) : searched && !error ? (

@@ -8,6 +8,222 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.29.0
+
+Een ronde langs de hele app op zoek naar stille rekenfouten: antwoorden die er
+geloofwaardig uitzagen en niet klopten. Aanleiding was de reisplanner die 57
+minuten gaf waar 9292 er 42 gaf. Alles hieronder is met een test vastgelegd die
+aantoonbaar faalt op de vorige versie.
+
+**Vertrektijden**
+
+- **Een OV-rit die voor middernacht vertrok stond een dag mis.** Begint er iets
+  om 00:30 en haal je daar de laatste trein van 23:50 voor, dan rekende de app
+  24 uur de verkeerde kant op. Dat moment stuurt je meldingen: de herinnering
+  kwam een dag te laat.
+- **In de nacht van de tijdswissel klopte je vertrektijd een uur niet.** De app
+  rekende in milliseconden terug vanaf de starttijd, terwijl die nacht 23 of 25
+  uur duurt. Het scherm zei 22:50, de melding ging om 23:50.
+- **Rijdt er niets dat op tijd aankomt**, dan toont de app de eerstvolgende rit
+  daarna. Die gold als "de dag ervoor", waardoor de vertrekregel uit de dag
+  verdween en er geen melding kwam. Nu staat hij er gewoon.
+- **De veiligheidsmarge deed bij OV niets.** Die marge bepaalt welke rit je
+  krijgt, maar zat niet in de sleutel waarmee de app bepaalt of een berekende
+  reis nog geldig is. Van 10 naar 30 minuten veranderde er niets op het scherm.
+- **Een stage of vakantie plande zijn rit altijd op de eerste dag.** In oktober
+  vroeg de app nog de dienstregeling van 1 september op — een datum in het
+  verleden.
+- **Een gewijzigde eindtijd haalde de terugreis niet opnieuw op.** De oude
+  thuiskomsttijd bleef staan, en dan ook nog zonder het bijschrift dat het om
+  een reis van een andere dag ging.
+- **Op een dag waarop je doorreist naar de sportschool** stond soms noch de
+  doorreis noch de thuisreis: de kaart zweeg over de hele rest van de dag.
+
+**Reisplanner**
+
+- **De app kiest zelf de beste rit** in plaats van de eerste die de planner
+  teruggeeft. Op een heenreis was dat vaak de vroegste vertrektijd met de
+  langste route. Bij "uiterlijk aankomen om" wint nu de laatste vertrektijd die
+  het haalt, bij een terugreis de vroegste aankomst, en een overstap weegt mee
+  als vijf minuten.
+- **Lopen kan altijd, ook met een fiets.** Stond "fiets naar de halte" aan, dan
+  viel de halte om de hoek af en kwam je op een verder station uit.
+- **De fiets staat nu aan de goede kant van de rit.** Je fiets staat thuis: heen
+  is dat het eerste stuk, terug het laatste. De app zette hem altijd vooraan,
+  dus naar huis toe mocht je een half uur fietsen vanaf school en maar twintig
+  minuten lopen vanaf je eigen station.
+- **Twintig minuten naar het station lopen mag**; de planner hield het uit
+  zichzelf op een kwartier en stuurde je anders om met een extra bus.
+- **Live vertraging is weer live.** De server bewaarde een OV-uitkomst tien
+  minuten terwijl de app elke twee minuten ververst. "Op tijd" bleef staan voor
+  een trein die allang negen minuten te laat was.
+- **Doorbladeren voorbij de laatste rit** wist de hele lijst en beide knoppen.
+  Nu blijft je lijst staan met "Verder rijdt er vandaag niets meer".
+- **Rijdt er niets**, dan volgt de directe loop- of fietsroute in plaats van
+  "geen verbinding".
+- **Haperde het zoeken naar haltes**, dan werd dat halve antwoord 24 uur lang
+  bewaard: "Almere Centrum" gaf dan de wijk in plaats van het station, en
+  opnieuw zoeken hielp niet.
+
+**Je gegevens**
+
+- **De agenda van de vorige gebruiker belandde in het volgende account.**
+  Uitloggen wiste de agenda niet uit het geheugen; logde daarna iemand anders
+  in op hetzelfde apparaat, dan werd alles — thuisadres incluis — naar diens
+  account gepusht.
+- **Wat je weggooit blijft weg.** Samenvoegen met de cloud was een unie: alles
+  wat je op het ene apparaat weggooide kwam terug zodra het andere het nog
+  kende. Ongedaan maken werkt gewoon.
+- **Wat je offline aan je instellingen wijzigde blijft staan.** De cloud won
+  altijd, dus je marge sprong terug.
+- **Een zelfgemaakt activiteitstype werd stil "School"** — bij import, maar ook
+  bij elke keer dat de app je agenda uit de cloud haalde.
+- **Mislukt opslaan is niet langer stil.** Zit de opslag van je browser vol of
+  staat hij uit, dan stond alles wat je invoerde alleen op het scherm en was het
+  na één keer herladen weg. Nu staat er een melding bovenaan.
+- **Zet je bij een activiteit van meer dagen alsnog "herhalen" aan**, dan bleef
+  de oude einddatum staan: dag 2 t/m 5 verdwenen zonder melding en op de kaart
+  stond "dag 8 van 5".
+
+**Rooster en agenda's koppelen**
+
+- **Een afgelaste les bleef staan en een verplaatste les kwam dubbel.** De
+  koppeling waarmee een agenda zo'n wijziging meldt werd genegeerd.
+- **Dagelijkse, maandelijkse en jaarlijkse herhalingen** werden één losse
+  afspraak. Je eigen agenda erbij koppelen zit er vol mee.
+- **Twee gekoppelde agenda's overschreven elkaars sync-tijdstip**, waarna de
+  eerste bij elke tik opnieuw het net op ging.
+- **Een meegestuurde duur werd genegeerd.** Staat er geen eindtijd maar wel een
+  duur — wat agenda's vaak doen — dan nam de app stil een uur aan. Een werkgroep
+  van 09:00 tot 10:45 stond tot 10:00 in je agenda.
+- **De laatste dag van een vakantie viel eraf** als de zomertijd binnen die
+  periode eindigde: die dag duurt 25 uur, en de app rekende met 24.
+
+**Agenda en weekraster**
+
+- **"Eerstvolgende" liet een vrije dag de echte afspraak verdringen.** Iets dat
+  de hele dag duurt heeft geen tijdstip en dus geen vertrektijd, maar stond wel
+  bovenaan — dus "Herfstvakantie" in plaats van de tandarts van 10:00.
+- **Een maandelijkse reeks viel buiten beeld.** De kaart keek drie weken
+  vooruit; huur op de 1e is vanaf 7 september 24 dagen wachten. Nu twee maanden.
+- **Slepen tot onder aan het scherm** gaf eindtijd 00:00, en daar klapte het
+  hele weekraster op dicht. Nu kun je tot 23:59.
+- **Een hele reeks verslepen liet de overgeslagen dagen achter** op hun oude
+  datum, waarna een dag die je bewust had weggehaald weer opdook.
+- **Eén dag uit een reeks slepen** toonde "verwijderd — ongedaan maken". Klikte
+  je daarop, dan stond de activiteit dubbel. Verplaatsen is nu één handeling,
+  en het balkje zegt wat het doet.
+- **Zoeken naar een afgelopen reeks** gaf de eerste keer in plaats van de
+  laatste: "wanneer was dat practicum ook alweer" wees naar februari terwijl
+  het in juni ophield.
+- **Een reeks aanpassen vanuit een latere week wiste de eerdere dagen.** Klik je
+  op het blok van woensdag van een reeks die op maandag begon, verander je
+  alleen de kleur en sla je op, dan werd woensdag de nieuwe startdatum en
+  verdween de maandag.
+- **Dupliceren van een vakantie van vijf dagen** maakte er stil één dag van
+  09:00 tot 10:00 van. Slepen had hetzelfde probleem.
+- **De dagtijdlijn zei bij de terugreis altijd "rijden"**, ook met de trein of
+  op de fiets.
+
+**Meldingen**
+
+- **Een vertrek verder dan zes uur weg werd nooit alsnog ingepland.** Liet je de
+  app 's ochtends openstaan, dan kwam de melding voor 17:00 gewoon niet.
+- **Twee wijzigingen binnen vijf minuten**: de tweede bereikte de server nooit,
+  dus stonden er verkeerde meldingen klaar.
+- **De wachtrij werd eerst gewist en dan gevuld.** Mislukte dat vullen, dan
+  stond hij leeg en kreeg je die dag niets — terwijl iets verouderde tijden nog
+  altijd beter zijn dan niets.
+- **De app keek niet of het versturen lukte**, dus een serverfout gold als
+  geslaagd en werd nooit opnieuw geprobeerd.
+- **Een verlopen abonnement** werd door de server opgeruimd terwijl de app "aan"
+  bleef tonen. De app meldt zich nu opnieuw aan.
+- **Meldingen bleven in de oude taal** na het wisselen van taal, en
+  serverfoutmeldingen kwamen in de taal van je browser in plaats van die van de
+  app.
+
+**Offline**
+
+- **De app opende niet zonder bereik.** Alleen de offline-pagina en de iconen
+  stonden voorgeladen, geen enkel scherm van de app zelf: die kwamen er alleen
+  in als je ze ooit met een harde paginalading had geopend. Wie zijn agenda via
+  het menu opende, kreeg in de trein "je bent offline" terwijl zijn gegevens
+  gewoon op het apparaat stonden.
+- **Mislukte antwoorden werden bewaard.** Een 404 tijdens een uitrol of de
+  inlogpagina van een captive portal op schoolwifi belandde in de cache, en
+  daarna deed de app het niet meer tot de volgende versie.
+- **Eén mislukte download liet de app zonder offline-pagina achter**, voorgoed.
+- **Tikken op een vertrekmelding** haalde het openstaande venster naar voren
+  zonder ergens heen te gaan.
+
+**Rooster**
+
+- **Eigen aanpassingen aan een gekoppelde les** — kleur, vervoermiddel — waren
+  na elke verversing weer weg.
+
+**Beveiliging**
+
+- **Een IPv4-adres vermomd als IPv6 glipte volledig langs de controle** op een
+  agenda-link. Het metadata-adres van de cloudprovider was zo gewoon op te
+  vragen.
+- **Elke hostnaam die met "fc" of "fd" begint** werd geweigerd als privé-adres;
+  fd.nl kon dus geen agenda-link zijn.
+- **Alleen de naam werd gecontroleerd, nooit waar die naam heen wijst.** De
+  server zoekt de naam nu op en weigert elk adres dat naar binnen wijst, ook bij
+  elke omleiding.
+- **De 4MB-grens telde pas nadat het hele bestand in het geheugen stond**, en
+  alleen als de bron een lengte meestuurde.
+- **De verkeersdrempel was met één kopregel te omzeilen.** Hij las een waarde
+  die de bezoeker zelf invult; wie bij elke aanvraag een ander adres verzon
+  kreeg elke keer een verse emmer.
+- **Aanmelden voor meldingen accepteerde elk https-adres**, en de server roept
+  dat adres later zelf aan. Nu alleen de pushdiensten van de browsers.
+
+**Onder de motorkap**
+
+- `src/lib/transitQuery.ts` bouwt de vraag aan de OV-planner op, met de
+  standaardwaarden van MOTIS erbij gedocumenteerd en onder test. Die parameters
+  bepalen het antwoord meer dan welke code dan ook.
+- De tests draaien in Europe/Amsterdam in plaats van UTC: in UTC komt de nacht
+  van de tijdswissel nooit langs.
+- `scripts/reis-check.mjs` laat zien wat de OV-planner echt teruggeeft, met
+  varianten naast elkaar. Bedoeld om een verschil met 9292 te herleiden tot de
+  gegevens of tot een instelling.
+- Van 152 naar 215 tests.
+
+## 0.28.0
+
+- **De app kiest nu zelf de beste rit.** De reisplanner geeft meerdere opties terug die elk
+  ergens beter in zijn — de een vertrekt later, de ander komt eerder aan — en in welke volgorde
+  dat binnenkomt ligt niet vast. De app pakte gewoon de eerste, en op een heenreis was dat vaak
+  de **vroegste vertrektijd met de langste route**: je stond een half uur te vroeg op het
+  perron voor een omweg. Nu vraagt de app er vijf op en kiest hij bewust: bij "uiterlijk
+  aankomen om" de laatste vertrektijd waarmee je nog op tijd bent, bij een terugreis de
+  vroegste aankomst.
+- **Een overstap telt mee.** Vijf minuten later de deur uit is fijn, maar niet als je er een
+  extra overstap voor terugkrijgt: die kost tijd op het perron en gaat als eerste mis bij
+  vertraging. Een overstap weegt daarom als vijf minuten.
+- **Lopen kan altijd, ook met een fiets.** Wie "fiets naar de halte" aan had staan kón niet meer
+  lopen: de halte om de hoek viel af en je kwam op een verder station uit. Nu liggen lopen en
+  fietsen naast elkaar en kiest de planner per rit wat sneller is.
+- **Twintig minuten naar het station lopen mag.** De planner hield het uit zichzelf op een
+  kwartier, en wie verder liep kreeg daardoor geen wandelroute maar een omweg met een extra bus.
+- **Geen dubbele en geen zinloze opties meer.** Een rit die eerder weg moet én later aankomt dan
+  een andere valt weg, net als dezelfde trein die twee keer verschijnt met een net ander looppad.
+  De lijst staat op vertrektijd zoals een vertrekbord, en de kortste rit krijgt het merkje
+  *snelste*, want die hoeft niet bovenaan te staan.
+- **De nachtrit van vier uur staat er niet meer bij.** Een rit die om 01:00 vertrekt en om 05:28
+  aankomt is formeel de vroegste aankomst, dus die bleef bovenaan staan naast ritten van 57
+  minuten. Niemand wacht vier uur op een station: opties die meer dan twee keer zo lang duren
+  als de snelste vallen weg.
+- **Rijdt er niets, dan volgt de loop- of fietsroute.** Voor een bestemming zonder OV in de buurt
+  zei de app "geen verbinding"; nu krijg je gewoon de directe route, tot drie kwartier.
+
+## 0.18.0 t/m 0.27.0
+
+Nog niet uitgeschreven in dit bestand. Wat er in die versies veranderde staat wel in de
+commitberichten (`git log --oneline`).
+
 ## 0.17.1
 
 - **De hele achtergrond krijgt je kleur, de kaarten niet.** Eerst waren ook de kaarten, vlakken

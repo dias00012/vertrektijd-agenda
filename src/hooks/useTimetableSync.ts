@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { headers } from "@/lib/api";
 import { useAgenda } from "./useAgenda";
 import { parseIcs } from "@/lib/ical";
 import { compareTimetable } from "@/lib/timetableChanges";
@@ -99,7 +100,7 @@ export function useTimetableSync(): void {
         try {
           const response = await fetch("/api/rooster", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers({ "Content-Type": "application/json" }),
             body: JSON.stringify({ url: feed.url }),
           });
           if (!response.ok) return;
@@ -134,6 +135,21 @@ export function useTimetableSync(): void {
           // iets weet dat jij nog niet weet. Een vervallen eerste uur meldt
           // Magister zelf niet.
           const mine = activities.filter((item) => item.source === feed.source);
+
+          // Wat jíj aan een les hebt aangepast, overleeft de verversing. De
+          // koppeling levert kleur noch vervoermiddel, dus alles wat daar
+          // staat heb je zelf gekozen — en dat werd elke dag overschreven
+          // omdat de reeks in zijn geheel werd vervangen.
+          const lessonKey = (item: { date: string; startTime: string; title: string }) =>
+            `${item.date}|${item.startTime}|${item.title}`;
+          const previous = new Map(mine.map((item) => [lessonKey(item), item]));
+          for (const draft of drafts) {
+            const before = previous.get(lessonKey(draft));
+            if (!before) continue;
+            draft.color = before.color;
+            draft.travelMode = before.travelMode ?? null;
+          }
+
           const changes = compareTimetable(mine, drafts, todayKey());
           if (changes.length > 0) {
             saveChanges(changes);
@@ -157,17 +173,22 @@ export function useTimetableSync(): void {
     /** Zet het tijdstip weg waarop deze agenda voor het laatst is geprobeerd. */
     function markSynced(source: string) {
       const now = new Date().toISOString();
+      // Op de huidige instellingen rekenen, niet op de momentopname van toen
+      // dit effect begon. Twee agenda's die vlak na elkaar klaar zijn schreven
+      // anders allebei hun eigen versie van de lijst terug, en dan raakte de
+      // eerste zijn tijdstip kwijt — waarna hij bij de volgende tik meteen
+      // opnieuw ging ophalen, eindeloos.
       if (source === TIMETABLE_SOURCE) {
-        if (settings.timetable) {
-          updateSettings({ timetable: { ...settings.timetable, syncedAt: now } });
-        }
+        updateSettings((current) =>
+          current.timetable ? { timetable: { ...current.timetable, syncedAt: now } } : {},
+        );
         return;
       }
-      updateSettings({
-        calendars: (settings.calendars ?? []).map((calendar) =>
+      updateSettings((current) => ({
+        calendars: (current.calendars ?? []).map((calendar) =>
           subscriptionSource(calendar.id) === source ? { ...calendar, syncedAt: now } : calendar,
         ),
-      });
+      }));
     }
 
     return () => {

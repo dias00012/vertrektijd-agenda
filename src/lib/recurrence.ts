@@ -1,5 +1,5 @@
 import type { Activity, ActivityOccurrence, Recurrence } from "./types";
-import { daysBetween, parseDateKey, startOfWeekKey } from "./time";
+import { addDaysToKey, daysBetween, parseDateKey, startOfWeekKey } from "./time";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -53,6 +53,12 @@ export function sortWeekdays(days: number[]): number[] {
 
 /** De laatste dag van een activiteit; gelijk aan de eerste bij één dag. */
 export function lastDayOf(activity: Activity): string {
+  // Een herhaling en een einddatum sluiten elkaar uit: bij een reeks bepaalt
+  // `until` waar hij ophoudt, niet `endDate`. Bleef er een oude einddatum
+  // staan (het formulier verbergt het veld maar wiste hem niet), dan telde de
+  // app die dagen alsnog mee en stond er "dag 8 van 5" op de kaart.
+  if (activity.recurrence) return activity.date;
+
   const end = activity.endDate;
   return end && end > activity.date ? end : activity.date;
 }
@@ -91,6 +97,27 @@ export function occursOn(activity: Activity, dateKey: string): boolean {
   return true;
 }
 
+/** Zo ver kijken we terug naar het laatste voorkomen van een afgelopen reeks. */
+const LOOKBACK_DAYS = 400;
+
+/**
+ * De laatste dag waarop deze activiteit viel, op of vóór `before`.
+ *
+ * Nodig zodra een reeks voorbij is: de vraag is dan "wanneer was dat ook
+ * alweer", en dan hoort de laatste keer erbij en niet de allereerste.
+ */
+export function lastOccurrenceDate(activity: Activity, before: string): string | null {
+  const until = activity.recurrence?.until;
+  const from = until && until < before ? until : before;
+
+  for (let offset = 0; offset <= LOOKBACK_DAYS; offset += 1) {
+    const dateKey = addDaysToKey(from, -offset);
+    if (dateKey < activity.date) return null;
+    if (occursOn(activity, dateKey)) return dateKey;
+  }
+  return null;
+}
+
 /**
  * Maakt de concrete dag-versie van een activiteit.
  *
@@ -107,6 +134,7 @@ export function toOccurrence(activity: Activity, dateKey: string): ActivityOccur
     date: dateKey,
     occurrenceId: `${activity.id}:${dateKey}`,
     recurring: Boolean(activity.recurrence),
+    seriesDate: activity.date,
     span:
       total > 1
         ? {

@@ -84,7 +84,9 @@ export async function motisGeocode(
     { headers: { "User-Agent": config.userAgent, Accept: "application/json" } },
     8_000,
   );
-  if (!response.ok) return [];
+  // Bewust een fout en geen lege lijst: "de dienst hapert" is iets anders dan
+  // "niets gevonden", en de aanroeper bewaart die twee verschillend lang.
+  if (!response.ok) throw new ProviderError("api.geocodeFailed");
 
   const data = (await response.json()) as {
     name?: string;
@@ -92,7 +94,7 @@ export async function motisGeocode(
     lon?: number;
     type?: string;
   }[];
-  if (!Array.isArray(data)) return [];
+  if (!Array.isArray(data)) throw new ProviderError("api.geocodeFailed");
 
   return data
     .filter((item) => typeof item.lat === "number" && typeof item.lon === "number" && item.name)

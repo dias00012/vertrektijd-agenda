@@ -2,7 +2,9 @@ import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { motisPlan, toTravelLeg } from "./motis";
-import type { GeoLocation, TravelMode, TravelResult, TransitBike } from "../types";
+import { pickItinerary } from "../itineraries";
+import { place, transitParams } from "../transitQuery";
+import type { BikeEnds, GeoLocation, TravelMode, TravelResult } from "../types";
 
 /**
  * Routering per vervoermiddel voor de agenda: één reis van A naar B.
@@ -17,8 +19,17 @@ import type { GeoLocation, TravelMode, TravelResult, TransitBike } from "../type
  */
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-/** OV-plannen verouderen sneller: dienstregeling en vertragingen wijzigen. */
-const TRANSIT_CACHE_TTL_MS = 10 * 60 * 1000;
+/**
+ * OV-plannen verouderen sneller: dienstregeling en vertragingen wijzigen.
+ *
+ * Korter dan de twee minuten waarmee de app ververst (`REFRESH_MS` in
+ * `useOccurrenceTravel`). Stond hier tien minuten, en dan liep al dat
+ * verversen dood op de cache: je kreeg tot tien minuten lang letterlijk
+ * hetzelfde antwoord terug, inclusief "op tijd" voor een trein die inmiddels
+ * negen minuten vertraging had. Een minuut vangt nog steeds de stortvloed op
+ * van meerdere kaarten en apparaten die tegelijk om dezelfde rit vragen.
+ */
+const TRANSIT_CACHE_TTL_MS = 60 * 1000;
 /** Ruime bovengrens zodat ook lange fiets-/looproutes een antwoord geven. */
 const MAX_DIRECT_SECONDS = 4 * 60 * 60;
 
@@ -30,8 +41,8 @@ export interface RouteOptions {
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (gebruikt voor de terugreis met OV). */
   departAt?: string;
-  /** Fiets naar (en eventueel vanaf) de halte; alleen zinvol bij OV. */
-  transitBike?: TransitBike;
+  /** Aan welke kant van deze rit een fiets staat; alleen zinvol bij OV. */
+  bike?: BikeEnds;
 }
 
 /** Berekent de reis tussen twee punten voor het gekozen vervoermiddel. */
@@ -49,8 +60,8 @@ export async function route(
   // En de fietskeuze ook: fietsen naar het station geeft een andere reis dan
   // lopen. Zonder dit krijg je de eerder berekende looproute terug.
   const bikePart =
-    mode === "transit" && options.transitBike && options.transitBike !== "none"
-      ? `+${options.transitBike}`
+    mode === "transit" && options.bike && options.bike !== "none"
+      ? `+${options.bike}`
       : "";
   const key = `route:${config.provider}:${mode}${timePart}${bikePart}:${coord(from)}>${coord(to)}`;
 
@@ -72,10 +83,6 @@ export async function route(
 
 function coord(point: GeoLocation): string {
   return `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
-}
-
-export function place(point: GeoLocation): string {
-  return `${point.lat},${point.lon}`;
 }
 
 /* --- Auto via OSRM ------------------------------------------------------ */
@@ -145,24 +152,6 @@ async function planDirect(
 
 /* --- OV via MOTIS ------------------------------------------------------- */
 
-/** Zo lang mag het fietsdeel naar of vanaf een halte duren. */
-const MAX_BIKE_SECONDS = 30 * 60;
-
-/**
- * Fietsen naar de halte, en eventueel aan de andere kant weer verder. Dat
- * scheelt op een gemiddelde studentenreis al snel twintig minuten ten opzichte
- * van lopen, met precies dezelfde trein.
- */
-export function applyBikeOptions(params: URLSearchParams, bike: TransitBike | undefined): void {
-  if (!bike || bike === "none") return;
-  params.set("preTransitModes", "BIKE");
-  params.set("maxPreTransitTime", String(MAX_BIKE_SECONDS));
-  if (bike === "both") {
-    params.set("postTransitModes", "BIKE");
-    params.set("maxPostTransitTime", String(MAX_BIKE_SECONDS));
-  }
-}
-
 async function planTransit(
   from: GeoLocation,
   to: GeoLocation,
@@ -171,17 +160,20 @@ async function planTransit(
   const arriveBy = Boolean(options.arriveBy);
   const time = options.arriveBy ?? options.departAt ?? new Date().toISOString();
 
-  const params = new URLSearchParams({
-    fromPlace: place(from),
-    toPlace: place(to),
+  const params = transitParams({
+    from,
+    to,
+    shape: "best",
     time,
-    arriveBy: String(arriveBy),
-    numItineraries: "1",
+    arriveBy,
+    bike: options.bike,
   });
-  applyBikeOptions(params, options.transitBike);
 
   const data = await motisPlan(params);
-  const best = data.itineraries?.[0];
+  // Levert het OV niets op, dan is er soms nog wel een directe loop- of
+  // fietsroute. Die tonen is beter dan zeggen dat er geen verbinding is.
+  const candidates = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  const best = pickItinerary(candidates, { arriveBy, time });
   if (!best?.duration || !best.startTime || !best.endTime) {
     throw new ProviderError("api.noTransit", 422);
   }

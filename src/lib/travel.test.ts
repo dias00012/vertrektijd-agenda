@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeDeparture, computeReturn, nextOccurrenceDate, travelPlanForDate } from "./travel";
+import {
+  computeDeparture,
+  computeReturn,
+  departureDateTime,
+  nextOccurrenceDate,
+  travelPlanForDate,
+} from "./travel";
 import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
 
 const HOME = { label: "Thuis", lat: 52.37, lon: 5.21 };
@@ -58,6 +64,145 @@ function activity(patch: Partial<ActivityOccurrence> = {}): ActivityOccurrence {
     ...patch,
   } as ActivityOccurrence;
 }
+
+describe("computeDeparture bij een rit die de starttijd niet haalt", () => {
+  it("houdt de vertrektijd op de dag zelf staan", () => {
+    // Zondagse bijbaan om 09:00 op een slecht bereikbare plek: er rijdt niets
+    // dat op tijd aankomt, de eerste bus gaat pas om 09:32. Die vertrektijd
+    // hoort gewoon op de dag zelf te staan, niet als "dag ervoor".
+    const result = computeDeparture(
+      activity({
+        startTime: "09:00",
+        endTime: "14:00",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 62,
+          plannedDeparture: new Date(2026, 8, 7, 9, 32).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(result?.time).toBe("09:32");
+    expect(result?.previousDay).toBe(false);
+    expect(result?.minutes).toBe(9 * 60 + 32);
+  });
+
+  it("zet hem wel op de dag ervoor als de rit echt de vorige dag vertrekt", () => {
+    const result = computeDeparture(
+      activity({
+        startTime: "00:30",
+        endTime: "04:00",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 34,
+          plannedDeparture: new Date(2026, 8, 6, 23, 50).toISOString(),
+          plannedArrival: new Date(2026, 8, 7, 0, 24).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(result?.time).toBe("23:50");
+    expect(result?.previousDay).toBe(true);
+  });
+});
+
+describe("computeDeparture bij een herhalende activiteit", () => {
+  it("noemt een rit van een andere dag niet 'de dag ervoor'", () => {
+    // Bij een reeks staat er één berekende rit opgeslagen, van de eerste dag
+    // die eraan komt. Kijk je naar donderdag terwijl de rit van maandag is,
+    // dan mag die datum niets zeggen over "dag ervoor" — anders valt de
+    // vertrektijd uit de dag en komt de melding een dag te vroeg.
+    const result = computeDeparture(
+      activity({
+        date: "2026-09-10",
+        occurrenceId: "a1:2026-09-10",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 42,
+          plannedDeparture: new Date(2026, 8, 7, 8, 12).toISOString(),
+          plannedArrival: new Date(2026, 8, 7, 8, 54).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(result?.previousDay).toBe(false);
+    expect(result?.time).toBe("08:12");
+    expect(result?.minutes).toBe(8 * 60 + 12);
+  });
+});
+
+describe("departureDateTime", () => {
+  it("zet een gewone vertrektijd op dezelfde dag", () => {
+    const moment = departureDateTime(activity({ travel: travel() }), settings());
+    // 09:00 - 25 min reizen - 10 min marge = 08:25 op de dag zelf.
+    expect(moment?.toString()).toBe(new Date(2026, 8, 7, 8, 25).toString());
+  });
+
+  it("zet een OV-rit die voor middernacht vertrekt op de dag ervoor", () => {
+    // Een activiteit die om 00:30 begint met de laatste trein van de avond
+    // ervoor: het vertrek is 6 september 23:50, niet 7 september.
+    const moment = departureDateTime(
+      activity({
+        startTime: "00:30",
+        endTime: "04:00",
+        travel: travel({
+          mode: "transit",
+          durationMinutes: 34,
+          plannedDeparture: new Date(2026, 8, 6, 23, 50).toISOString(),
+          plannedArrival: new Date(2026, 8, 7, 0, 24).toISOString(),
+        }),
+      }),
+      settings({ travelMode: "transit" }),
+    );
+
+    expect(moment?.toString()).toBe(new Date(2026, 8, 6, 23, 50).toString());
+  });
+
+  it("houdt de klok gelijk in de nacht dat de zomertijd eindigt", () => {
+    // 25 oktober 2026 duurt 25 uur. Een aftreksom in milliseconden zou het
+    // vertrek een uur mis zetten, terwijl de app "22:50" op het scherm zet.
+    const moment = departureDateTime(
+      activity({
+        date: "2026-10-25",
+        startTime: "06:00",
+        travel: travel({ durationMinutes: 420 }),
+      }),
+      settings(),
+    );
+
+    expect(moment?.getHours()).toBe(22);
+    expect(moment?.getMinutes()).toBe(50);
+    expect(moment?.getDate()).toBe(24);
+  });
+
+  it("houdt de klok ook gelijk in de nacht dat de zomertijd begint", () => {
+    // 29 maart 2026 duurt 23 uur.
+    const moment = departureDateTime(
+      activity({
+        date: "2026-03-29",
+        startTime: "06:00",
+        travel: travel({ durationMinutes: 420 }),
+      }),
+      settings(),
+    );
+
+    expect(moment?.getHours()).toBe(22);
+    expect(moment?.getMinutes()).toBe(50);
+    expect(moment?.getDate()).toBe(28);
+  });
+
+  it("zet ook een berekende vertrektijd voor middernacht op de dag ervoor", () => {
+    const moment = departureDateTime(
+      activity({ startTime: "06:00", travel: travel({ durationMinutes: 420 }) }),
+      settings(),
+    );
+    // 06:00 - 7 uur - 10 min marge = 22:50 de avond ervoor.
+    expect(moment?.toString()).toBe(new Date(2026, 8, 6, 22, 50).toString());
+  });
+});
 
 describe("computeDeparture", () => {
   it("rekent starttijd - reistijd - marge", () => {
@@ -124,6 +269,46 @@ describe("computeReturn", () => {
     expect(result?.nextDay).toBe(true);
   });
 
+  it("valt terug op de thuisreis als de doorreis nog niet berekend is", () => {
+    // De doorreis wordt alleen opgehaald voor de eerstvolgende dag dat een
+    // activiteit valt. Kijk je vooruit naar een dag waarop je wél doorreist,
+    // dan is die er nog niet — en dan verdween ook het antwoord op "hoe laat
+    // ben ik thuis". Liever de thuisreis dan helemaal niets.
+    const result = computeReturn(
+      activity({
+        returnTravel: travel({ durationMinutes: 68 }),
+        onwardTravel: null,
+        travelRole: {
+          outbound: true,
+          inbound: true,
+          arrivesFrom: null,
+          onward: { label: "Sportschool", lat: 52.4, lon: 5.3 },
+        },
+      }),
+      settings(),
+    );
+
+    expect(result?.time).toBe("18:08");
+  });
+
+  it("laat de thuisreis weg zodra de doorreis er wel is", () => {
+    const result = computeReturn(
+      activity({
+        returnTravel: travel({ durationMinutes: 68 }),
+        onwardTravel: travel({ durationMinutes: 20 }),
+        travelRole: {
+          outbound: true,
+          inbound: true,
+          arrivesFrom: null,
+          onward: { label: "Sportschool", lat: 52.4, lon: 5.3 },
+        },
+      }),
+      settings(),
+    );
+
+    expect(result).toBeNull();
+  });
+
   it("neemt bij OV de aankomst uit de dienstregeling", () => {
     const result = computeReturn(
       activity({
@@ -139,6 +324,28 @@ describe("computeReturn", () => {
 });
 
 describe("nextOccurrenceDate", () => {
+  it("pakt bij iets dat meer dagen duurt de dag van vandaag", () => {
+    // Stage van 1 september t/m 19 december: op 15 oktober wil je de
+    // dienstregeling van 15 oktober, niet die van anderhalve maand geleden.
+    const stage = activity({
+      date: "2026-09-01",
+      endDate: "2026-12-19",
+      recurrence: null,
+    });
+
+    expect(nextOccurrenceDate(stage, new Date(2026, 9, 15, 8, 0))).toBe("2026-10-15");
+  });
+
+  it("houdt bij zoiets de eerste dag aan zolang die nog moet komen", () => {
+    const stage = activity({
+      date: "2026-09-01",
+      endDate: "2026-12-19",
+      recurrence: null,
+    });
+
+    expect(nextOccurrenceDate(stage, new Date(2026, 7, 20, 8, 0))).toBe("2026-09-01");
+  });
+
   it("geeft bij een losse activiteit gewoon zijn eigen datum", () => {
     expect(nextOccurrenceDate(activity(), new Date(2026, 8, 1))).toBe("2026-09-07");
   });
@@ -184,6 +391,66 @@ describe("travelPlanForDate", () => {
     const monday = travelPlanForDate(item, settings(), "2026-09-07");
     const wednesday = travelPlanForDate(item, settings(), "2026-09-09");
     expect(monday?.outboundKey).toBe(wednesday?.outboundKey);
+  });
+
+  it("verandert de sleutel als je de marge aanpast", () => {
+    // Bij OV komt de vertrektijd uit de rit die "uiterlijk aankomen om
+    // starttijd min marge" oplevert. Zit de marge niet in de sleutel, dan
+    // vindt de app de oude uitkomst nog geldig en verandert er niets op het
+    // scherm terwijl je hem net van 10 naar 30 minuten hebt gezet.
+    const tien = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", bufferMinutes: 10 }),
+      "2026-09-07",
+    );
+    const dertig = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", bufferMinutes: 30 }),
+      "2026-09-07",
+    );
+
+    expect(tien?.arriveBy).not.toBe(dertig?.arriveBy);
+    expect(tien?.outboundKey).not.toBe(dertig?.outboundKey);
+  });
+
+  it("zet de fiets heen aan het begin en terug aan het eind", () => {
+    // Je fiets staat thuis: op de heenreis is dat het eerste stuk, op de
+    // terugreis het laatste. Een doorreis komt niet langs huis.
+    const plan = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", transitBike: "start" }),
+      "2026-09-07",
+      { label: "Sportschool", lat: 52.4, lon: 5.3 },
+    );
+
+    expect(plan?.outboundBike).toBe("origin");
+    expect(plan?.returnBike).toBe("destination");
+    expect(plan?.onwardBike).toBe("none");
+  });
+
+  it("geldt bij een fiets aan beide kanten voor elke rit", () => {
+    const plan = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", transitBike: "both" }),
+      "2026-09-07",
+      { label: "Sportschool", lat: 52.4, lon: 5.3 },
+    );
+
+    expect(plan?.outboundBike).toBe("both");
+    expect(plan?.returnBike).toBe("both");
+    expect(plan?.onwardBike).toBe("both");
+  });
+
+  it("geeft heen en terug een andere sleutel zodra er een fiets in het spel is", () => {
+    // Anders zou de terugreis de heenreis-uitkomst kunnen hergebruiken.
+    const plan = travelPlanForDate(
+      activity({ travelMode: "transit" }),
+      settings({ travelMode: "transit", transitBike: "start" }),
+      "2026-09-07",
+    );
+
+    expect(plan?.outboundKey).toContain("+origin");
+    expect(plan?.returnKey).toContain("+destination");
   });
 
   it("geeft niets terug zonder thuislocatie", () => {

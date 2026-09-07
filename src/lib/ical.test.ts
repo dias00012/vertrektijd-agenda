@@ -326,3 +326,324 @@ describe("herhaling over de tijdswissel", () => {
     ]);
   });
 });
+
+/**
+ * Alleen wekelijkse herhalingen werden uitgeklapt. Een gekoppelde eigen agenda
+ * zit vol met de andere soorten, en die verschenen dan als één losse afspraak:
+ * de dagelijkse stand-up stond er één keer, de verjaardag verdween helemaal.
+ */
+describe("parseIcs met andere herhalingen dan wekelijks", () => {
+  it("klapt een dagelijkse herhaling uit", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:standup",
+          "SUMMARY:Stand-up",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DTEND;TZID=Europe/Amsterdam:20260907T091500",
+          "RRULE:FREQ=DAILY;COUNT=5",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events.map((event) => event.date)).toEqual([
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+    ]);
+  });
+
+  it("houdt bij dagelijks het interval aan", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:omdedag",
+          "SUMMARY:Hardlopen",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T070000",
+          "DTEND;TZID=Europe/Amsterdam:20260907T080000",
+          "RRULE:FREQ=DAILY;INTERVAL=3;COUNT=3",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events.map((event) => event.date)).toEqual([
+      "2026-09-07",
+      "2026-09-10",
+      "2026-09-13",
+    ]);
+  });
+
+  it("klapt een maandelijkse herhaling uit op dezelfde dag van de maand", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:huur",
+          "SUMMARY:Huur betalen",
+          "DTSTART;TZID=Europe/Amsterdam:20260901T100000",
+          "DTEND;TZID=Europe/Amsterdam:20260901T101500",
+          "RRULE:FREQ=MONTHLY",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events.map((event) => event.date)).toEqual(["2026-09-01", "2026-10-01"]);
+  });
+
+  it("slaat een maand zonder die dag over in plaats van te schuiven", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:eenendertigste",
+          "SUMMARY:Maandafsluiting",
+          "DTSTART;TZID=Europe/Amsterdam:20260831T100000",
+          "DTEND;TZID=Europe/Amsterdam:20260831T110000",
+          "RRULE:FREQ=MONTHLY",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      { from: new Date("2026-08-01T00:00:00Z"), to: new Date("2026-11-30T23:59:59Z"), zone: "Europe/Amsterdam" },
+    );
+
+    // September heeft geen 31e; die maand valt weg, oktober doet weer mee.
+    expect(events.map((event) => event.date)).toEqual(["2026-08-31", "2026-10-31"]);
+  });
+
+  it("klapt een jaarlijkse herhaling uit", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:verjaardag",
+          "SUMMARY:Verjaardag",
+          "DTSTART;TZID=Europe/Amsterdam:20200915T000000",
+          "DTEND;TZID=Europe/Amsterdam:20200915T010000",
+          "RRULE:FREQ=YEARLY",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events.map((event) => event.date)).toEqual(["2026-09-15"]);
+  });
+
+  it("laat een frequentie die we niet kennen als losse afspraak staan", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:raar",
+          "SUMMARY:Iets",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DTEND;TZID=Europe/Amsterdam:20260907T100000",
+          "RRULE:FREQ=HOURLY;COUNT=5",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events).toHaveLength(1);
+  });
+});
+
+/**
+ * Een agenda meldt een afgelaste of verplaatste les met een tweede VEVENT met
+ * dezelfde UID en een RECURRENCE-ID. Werd die koppeling genegeerd, dan bleef
+ * de afgelaste les staan en kwam de verplaatste er dubbel in.
+ */
+describe("parseIcs met losse afwijkingen op een reeks", () => {
+  const REEKS = [
+    "BEGIN:VEVENT",
+    "UID:wiskunde",
+    "SUMMARY:Wiskunde",
+    "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+    "DTEND;TZID=Europe/Amsterdam:20260907T100000",
+    "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4",
+    "END:VEVENT",
+  ];
+
+  it("haalt een afgelaste les uit de reeks", () => {
+    const events = parseIcs(
+      ics(
+        [
+          ...REEKS,
+          "BEGIN:VEVENT",
+          "UID:wiskunde",
+          "RECURRENCE-ID;TZID=Europe/Amsterdam:20260914T090000",
+          "SUMMARY:Wiskunde",
+          "DTSTART;TZID=Europe/Amsterdam:20260914T090000",
+          "DTEND;TZID=Europe/Amsterdam:20260914T100000",
+          "STATUS:CANCELLED",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events.map((event) => event.date)).toEqual([
+      "2026-09-07",
+      "2026-09-21",
+      "2026-09-28",
+    ]);
+  });
+
+  it("zet een verplaatste les op de nieuwe dag, en niet dubbel", () => {
+    const events = parseIcs(
+      ics(
+        [
+          ...REEKS,
+          "BEGIN:VEVENT",
+          "UID:wiskunde",
+          "RECURRENCE-ID;TZID=Europe/Amsterdam:20260914T090000",
+          "SUMMARY:Wiskunde (verplaatst)",
+          "DTSTART;TZID=Europe/Amsterdam:20260916T130000",
+          "DTEND;TZID=Europe/Amsterdam:20260916T140000",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events.map((event) => event.date)).toEqual([
+      "2026-09-07",
+      "2026-09-16",
+      "2026-09-21",
+      "2026-09-28",
+    ]);
+    const verplaatst = events.find((event) => event.date === "2026-09-16");
+    expect(verplaatst?.startTime).toBe("13:00");
+    expect(verplaatst?.title).toBe("Wiskunde (verplaatst)");
+  });
+
+  it("raakt een reeks zonder afwijkingen niet kwijt", () => {
+    const events = parseIcs(ics(REEKS.join("\r\n")), WINDOW);
+
+    expect(events.map((event) => event.date)).toEqual([
+      "2026-09-07",
+      "2026-09-14",
+      "2026-09-21",
+      "2026-09-28",
+    ]);
+  });
+});
+
+describe("parseIcs met een duur in plaats van een eindtijd", () => {
+  it("leest DURATION als er geen DTEND staat", () => {
+    // Zonder dit werd elke afspraak zonder DTEND stil een uur lang, terwijl
+    // agenda's juist vaak een duur meesturen.
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:werkgroep",
+          "SUMMARY:Werkgroep",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DURATION:PT1H45M",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.startTime).toBe("09:00");
+    expect(events[0]?.endTime).toBe("10:45");
+  });
+
+  it("kent ook dagen en losse minuten", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:kort",
+          "SUMMARY:Kort",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DURATION:PT30M",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.endTime).toBe("09:30");
+  });
+
+  it("valt terug op een uur bij een duur die nergens op slaat", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:raar",
+          "SUMMARY:Raar",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DURATION:banaan",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.endTime).toBe("10:00");
+  });
+
+  it("laat een eindtijd voorgaan op een duur", () => {
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:beide",
+          "SUMMARY:Beide",
+          "DTSTART;TZID=Europe/Amsterdam:20260907T090000",
+          "DTEND;TZID=Europe/Amsterdam:20260907T101500",
+          "DURATION:PT5H",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      WINDOW,
+    );
+
+    expect(events[0]?.endTime).toBe("10:15");
+  });
+});
+
+describe("parseIcs bij een vrije periode over de tijdswissel", () => {
+  it("houdt de laatste dag erbij als de zomertijd binnen de periode eindigt", () => {
+    // 25 oktober 2026 duurt 25 uur. Met een aftreksom van 24 uur viel de
+    // laatste dag van de herfstvakantie eraf.
+    const events = parseIcs(
+      ics(
+        [
+          "BEGIN:VEVENT",
+          "UID:herfst",
+          "SUMMARY:Herfstvakantie",
+          "DTSTART;VALUE=DATE:20261019",
+          "DTEND;VALUE=DATE:20261027",
+          "END:VEVENT",
+        ].join("\r\n"),
+      ),
+      {
+        from: new Date("2026-10-01T00:00:00Z"),
+        to: new Date("2026-11-15T00:00:00Z"),
+        zone: "Europe/Amsterdam",
+      },
+    );
+
+    expect(events[0]).toMatchObject({
+      allDay: true,
+      date: "2026-10-19",
+      endDate: "2026-10-26",
+    });
+  });
+});
