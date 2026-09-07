@@ -172,6 +172,16 @@ self.addEventListener("push", (event) => {
   );
 });
 
+/*
+ * De browser mag een pushabonnement vernieuwen (pushsubscriptionchange). Dat
+ * afvangen kan hier niet zinnig: /api/push/subscribe wil het apparaat-id, en
+ * dat staat in localStorage waar een worker niet bij kan. In plaats daarvan
+ * meldt de app zichzelf opnieuw aan zodra hij zijn wachtrij bijwerkt
+ * (`refreshSubscription` in src/lib/push.ts). Tussen het vernieuwen en de
+ * eerstvolgende keer dat je de app opent kan dus een melding wegvallen; dat is
+ * bewust, want half aanmelden is erger dan wachten tot je hem opent.
+ */
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(

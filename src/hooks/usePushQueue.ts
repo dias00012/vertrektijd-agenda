@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useAgenda } from "./useAgenda";
 import { useLanguage } from "./useLanguage";
 import { plannedReminders } from "@/lib/reminders";
-import { pushEnabled, replaceQueue } from "@/lib/push";
+import { pushEnabled, refreshSubscription, replaceQueue } from "@/lib/push";
 
 /**
  * Houdt de wachtrij op de server gelijk aan wat je agenda zegt.
@@ -66,8 +66,19 @@ export function usePushQueue(): void {
         return;
       }
 
-      lastSent.current = { fingerprint, at: Date.now() };
-      if (active) await replaceQueue(messages);
+      // Het abonnement opnieuw aanmelden: de server ruimt een apparaat op
+      // zodra de pushdienst zegt dat het verlopen is, en dan kwam er nooit
+      // meer een melding terwijl de app "aan" bleef tonen.
+      if (!active) return;
+      await refreshSubscription();
+      if (!active) return;
+
+      const stored = await replaceQueue(messages);
+      // Alleen onthouden wat er echt staat. Deed de server het niet, dan mag
+      // de volgende poging het opnieuw sturen in plaats van te denken dat de
+      // meldingen klaarstaan.
+      if (stored) lastSent.current = { fingerprint, at: Date.now() };
+      else retry = setTimeout(() => void send(), MIN_INTERVAL_MS);
     }
 
     void send();
