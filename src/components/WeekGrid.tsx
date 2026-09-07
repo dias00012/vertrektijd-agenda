@@ -81,6 +81,10 @@ function draftFrom(activity: Activity, overrides: Partial<ActivityDraft>): Activ
     category: activity.category,
     title: activity.title,
     date: activity.date,
+    // Meenemen, anders raakt een verplaatste activiteit ze kwijt: een vrije
+    // week zou na één sleep een blok van een uur worden.
+    allDay: activity.allDay ?? false,
+    endDate: activity.endDate ?? null,
     startTime: activity.startTime,
     endTime: activity.endTime,
     location: activity.location,

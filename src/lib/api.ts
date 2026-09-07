@@ -21,7 +21,7 @@ function say(key: TranslationKey): string {
  * Daarom gaat hij bij elke aanvraag mee, zodat foutmeldingen in dezelfde taal
  * terugkomen als de rest van de app.
  */
-function headers(extra: Record<string, string> = {}): Record<string, string> {
+export function headers(extra: Record<string, string> = {}): Record<string, string> {
   return { "X-Language": getLanguage(), ...extra };
 }
 

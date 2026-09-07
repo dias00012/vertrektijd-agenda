@@ -67,6 +67,11 @@ function initialDraft(
       // aangeklikte dag erin verdween alles wat daarvóór lag — ook als je
       // alleen de kleur veranderde.
       date: seriesStart(activity),
+      // Zonder deze twee klopte het formulier bij bewerken toevallig nog wel
+      // (updateActivity laat ontbrekende velden staan), maar dupliceren maakte
+      // van een vakantie van vijf dagen stil één dag van 09:00 tot 10:00.
+      allDay: activity.allDay ?? false,
+      endDate: activity.endDate ?? null,
       startTime: activity.startTime,
       endTime: activity.endTime,
       location: activity.location,

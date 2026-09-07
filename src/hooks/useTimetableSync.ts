@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { headers } from "@/lib/api";
 import { useAgenda } from "./useAgenda";
 import { parseIcs } from "@/lib/ical";
 import { compareTimetable } from "@/lib/timetableChanges";
@@ -99,7 +100,7 @@ export function useTimetableSync(): void {
         try {
           const response = await fetch("/api/rooster", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: headers({ "Content-Type": "application/json" }),
             body: JSON.stringify({ url: feed.url }),
           });
           if (!response.ok) return;

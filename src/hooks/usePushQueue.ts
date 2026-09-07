@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useAgenda } from "./useAgenda";
+import { useLanguage } from "./useLanguage";
 import { plannedReminders } from "@/lib/reminders";
 import { pushEnabled, replaceQueue } from "@/lib/push";
 
@@ -23,6 +24,10 @@ const MIN_INTERVAL_MS = 5 * 60_000;
 
 export function usePushQueue(): void {
   const { activities, settings, hydrated } = useAgenda();
+  // De berichten worden hier al vertaald en kant-en-klaar op de server gezet.
+  // Zonder de taal in de afhankelijkheden bleven ze na het wisselen van taal
+  // in de oude taal staan tot je toevallig iets aan je agenda veranderde.
+  const { language } = useLanguage();
   /** Wat we het laatst hebben doorgegeven, zodat we niet hetzelfde herhalen. */
   const lastSent = useRef<{ fingerprint: string; at: number } | null>(null);
 
@@ -44,7 +49,9 @@ export function usePushQueue(): void {
         }),
       );
 
-      const fingerprint = messages.map((m) => `${m.sendAt}|${m.title}`).join("\n");
+      // De tekst hoort erbij: na het wisselen van taal veranderen de tijden
+      // niet, maar de berichten wel.
+      const fingerprint = messages.map((m) => `${m.sendAt}|${m.title}|${m.body}`).join("\n");
       const previous = lastSent.current;
       if (previous && previous.fingerprint === fingerprint) return;
 
@@ -69,5 +76,5 @@ export function usePushQueue(): void {
       active = false;
       if (retry) clearTimeout(retry);
     };
-  }, [activities, settings, hydrated]);
+  }, [activities, settings, hydrated, language]);
 }
