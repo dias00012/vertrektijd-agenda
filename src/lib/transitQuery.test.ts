@@ -83,6 +83,14 @@ describe("transitParams", () => {
     expect(params.get("maxPostTransitTime")).toBe(String(30 * 60));
   });
 
+  it("laat overstappen over de echte straat berekenen", () => {
+    // De vaste looppaden bij de dienstregeling zijn niet compleet: ontbreekt
+    // er een tussen het perron en het busstation ernaast, dan bestaat die
+    // overstap voor de planner niet en kom je op een latere bus uit.
+    expect(ask().get("useRoutedTransfers")).toBe("true");
+    expect(ask({ shape: "timetable" }).get("useRoutedTransfers")).toBe("true");
+  });
+
   it("staat een directe loop- of fietsroute van drie kwartier toe", () => {
     // MOTIS staat zelf op 1800 seconden.
     expect(ask().get("maxDirectTime")).toBe(String(45 * 60));

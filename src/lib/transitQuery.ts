@@ -77,6 +77,18 @@ export function transitParams(query: TransitQuery): URLSearchParams {
     fromPlace: place(query.from),
     toPlace: place(query.to),
     maxDirectTime: String(MAX_DIRECT_SECONDS),
+    /**
+     * Overstappen over de echte straat berekenen in plaats van uit de vaste
+     * looppaden die bij de dienstregeling zitten (`useRoutedTransfers` staat
+     * standaard uit).
+     *
+     * Die vaste looppaden zijn niet compleet. Ontbreekt er een tussen het
+     * perron en het busstation ernaast, dan bestaat die overstap voor de
+     * planner niet — ook al loop je het in drie minuten — en komt hij uit op
+     * een latere bus vanaf een halte die wél in de lijst staat. Precies het
+     * soort omweg dat er geloofwaardig uitziet en een kwartier kost.
+     */
+    useRoutedTransfers: "true",
   });
   applyStreetOptions(params, query.bike);
 

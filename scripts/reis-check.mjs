@@ -55,8 +55,11 @@ function describe(leg) {
     `          ${leg.from?.name ?? "?"} → ${leg.to?.name ?? "?"}`;
 }
 
+/** De planversies die MOTIS kent; v6 is de huidige, v1 de oude. */
+const PLAN_VERSIONS = ["v6", "v1"];
+
 /** Dezelfde parameters als src/lib/transitQuery.ts opbouwt. */
-async function plan(from, to, extra = {}) {
+async function plan(from, to, extra = {}, version = PLAN_VERSIONS[0]) {
   const params = new URLSearchParams({
     fromPlace: `${from.lat},${from.lon}`,
     toPlace: `${to.lat},${to.lon}`,
@@ -68,9 +71,23 @@ async function plan(from, to, extra = {}) {
     postTransitModes: "WALK",
     maxPostTransitTime: String(20 * 60),
     maxDirectTime: String(45 * 60),
+    useRoutedTransfers: "true",
     ...extra,
   });
-  return get(`${MOTIS}/api/v1/plan?${params}`);
+  return get(`${MOTIS}/api/${version}/plan?${params}`);
+}
+
+/** Wat kan deze server? Zegt onder meer of overstappen over straat kan. */
+async function serverConfig() {
+  try {
+    const health = await get(`${MOTIS}/api/v1/health`);
+    console.log("\n=== Wat de planner-server aankan ===");
+    for (const [key, value] of Object.entries(health)) {
+      if (typeof value !== "object") console.log(`  ${key}: ${value}`);
+    }
+  } catch (error) {
+    console.log("\n=== Wat de planner-server aankan ===\n  (niet op te vragen:", error.message, ")");
+  }
 }
 
 function report(title, data) {
@@ -105,23 +122,28 @@ console.log(`Van : ${from.label}\n      ${from.lat}, ${from.lon}`);
 console.log(`Naar: ${to.label}\n      ${to.lat}, ${to.lon}`);
 console.log(`Tijd: ${TIME.toISOString()}`);
 
-// 1. Precies zoals de reisplanner in de app het vraagt.
-report("Zoals de reisplanner het vraagt", await plan(from, to));
+await serverConfig();
+
+// 1. Precies zoals de reisplanner in de app het nu vraagt.
+report("Zoals de reisplanner het vraagt (v6)", await plan(from, to));
 
 // 2. Zoals de agenda het vraagt: één beste rit in plaats van een vertrekbord.
 report(
-  "Zoals de agenda het vraagt (timetableView=false)",
+  "Zoals de agenda het vraagt (v6, timetableView=false)",
   await plan(from, to, { timetableView: "false", numItineraries: "1" }),
 );
 
-// 3. Met overstappen over de straat berekend in plaats van uit vaste
-//    looppaden. Als hier ineens wél de snelle bus staat, weten we genoeg.
+// 3. Zonder overstappen over straat: zo deed de app het tot nu toe. Staat de
+//    snelle bus alleen in 1 en 2 en niet hier, dan was dát het probleem.
 report(
-  "Met overstappen over straat berekend",
-  await plan(from, to, { useRoutedTransfers: "true" }),
+  "Zonder overstappen over straat",
+  await plan(from, to, { useRoutedTransfers: "false" }),
 );
 
-// 4. Zonder grens op het laatste stuk lopen: staat de goede halte er dan wel
+// 4. De oude versie van het endpoint, waar de app tot nu toe op zat.
+report("Op de oude planversie (v1)", await plan(from, to, {}, "v1"));
+
+// 5. Zonder grens op het laatste stuk lopen: staat de goede halte er dan wel
 //    bij, dan lag het aan die grens.
 report(
   "Met een half uur lopen toegestaan aan beide kanten",

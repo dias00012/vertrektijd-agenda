@@ -41,6 +41,20 @@ aantoonbaar faalt op de vorige versie.
 
 **Reisplanner**
 
+- **De app praatte met een oude versie van de planner.** MOTIS nummert zijn
+  plan-endpoint apart, en de app zat nog op v1 terwijl v6 de huidige is. Dat is
+  geen detail: alle instellingen die de app meestuurt — één beste rit in plaats
+  van een vertrekbord, hoe lang je naar de halte mag lopen, hoe overstappen
+  worden berekend — horen bij de v6-beschrijving. Wat een oudere versie daar
+  niet van kent, negeert hij stilzwijgend, en dan krijg je een antwoord dat er
+  goed uitziet maar niet is wat je vroeg. v1 blijft als terugval staan.
+- **Overstappen worden nu over de echte straat berekend.** Standaard gebruikt de
+  planner de vaste looppaden die bij de dienstregeling zitten, en die zijn niet
+  compleet: ontbreekt er een tussen het perron en het busstation ernaast, dan
+  bestáát die overstap voor de planner niet — ook al loop je het in drie
+  minuten. Hij komt dan uit op een latere bus vanaf een halte die wél in de
+  lijst staat. Precies het soort omweg dat er geloofwaardig uitziet en een
+  kwartier kost.
 - **De app kiest zelf de beste rit** in plaats van de eerste die de planner
   teruggeeft. Op een heenreis was dat vaak de vroegste vertrektijd met de
   langste route. Bij "uiterlijk aankomen om" wint nu de laatste vertrektijd die
