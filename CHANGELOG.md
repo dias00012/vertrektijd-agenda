@@ -116,6 +116,14 @@ aantoonbaar faalt op de vorige versie.
 - **Zoeken naar een afgelopen reeks** gaf de eerste keer in plaats van de
   laatste: "wanneer was dat practicum ook alweer" wees naar februari terwijl
   het in juni ophield.
+- **Een reeks aanpassen vanuit een latere week wiste de eerdere dagen.** Klik je
+  op het blok van woensdag van een reeks die op maandag begon, verander je
+  alleen de kleur en sla je op, dan werd woensdag de nieuwe startdatum en
+  verdween de maandag.
+- **Dupliceren van een vakantie van vijf dagen** maakte er stil één dag van
+  09:00 tot 10:00 van. Slepen had hetzelfde probleem.
+- **De dagtijdlijn zei bij de terugreis altijd "rijden"**, ook met de trein of
+  op de fiets.
 
 **Meldingen**
 
@@ -123,6 +131,35 @@ aantoonbaar faalt op de vorige versie.
   app 's ochtends openstaan, dan kwam de melding voor 17:00 gewoon niet.
 - **Twee wijzigingen binnen vijf minuten**: de tweede bereikte de server nooit,
   dus stonden er verkeerde meldingen klaar.
+- **De wachtrij werd eerst gewist en dan gevuld.** Mislukte dat vullen, dan
+  stond hij leeg en kreeg je die dag niets — terwijl iets verouderde tijden nog
+  altijd beter zijn dan niets.
+- **De app keek niet of het versturen lukte**, dus een serverfout gold als
+  geslaagd en werd nooit opnieuw geprobeerd.
+- **Een verlopen abonnement** werd door de server opgeruimd terwijl de app "aan"
+  bleef tonen. De app meldt zich nu opnieuw aan.
+- **Meldingen bleven in de oude taal** na het wisselen van taal, en
+  serverfoutmeldingen kwamen in de taal van je browser in plaats van die van de
+  app.
+
+**Offline**
+
+- **De app opende niet zonder bereik.** Alleen de offline-pagina en de iconen
+  stonden voorgeladen, geen enkel scherm van de app zelf: die kwamen er alleen
+  in als je ze ooit met een harde paginalading had geopend. Wie zijn agenda via
+  het menu opende, kreeg in de trein "je bent offline" terwijl zijn gegevens
+  gewoon op het apparaat stonden.
+- **Mislukte antwoorden werden bewaard.** Een 404 tijdens een uitrol of de
+  inlogpagina van een captive portal op schoolwifi belandde in de cache, en
+  daarna deed de app het niet meer tot de volgende versie.
+- **Eén mislukte download liet de app zonder offline-pagina achter**, voorgoed.
+- **Tikken op een vertrekmelding** haalde het openstaande venster naar voren
+  zonder ergens heen te gaan.
+
+**Rooster**
+
+- **Eigen aanpassingen aan een gekoppelde les** — kleur, vervoermiddel — waren
+  na elke verversing weer weg.
 
 **Beveiliging**
 
@@ -152,7 +189,7 @@ aantoonbaar faalt op de vorige versie.
 - `scripts/reis-check.mjs` laat zien wat de OV-planner echt teruggeeft, met
   varianten naast elkaar. Bedoeld om een verschil met 9292 te herleiden tot de
   gegevens of tot een instelling.
-- Van 152 naar 213 tests.
+- Van 152 naar 215 tests.
 
 ## 0.28.0
 
