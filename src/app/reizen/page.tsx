@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { fetchJourneys } from "@/lib/api";
+import { fetchJourneys, type JourneyDiagnostics } from "@/lib/api";
 import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
@@ -36,6 +36,26 @@ function fastestJourneyId(journeys: Journey[]): string | null {
   return shared ? null : fastest.id;
 }
 
+/** Eén regel in de technische details. */
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="shrink-0 font-medium">{label}</dt>
+      <dd className="min-w-0 break-words tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+/**
+ * Naam plus coordinaten. Juist die coordinaten doen ertoe: kies je in de lijst
+ * de straat in plaats van het huisnummer, dan rekent de planner vanaf het
+ * midden van die straat en kan hij bij een andere halte uitkomen.
+ */
+function pointLabel(point: GeoLocation | null): string {
+  if (!point) return "—";
+  return `${point.label} (${point.lat.toFixed(5)}, ${point.lon.toFixed(5)})`;
+}
+
 /** Reisplanner: zoek een rit met trein, bus, tram of metro. */
 export default function TravelPlannerPage() {
   const { settings, hydrated } = useAgenda();
@@ -53,6 +73,9 @@ export default function TravelPlannerPage() {
   const [searched, setSearched] = useState(false);
   // Losstaand van `error`: het einde van de dienstregeling is geen storing.
   const [notice, setNotice] = useState<string | null>(null);
+  /** Wat de planner deed; alleen zichtbaar als je erom vraagt. */
+  const [details, setDetails] = useState<JourneyDiagnostics | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [locating, setLocating] = useState(false);
 
   const places = hydrated ? placeChoices(settings) : [];
@@ -116,6 +139,7 @@ export default function TravelPlannerPage() {
         });
         track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
+        setDetails(result.meta ?? null);
 
         // Voorbij de laatste rit van de dag geeft de planner een lege pagina
         // terug. Die niet tonen als "geen verbinding" en vooral: de lijst die
@@ -326,6 +350,51 @@ export default function TravelPlannerPage() {
             <p className="mt-2.5 text-center text-xs" style={{ color: "var(--muted)" }}>
               {notice}
             </p>
+          ) : null}
+
+          {/* Klopt een rit niet, dan is dit het antwoord op "hoe kom ik erachter
+              waarom". Eén schermafbeelding hiervan vertelt waar het misgaat:
+              welke planner antwoordde, hoeveel opties er binnenkwamen, en van
+              welk punt er precies gerekend is. */}
+          {details ? (
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                aria-expanded={showDetails}
+                className="text-xs underline underline-offset-2"
+                style={{ color: "var(--muted)" }}
+              >
+                {showDetails ? t("travel.why.hide") : t("travel.why")}
+              </button>
+
+              {showDetails ? (
+                <dl
+                  className="card mt-2 space-y-1 px-4 py-3 text-left text-xs"
+                  style={{ color: "var(--muted)" }}
+                >
+                  <p className="mb-2">{t("travel.why.intro")}</p>
+                  <Detail label={t("travel.why.from")} value={pointLabel(from)} />
+                  <Detail label={t("travel.why.to")} value={pointLabel(to)} />
+                  <Detail
+                    label={t("travel.why.planner")}
+                    value={details.planVersion ?? "?"}
+                  />
+                  <Detail
+                    label={t("travel.why.transfers")}
+                    value={t(details.routedTransfers ? "travel.why.on" : "travel.why.off")}
+                  />
+                  <Detail
+                    label="—"
+                    value={t("travel.why.options", {
+                      received: details.received,
+                      shown: details.shown,
+                    })}
+                  />
+                  {details.directOnly ? <p>{t("travel.why.directOnly")}</p> : null}
+                </dl>
+              ) : null}
+            </div>
           ) : null}
         </section>
       ) : searched && !error ? (

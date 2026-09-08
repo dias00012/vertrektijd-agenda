@@ -1,6 +1,6 @@
 import "server-only";
 import { ProviderError } from "./config";
-import { motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
+import { lastPlanVersion, motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
 import { tidyItineraries } from "../itineraries";
 import { transitParams } from "../transitQuery";
 import type { BikeEnds, GeoLocation, Journey } from "../types";
@@ -30,6 +30,22 @@ export interface JourneyResult {
   /** Cursors voor "eerdere ritten" en "latere ritten". */
   previousCursor?: string;
   nextCursor?: string;
+  /**
+   * Wat de planner precies deed. Niet voor het dagelijks gebruik, wel om een
+   * rit die niet klopt te kunnen herleiden zonder in de code te duiken: welke
+   * versie van de planner antwoordde, hoeveel opties er binnenkwamen, en
+   * hoeveel er na het opschonen overbleven.
+   */
+  meta: {
+    planVersion: string | null;
+    routedTransfers: boolean;
+    /** Aantal opties dat de planner teruggaf. */
+    received: number;
+    /** Aantal dat je uiteindelijk ziet. */
+    shown: number;
+    /** true wanneer er geen OV was en dit een directe loop-/fietsroute is. */
+    directOnly: boolean;
+  };
 }
 
 const DEFAULT_COUNT = 5;
@@ -71,6 +87,13 @@ export async function planJourneys(
         journeys: [],
         previousCursor: data.previousPageCursor,
         nextCursor: data.nextPageCursor,
+        meta: {
+          planVersion: lastPlanVersion(),
+          routedTransfers: params.get("useRoutedTransfers") === "true",
+          received: 0,
+          shown: 0,
+          directOnly: false,
+        },
       };
     }
     throw new ProviderError("api.noConnection", 422);
@@ -79,14 +102,23 @@ export async function planJourneys(
   const fromLabel = from.label || "vertrekpunt";
   const toLabel = to.label || "bestemming";
 
+  const journeys = dedupe(
+    itineraries
+      .map((itinerary) => toJourney(itinerary, fromLabel, toLabel))
+      .filter((journey): journey is Journey => journey !== null),
+  );
+
   return {
-    journeys: dedupe(
-      itineraries
-        .map((itinerary) => toJourney(itinerary, fromLabel, toLabel))
-        .filter((journey): journey is Journey => journey !== null),
-    ),
+    journeys,
     previousCursor: data.previousPageCursor,
     nextCursor: data.nextPageCursor,
+    meta: {
+      planVersion: lastPlanVersion(),
+      routedTransfers: params.get("useRoutedTransfers") === "true",
+      received: found.length,
+      shown: journeys.length,
+      directOnly: !data.itineraries?.length,
+    },
   };
 }
 

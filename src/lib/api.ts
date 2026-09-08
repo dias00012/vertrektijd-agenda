@@ -96,10 +96,20 @@ export interface JourneySearchOptions {
   count?: number;
 }
 
+export interface JourneyDiagnostics {
+  planVersion: string | null;
+  routedTransfers: boolean;
+  received: number;
+  shown: number;
+  directOnly: boolean;
+}
+
 export interface JourneySearchResult {
   journeys: Journey[];
   previousCursor?: string;
   nextCursor?: string;
+  /** Wat de planner deed; zie `JourneyDiagnostics`. */
+  meta?: JourneyDiagnostics;
 }
 
 /** Haalt meerdere reismogelijkheden op, inclusief live vertragingen. */

@@ -68,6 +68,15 @@ const PLAN_VERSIONS = ["v6", "v1"] as const;
 /** Welke versie deze server bleek te kennen; scheelt bij elke volgende vraag. */
 let planVersion: string | null = null;
 
+/**
+ * De versie die het laatst werkte. Staat in de technische details van een
+ * zoekopdracht, zodat aan een schermafbeelding te zien is waar de app mee
+ * praat — dat scheelt een ronde heen en weer als een rit niet klopt.
+ */
+export function lastPlanVersion(): string | null {
+  return planVersion;
+}
+
 /** Roept de MOTIS-reisplanner aan en vertaalt fouten naar nette meldingen. */
 export async function motisPlan(params: URLSearchParams): Promise<MotisPlanResponse> {
   const config = getProviderConfig();
