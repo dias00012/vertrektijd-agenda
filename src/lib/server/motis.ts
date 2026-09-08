@@ -197,6 +197,7 @@ export function toTravelLeg(leg: MotisLeg, fromLabel: string, toLabel: string): 
   return {
     mode: toLegMode(leg.mode),
     durationMinutes: Math.round((leg.duration ?? 0) / 60),
+    distanceMeters: typeof leg.distance === "number" ? Math.round(leg.distance) : undefined,
     from: placeName(leg.from?.name, fromLabel, toLabel),
     to: placeName(leg.to?.name, fromLabel, toLabel),
     departure: leg.startTime,

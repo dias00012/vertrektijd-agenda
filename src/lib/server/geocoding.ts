@@ -149,8 +149,20 @@ async function geocodeNominatim(
     // "Wisselweg 60" is dan een stuk herkenbaarder dan "60".
     const rawName = item.name?.trim() ?? "";
     const numberOnly = /^\d+[a-zA-Z]?$/.test(rawName);
+    // Ontbreekt de straat in de adresgegevens, dan staat hij meestal nog wel
+    // in de volledige omschrijving ("184, Donaustraat, Lelystad, ..."). Zonder
+    // deze regel heet zo'n bestemming gewoon "184, Lelystad", en dan zie je
+    // niet dat je een zwakke match hebt gekozen die honderden meters naast je
+    // voordeur kan liggen — je merkt het pas aan een looptijd die niet klopt.
+    const fromDisplay =
+      numberOnly && !street && parts[1] ? `${parts[1]} ${rawName}` : "";
     const name =
-      (numberOnly && street ? street : rawName) || street || parts[0] || item.display_name;
+      (numberOnly && street ? street : "") ||
+      fromDisplay ||
+      rawName ||
+      street ||
+      parts[0] ||
+      item.display_name;
 
     // Tweede regel van de suggestie: straat, wijk en plaats, zonder herhaling
     // van de naam die al op de eerste regel staat.

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDuration } from "@/lib/time";
+import { formatDuration, formatDistance } from "@/lib/time";
 import {
   LEG_EMOJI,
   describeLeg,
@@ -104,6 +104,13 @@ export function JourneyDetails({
                     <span className="font-normal" style={{ color: "var(--muted)" }}>
                       {" "}
                       &middot; {formatDuration(leg.durationMinutes)}
+                      {/* De afstand erbij, want alleen een tijd verbergt een
+                          omweg: twintig minuten naar een halte die zevenhonderd
+                          meter verderop ligt is geen normale wandeling, en dat
+                          zie je pas als het aantal meters ernaast staat. */}
+                      {typeof leg.distanceMeters === "number"
+                        ? ` · ${formatDistance(leg.distanceMeters / 1000)}`
+                        : ""}
                     </span>
                   ) : null}
                 </span>
