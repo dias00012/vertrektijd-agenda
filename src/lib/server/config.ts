@@ -15,6 +15,8 @@ export interface ProviderConfig {
   osrmBaseUrl: string;
   /** MOTIS/transitous: OV-planning en realistische fiets-/looproutes. */
   motisBaseUrl: string;
+  /** PDOK Locatieserver: het Nederlandse adressenregister (BAG). */
+  pdokBaseUrl: string;
   userAgent: string;
 }
 
@@ -35,6 +37,9 @@ export function getProviderConfig(): ProviderConfig {
       process.env.OSRM_BASE_URL?.replace(/\/$/, "") ?? "https://router.project-osrm.org",
     motisBaseUrl:
       process.env.MOTIS_BASE_URL?.replace(/\/$/, "") ?? "https://api.transitous.org",
+    pdokBaseUrl:
+      process.env.PDOK_BASE_URL?.replace(/\/$/, "") ??
+      "https://api.pdok.nl/bzk/locatieserver/search/v3_1",
     userAgent:
       process.env.NOMINATIM_USER_AGENT?.trim() ||
       "VertrektijdAgenda/0.1 (https://localhost; persoonlijke agenda-app)",
