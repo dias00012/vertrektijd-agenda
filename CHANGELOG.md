@@ -8,6 +8,25 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.31.0
+
+- **Een bewaarde plek een beter adres geven, zonder de rest opnieuw te doen.**
+  Bij je bewaarde plekken staat nu "Adres wijzigen". Kies je daar een nieuw
+  adres, dan verhuist alles mee wat op het oude punt stond: de plek zelf, je
+  rooster, je agenda-abonnementen en elke activiteit die er al stond. Hun
+  opgeslagen reistijd vervalt en wordt opnieuw berekend.
+
+  Dat laatste was namelijk de stille fout eronder. Een bewaarde plek is geen
+  verwijzing maar een kopie: bij het toevoegen van een activiteit gaan de
+  coordinaten mee. Verbeterde je later het adres van de plek, dan bleven al je
+  bestaande activiteiten naar het oude punt reizen — en daar zag je niets van.
+  Precies het geval uit 0.30.0: een punt zonder straatnaam dat honderden meters
+  naast de voordeur ligt, weggooien en opnieuw kiezen hielp alleen voor wat je
+  daarna aanmaakte.
+
+- **De waarschuwing bij een adres zonder straatnaam wijst nu naar die knop**
+  in plaats van naar "gooi hem weg en begin opnieuw".
+
 ## 0.30.0
 
 - **Adressen komen nu uit het Nederlandse adressenregister.** De app zocht
