@@ -136,6 +136,7 @@ export default function TravelPlannerPage() {
               : settings.transitBike === "start"
                 ? "origin"
                 : "none",
+          walk: settings.walkSpeed ?? "normal",
         });
         track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
@@ -160,7 +161,7 @@ export default function TravelPlannerPage() {
         setLoading(false);
       }
     },
-    [from, to, when, dateTime, t, settings.transitBike],
+    [from, to, when, dateTime, t, settings.transitBike, settings.walkSpeed],
   );
 
   function useMyLocation() {

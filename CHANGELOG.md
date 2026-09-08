@@ -8,6 +8,24 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.32.0
+
+- **Loopsnelheid instelbaar, zoals 9292 dat ook heeft.** De planner rekent uit
+  zichzelf met ongeveer 4 km/h; 9292 gaat uit van 5 km/h. Op een reis met drie
+  loopstukken — naar de halte, de overstap, en het laatste stuk naar de deur —
+  loopt dat verschil op tot zo'n tien minuten, zonder dat er iets fout gaat en
+  zonder dat je er iets over kon zeggen.
+
+  In Instellingen staat nu "Loopsnelheid": rustig (3 km/h), normaal (de
+  snelheid van de planner zelf) of stevig (5 km/h, waar 9292 mee rekent). De
+  keuze gaat als `pedestrianSpeed` mee naar de planner en geldt voor elk
+  loopstuk, ook bij een route die helemaal lopend is.
+
+  "Normaal" stuurt bewust niets mee: wie niets verandert houdt exact dezelfde
+  tijden als voorheen. De snelheid staat wel in de sleutel van een berekende
+  reis, zodat het omzetten meteen alles opnieuw laat berekenen in plaats van de
+  oude, langzamere uitkomst te blijven tonen.
+
 ## 0.31.0
 
 - **Een bewaarde plek een beter adres geven, zonder de rest opnieuw te doen.**

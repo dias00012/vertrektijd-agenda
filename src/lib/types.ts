@@ -352,6 +352,17 @@ export interface SavedPlace {
   createdAt: string;
 }
 
+/**
+ * Hoe snel je loopt. Elk loopstuk in een OV-reis hangt hieraan: naar de halte,
+ * de overstap, en het laatste stuk naar de deur.
+ *
+ * De planner rekent zelf met ongeveer 4 km/h. Dat is voorzichtig — 9292 gaat
+ * uit van 5 km/h — en op een reis met drie loopstukken scheelt dat zo tien
+ * minuten. Voorzichtig is niet verkeerd (je mist geen bus), maar wie sneller
+ * loopt hoort dat te kunnen zeggen in plaats van elke rit te lang te krijgen.
+ */
+export type WalkSpeed = "slow" | "normal" | "fast";
+
 export interface Settings {
   home: GeoLocation | null;
   /** Bewaarde locaties, herbruikbaar bij het toevoegen van een activiteit. */
@@ -369,6 +380,8 @@ export interface Settings {
    * of een OV-fiets. Lopend duurt dezelfde reis al snel een half uur langer.
    */
   transitBike?: TransitBike;
+  /** Hoe snel je loopt; standaard de snelheid van de planner zelf. */
+  walkSpeed?: WalkSpeed;
   /**
    * Je gekoppelde rooster, zodat de app het zelf bij kan houden. Zonder deze
    * gegevens zou je na elke roosterwijziging opnieuw alles moeten invullen.

@@ -3,7 +3,7 @@ import { ProviderError } from "./config";
 import { lastPlanVersion, motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
 import { tidyItineraries } from "../itineraries";
 import { transitParams } from "../transitQuery";
-import type { BikeEnds, GeoLocation, Journey } from "../types";
+import type { BikeEnds, GeoLocation, Journey, WalkSpeed } from "../types";
 
 /**
  * De reisplanner: meerdere reismogelijkheden naast elkaar, met live
@@ -23,6 +23,8 @@ export interface JourneySearch {
   count?: number;
   /** Aan welke kant van de rit een fiets staat. */
   bike?: BikeEnds;
+  /** Hoe snel je loopt; bepaalt elk loopstuk van de rit. */
+  walk?: WalkSpeed;
 }
 
 export interface JourneyResult {
@@ -66,6 +68,7 @@ export async function planJourneys(
     time: search.time ?? new Date().toISOString(),
     arriveBy: search.arriveBy,
     bike: search.bike,
+    walk: search.walk,
     cursor: search.cursor,
   });
 

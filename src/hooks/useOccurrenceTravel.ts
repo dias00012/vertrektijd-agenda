@@ -146,11 +146,13 @@ export function useOccurrenceTravel(
                 mode: plan.mode,
                 arriveBy: plan.arriveBy,
                 bike: plan.outboundBike,
+                walk: plan.walk,
               }),
               fetchTravel(destination, home, {
                 mode: plan.mode,
                 departAt: plan.departAt,
                 bike: plan.returnBike,
+                walk: plan.walk,
               }),
             ]).then(([outbound, inbound]) => ({ outbound, inbound }));
             cache.set(tripKey, { at: Date.now(), value });

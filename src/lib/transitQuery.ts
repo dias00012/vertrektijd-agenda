@@ -1,4 +1,4 @@
-import type { BikeEnds, GeoLocation } from "./types";
+import type { BikeEnds, GeoLocation, WalkSpeed } from "./types";
 
 /**
  * De vraag die we aan de OV-planner (MOTIS/transitous) stellen.
@@ -27,6 +27,21 @@ const MAX_WALK_SECONDS = 20 * 60;
  */
 const MAX_DIRECT_SECONDS = 45 * 60;
 
+/**
+ * Loopsnelheid in meters per seconde (`pedestrianSpeed`).
+ *
+ * De planner rekent zonder deze waarde met ongeveer 1,1 m/s (4 km/h) en dat
+ * laten we ook zo bij "normaal": zonder waarde meesturen verandert er niets
+ * aan wat je gewend bent. 9292 rekent met 5 km/h, dus wie zegt dat hij stevig
+ * doorloopt krijgt dezelfde rekensom als daar — en bij drie loopstukken op één
+ * reis scheelt dat al snel tien minuten.
+ */
+export const WALK_SPEEDS: Record<WalkSpeed, number | null> = {
+  slow: 0.9,
+  normal: null,
+  fast: 1.4,
+};
+
 export type TransitShape =
   /** Eén beste rit, voor de vertrektijd in de agenda. */
   | "best"
@@ -43,6 +58,8 @@ export interface TransitQuery {
   arriveBy?: boolean;
   /** Aan welke kant van deze rit een fiets staat. */
   bike?: BikeEnds;
+  /** Hoe snel je loopt; leeg = de snelheid van de planner zelf. */
+  walk?: WalkSpeed;
   /** Gewenst aantal opties; alleen zinvol bij `shape: "timetable"`. */
   options?: number;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */
@@ -91,6 +108,9 @@ export function transitParams(query: TransitQuery): URLSearchParams {
     useRoutedTransfers: "true",
   });
   applyStreetOptions(params, query.bike);
+
+  const speed = query.walk ? WALK_SPEEDS[query.walk] : null;
+  if (speed) params.set("pedestrianSpeed", String(speed));
 
   if (query.shape === "best") {
     /**

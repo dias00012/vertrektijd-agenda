@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transitParams } from "./transitQuery";
+import { transitParams, WALK_SPEEDS } from "./transitQuery";
 
 /**
  * Deze parameters bepalen het antwoord van de OV-planner. Een verkeerde stand
@@ -115,5 +115,26 @@ describe("transitParams", () => {
 
   it("laat de tijd weg als er geen gegeven is, zodat MOTIS 'nu' pakt", () => {
     expect(ask().get("time")).toBeNull();
+  });
+
+  /**
+   * De loopsnelheid raakt elk loopstuk: naar de halte, de overstap en het
+   * laatste stuk naar de deur. Bij "normaal" mag er niets meegestuurd worden,
+   * anders schuift de app stilletjes alle bestaande reistijden op.
+   */
+  it("stuurt geen loopsnelheid mee bij normaal lopen", () => {
+    expect(ask().get("pedestrianSpeed")).toBeNull();
+    expect(ask({ walk: "normal" }).get("pedestrianSpeed")).toBeNull();
+  });
+
+  it("stuurt de loopsnelheid mee zodra je zegt hoe je loopt", () => {
+    expect(ask({ walk: "fast" }).get("pedestrianSpeed")).toBe("1.4");
+    expect(ask({ walk: "slow" }).get("pedestrianSpeed")).toBe("0.9");
+  });
+
+  it("houdt stevig doorlopen sneller dan rustig aan", () => {
+    expect(WALK_SPEEDS.fast).toBeGreaterThan(WALK_SPEEDS.slow as number);
+    // 5 km/h, waar 9292 mee rekent.
+    expect(WALK_SPEEDS.fast).toBeCloseTo(5000 / 3600, 1);
   });
 });
