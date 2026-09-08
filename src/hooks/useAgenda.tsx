@@ -35,6 +35,7 @@ import {
   type ImportSummary,
 } from "@/lib/backup";
 import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
+import { relocatePoint } from "@/lib/places";
 import { dayRoleFor } from "@/lib/agenda";
 import { track } from "@/lib/stats";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
@@ -114,6 +115,12 @@ interface AgendaContextValue {
   rememberPlace: (location: GeoLocation, category: CategoryId | null) => void;
   /** Geeft een bewaarde locatie een eigen naam; leeg maakt de naam weer los. */
   renamePlace: (placeId: string, name: string) => void;
+  /**
+   * Geeft een bewaarde locatie een ander adres. Alles wat op het oude punt
+   * stond verhuist mee, inclusief bestaande activiteiten; hun reistijd wordt
+   * opnieuw berekend.
+   */
+  movePlace: (placeId: string, location: GeoLocation) => void;
   /** Verwijdert een bewaarde locatie en de verwijzingen ernaar. */
   forgetPlace: (placeId: string) => void;
 
@@ -670,6 +677,24 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  /**
+   * Het adres van een bewaarde plek verbeteren. Nodig wanneer de adreszoeker
+   * ooit een punt zonder straatnaam teruggaf ("184, Lelystad"): dat kan
+   * honderden meters naast de voordeur liggen, en elke activiteit die hem
+   * gebruikte draagt die fout mee. Daarom niet alleen de plek zelf.
+   */
+  const movePlace = useCallback(
+    (placeId: string, location: GeoLocation) => {
+      const place = settings.savedPlaces.find((item) => item.id === placeId);
+      if (!place) return;
+      const from = place.location;
+      const stamp = new Date().toISOString();
+      setActivities((current) => relocatePoint(settings, current, from, location, stamp).activities);
+      setSettings((current) => relocatePoint(current, [], from, location, stamp).settings);
+    },
+    [settings],
+  );
+
   const forgetPlace = useCallback((placeId: string) => {
     setSettings((current) => {
       const categoryPlaces = { ...current.categoryPlaces };
@@ -983,6 +1008,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateSettings,
       rememberPlace,
       renamePlace,
+      movePlace,
       forgetPlace,
       categories,
       categoryFor,
@@ -1022,6 +1048,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       updateSettings,
       rememberPlace,
       renamePlace,
+      movePlace,
       forgetPlace,
       categories,
       categoryFor,

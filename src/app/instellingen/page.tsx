@@ -270,12 +270,14 @@ function IntroSection() {
 
 /** Overzicht van bewaarde locaties, met de categorieën die ze als vaste plek gebruiken. */
 function SavedPlaces() {
-  const { settings, forgetPlace, renamePlace, categoryFor } = useAgenda();
+  const { settings, forgetPlace, renamePlace, movePlace, categoryFor } = useAgenda();
   const t = useT();
   const places = sortedPlaces(settings);
   /** De locatie waarvan je op dit moment de naam aanpast. */
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  /** De locatie waarvan je op dit moment het adres opnieuw kiest. */
+  const [readdressing, setReaddressing] = useState<string | null>(null);
 
   return (
     <section className="card mt-4 px-5 py-5">
@@ -375,6 +377,37 @@ function SavedPlaces() {
                     <p className="mt-0.5 text-xs" style={{ color: "var(--muted)" }}>
                       {t("places.quickOnly")}
                     </p>
+                  )}
+                  {readdressing === place.id ? (
+                    <div className="mt-2">
+                      <LocationInput
+                        value={null}
+                        label={t("places.newAddress")}
+                        placeholder={t("places.newAddress.placeholder")}
+                        hint={t("places.newAddress.hint")}
+                        onChange={(location) => {
+                          if (!location) return;
+                          movePlace(place.id, location);
+                          setReaddressing(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-ghost mt-2 px-3 py-1.5 text-xs"
+                        onClick={() => setReaddressing(null)}
+                      >
+                        {t("common.cancel")}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mt-1 text-xs underline"
+                      style={{ color: "var(--muted)" }}
+                      onClick={() => setReaddressing(place.id)}
+                    >
+                      {t("places.changeAddress")}
+                    </button>
                   )}
                 </div>
 

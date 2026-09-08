@@ -1,7 +1,7 @@
 import { resolveCategory } from "./categories";
 import { getLanguage } from "./i18n/locale";
 import { translate } from "./i18n/dictionary";
-import type { CategoryId, GeoLocation, SavedPlace, Settings } from "./types";
+import type { Activity, CategoryId, GeoLocation, SavedPlace, Settings } from "./types";
 
 /**
  * Mist dit adres zijn straatnaam?
@@ -119,4 +119,94 @@ export function placeChoices(settings: Settings, limit = 6): PlaceChoice[] {
   }
 
   return choices.slice(0, limit);
+}
+
+/**
+ * Twee bewaarde punten zijn dezelfde plek wanneer ze tot op vijf decimalen
+ * gelijk zijn — ruim binnen een meter. Het label mag verschillen: dezelfde
+ * voordeur heet in de ene zoekopdracht net anders dan in de andere.
+ */
+export function samePoint(a: GeoLocation | null | undefined, b: GeoLocation | null | undefined): boolean {
+  if (!a || !b) return false;
+  return a.lat.toFixed(5) === b.lat.toFixed(5) && a.lon.toFixed(5) === b.lon.toFixed(5);
+}
+
+export interface Relocation {
+  settings: Settings;
+  activities: Activity[];
+  /** Hoeveel activiteiten mee verhuisden. */
+  movedActivities: number;
+}
+
+/**
+ * Zet overal waar dit punt stond het nieuwe punt neer.
+ *
+ * Een bewaarde plek is geen verwijzing maar een kopie: bij het toevoegen van
+ * een activiteit gaan de coordinaten mee. Verbeter je later het adres van die
+ * plek, dan bleven al je bestaande activiteiten dus naar het oude punt reizen,
+ * zonder dat je daar iets van zag. Daarom verhuist alles mee wat op dat punt
+ * stond: thuis, de bewaarde plek zelf, je rooster, je agenda-abonnementen en
+ * elke activiteit.
+ *
+ * De opgeslagen reistijd van een verhuisde activiteit vervalt: die hoort bij
+ * het oude punt. De store berekent hem opnieuw.
+ */
+export function relocatePoint(
+  settings: Settings,
+  activities: Activity[],
+  from: GeoLocation,
+  to: GeoLocation,
+  now: string = new Date().toISOString(),
+): Relocation {
+  // Hetzelfde punt opnieuw kiezen mag geen stempel op je hele agenda zetten;
+  // dat zou bij het synchroniseren als een wijziging langskomen.
+  if (samePoint(from, to) && from.label === to.label) {
+    return { settings, activities, movedActivities: 0 };
+  }
+
+  const swap = (location: GeoLocation | null): GeoLocation | null =>
+    samePoint(location, from) ? to : location;
+
+  let movedActivities = 0;
+  const nextActivities = activities.map((activity) => {
+    if (!samePoint(activity.location, from)) return activity;
+    movedActivities += 1;
+    return {
+      ...activity,
+      location: to,
+      travel: null,
+      returnTravel: null,
+      onwardTravel: null,
+      travelError: null,
+      updatedAt: now,
+    };
+  });
+
+  const nextSettings: Settings = {
+    ...settings,
+    home: swap(settings.home),
+    savedPlaces: settings.savedPlaces.map((place) =>
+      samePoint(place.location, from)
+        ? {
+            ...place,
+            location: to,
+            // Heette de plek naar zijn adres, dan hoort de naam mee te gaan.
+            // Een zelfgekozen naam ("Werk") blijft staan.
+            name: place.name === from.label ? to.label : place.name,
+          }
+        : place,
+    ),
+    updatedAt: now,
+  };
+
+  if (settings.timetable && samePoint(settings.timetable.location, from)) {
+    nextSettings.timetable = { ...settings.timetable, location: to };
+  }
+  if (settings.calendars) {
+    nextSettings.calendars = settings.calendars.map((calendar) =>
+      samePoint(calendar.location, from) ? { ...calendar, location: to } : calendar,
+    );
+  }
+
+  return { settings: nextSettings, activities: nextActivities, movedActivities };
 }
