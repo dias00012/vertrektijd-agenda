@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { searchLocations } from "@/lib/api";
 import { Spinner } from "./ui";
 import { useT } from "@/hooks/useLanguage";
-import type { PlaceChoice } from "@/lib/places";
+import { missesStreet, type PlaceChoice } from "@/lib/places";
 import type { GeocodeResult, GeoLocation } from "@/lib/types";
 
 interface Props {
@@ -213,7 +213,22 @@ export function LocationInput({
         </div>
       ) : null}
 
-      {value ? (
+      {value && missesStreet(value) ? (
+        /* Een adres zonder straatnaam is geen adres, maar een los punt dat de
+           zoeker niet kon plaatsen. Dat kan honderden meters verkeerd liggen,
+           en dan klopt de hele reistijd niet — zonder dat je iets ziet. Dus
+           zeggen we het, precies daar waar het adres staat. */
+        <p
+          className="mt-1.5 text-xs"
+          style={{ color: "var(--danger)" }}
+          role="status"
+        >
+          &#9888;&#65039; {t("place.noStreet")}
+          <span className="mt-0.5 block" style={{ color: "var(--muted)" }}>
+            {t("place.noStreet.body")}
+          </span>
+        </p>
+      ) : value ? (
         <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
           📍 {value.label}
         </p>

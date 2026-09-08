@@ -45,6 +45,15 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   hem missen. Een bestemming die "184, Lelystad" heet is een zwakke match, en
   dat hoor je te kunnen zien voordat je hem kiest.
 
+- **De app zegt het nu wanneer een adres zijn straatnaam mist.** Dat was de
+  stille fout achter alles hierboven: "60, Almere" en "184, Lelystad" zijn geen
+  adressen maar losse punten die de zoeker niet aan een straat kon koppelen, en
+  zo'n punt kan honderden meters van de bedoelde voordeur liggen. De app rekende
+  daar keurig een looproute naartoe en gaf een reistijd die nergens uit bleek.
+  Nu staat er een waarschuwing — in het adresveld zelf en bij je bewaarde
+  plekken — met wat je eraan doet. Al opgeslagen locaties houden hun oude punt
+  tot je ze opnieuw kiest; die waarschuwing wijst ze voor je aan.
+
 ## 0.29.0
 
 Een ronde langs de hele app op zoek naar stille rekenfouten: antwoorden die er
