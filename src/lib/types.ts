@@ -67,6 +67,13 @@ export type TravelLegMode =
 export interface TravelLeg {
   mode: TravelLegMode;
   durationMinutes: number;
+  /**
+   * Lengte van dit onderdeel in meters. Alleen zinvol bij lopen en fietsen, en
+   * daar juist heel zinvol: staat er "20 min lopen" bij een halte die 700 meter
+   * verderop ligt, dan neemt de planner een omweg. Zonder dit getal is dat niet
+   * te zien — je leest alleen een tijd die klopt met een route die je niet ziet.
+   */
+  distanceMeters?: number;
   /** Naam van de halte/plek waar dit deel begint en eindigt. */
   from: string;
   to: string;
