@@ -44,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferMinutes: 10,
   travelMode: "car",
   transitBike: "none",
+  walkSpeed: "normal",
   timetable: null,
   calendars: [],
   reminderMinutes: null,

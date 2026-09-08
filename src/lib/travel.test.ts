@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   computeDeparture,
+  travelKey,
   computeReturn,
   departureDateTime,
   nextOccurrenceDate,
@@ -455,5 +456,31 @@ describe("travelPlanForDate", () => {
 
   it("geeft niets terug zonder thuislocatie", () => {
     expect(travelPlanForDate(activity(), settings({ home: null }), "2026-09-07")).toBeNull();
+  });
+});
+
+
+/**
+ * De loopsnelheid hoort bij de sleutel. Zonder dat bleef de app na het omzetten
+ * de eerder berekende, langzamere reis geldig vinden en veranderde er niets op
+ * het scherm — precies het soort instelling dat "niets lijkt te doen".
+ */
+describe("travelKey en de loopsnelheid", () => {
+  it("geeft een andere sleutel zodra je sneller loopt", () => {
+    const normal = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none", "normal");
+    const fast = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none", "fast");
+    expect(normal).not.toBe(fast);
+  });
+
+  it("laat de sleutel met rust bij de standaardsnelheid", () => {
+    const zonder = travelKey(HOME, SCHOOL, "transit", null, "none");
+    const normaal = travelKey(HOME, SCHOOL, "transit", null, "none", "normal");
+    expect(normaal).toBe(zonder);
+  });
+
+  it("raakt de auto niet: die loopt nergens", () => {
+    expect(travelKey(HOME, SCHOOL, "car", null, "none", "fast")).toBe(
+      travelKey(HOME, SCHOOL, "car", null, "none", "normal"),
+    );
   });
 });

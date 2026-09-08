@@ -3,7 +3,7 @@ import { say } from "@/lib/server/language";
 import { planJourneys } from "@/lib/server/journeys";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
-import type { BikeEnds, GeoLocation } from "@/lib/types";
+import type { BikeEnds, GeoLocation, WalkSpeed } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,12 +16,18 @@ interface JourneyRequestBody {
   cursor?: string;
   count?: number;
   bike?: string;
+  walk?: string;
 }
 
 /** Alleen de drie bekende waarden; anders gewoon lopen. */
 /** Alleen de vier bekende kanten; alles anders betekent gewoon lopen. */
 function bikeOrNone(value: unknown): BikeEnds {
   return value === "origin" || value === "destination" || value === "both" ? value : "none";
+}
+
+/** Alleen de drie bekende loopsnelheden; anders die van de planner zelf. */
+function walkSpeedOrNormal(value: unknown): WalkSpeed {
+  return value === "slow" || value === "fast" ? value : "normal";
 }
 
 function isValidPoint(point: Partial<GeoLocation> | undefined): point is GeoLocation {
@@ -73,6 +79,7 @@ export async function POST(request: Request) {
       cursor: typeof body.cursor === "string" ? body.cursor : undefined,
       count: typeof body.count === "number" ? body.count : undefined,
       bike: bikeOrNone(body.bike),
+      walk: walkSpeedOrNormal(body.walk),
     });
     return NextResponse.json(result);
   } catch (error) {
