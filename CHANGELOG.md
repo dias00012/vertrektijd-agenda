@@ -8,6 +8,43 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.30.0
+
+- **Adressen komen nu uit het Nederlandse adressenregister.** De app zocht
+  adressen op in OpenStreetMap, en dat kent lang niet elk huisnummer. Wat je dan
+  terugkrijgt is het dichtstbijzijnde punt dat er wél in staat — en dat kan
+  honderden meters verderop liggen. De app rekent daar netjes een looproute
+  naartoe, dus je ziet geen foutmelding, alleen een reistijd die nergens uit
+  blijkt.
+
+  Concreet geval: een rit van Almere naar Lelystad duurde 52 minuten waar 9292
+  er 42 gaf. Zelfde trein, zelfde bus, zelfde overstap van drie minuten — maar
+  het laatste stukje lopen was 20 minuten in plaats van 11. Bij de loopsnelheid
+  die de planner aanhoudt (die klopte, want de overstap van 206 meter duurde in
+  beide precies drie minuten) hoort daar een afstand van 1,4 kilometer bij, twee
+  keer zo ver als de 693 meter die het werkelijk is. De bestemming lag dus zo'n
+  zevenhonderd meter naast de voordeur. Herkenbaar aan de naam: die heette
+  "184, Lelystad", zonder straatnaam.
+
+  Voortaan gaat elke adreszoekopdracht eerst langs de BAG via PDOK — gratis,
+  zonder sleutel, en de bron waar elk Nederlands adres in staat met de
+  coordinaten van het pand zelf. OpenStreetMap blijft er voor alles wat geen
+  Nederlands huisadres is: een sportschool op naam, een station over de grens,
+  een gebouw zonder huisnummer. Levert het register niets op, dan valt de app
+  daar vanzelf op terug.
+
+  **Let op:** locaties die je eerder hebt opgeslagen — je thuisadres, je vaste
+  plekken — houden hun oude coordinaten. Kies ze één keer opnieuw om ook daar
+  het exacte punt te krijgen.
+
+- **Bij elk loop- en fietsonderdeel staat nu de afstand** ("20 min · 1,4 km").
+  Alleen een tijd verbergt een omweg; met de meters ernaast zie je meteen of er
+  iets niet klopt.
+
+- **De straatnaam blijft in de zoeksuggestie staan**, ook als de adresgegevens
+  hem missen. Een bestemming die "184, Lelystad" heet is een zwakke match, en
+  dat hoor je te kunnen zien voordat je hem kiest.
+
 ## 0.29.0
 
 Een ronde langs de hele app op zoek naar stille rekenfouten: antwoorden die er

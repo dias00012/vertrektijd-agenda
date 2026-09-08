@@ -2,6 +2,7 @@ import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { motisGeocode } from "./motis";
+import { toGeocodeResults, type PdokResponse } from "../pdok";
 import type { GeocodeResult } from "../types";
 import type { Language } from "../i18n/locale";
 import { translate } from "../i18n/dictionary";
@@ -64,10 +65,12 @@ export async function geocode(
   const cached = cacheGet<GeocodeResult[]>(cacheKey);
   if (cached) return cached;
 
+  // Eerst het Nederlandse adressenregister, dan pas OpenStreetMap. Zie
+  // `geocodeAddresses` voor waarom die volgorde uitmaakt.
   const addresses =
     config.provider === "ors"
       ? await geocodeOrs(trimmed, limit)
-      : await geocodeNominatim(trimmed, limit, language);
+      : await geocodeAddresses(trimmed, limit, language);
 
   let results = addresses;
   let complete = true;
@@ -80,6 +83,55 @@ export async function geocode(
 
   cacheSet(cacheKey, results, complete ? CACHE_TTL_MS : PARTIAL_CACHE_TTL_MS);
   return results;
+}
+
+/**
+ * Adressen zoeken: eerst het Nederlandse adressenregister, dan OpenStreetMap.
+ *
+ * Voor een Nederlands huisadres is de BAG de bron waar elk adres in staat, met
+ * de coordinaten van het pand zelf. OpenStreetMap kent lang niet elk
+ * huisnummer; wat je dan terugkrijgt is het dichtstbijzijnde punt dat er wél in
+ * staat, en dat kan honderden meters verderop liggen. De app rekent daar netjes
+ * een looproute naartoe, dus je merkt het niet aan een foutmelding maar aan een
+ * reistijd die nergens uit blijkt.
+ *
+ * OpenStreetMap blijft nodig voor alles wat geen Nederlands adres is: een
+ * sportschool op naam, een station in Duitsland, een gebouw zonder huisnummer.
+ * Levert het adressenregister niets op, dan komt hij dus alsnog aan bod.
+ */
+async function geocodeAddresses(
+  query: string,
+  limit: number,
+  language: Language,
+): Promise<GeocodeResult[]> {
+  try {
+    const found = await geocodePdok(query, limit);
+    if (found.length > 0) return found;
+  } catch {
+    // De Locatieserver hapert: dan is OpenStreetMap er nog.
+  }
+  return geocodeNominatim(query, limit, language);
+}
+
+/** Het Nederlandse adressenregister (BAG) via de Locatieserver van PDOK. */
+async function geocodePdok(query: string, limit: number): Promise<GeocodeResult[]> {
+  const config = getProviderConfig();
+  const url = new URL(`${config.pdokBaseUrl}/free`);
+  url.searchParams.set("q", query);
+  url.searchParams.set("rows", String(limit));
+  // Alleen wat je als bestemming kunt gebruiken; geen provincies of percelen.
+  url.searchParams.set("fq", "type:(adres OR weg OR woonplaats OR postcode)");
+  url.searchParams.set(
+    "fl",
+    "type,weergavenaam,straatnaam,huis_nlt,postcode,woonplaatsnaam,gemeentenaam,centroide_ll",
+  );
+
+  const response = await fetchWithTimeout(url.toString(), {
+    headers: { "User-Agent": config.userAgent, Accept: "application/json" },
+  });
+  if (!response.ok) throw new ProviderError("api.geocodeFailed");
+
+  return toGeocodeResults((await response.json()) as PdokResponse, limit);
 }
 
 /**
