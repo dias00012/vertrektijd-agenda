@@ -3,6 +3,31 @@ import { getLanguage } from "./i18n/locale";
 import { translate } from "./i18n/dictionary";
 import type { CategoryId, GeoLocation, SavedPlace, Settings } from "./types";
 
+/**
+ * Mist dit adres zijn straatnaam?
+ *
+ * De adreszoeker gaf soms een resultaat terug dat alleen uit een huisnummer
+ * bestond: "60, Almere", "184, Lelystad". Dat is geen adres maar een los punt
+ * dat de zoeker niet aan een straat kon koppelen — en dat punt kan honderden
+ * meters van de bedoelde voordeur liggen. De app rekende daar vervolgens netjes
+ * een looproute naartoe, dus je zag geen foutmelding maar een reistijd die
+ * nergens uit bleek.
+ *
+ * Herkenbaar aan het eerste deel van de naam: staat daar geen enkele letter in,
+ * dan is er geen straat gevonden.
+ */
+export function missesStreet(location: Pick<GeoLocation, "label"> | null): boolean {
+  if (!location) return false;
+  const first = location.label.split(",")[0]?.trim() ?? "";
+  if (!first) return false;
+  // Een naam als "Basic-Fit" of "Gran Canariastraat 60" bevat een straat; een
+  // kaal huisnummer als "60", "184A" of "184-A" niet. Let op de straatnamen die
+  // met een cijfer beginnen ("1e Kruisstraat"): daar staat meer achter, dus die
+  // vallen buiten dit patroon.
+  const bareHouseNumber = /^\d+\s*[-/]?\s*[a-zA-Z]?$/;
+  return bareHouseNumber.test(first) || !/\p{L}/u.test(first);
+}
+
 /** Bewaarde locaties, meest recent bewaarde eerst. */
 export function sortedPlaces(settings: Settings): SavedPlace[] {
   return [...settings.savedPlaces].sort((a, b) => b.createdAt.localeCompare(a.createdAt));

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces } from "@/lib/places";
+import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces, missesStreet } from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
@@ -341,6 +341,17 @@ function SavedPlaces() {
                   <p className="mt-0.5 truncate text-xs" style={{ color: "var(--muted)" }}>
                     {place.location.label}
                   </p>
+                  {/* Zonder straatnaam is het geen adres maar een los punt dat
+                      honderden meters verkeerd kan liggen. Dan klopt elke
+                      reistijd naar deze plek niet, en dat zie je nergens aan. */}
+                  {missesStreet(place.location) ? (
+                    <p className="mt-1 text-xs" style={{ color: "var(--danger)" }}>
+                      &#9888;&#65039; {t("place.noStreet")}
+                      <span className="mt-0.5 block" style={{ color: "var(--muted)" }}>
+                        {t("places.noStreet.fix")}
+                      </span>
+                    </p>
+                  ) : null}
                   {categories.length > 0 ? (
                     <p className="mt-1 flex flex-wrap gap-1.5">
                       {categories.map((id) => {
