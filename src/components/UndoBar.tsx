@@ -8,7 +8,8 @@ import { useT } from "@/hooks/useLanguage";
 const VISIBLE_MS = 8000;
 
 /**
- * "Verwijderd, ongedaan maken."
+ * "Verwijderd, ongedaan maken." — of "verplaatst", zodat de knop belooft wat
+ * hij doet.
  *
  * Verwijderen is het enige in deze app waarmee je echt iets kwijt kunt raken,
  * en juist dat gebeurt makkelijk met een duim op een telefoon. Een balkje van
@@ -53,7 +54,9 @@ export function UndoBar() {
         }}
       >
         <span className="min-w-0 flex-1 truncate">
-          {t("undo.removed", { title: lastRemoved.title })}
+          {t(lastRemoved.kind === "moved" ? "undo.moved" : "undo.removed", {
+            title: lastRemoved.title,
+          })}
         </span>
         <button
           type="button"

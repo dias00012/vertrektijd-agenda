@@ -31,6 +31,16 @@ export type TravelMode = "car" | "bike" | "walk" | "transit";
  */
 export type TransitBike = "none" | "start" | "both";
 
+/**
+ * Aan welke kant van één rit een fiets staat. `TransitBike` is de keuze van de
+ * gebruiker ("ik heb thuis een fiets"); dit is wat dat voor een concrete rit
+ * betekent. Op de heenreis staat je fiets aan het begin, op de terugreis aan
+ * het eind — dezelfde keuze, de andere kant van de rit. Zonder dat onderscheid
+ * mocht je heen een half uur naar het station fietsen maar terug alleen lopen,
+ * en viel je thuisadres buiten bereik.
+ */
+export type BikeEnds = "none" | "origin" | "destination" | "both";
+
 export interface GeoLocation {
   /** Weergavenaam zoals de gebruiker die herkent, bv. "Windesheim, Almere". */
   label: string;
@@ -232,6 +242,12 @@ export interface ActivityDraft {
   linkedExamId?: string | null;
   /** Herkomst, bv. "leerplan". Standaard leeg. */
   source?: string | null;
+  /**
+   * Overgeslagen dagen van een reeks. Normaal niet meegestuurd — die blijven
+   * dan gewoon staan. Wel nodig wanneer de hele reeks verschuift: de dagen
+   * staan als kalenderdatum opgeslagen en moeten dan meebewegen.
+   */
+  exceptions?: string[];
 }
 
 /**
@@ -266,6 +282,12 @@ export interface ActivityOccurrence extends Activity {
   occurrenceId: string;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring: boolean;
+  /**
+   * De startdatum van de reeks zelf. `date` is bij een herhaling de dag die je
+   * bekijkt, niet de dag waarop de reeks begint. Wie dat verwarde schreef de
+   * bekeken dag terug als startdatum, waarna alle eerdere dagen verdwenen.
+   */
+  seriesDate: string;
   /**
    * Hoort deze dag bij iets dat meer dagen duurt, dan staat hier het geheel:
    * de eerste en laatste dag, en de hoeveelste dag dit is. `null` bij het
@@ -355,6 +377,12 @@ export interface Settings {
    * Zie `useReminders` voor wat er wel en niet kan zonder pushserver.
    */
   reminderMinutes?: number | null;
+  /**
+   * Wanneer je deze instellingen voor het laatst wijzigde (ISO). Nodig bij het
+   * samenvoegen met de cloud: zonder dit won de cloud altijd, en verdween wat
+   * je offline had aangepast.
+   */
+  updatedAt?: string;
 }
 
 export interface GeocodeResult extends GeoLocation {

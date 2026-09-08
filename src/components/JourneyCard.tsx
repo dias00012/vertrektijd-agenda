@@ -10,8 +10,17 @@ import type { Journey, TravelLeg } from "@/lib/types";
 /**
  * Eén reismogelijkheid: vertrek, aankomst, duur en overstappen in één oogopslag,
  * met live vertraging in het rood. Uitklappen toont de hele rit.
+ *
+ * De lijst staat op vertrektijd, zoals op een vertrekbord. Dat betekent dat de
+ * snelste rit niet bovenaan hoeft te staan, dus krijgt die een merkje.
  */
-export function JourneyCard({ journey }: { journey: Journey }) {
+export function JourneyCard({
+  journey,
+  fastest = false,
+}: {
+  journey: Journey;
+  fastest?: boolean;
+}) {
   const t = useT();
   const [open, setOpen] = useState(false);
 
@@ -41,6 +50,15 @@ export function JourneyCard({ journey }: { journey: Journey }) {
             →
           </span>
           <span className="text-xl font-semibold tabular-nums">{legTime(journey.arrival)}</span>
+
+          {fastest ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-[0.65rem] font-medium"
+              style={{ background: "var(--surface-soft)", color: "var(--accent)" }}
+            >
+              {t("journey.fastest")}
+            </span>
+          ) : null}
 
           <span className="ml-auto text-right text-xs" style={{ color: "var(--muted)" }}>
             {formatDuration(journey.durationMinutes)}

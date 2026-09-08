@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { headers } from "@/lib/api";
 import { useT } from "@/hooks/useLanguage";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,7 +45,7 @@ export function AccountSection() {
 
       const response = await fetch("/api/account/delete", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: headers({ Authorization: `Bearer ${token}` }),
       });
       if (!response.ok) {
         const payload = (await response.json().catch(() => ({}))) as { error?: string };

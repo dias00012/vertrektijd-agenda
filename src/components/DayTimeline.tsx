@@ -162,7 +162,14 @@ function TimelineRow({
             <span className="block text-xs tabular-nums" style={{ color: "var(--muted)" }}>
               {t("timeline.backHome", {
                 duration: formatDuration(entry.returnMinutes),
-                verb: t("timeline.drive"),
+                verb: t(
+                  // Zelfde keuze als bij de heenreis hierboven; hier stond
+                  // "rijden" vast, ook als je met de trein of op de fiets naar
+                  // huis ging.
+                  (entry.activity.returnTravel?.mode ?? entry.activity.travel?.mode) === "car"
+                    ? "timeline.drive"
+                    : "timeline.travel",
+                ),
                 time: minutesToTime(entry.minutes + entry.returnMinutes),
               })}
             </span>

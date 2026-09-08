@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { fetchJourneys } from "@/lib/api";
+import { fetchJourneys, type JourneyDiagnostics } from "@/lib/api";
 import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
@@ -21,6 +21,41 @@ function toLocalInput(date: Date): string {
   )}:${pad(date.getMinutes())}`;
 }
 
+/**
+ * De id van de kortste rit, of null als alle opties even lang duren: dan zegt
+ * een merkje "snelste" niets en is het alleen maar ruis.
+ */
+function fastestJourneyId(journeys: Journey[]): string | null {
+  if (journeys.length < 2) return null;
+  const fastest = journeys.reduce((best, journey) =>
+    journey.durationMinutes < best.durationMinutes ? journey : best,
+  );
+  const shared = journeys.every(
+    (journey) => journey.durationMinutes === fastest.durationMinutes,
+  );
+  return shared ? null : fastest.id;
+}
+
+/** Eén regel in de technische details. */
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-2">
+      <dt className="shrink-0 font-medium">{label}</dt>
+      <dd className="min-w-0 break-words tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+/**
+ * Naam plus coordinaten. Juist die coordinaten doen ertoe: kies je in de lijst
+ * de straat in plaats van het huisnummer, dan rekent de planner vanaf het
+ * midden van die straat en kan hij bij een andere halte uitkomen.
+ */
+function pointLabel(point: GeoLocation | null): string {
+  if (!point) return "—";
+  return `${point.label} (${point.lat.toFixed(5)}, ${point.lon.toFixed(5)})`;
+}
+
 /** Reisplanner: zoek een rit met trein, bus, tram of metro. */
 export default function TravelPlannerPage() {
   const { settings, hydrated } = useAgenda();
@@ -36,9 +71,17 @@ export default function TravelPlannerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  // Losstaand van `error`: het einde van de dienstregeling is geen storing.
+  const [notice, setNotice] = useState<string | null>(null);
+  /** Wat de planner deed; alleen zichtbaar als je erom vraagt. */
+  const [details, setDetails] = useState<JourneyDiagnostics | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const [locating, setLocating] = useState(false);
 
   const places = hydrated ? placeChoices(settings) : [];
+  // De lijst staat op vertrektijd; de snelste rit hoeft dus niet bovenaan te
+  // staan. Alleen merken als er echt iets te kiezen valt.
+  const fastestId = fastestJourneyId(journeys);
 
   // Vertrekpunt standaard op thuis: dat is bijna altijd waar je vandaan gaat.
   useEffect(() => {
@@ -65,13 +108,14 @@ export default function TravelPlannerPage() {
   }, [hydrated, t]);
 
   const search = useCallback(
-    async (cursor?: string) => {
+    async (cursor?: string, direction: "next" | "previous" = "next") => {
       if (!from || !to) {
         setError(t("travel.needBoth"));
         return;
       }
       setLoading(true);
       setError(null);
+      setNotice(null);
       setSearched(true);
 
       try {
@@ -84,14 +128,33 @@ export default function TravelPlannerPage() {
                 arriveBy: when === "arrive",
               }),
           count: 5,
-          transitBike: settings.transitBike ?? "none",
+          // In de reisplanner kies je zelf van en naar; het vertrekpunt staat
+          // standaard op thuis, dus daar staat je fiets.
+          bike:
+            settings.transitBike === "both"
+              ? "both"
+              : settings.transitBike === "start"
+                ? "origin"
+                : "none",
         });
-        setJourneys(result.journeys);
         track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
+        setDetails(result.meta ?? null);
+
+        // Voorbij de laatste rit van de dag geeft de planner een lege pagina
+        // terug. Die niet tonen als "geen verbinding" en vooral: de lijst die
+        // er staat laten staan, zodat je niet opnieuw hoeft te zoeken.
+        if (cursor && result.journeys.length === 0) {
+          setNotice(t(direction === "previous" ? "travel.noEarlier" : "travel.noLater"));
+          return;
+        }
+        setJourneys(result.journeys);
       } catch (err) {
-        setJourneys([]);
-        setCursors({});
+        // Mislukt het bladeren, dan blijft staan wat je al had.
+        if (!cursor) {
+          setJourneys([]);
+          setCursors({});
+        }
         setError(err instanceof Error ? err.message : t("travel.failed"));
       } finally {
         setLoading(false);
@@ -255,7 +318,7 @@ export default function TravelPlannerPage() {
             <button
               type="button"
               className="btn btn-ghost mb-2.5 w-full text-xs"
-              onClick={() => void search(cursors.previous)}
+              onClick={() => void search(cursors.previous, "previous")}
               disabled={loading}
             >
               &#8593; {t("travel.earlier")}
@@ -264,7 +327,11 @@ export default function TravelPlannerPage() {
 
           <div className="space-y-2.5">
             {journeys.map((journey) => (
-              <JourneyCard key={journey.id} journey={journey} />
+              <JourneyCard
+                key={journey.id}
+                journey={journey}
+                fastest={journey.id === fastestId}
+              />
             ))}
           </div>
 
@@ -277,6 +344,57 @@ export default function TravelPlannerPage() {
             >
               &#8595; {t("travel.later")}
             </button>
+          ) : null}
+
+          {notice ? (
+            <p className="mt-2.5 text-center text-xs" style={{ color: "var(--muted)" }}>
+              {notice}
+            </p>
+          ) : null}
+
+          {/* Klopt een rit niet, dan is dit het antwoord op "hoe kom ik erachter
+              waarom". Eén schermafbeelding hiervan vertelt waar het misgaat:
+              welke planner antwoordde, hoeveel opties er binnenkwamen, en van
+              welk punt er precies gerekend is. */}
+          {details ? (
+            <div className="mt-3 text-center">
+              <button
+                type="button"
+                onClick={() => setShowDetails(!showDetails)}
+                aria-expanded={showDetails}
+                className="text-xs underline underline-offset-2"
+                style={{ color: "var(--muted)" }}
+              >
+                {showDetails ? t("travel.why.hide") : t("travel.why")}
+              </button>
+
+              {showDetails ? (
+                <dl
+                  className="card mt-2 space-y-1 px-4 py-3 text-left text-xs"
+                  style={{ color: "var(--muted)" }}
+                >
+                  <p className="mb-2">{t("travel.why.intro")}</p>
+                  <Detail label={t("travel.why.from")} value={pointLabel(from)} />
+                  <Detail label={t("travel.why.to")} value={pointLabel(to)} />
+                  <Detail
+                    label={t("travel.why.planner")}
+                    value={details.planVersion ?? "?"}
+                  />
+                  <Detail
+                    label={t("travel.why.transfers")}
+                    value={t(details.routedTransfers ? "travel.why.on" : "travel.why.off")}
+                  />
+                  <Detail
+                    label="—"
+                    value={t("travel.why.options", {
+                      received: details.received,
+                      shown: details.shown,
+                    })}
+                  />
+                  {details.directOnly ? <p>{t("travel.why.directOnly")}</p> : null}
+                </dl>
+              ) : null}
+            </div>
           ) : null}
         </section>
       ) : searched && !error ? (

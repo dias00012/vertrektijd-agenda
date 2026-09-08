@@ -146,11 +146,41 @@ export async function pushEnabled(): Promise<boolean> {
   }
 }
 
-/** Vervangt de wachtrij van dit apparaat door deze berichten. */
-export async function replaceQueue(messages: QueuedMessage[]): Promise<void> {
-  await fetch("/api/push/schedule", {
-    method: "PUT",
+/**
+ * Vervangt de wachtrij van dit apparaat door deze berichten.
+ *
+ * Geeft terug of het lukte. Dat werd eerder genegeerd, dus een server die 502
+ * gaf leek geslaagd: de app dacht dat de meldingen klaarstonden en probeerde
+ * het nooit opnieuw.
+ */
+export async function replaceQueue(messages: QueuedMessage[]): Promise<boolean> {
+  try {
+    const response = await fetch("/api/push/schedule", {
+      method: "PUT",
+      headers: headers(),
+      body: JSON.stringify({ device: deviceId(), messages }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Meldt het huidige abonnement opnieuw aan bij de server.
+ *
+ * Nodig omdat de server een apparaat opruimt zodra de pushdienst zegt dat het
+ * abonnement verlopen is. De browser merkt daar niets van en bleef "aan"
+ * tonen, terwijl er nooit meer een melding kwam.
+ */
+export async function refreshSubscription(): Promise<void> {
+  const registration = await readyRegistration();
+  const subscription = await registration?.pushManager.getSubscription().catch(() => null);
+  if (!subscription) return;
+
+  await fetch("/api/push/subscribe", {
+    method: "POST",
     headers: headers(),
-    body: JSON.stringify({ device: deviceId(), messages }),
+    body: JSON.stringify({ device: deviceId(), subscription: subscription.toJSON() }),
   }).catch(() => undefined);
 }

@@ -1,9 +1,9 @@
 import type {
   Activity,
   ActivityOccurrence,
+  BikeEnds,
   GeoLocation,
   Settings,
-  TransitBike,
   TravelMode,
 } from "./types";
 import {
@@ -14,7 +14,7 @@ import {
   toDateKey,
   toDateTime,
 } from "./time";
-import { occursOn } from "./recurrence";
+import { occursOn, spansDays } from "./recurrence";
 
 /** Het vervoermiddel voor deze activiteit: eigen keuze, anders de standaard. */
 export function travelModeFor(activity: Activity, settings: Settings): TravelMode {
@@ -30,15 +30,15 @@ export function travelKey(
   destination: GeoLocation | null,
   mode: TravelMode,
   timeSlot?: string | null,
-  transitBike?: TransitBike,
+  bike?: BikeEnds,
 ): string | null {
   if (!home || !destination) return null;
   const round = (n: number) => n.toFixed(5);
   const slot = mode === "transit" && timeSlot ? `@${timeSlot}` : "";
   // De fietskeuze hoort bij de sleutel: zet je hem om, dan moet de reis
   // opnieuw berekend worden in plaats van de oude looptijd te blijven tonen.
-  const bike = mode === "transit" && transitBike && transitBike !== "none" ? `+${transitBike}` : "";
-  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bike}`;
+  const bikePart = mode === "transit" && bike && bike !== "none" ? `+${bike}` : "";
+  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bikePart}`;
 }
 
 /** Hoe ver vooruit we zoeken naar de eerstvolgende dag van een reeks. */
@@ -50,7 +50,10 @@ const OCCURRENCE_LOOKAHEAD_DAYS = 60;
  * we op die dag, zodat de dienstregeling klopt.
  */
 export function nextOccurrenceDate(activity: Activity, now: Date = new Date()): string {
-  if (!activity.recurrence) return activity.date;
+  // Eén dag, één antwoord. Maar een reeks valt op meer dagen, en iets met een
+  // einddatum (een stage, een vakantie) ook — zonder dat onderscheid vroeg de
+  // app in oktober nog de dienstregeling van de eerste stagedag in september.
+  if (!activity.recurrence && !spansDays(activity)) return activity.date;
 
   const today = toDateKey(now);
   for (let offset = 0; offset <= OCCURRENCE_LOOKAHEAD_DAYS; offset += 1) {
@@ -70,8 +73,12 @@ export function bufferFor(activity: Activity, settings: Settings): number {
  */
 export interface TravelPlan {
   mode: TravelMode;
-  /** Fiets naar (en eventueel vanaf) de halte; alleen bij OV. */
-  transitBike: TransitBike;
+  /** Aan welke kant van de heenreis je fiets staat. */
+  outboundBike: BikeEnds;
+  /** En van de terugreis — dat is de andere kant van dezelfde rit. */
+  returnBike: BikeEnds;
+  /** En van een doorreis, die thuis niet aandoet. */
+  onwardBike: BikeEnds;
   outboundKey: string;
   returnKey: string;
   /** Uiterlijke aankomst voor de heenreis (ISO); alleen bij OV. */
@@ -121,23 +128,38 @@ export function travelPlanForDate(
       : null;
   const departAtDate = mode === "transit" ? toDateTime(dateKey, activity.endTime) : null;
 
-  const outboundSlot = arriveByDate ? `${dateKey}T${activity.startTime}` : null;
-  const returnSlot = departAtDate ? `${dateKey}T${activity.endTime}` : null;
+  // Het tijdstip dat we de planner echt vragen, niet de starttijd op het
+  // rooster. Anders zit de marge er niet in: zet je hem van 10 op 30 minuten,
+  // dan vraagt de app een andere rit op maar vindt hij de oude uitkomst nog
+  // geldig, en verandert er niets op het scherm.
+  const outboundSlot = arriveByDate ? arriveByDate.toISOString() : null;
+  const returnSlot = departAtDate ? departAtDate.toISOString() : null;
 
-  const transitBike = settings.transitBike ?? "none";
-  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, transitBike);
-  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, transitBike);
+  const bike = settings.transitBike ?? "none";
+  // Dezelfde keuze, per rit de andere kant op. "start" betekent: mijn fiets
+  // staat thuis — dus aan het begin van de heenreis en aan het eind van de
+  // terugreis. Een doorreis komt niet langs huis, dus daar staat hij niet.
+  // "both" (een tweede fiets of een OV-fiets) geldt overal aan beide kanten.
+  const outboundBike: BikeEnds = bike === "both" ? "both" : bike === "start" ? "origin" : "none";
+  const returnBike: BikeEnds =
+    bike === "both" ? "both" : bike === "start" ? "destination" : "none";
+  const onwardBike: BikeEnds = bike === "both" ? "both" : "none";
+
+  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, outboundBike);
+  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, returnBike);
   if (!outboundKey || !returnKey) return null;
 
   // De doorreis vertrekt op hetzelfde moment als de reis naar huis zou doen:
   // zodra je klaar bent.
   const onwardKey = onward
-    ? travelKey(activity.location, onward, mode, returnSlot, transitBike)
+    ? travelKey(activity.location, onward, mode, returnSlot, onwardBike)
     : null;
 
   return {
     mode,
-    transitBike,
+    outboundBike,
+    returnBike,
+    onwardBike,
     outboundKey,
     returnKey,
     arriveBy: arriveByDate?.toISOString(),
@@ -204,14 +226,29 @@ export function computeDeparture(
   const startMinutes = timeToMinutes(activity.startTime);
 
   if (activity.travel.plannedDeparture) {
-    const minutes = localMinutes(activity.travel.plannedDeparture);
+    const departure = new Date(activity.travel.plannedDeparture);
+    const clockMinutes = departure.getHours() * 60 + departure.getMinutes();
+    // Binnen de rit zelf kijken: vertrekt hij op een eerdere kalenderdag dan
+    // dat hij aankomt? De aankomst valt per definitie op de dag van de
+    // activiteit, want daar is de rit op gezocht.
+    //
+    // Niet vergelijken met kloktijden — dan geldt elke rit die later vertrekt
+    // dan de activiteit begint als "de dag ervoor", en dat gebeurt echt: als
+    // er niets op tijd rijdt toont de app de eerstvolgende rit daarna.
+    // En niet vergelijken met `activity.date` — bij een reeks staat er één
+    // berekende rit voor alle dagen, dus dan zou elke volgende dag "de dag
+    // ervoor" heten.
+    const arrival = activity.travel.plannedArrival;
+    const previousDay = arrival ? toDateKey(departure) < toDateKey(new Date(arrival)) : false;
+    // Bij een vertrek de dag ervoor telt `minutes` negatief door, net als bij
+    // de rekensom hieronder; daar rekent `departureDateTime` mee.
+    const minutes = previousDay ? clockMinutes - MINUTES_PER_DAY : clockMinutes;
     return {
       time: minutesToTime(minutes),
       minutes,
       travelMinutes,
       bufferMinutes: buffer,
-      // Vertrek later op de klok dan de starttijd betekent: de dag ervoor.
-      previousDay: minutes > startMinutes,
+      previousDay,
     };
   }
 
@@ -225,17 +262,22 @@ export function computeDeparture(
   };
 }
 
-/** Absoluut moment van vertrek, handig voor sorteren en "eerstvolgende". */
+/**
+ * Absoluut moment van vertrek, handig voor sorteren, "eerstvolgende" en het
+ * plannen van meldingen.
+ *
+ * Bewust opgebouwd uit een datum en een kloktijd in plaats van "starttijd min
+ * zoveel milliseconden": in de nacht van de tijdswissel duurt een dag 23 of 25
+ * uur, en dan zet een aftreksom in milliseconden je vertrek een uur mis.
+ */
 export function departureDateTime(
   activity: ActivityOccurrence,
   settings: Settings,
 ): Date | null {
   const departure = computeDeparture(activity, settings);
   if (!departure) return null;
-  const start = toDateTime(activity.date, activity.startTime);
-  return new Date(
-    start.getTime() - (timeToMinutes(activity.startTime) - departure.minutes) * 60_000,
-  );
+  const dateKey = departure.previousDay ? addDaysToKey(activity.date, -1) : activity.date;
+  return toDateTime(dateKey, departure.time);
 }
 
 export interface OnwardInfo {
@@ -303,9 +345,14 @@ export function computeReturn(
   activity: ActivityOccurrence,
   settings: Settings,
 ): ReturnInfo | null {
-  // Alleen na je laatste uur op die plek ga je naar huis, en alleen als je
-  // niet rechtstreeks doorreist naar de volgende plek.
-  if (!activity.travelRole.inbound || activity.travelRole.onward) return null;
+  // Alleen na je laatste uur op die plek ga je naar huis.
+  if (!activity.travelRole.inbound) return null;
+  // Reis je rechtstreeks door naar de volgende plek, dan is er geen thuisreis.
+  // Tenzij die doorreis nog niet berekend is: dat gebeurt zodra je vooruit
+  // kijkt naar een dag die nog niet aan de beurt was. Dan stond er noch een
+  // doorreis noch een thuisreis, en verdween de vraag "hoe laat ben ik thuis"
+  // helemaal van het scherm. Iets tonen is dan beter dan niets.
+  if (activity.travelRole.onward && activity.onwardTravel) return null;
   if (!activity.location || !activity.returnTravel) return null;
   void settings;
 

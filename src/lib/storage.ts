@@ -1,6 +1,7 @@
 "use client";
 
 import type { Activity, CalendarSubscription, Exam, Settings, Task } from "./types";
+import type { Deletion } from "./sync";
 
 /**
  * Persistente opslag. Voor de MVP is dit localStorage: de app werkt daarmee
@@ -13,6 +14,19 @@ const ACTIVITIES_KEY = "agenda.activities.v1";
 const SETTINGS_KEY = "agenda.settings.v1";
 const TASKS_KEY = "agenda.tasks.v1";
 const EXAMS_KEY = "agenda.exams.v1";
+/**
+ * Van wie de gegevens op dit apparaat zijn. Uitloggen wist de agenda niet uit
+ * het geheugen, dus logde daarna iemand anders in, dan werd andermans agenda
+ * — thuisadres incluis — naar dat account gepusht. Met deze sleutel ziet de
+ * app dat de gegevens van een ander zijn en neemt hij de cloud als waarheid.
+ */
+const OWNER_KEY = "agenda.owner.v1";
+/**
+ * Wat je hebt weggegooid. Zonder dit spoor is samenvoegen met de cloud een
+ * unie en komt alles wat je weggooide terug zodra een ander apparaat het nog
+ * kent.
+ */
+const DELETIONS_KEY = "agenda.deletions.v1";
 
 /**
  * Schema-versie van de opgeslagen data. Wordt meegegeven bij export en gebruikt
@@ -47,13 +61,43 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write(key: string, value: unknown): void {
-  if (typeof window === "undefined") return;
+/**
+ * Geeft terug of het opslaan lukte. Dat is geen luxe: is de opslag vol of staat
+ * de browser hem niet toe (privé-venster, "site-gegevens blokkeren"), dan
+ * mislukte dit stil en was een avond invoeren na één keer herladen weg.
+ */
+function write(key: string, value: unknown): boolean {
+  if (typeof window === "undefined") return true;
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch (error) {
     console.warn(`Kon ${key} niet opslaan in localStorage`, error);
+    return false;
   }
+}
+
+/** Het account waar de opgeslagen gegevens bij horen; null = nog nooit gesynct. */
+export function loadOwner(): string | null {
+  const stored = read<string | null>(OWNER_KEY, null);
+  return typeof stored === "string" && stored ? stored : null;
+}
+
+export function saveOwner(userId: string | null): boolean {
+  return write(OWNER_KEY, userId);
+}
+
+export function loadDeletions(): Deletion[] {
+  const stored = read<Deletion[]>(DELETIONS_KEY, []);
+  if (!Array.isArray(stored)) return [];
+  return stored.filter(
+    (item): item is Deletion =>
+      !!item && typeof item.id === "string" && typeof item.at === "string",
+  );
+}
+
+export function saveDeletions(deletions: Deletion[]): boolean {
+  return write(DELETIONS_KEY, deletions);
 }
 
 export function loadActivities(): Activity[] {
@@ -80,8 +124,8 @@ export function loadActivities(): Activity[] {
     }));
 }
 
-export function saveActivities(activities: Activity[]): void {
-  write(ACTIVITIES_KEY, activities);
+export function saveActivities(activities: Activity[]): boolean {
+  return write(ACTIVITIES_KEY, activities);
 }
 
 export function loadTasks(): Task[] {
@@ -94,8 +138,8 @@ export function loadTasks(): Task[] {
   );
 }
 
-export function saveTasks(tasks: Task[]): void {
-  write(TASKS_KEY, tasks);
+export function saveTasks(tasks: Task[]): boolean {
+  return write(TASKS_KEY, tasks);
 }
 
 export function loadExams(): Exam[] {
@@ -107,8 +151,8 @@ export function loadExams(): Exam[] {
   );
 }
 
-export function saveExams(exams: Exam[]): void {
-  write(EXAMS_KEY, exams);
+export function saveExams(exams: Exam[]): boolean {
+  return write(EXAMS_KEY, exams);
 }
 
 export function loadSettings(): Settings {
@@ -133,6 +177,6 @@ export function loadSettings(): Settings {
   };
 }
 
-export function saveSettings(settings: Settings): void {
-  write(SETTINGS_KEY, settings);
+export function saveSettings(settings: Settings): boolean {
+  return write(SETTINGS_KEY, settings);
 }

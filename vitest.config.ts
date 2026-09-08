@@ -10,5 +10,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // De app rekent met lokale tijd en wordt in Nederland gebruikt. In UTC
+    // getest zou de nacht van de tijdswissel nooit langskomen, terwijl juist
+    // daar de vertrektijden misgaan.
+    env: { TZ: "Europe/Amsterdam" },
   },
 });

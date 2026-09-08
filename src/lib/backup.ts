@@ -152,9 +152,11 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
   const now = new Date().toISOString();
   return {
     id: str(raw.id) || createId(),
-    category: (["school", "werk", "gym", "koken", "hobby"].includes(str(raw.category))
-      ? raw.category
-      : "school") as Activity["category"],
+    // Elk niet-leeg type overnemen, ook een zelfgemaakt. Alleen de vijf
+    // ingebouwde doorlaten betekende dat "Bijbaan" of "Muziekles" stil
+    // "School" werd — bij import, maar ook bij elke keer dat de app de agenda
+    // uit de cloud haalde. `resolveCategory` kent de eigen types wel.
+    category: str(raw.category) || "school",
     title: str(raw.title, "Activiteit"),
     date: str(raw.date, now.slice(0, 10)),
     endDate: typeof raw.endDate === "string" ? raw.endDate : null,

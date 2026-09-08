@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { headers } from "@/lib/api";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { parseIcs, type IcsEvent } from "@/lib/ical";
@@ -67,7 +68,7 @@ export function TimetableImport() {
     try {
       const response = await fetch("/api/rooster", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers({ "Content-Type": "application/json" }),
         body: JSON.stringify({ url }),
       });
       const payload = (await response.json()) as { text?: string; error?: string };

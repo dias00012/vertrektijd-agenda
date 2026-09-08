@@ -52,24 +52,61 @@ export interface MotisPlanResponse {
   nextPageCursor?: string;
 }
 
+/**
+ * MOTIS nummert zijn plan-endpoint apart van de rest van de API. v6 is wat de
+ * huidige documentatie beschrijft en wat de officiële client aanroept; deze app
+ * zat nog op v1. Dat is geen detail: de instellingen die we meesturen — één
+ * beste rit in plaats van een vertrekbord, hoe lang je naar de halte mag lopen,
+ * overstappen over straat berekenen — horen bij de v6-beschrijving. Wat een
+ * oudere versie daar niet van kent, negeert hij stilzwijgend, en dan krijg je
+ * een antwoord dat er goed uitziet maar niet is wat je vroeg.
+ *
+ * v1 blijft als terugval staan, voor een server die v6 nog niet serveert.
+ */
+const PLAN_VERSIONS = ["v6", "v1"] as const;
+
+/** Welke versie deze server bleek te kennen; scheelt bij elke volgende vraag. */
+let planVersion: string | null = null;
+
+/**
+ * De versie die het laatst werkte. Staat in de technische details van een
+ * zoekopdracht, zodat aan een schermafbeelding te zien is waar de app mee
+ * praat — dat scheelt een ronde heen en weer als een rit niet klopt.
+ */
+export function lastPlanVersion(): string | null {
+  return planVersion;
+}
+
 /** Roept de MOTIS-reisplanner aan en vertaalt fouten naar nette meldingen. */
 export async function motisPlan(params: URLSearchParams): Promise<MotisPlanResponse> {
   const config = getProviderConfig();
-  const url = `${config.motisBaseUrl}/api/v1/plan?${params.toString()}`;
+  const versions = planVersion ? [planVersion] : PLAN_VERSIONS;
 
-  const response = await fetchWithTimeout(
-    url,
-    { headers: { "User-Agent": config.userAgent, Accept: "application/json" } },
-    12_000,
-  );
+  for (const version of versions) {
+    const url = `${config.motisBaseUrl}/api/${version}/plan?${params.toString()}`;
+    const response = await fetchWithTimeout(
+      url,
+      { headers: { "User-Agent": config.userAgent, Accept: "application/json" } },
+      12_000,
+    );
 
-  if (response.status === 429) {
-    throw new ProviderError("api.tooManyJourneys", 429);
+    if (response.status === 429) {
+      throw new ProviderError("api.tooManyJourneys", 429);
+    }
+    // Kent deze server die versie niet, dan de volgende proberen in plaats van
+    // meteen "de planner doet het niet" te melden.
+    if (response.status === 404 && version !== versions[versions.length - 1]) {
+      continue;
+    }
+    if (!response.ok) {
+      throw new ProviderError("api.plannerDown");
+    }
+
+    planVersion = version;
+    return (await response.json()) as MotisPlanResponse;
   }
-  if (!response.ok) {
-    throw new ProviderError("api.plannerDown");
-  }
-  return (await response.json()) as MotisPlanResponse;
+
+  throw new ProviderError("api.plannerDown");
 }
 
 /** Zoekt haltes en stations op naam. */
@@ -84,7 +121,9 @@ export async function motisGeocode(
     { headers: { "User-Agent": config.userAgent, Accept: "application/json" } },
     8_000,
   );
-  if (!response.ok) return [];
+  // Bewust een fout en geen lege lijst: "de dienst hapert" is iets anders dan
+  // "niets gevonden", en de aanroeper bewaart die twee verschillend lang.
+  if (!response.ok) throw new ProviderError("api.geocodeFailed");
 
   const data = (await response.json()) as {
     name?: string;
@@ -92,7 +131,7 @@ export async function motisGeocode(
     lon?: number;
     type?: string;
   }[];
-  if (!Array.isArray(data)) return [];
+  if (!Array.isArray(data)) throw new ProviderError("api.geocodeFailed");
 
   return data
     .filter((item) => typeof item.lat === "number" && typeof item.lon === "number" && item.name)

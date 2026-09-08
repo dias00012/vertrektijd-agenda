@@ -1,8 +1,9 @@
 import "server-only";
 import { ProviderError } from "./config";
-import { motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
-import { applyBikeOptions, place } from "./routing";
-import type { GeoLocation, Journey, TransitBike } from "../types";
+import { lastPlanVersion, motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
+import { tidyItineraries } from "../itineraries";
+import { transitParams } from "../transitQuery";
+import type { BikeEnds, GeoLocation, Journey } from "../types";
 
 /**
  * De reisplanner: meerdere reismogelijkheden naast elkaar, met live
@@ -20,8 +21,8 @@ export interface JourneySearch {
   cursor?: string;
   /** Aantal gewenste reisopties. */
   count?: number;
-  /** Fiets naar (en eventueel vanaf) de halte. */
-  transitBike?: TransitBike;
+  /** Aan welke kant van de rit een fiets staat. */
+  bike?: BikeEnds;
 }
 
 export interface JourneyResult {
@@ -29,6 +30,22 @@ export interface JourneyResult {
   /** Cursors voor "eerdere ritten" en "latere ritten". */
   previousCursor?: string;
   nextCursor?: string;
+  /**
+   * Wat de planner precies deed. Niet voor het dagelijks gebruik, wel om een
+   * rit die niet klopt te kunnen herleiden zonder in de code te duiken: welke
+   * versie van de planner antwoordde, hoeveel opties er binnenkwamen, en
+   * hoeveel er na het opschonen overbleven.
+   */
+  meta: {
+    planVersion: string | null;
+    routedTransfers: boolean;
+    /** Aantal opties dat de planner teruggaf. */
+    received: number;
+    /** Aantal dat je uiteindelijk ziet. */
+    shown: number;
+    /** true wanneer er geen OV was en dit een directe loop-/fietsroute is. */
+    directOnly: boolean;
+  };
 }
 
 const DEFAULT_COUNT = 5;
@@ -41,38 +58,82 @@ export async function planJourneys(
 ): Promise<JourneyResult> {
   const count = Math.min(Math.max(search.count ?? DEFAULT_COUNT, 1), MAX_COUNT);
 
-  const params = new URLSearchParams({
-    fromPlace: place(from),
-    toPlace: place(to),
-    numItineraries: String(count),
+  const params = transitParams({
+    from,
+    to,
+    shape: "timetable",
+    options: count,
+    time: search.time ?? new Date().toISOString(),
+    arriveBy: search.arriveBy,
+    bike: search.bike,
+    cursor: search.cursor,
   });
-  applyBikeOptions(params, search.transitBike);
-
-  // Bij bladeren bepaalt de cursor het tijdvenster; anders het gekozen tijdstip.
-  if (search.cursor) {
-    params.set("pageCursor", search.cursor);
-  } else {
-    params.set("time", search.time ?? new Date().toISOString());
-    params.set("arriveBy", String(Boolean(search.arriveBy)));
-  }
 
   const data = await motisPlan(params);
-  const itineraries = data.itineraries ?? [];
+  // Rijdt er niets, dan is er soms nog wel een directe loop- of fietsroute.
+  // Die tonen is beter dan zeggen dat er geen verbinding is.
+  const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  // Opties die op geen enkel punt winnen eruit, en op vertrektijd sorteren:
+  // de volgorde waarin de planner ze teruggeeft ligt namelijk niet vast.
+  const itineraries = tidyItineraries(found);
 
   if (itineraries.length === 0) {
+    // Bij bladeren is een lege pagina geen fout maar het einde van de
+    // dienstregeling. Een fout zou de client de hele lijst en beide cursors
+    // laten weggooien, en dan sta je na drie keer "later" met een leeg scherm
+    // dat je niet eens terug kunt bladeren.
+    if (search.cursor) {
+      return {
+        journeys: [],
+        previousCursor: data.previousPageCursor,
+        nextCursor: data.nextPageCursor,
+        meta: {
+          planVersion: lastPlanVersion(),
+          routedTransfers: params.get("useRoutedTransfers") === "true",
+          received: 0,
+          shown: 0,
+          directOnly: false,
+        },
+      };
+    }
     throw new ProviderError("api.noConnection", 422);
   }
 
   const fromLabel = from.label || "vertrekpunt";
   const toLabel = to.label || "bestemming";
 
-  return {
-    journeys: itineraries
+  const journeys = dedupe(
+    itineraries
       .map((itinerary) => toJourney(itinerary, fromLabel, toLabel))
       .filter((journey): journey is Journey => journey !== null),
+  );
+
+  return {
+    journeys,
     previousCursor: data.previousPageCursor,
     nextCursor: data.nextPageCursor,
+    meta: {
+      planVersion: lastPlanVersion(),
+      routedTransfers: params.get("useRoutedTransfers") === "true",
+      received: found.length,
+      shown: journeys.length,
+      directOnly: !data.itineraries?.length,
+    },
   };
+}
+
+/**
+ * Twee keer dezelfde rit in de lijst is verwarrend: je gaat verschillen zoeken
+ * die er niet zijn. Gebeurt zodra de planner dezelfde trein teruggeeft met een
+ * net ander looppad ernaartoe.
+ */
+function dedupe(journeys: Journey[]): Journey[] {
+  const seen = new Set<string>();
+  return journeys.filter((journey) => {
+    if (seen.has(journey.id)) return false;
+    seen.add(journey.id);
+    return true;
+  });
 }
 
 function toJourney(
@@ -93,7 +154,11 @@ function toJourney(
   );
 
   return {
-    id: `${itinerary.startTime}-${itinerary.endTime}-${legs.length}`,
+    // De lijn per onderdeel hoort erbij: twee ritten van 8:22 tot 8:54 met
+    // evenveel onderdelen zijn niet dezelfde rit als de bus verschilt.
+    id: `${itinerary.startTime}-${itinerary.endTime}-${legs
+      .map((leg) => leg.line ?? leg.mode)
+      .join(">")}`,
     departure: itinerary.startTime,
     arrival: itinerary.endTime,
     durationMinutes: Math.round(itinerary.duration / 60),

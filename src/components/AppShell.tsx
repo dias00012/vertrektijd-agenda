@@ -37,7 +37,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [introOpen, setIntroOpen] = useState(false);
   /** De rondleiding langs de tabbladen. */
   const [tourOpen, setTourOpen] = useState(false);
-  const { settings, hydrated } = useAgenda();
+  const { settings, hydrated, storageFull } = useAgenda();
   const t = useT();
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
@@ -112,6 +112,22 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Op een laptop mag het breder: het weekraster heeft zeven kolommen. */}
         <main className="mx-auto w-full max-w-2xl flex-1 px-4 pb-40 pt-6 sm:px-6 lg:max-w-4xl lg:px-8 lg:pb-12 lg:pt-8">
+          {/* Opslaan mislukt: dat moet je weten vóór je herlaadt, niet erna. */}
+          {storageFull ? (
+            <div
+              role="alert"
+              className="card mb-4 px-4 py-3 text-sm"
+              style={{ borderColor: "var(--danger)" }}
+            >
+              <span className="block font-semibold" style={{ color: "var(--danger)" }}>
+                &#9888;&#65039; {t("storage.full.title")}
+              </span>
+              <span className="mt-0.5 block" style={{ color: "var(--muted)" }}>
+                {t("storage.full.body")}
+              </span>
+            </div>
+          ) : null}
+
           {showHomeHint ? (
             <Link
               href="/instellingen"
