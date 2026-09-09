@@ -879,7 +879,12 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            /* Bij het bewerken staan er vier knoppen naast elkaar, en dat past
+               niet op een telefoon: "Annuleren" en "Opslaan" vielen buiten het
+               scherm — op 390 px net zo goed als op 320. Je kon je wijziging
+               dus niet bewaren. Met flex-wrap zakken die twee naar een tweede
+               regel en blijven ze rechts staan. */
+            <div className="flex flex-wrap items-center gap-2">
               {isEdit ? (
                 <>
                   <button

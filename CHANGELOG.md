@@ -8,6 +8,17 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.40.0
+
+- **Op een telefoon kon je een wijziging niet opslaan.** Open je een bestaande
+  activiteit, dan staan er vier knoppen onderaan: Verwijderen, Dupliceren,
+  Annuleren en Opslaan. Die pasten niet naast elkaar, en juist de laatste twee
+  vielen buiten het scherm — op een gewone telefoon van 390 pixels net zo goed
+  als op een smalle van 320. Je kon je aanpassing dus wel maken maar niet
+  bewaren. Hetzelfde gold voor het bewerken van een opdracht bij Schoolwerk,
+  waar "Opslaan" van het scherm af viel. Beide knoppenrijen zakken nu netjes
+  door naar een tweede regel.
+
 ## 0.39.0
 
 - **De app zegt het nu wanneer je het niet haalt.** Rijdt er niets dat je op
