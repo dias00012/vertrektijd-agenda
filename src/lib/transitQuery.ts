@@ -42,6 +42,16 @@ export const WALK_SPEEDS: Record<WalkSpeed, number | null> = {
   fast: 1.4,
 };
 
+/**
+ * Waar de app van uitgaat als je zelf niets kiest: stevig doorlopen, 5 km/h.
+ *
+ * Dezelfde aanname als 9292. De planner is uit zichzelf voorzichtiger (4 km/h)
+ * en dat is geen fout, maar het maakt elke reis met drie loopstukken zo'n tien
+ * minuten langer dan wat je gewend bent te zien — en dan lijkt de app trager
+ * dan hij is. Wie rustiger loopt zet het in Instellingen terug.
+ */
+export const DEFAULT_WALK_SPEED: WalkSpeed = "fast";
+
 export type TransitShape =
   /** Eén beste rit, voor de vertrektijd in de agenda. */
   | "best"

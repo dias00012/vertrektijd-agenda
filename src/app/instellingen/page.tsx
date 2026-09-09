@@ -15,6 +15,7 @@ import { ThemeSection } from "@/components/ThemeSection";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
+import { DEFAULT_WALK_SPEED } from "@/lib/transitQuery";
 import type { GeoLocation, TransitBike, TravelMode, WalkSpeed } from "@/lib/types";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
@@ -28,7 +29,7 @@ export default function SettingsPage() {
   const [buffer, setBuffer] = useState("10");
   const [mode, setMode] = useState<TravelMode>("car");
   const [bike, setBike] = useState<TransitBike>("none");
-  const [walk, setWalk] = useState<WalkSpeed>("normal");
+  const [walk, setWalk] = useState<WalkSpeed>(DEFAULT_WALK_SPEED);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +39,7 @@ export default function SettingsPage() {
     setBuffer(String(settings.bufferMinutes));
     setMode(settings.travelMode);
     setBike(settings.transitBike ?? "none");
-    setWalk(settings.walkSpeed ?? "normal");
+    setWalk(settings.walkSpeed ?? DEFAULT_WALK_SPEED);
   }, [
     hydrated,
     settings.home,

@@ -16,6 +16,7 @@ import {
   toDateTime,
 } from "./time";
 import { occursOn, spansDays } from "./recurrence";
+import { DEFAULT_WALK_SPEED } from "./transitQuery";
 
 /** Het vervoermiddel voor deze activiteit: eigen keuze, anders de standaard. */
 export function travelModeFor(activity: Activity, settings: Settings): TravelMode {
@@ -152,7 +153,7 @@ export function travelPlanForDate(
     bike === "both" ? "both" : bike === "start" ? "destination" : "none";
   const onwardBike: BikeEnds = bike === "both" ? "both" : "none";
 
-  const walk = settings.walkSpeed ?? "normal";
+  const walk = settings.walkSpeed ?? DEFAULT_WALK_SPEED;
 
   const outboundKey = travelKey(
     settings.home,

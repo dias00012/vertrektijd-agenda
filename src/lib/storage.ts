@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_WALK_SPEED } from "./transitQuery";
 import type { Activity, CalendarSubscription, Exam, Settings, Task } from "./types";
 import type { Deletion } from "./sync";
 
@@ -44,7 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferMinutes: 10,
   travelMode: "car",
   transitBike: "none",
-  walkSpeed: "normal",
+  walkSpeed: DEFAULT_WALK_SPEED,
   timetable: null,
   calendars: [],
   reminderMinutes: null,
