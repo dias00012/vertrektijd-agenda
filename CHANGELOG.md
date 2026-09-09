@@ -23,6 +23,11 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   hem bekijkt. De dichtstbijzijnde dag gaat bovendien eerst, zodat bij drukte
   de verste dag sneuvelt en niet die van morgenochtend.
 
+- **"Controleer je internetverbinding" stond er ook als het aan de andere
+  kant lag.** Is de kaarten- of reisdienst zelf even onbereikbaar, dan is er
+  met jouw wifi niets mis; die melding stuurde je het verkeerde bos in. Nu
+  zegt hij wat er aan de hand is.
+
 - **Het formulier pakte de focus niet.** Wie met een toetsenbord of
   schermlezer werkt, bleef achter op de knop eronder en moest eerst door de
   hele pagina heen tabben om bij "Naam" te komen.
