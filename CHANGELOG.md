@@ -8,6 +8,30 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.37.0
+
+- **Zonder bereik stond er "Failed to fetch" op je beginscherm.** De tekst van
+  de browser, in het Engels, precies op de plek waar je vertrektijd hoort te
+  staan. Nu staat er wat er aan de hand is: geen verbinding, en de app rekent
+  het opnieuw uit zodra je weer bereik hebt.
+
+- **En dat doet hij nu ook echt.** Een mislukte berekening werd onthouden en
+  nooit meer vanzelf geprobeerd — je moest de app aanraken. Kom je weer online,
+  dan pakt hij het zelf op. Handig in de trein: even door een tunnel en je
+  vertrektijd staat er tien seconden later gewoon weer.
+
+- **Een importbestand met rommel in de instellingen sloopte je beginscherm.**
+  Activiteiten, taken en toetsen werden bij import zorgvuldig nagelopen, de
+  instellingen niet. `bufferMinutes: "veel"` gaf geen foutmelding maar
+  `NaN:NaN` als vertrektijd, en een vervoermiddel dat niet bestaat liet elke
+  reisberekening stuklopen. Die gaan nu door dezelfde zeef: wat klopt blijft
+  staan, wat niet klopt valt terug op de standaard, en een veld dat niet in het
+  bestand staat blijft ook hier weg.
+
+- **Twee foutmeldingen bij import waren altijd Nederlands**, ook in de Engelse
+  app: die over een bestand van een andere app, en die over een onbekende
+  bestandsversie.
+
 ## 0.36.0
 
 Verder gezocht met vreemde gegevens: een dienst die over middernacht heen loopt,

@@ -261,6 +261,27 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   /** Sleutels waarvoor de berekening faalde; niet automatisch opnieuw proberen. */
   const failedKeys = useRef<Set<string>>(new Set());
   const inFlight = useRef<Set<string>>(new Set());
+  /** Telt op zodra de verbinding terugkomt, om de reisberekening te herstarten. */
+  const [reconnected, setReconnected] = useState(0);
+
+  /**
+   * Kwam je weer online? Dan mogen mislukte reizen opnieuw.
+   *
+   * De app onthoudt een mislukking zodat hij niet blijft doorvragen aan een
+   * dienst die toch niet antwoordt. Maar "geen bereik" is geen storing die
+   * blijft: in de trein door een tunnel is je vertrektijd na tien seconden
+   * gewoon weer op te halen. Zonder dit bleef "geen verbinding" staan tot je
+   * zelf iets aanraakte — terwijl de app je juist belooft dat hij het opnieuw
+   * uitrekent.
+   */
+  useEffect(() => {
+    const backOnline = () => {
+      failedKeys.current.clear();
+      setReconnected((count) => count + 1);
+    };
+    window.addEventListener("online", backOnline);
+    return () => window.removeEventListener("online", backOnline);
+  }, []);
 
   useEffect(() => {
     setActivities(loadActivities());
@@ -438,7 +459,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (plan && failedKeys.current.has(plan.outboundKey)) continue;
       void computeTravel(activity, settings, onward);
     }
-  }, [activities, settings, hydrated, computeTravel]);
+    // `reconnected` staat er bewust bij: het is het sein dat mislukte ritten
+    // weer een kans krijgen.
+  }, [activities, settings, hydrated, computeTravel, reconnected]);
 
   const addActivity = useCallback((draft: ActivityDraft): Activity => {
     // Alleen wat je zelf toevoegt telt; een geïmporteerd rooster zou de teller

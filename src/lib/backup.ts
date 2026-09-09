@@ -9,11 +9,13 @@ import type {
   Settings,
   Task,
   TaskStep,
+  TransitBike,
+  TravelMode,
 } from "./types";
 
 /** Een tekst in de taal die nu actief is. */
-function say(key: TranslationKey): string {
-  return translate(getLanguage(), key);
+function say(key: TranslationKey, values?: Record<string, string | number>): string {
+  return translate(getLanguage(), key, values);
 }
 
 /**
@@ -60,6 +62,11 @@ export interface ParseResult {
 
 const PRIORITIES: SchoolworkPriority[] = ["high", "medium", "low", "later"];
 const STATUSES: SchoolworkStatus[] = ["todo", "doing", "done"];
+const TRAVEL_MODES: TravelMode[] = ["car", "bike", "walk", "transit"];
+const TRANSIT_BIKES: TransitBike[] = ["none", "start", "both"];
+/** Dezelfde grenzen als het instellingenscherm hanteert. */
+const DEFAULT_BUFFER_MINUTES = 10;
+const MAX_BUFFER_MINUTES = 120;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -120,7 +127,7 @@ export function parseBackup(text: string): ParseResult {
   if (raw.app !== APP_ID) {
     return {
       ok: false,
-      error: `Dit bestand hoort niet bij ${APP_ID} (app: ${str(raw.app, "onbekend")}).`,
+      error: say("backup.wrongApp", { app: APP_ID, found: str(raw.app, "?") }),
     };
   }
 
@@ -128,7 +135,7 @@ export function parseBackup(text: string): ParseResult {
   if (version < 1 || version > SCHEMA_VERSION) {
     return {
       ok: false,
-      error: `Onbekende bestandsversie (${version}). Deze app ondersteunt versie 1 t/m ${SCHEMA_VERSION}.`,
+      error: say("backup.unknownVersion", { version, max: SCHEMA_VERSION }),
     };
   }
 
@@ -136,7 +143,7 @@ export function parseBackup(text: string): ParseResult {
     app: APP_ID,
     version,
     exportedAt: str(raw.exportedAt, new Date().toISOString()),
-    settings: isRecord(raw.settings) ? (raw.settings as unknown as Settings) : null,
+    settings: isRecord(raw.settings) ? normalizeSettings(raw.settings) : null,
     activities: Array.isArray(raw.activities)
       ? raw.activities.filter(isRecord).map(normalizeActivity)
       : [],
@@ -145,6 +152,58 @@ export function parseBackup(text: string): ParseResult {
   };
 
   return { ok: true, data };
+}
+
+/**
+ * Haalt de instellingen uit een importbestand door dezelfde zeef als de rest.
+ *
+ * Activiteiten, taken en toetsen werden al zorgvuldig nagelopen; de
+ * instellingen gingen er ongezien in. Dat is precies het veld waar het
+ * misgaat: `bufferMinutes: "veel"` gaf geen foutmelding maar `NaN:NaN` als
+ * vertrektijd op je beginscherm, en een `travelMode` die niet bestaat liet
+ * elke reisberekening stuklopen op de server.
+ *
+ * Wat klopt blijft staan, wat niet klopt valt terug op de standaardwaarde. Een
+ * veld dat er niet in zit blijft ook hier weg: bij "samenvoegen" hoort het je
+ * bestaande instelling niet te overschrijven.
+ */
+export function normalizeSettings(raw: Record<string, unknown>): Settings {
+  const kept: Partial<Settings> = {};
+  const keep = <K extends keyof Settings>(key: K, value: Settings[K] | undefined) => {
+    if (raw[key] !== undefined) kept[key] = value;
+  };
+
+  keep("home", isRecord(raw.home) ? (raw.home as unknown as Settings["home"]) : null);
+  keep("savedPlaces", Array.isArray(raw.savedPlaces) ? (raw.savedPlaces as Settings["savedPlaces"]) : []);
+  keep(
+    "categoryPlaces",
+    isRecord(raw.categoryPlaces) ? (raw.categoryPlaces as Settings["categoryPlaces"]) : {},
+  );
+  keep(
+    "customCategories",
+    Array.isArray(raw.customCategories) ? (raw.customCategories as Settings["customCategories"]) : [],
+  );
+  // Een marge van een half etmaal is geen marge meer; de app zelf staat ook
+  // niet meer dan twee uur toe.
+  keep(
+    "bufferMinutes",
+    Math.min(MAX_BUFFER_MINUTES, Math.max(0, Math.round(num(raw.bufferMinutes, DEFAULT_BUFFER_MINUTES)))),
+  );
+  keep("travelMode", TRAVEL_MODES.includes(raw.travelMode as TravelMode) ? (raw.travelMode as TravelMode) : "car");
+  keep(
+    "transitBike",
+    TRANSIT_BIKES.includes(raw.transitBike as TransitBike) ? (raw.transitBike as TransitBike) : "none",
+  );
+  keep("timetable", isRecord(raw.timetable) ? (raw.timetable as unknown as Settings["timetable"]) : null);
+  keep("calendars", Array.isArray(raw.calendars) ? (raw.calendars as Settings["calendars"]) : []);
+  keep(
+    "reminderMinutes",
+    typeof raw.reminderMinutes === "number" && Number.isFinite(raw.reminderMinutes)
+      ? Math.max(0, Math.round(raw.reminderMinutes))
+      : null,
+  );
+
+  return kept as Settings;
 }
 
 /** Vult ontbrekende velden van een geïmporteerde activiteit aan. */

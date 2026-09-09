@@ -83,3 +83,46 @@ describe("parseBackup", () => {
     expect(result.data?.settings?.customCategories?.[0]?.id).toBe("bijbaan");
   });
 });
+
+/**
+ * Activiteiten, taken en toetsen werden al nagekeken bij import; de
+ * instellingen niet. Juist daar zit het veld dat je beginscherm sloopt.
+ */
+describe("parseBackup en de instellingen", () => {
+  const bestand = (settings: Record<string, unknown>) =>
+    JSON.stringify({ app: "vertrektijd-agenda", version: 2, settings, activities: [] });
+
+  it("weigert een marge die geen getal is", () => {
+    const result = parseBackup(bestand({ bufferMinutes: "veel" }));
+    expect(result.data?.settings?.bufferMinutes).toBe(10);
+  });
+
+  it("houdt de marge binnen wat de app zelf toestaat", () => {
+    expect(parseBackup(bestand({ bufferMinutes: 5000 })).data?.settings?.bufferMinutes).toBe(120);
+    expect(parseBackup(bestand({ bufferMinutes: -30 })).data?.settings?.bufferMinutes).toBe(0);
+  });
+
+  it("laat een vervoermiddel dat niet bestaat niet door", () => {
+    // Anders vraagt de app de server om een rit "per vliegtuig" en mislukt
+    // elke reisberekening, zonder dat je ziet waarom.
+    expect(parseBackup(bestand({ travelMode: "vliegtuig" })).data?.settings?.travelMode).toBe("car");
+    expect(parseBackup(bestand({ travelMode: "transit" })).data?.settings?.travelMode).toBe("transit");
+  });
+
+  it("laat een veld dat niet in het bestand staat met rust", () => {
+    // Bij samenvoegen hoort een ontbrekend veld je eigen instelling niet te
+    // overschrijven met de standaardwaarde.
+    const settings = parseBackup(bestand({ bufferMinutes: 15 })).data?.settings;
+    expect(settings?.bufferMinutes).toBe(15);
+    expect("travelMode" in (settings ?? {})).toBe(false);
+  });
+
+  it("houdt goede waarden gewoon staan", () => {
+    const settings = parseBackup(
+      bestand({ home: { label: "Thuis", lat: 52.3, lon: 5.2 }, bufferMinutes: 20, transitBike: "start" }),
+    ).data?.settings;
+    expect(settings?.home?.label).toBe("Thuis");
+    expect(settings?.bufferMinutes).toBe(20);
+    expect(settings?.transitBike).toBe("start");
+  });
+});
