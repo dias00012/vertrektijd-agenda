@@ -163,6 +163,8 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
   // Alleen zinvol als de opgeslagen activiteit al een reeks is.
   const editingSeries = Boolean(activity?.recurrence);
 
+  const dialog = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -174,6 +176,20 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  /**
+   * De focus naar het formulier brengen zodra het opengaat.
+   *
+   * Zonder dit blijft hij achter op de knop eronder: wie met een toetsenbord
+   * of een schermlezer werkt staat dan nog steeds op de pagina achter het
+   * venster en moet er eerst doorheen tabben om bij "Naam" te komen.
+   */
+  useEffect(() => {
+    const eerste = dialog.current?.querySelector<HTMLElement>(
+      'input:not([type="hidden"]), select, textarea, button',
+    );
+    eerste?.focus();
+  }, []);
 
   const errors = useMemo<FormErrors>(() => {
     const next: FormErrors = {};
@@ -307,6 +323,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
 
   return (
     <div
+      ref={dialog}
       className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
       role="dialog"

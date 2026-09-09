@@ -8,6 +8,30 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.38.0
+
+- **Met een gekoppeld rooster liep de app tegen zijn eigen limiet aan.** Een
+  semester aan lesuren (bijna 500 activiteiten) betekende bij het opstarten
+  461 aanvragen ineens, waarvan er 446 werden geweigerd door de
+  verkeersdrempel die de gratis OV-dienst moet beschermen. Resultaat: een
+  scherm vol lege vertrektijden en acht seconden wachten.
+
+  De app rekent nu uit zichzelf alleen de komende week door — vandaag, morgen
+  en het weekoverzicht, precies waar de app voor is. Dat is 47 aanvragen in
+  plaats van 461, en geen enkele die stukloopt. Kijk je naar een dag die
+  verder weg ligt, dan wordt die rit alsnog opgehaald op het moment dat je
+  hem bekijkt. De dichtstbijzijnde dag gaat bovendien eerst, zodat bij drukte
+  de verste dag sneuvelt en niet die van morgenochtend.
+
+- **Het formulier pakte de focus niet.** Wie met een toetsenbord of
+  schermlezer werkt, bleef achter op de knop eronder en moest eerst door de
+  hele pagina heen tabben om bij "Naam" te komen.
+
+- **Het verborgen bestandsveld bij Importeren** werd door een schermlezer
+  aangekondigd als naamloos invoerveld, en je kon er met de tab-toets in
+  belanden zonder het te zien. De knop ernaast is de bediening; het veld is
+  nu overgeslagen.
+
 ## 0.37.0
 
 - **Zonder bereik stond er "Failed to fetch" op je beginscherm.** De tekst van
