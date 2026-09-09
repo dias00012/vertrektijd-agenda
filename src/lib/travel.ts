@@ -5,7 +5,6 @@ import type {
   GeoLocation,
   Settings,
   TravelMode,
-  WalkSpeed,
 } from "./types";
 import {
   MINUTES_PER_DAY,
@@ -16,7 +15,6 @@ import {
   toDateTime,
 } from "./time";
 import { occursOn, spansDays } from "./recurrence";
-import { DEFAULT_WALK_SPEED } from "./transitQuery";
 
 /** Het vervoermiddel voor deze activiteit: eigen keuze, anders de standaard. */
 export function travelModeFor(activity: Activity, settings: Settings): TravelMode {
@@ -33,7 +31,6 @@ export function travelKey(
   mode: TravelMode,
   timeSlot?: string | null,
   bike?: BikeEnds,
-  walk?: WalkSpeed,
 ): string | null {
   if (!home || !destination) return null;
   const round = (n: number) => n.toFixed(5);
@@ -41,10 +38,7 @@ export function travelKey(
   // De fietskeuze hoort bij de sleutel: zet je hem om, dan moet de reis
   // opnieuw berekend worden in plaats van de oude looptijd te blijven tonen.
   const bikePart = mode === "transit" && bike && bike !== "none" ? `+${bike}` : "";
-  // Loopsnelheid hoort er net zo goed bij: zet je hem op stevig doorlopen, dan
-  // is het een andere rekensom en moet de reis opnieuw berekend worden.
-  const walkPart = walk && walk !== "normal" && mode !== "car" ? `~${walk}` : "";
-  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bikePart}${walkPart}`;
+  return `${round(home.lat)},${round(home.lon)}>${round(destination.lat)},${round(destination.lon)}@${mode}${slot}${bikePart}`;
 }
 
 /** Hoe ver vooruit we zoeken naar de eerstvolgende dag van een reeks. */
@@ -85,8 +79,6 @@ export interface TravelPlan {
   returnBike: BikeEnds;
   /** En van een doorreis, die thuis niet aandoet. */
   onwardBike: BikeEnds;
-  /** Hoe snel je loopt; hoort bij elke rit van deze activiteit. */
-  walk: WalkSpeed;
   outboundKey: string;
   returnKey: string;
   /** Uiterlijke aankomst voor de heenreis (ISO); alleen bij OV. */
@@ -153,30 +145,14 @@ export function travelPlanForDate(
     bike === "both" ? "both" : bike === "start" ? "destination" : "none";
   const onwardBike: BikeEnds = bike === "both" ? "both" : "none";
 
-  const walk = settings.walkSpeed ?? DEFAULT_WALK_SPEED;
-
-  const outboundKey = travelKey(
-    settings.home,
-    activity.location,
-    mode,
-    outboundSlot,
-    outboundBike,
-    walk,
-  );
-  const returnKey = travelKey(
-    activity.location,
-    settings.home,
-    mode,
-    returnSlot,
-    returnBike,
-    walk,
-  );
+  const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, outboundBike);
+  const returnKey = travelKey(activity.location, settings.home, mode, returnSlot, returnBike);
   if (!outboundKey || !returnKey) return null;
 
   // De doorreis vertrekt op hetzelfde moment als de reis naar huis zou doen:
   // zodra je klaar bent.
   const onwardKey = onward
-    ? travelKey(activity.location, onward, mode, returnSlot, onwardBike, walk)
+    ? travelKey(activity.location, onward, mode, returnSlot, onwardBike)
     : null;
 
   return {
@@ -184,7 +160,6 @@ export function travelPlanForDate(
     outboundBike,
     returnBike,
     onwardBike,
-    walk,
     outboundKey,
     returnKey,
     arriveBy: arriveByDate?.toISOString(),

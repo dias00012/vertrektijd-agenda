@@ -4,9 +4,9 @@ import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { legMeters, motisPlan, toTravelLeg } from "./motis";
 import { pickItinerary } from "../itineraries";
 import { metersBetween } from "../polyline";
-import { place, transitParams, WALK_SPEEDS, walkSpeedMs } from "../transitQuery";
+import { place, transitParams, WALK_SPEED_MS } from "../transitQuery";
 import { trimFinalWalk } from "../finalWalk";
-import type { BikeEnds, GeoLocation, TravelMode, TravelResult, WalkSpeed } from "../types";
+import type { BikeEnds, GeoLocation, TravelMode, TravelResult } from "../types";
 
 /**
  * Routering per vervoermiddel voor de agenda: één reis van A naar B.
@@ -67,8 +67,6 @@ export interface RouteOptions {
   departAt?: string;
   /** Aan welke kant van deze rit een fiets staat; alleen zinvol bij OV. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk van een OV- of looproute. */
-  walk?: WalkSpeed;
 }
 
 /** Berekent de reis tussen twee punten voor het gekozen vervoermiddel. */
@@ -89,10 +87,7 @@ export async function route(
     mode === "transit" && options.bike && options.bike !== "none"
       ? `+${options.bike}`
       : "";
-  // En de loopsnelheid: anders krijg je na het omzetten de oude, langzamere
-  // uitkomst terug en lijkt de instelling niets te doen.
-  const walkPart = options.walk && options.walk !== "normal" ? `~${options.walk}` : "";
-  const key = `route:${config.provider}:${mode}${timePart}${bikePart}${walkPart}:${coord(from)}>${coord(to)}`;
+  const key = `route:${config.provider}:${mode}${timePart}${bikePart}:${coord(from)}>${coord(to)}`;
 
   const cached = cacheGet<RouteResult>(key);
   if (cached) return cached;
@@ -101,7 +96,7 @@ export async function route(
   if (mode === "transit") {
     result = await planTransit(from, to, options);
   } else if (mode === "bike" || mode === "walk") {
-    result = await planDirect(from, to, mode, options.walk);
+    result = await planDirect(from, to, mode);
   } else {
     result = await routeCar(from, to);
   }
@@ -165,7 +160,6 @@ async function planDirect(
   from: GeoLocation,
   to: GeoLocation,
   mode: "bike" | "walk",
-  walk?: WalkSpeed,
 ): Promise<RouteResult> {
   const ask = async (limitSeconds: number) => {
     const params = new URLSearchParams({
@@ -177,10 +171,9 @@ async function planDirect(
       transitModes: "",
       maxDirectTime: String(limitSeconds),
     });
-    // Loop je zelf sneller dan de planner aanneemt, dan geldt dat ook voor een
-    // route die helemaal lopend is.
-    const speed = mode === "walk" && walk ? WALK_SPEEDS[walk] : null;
-    if (speed) params.set("pedestrianSpeed", String(speed));
+    // Dezelfde loopsnelheid als bij een OV-reis, ook voor een route die
+    // helemaal lopend is.
+    if (mode === "walk") params.set("pedestrianSpeed", String(WALK_SPEED_MS));
 
     const data = await motisPlan(params);
     return data.direct?.[0];
@@ -228,7 +221,6 @@ async function planTransit(
     time,
     arriveBy,
     bike: options.bike,
-    walk: options.walk,
   });
 
   const data = await motisPlan(params);
@@ -237,7 +229,7 @@ async function planTransit(
   const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
   // Eerst het laatste loopstuk narekenen, dan pas kiezen: anders vergelijken we
   // ritten op een aankomsttijd die van dat ene stuk een kwartier te somber is.
-  const candidates = found.map((itinerary) => trimFinalWalk(itinerary, walkSpeedMs(options.walk)));
+  const candidates = found.map((itinerary) => trimFinalWalk(itinerary, WALK_SPEED_MS));
   const best = pickItinerary(candidates, { arriveBy, time });
   if (!best?.duration || !best.startTime || !best.endTime) {
     throw new ProviderError("api.noTransit", 422);

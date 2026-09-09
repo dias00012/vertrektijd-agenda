@@ -5,12 +5,12 @@
  * Lelystad Palazzo zet bus 207 je aan de overkant van de Larserdreef af; van
  * de 916 meter naar de Donaustraat gaan de eerste 211 meter door de
  * Torenvalktunnel, en die 211 meter rekent de planner op tien minuten — 1,2
- * km/h. Wat je ook instelt: zonder loopsnelheid 20 minuten, op 5 km/h 18, op
- * 7,2 km/h nog altijd 15. Er zit dus geen snelheid in maar een vaste straftijd
- * uit de kaartgegevens, en daar komt geen knop in de app tegenop.
+ * km/h. En het schaalt niet mee met wat we meesturen: zonder loopsnelheid 20
+ * minuten, op 5 km/h 18, op 7,2 km/h nog altijd 15. Er zit dus geen snelheid
+ * in maar een vaste straftijd uit de kaartgegevens.
  *
- * Daarom rekent de app dit ene stuk zelf, uit afstand en de loopsnelheid die
- * je hebt ingesteld. Bewust alleen het laatste stuk: dat kan je hooguit eerder
+ * Daarom rekent de app dit ene stuk zelf, uit de afstand en de vaste
+ * loopsnelheid. Bewust alleen het laatste stuk: dat kan je hooguit eerder
  * thuisbrengen. Het loopstuk naar de eerste halte en de overstap blijven staan
  * zoals de planner ze geeft — daar minuten afhalen betekent later de deur uit
  * en je trein missen, en dat is precies wat deze app niet mag doen.

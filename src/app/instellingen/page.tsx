@@ -15,8 +15,7 @@ import { ThemeSection } from "@/components/ThemeSection";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
-import { DEFAULT_WALK_SPEED } from "@/lib/transitQuery";
-import type { GeoLocation, TransitBike, TravelMode, WalkSpeed } from "@/lib/types";
+import type { GeoLocation, TransitBike, TravelMode } from "@/lib/types";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 const MAX_BUFFER_MINUTES = 120;
@@ -29,7 +28,6 @@ export default function SettingsPage() {
   const [buffer, setBuffer] = useState("10");
   const [mode, setMode] = useState<TravelMode>("car");
   const [bike, setBike] = useState<TransitBike>("none");
-  const [walk, setWalk] = useState<WalkSpeed>(DEFAULT_WALK_SPEED);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,14 +37,12 @@ export default function SettingsPage() {
     setBuffer(String(settings.bufferMinutes));
     setMode(settings.travelMode);
     setBike(settings.transitBike ?? "none");
-    setWalk(settings.walkSpeed ?? DEFAULT_WALK_SPEED);
   }, [
     hydrated,
     settings.home,
     settings.bufferMinutes,
     settings.travelMode,
     settings.transitBike,
-    settings.walkSpeed,
   ]);
 
   const activitiesWithLocation = activities.filter((activity) => activity.location).length;
@@ -72,7 +68,6 @@ export default function SettingsPage() {
       bufferMinutes: Math.round(parsed),
       travelMode: mode,
       transitBike: bike,
-      walkSpeed: walk,
     });
     setSaved(true);
   }
@@ -212,49 +207,6 @@ export default function SettingsPage() {
             </div>
             <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
               {t(`settings.bike.${bike}Hint` as TranslationKey)}
-            </p>
-          </fieldset>
-
-          {/* De planner rekent uit zichzelf met zo'n 4 km/h. Wie stevig
-              doorloopt kreeg daardoor elke rit met drie loopstukken tien
-              minuten te lang — zonder dat daar iets over te zeggen viel. */}
-          <fieldset>
-            <legend className="label">&#128694; {t("settings.walk.title")}</legend>
-            <p className="mb-2 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-              {t("settings.walk.body")}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {(["slow", "normal", "fast"] as const).map((option) => {
-                const active = walk === option;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    aria-pressed={active}
-                    title={t(`settings.walk.${option}Hint` as TranslationKey)}
-                    onClick={() => {
-                      setWalk(option);
-                      setSaved(false);
-                    }}
-                    className="rounded-xl border px-2 py-2.5 text-center text-xs font-medium transition-colors"
-                    style={{
-                      borderColor: active ? "var(--accent)" : "var(--line)",
-                      background: active
-                        ? "color-mix(in srgb, var(--accent) 12%, transparent)"
-                        : "transparent",
-                      color: active ? "var(--accent)" : "var(--muted)",
-                    }}
-                  >
-                    <span aria-hidden className="block text-base leading-none">
-                      {option === "slow" ? "\u{1F422}" : option === "fast" ? "\u{1F3C3}" : "\u{1F6B6}"}
-                    </span>
-                    {t(`settings.walk.${option}` as TranslationKey)}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-              {t(`settings.walk.${walk}Hint` as TranslationKey)}
             </p>
           </fieldset>
 

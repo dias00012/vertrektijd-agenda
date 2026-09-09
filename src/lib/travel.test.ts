@@ -459,28 +459,32 @@ describe("travelPlanForDate", () => {
   });
 });
 
-
 /**
- * De loopsnelheid hoort bij de sleutel. Zonder dat bleef de app na het omzetten
- * de eerder berekende, langzamere reis geldig vinden en veranderde er niets op
- * het scherm — precies het soort instelling dat "niets lijkt te doen".
+ * De sleutel bepaalt of een eerder berekende reis nog geldig is. Zit er iets
+ * niet in wat de uitkomst wél verandert, dan blijft de app de oude reistijd
+ * tonen zonder dat iemand ziet dat hij niet meer klopt.
  */
-describe("travelKey en de loopsnelheid", () => {
-  it("geeft een andere sleutel zodra je sneller loopt", () => {
-    const normal = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none", "normal");
-    const fast = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none", "fast");
-    expect(normal).not.toBe(fast);
+describe("travelKey", () => {
+  it("hoort bij een OV-rit ook het tijdstip te bevatten", () => {
+    const ochtend = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none");
+    const middag = travelKey(HOME, SCHOOL, "transit", "2026-09-07T14:00:00.000Z", "none");
+    expect(ochtend).not.toBe(middag);
   });
 
-  it("laat de sleutel met rust bij de standaardsnelheid", () => {
-    const zonder = travelKey(HOME, SCHOOL, "transit", null, "none");
-    const normaal = travelKey(HOME, SCHOOL, "transit", null, "none", "normal");
-    expect(normaal).toBe(zonder);
+  it("verandert zodra de fiets meegaat naar de halte", () => {
+    const lopend = travelKey(HOME, SCHOOL, "transit", null, "none");
+    const fietsend = travelKey(HOME, SCHOOL, "transit", null, "origin");
+    expect(lopend).not.toBe(fietsend);
   });
 
-  it("raakt de auto niet: die loopt nergens", () => {
-    expect(travelKey(HOME, SCHOOL, "car", null, "none", "fast")).toBe(
-      travelKey(HOME, SCHOOL, "car", null, "none", "normal"),
+  it("laat de auto met rust: die kent geen dienstregeling en geen fiets", () => {
+    expect(travelKey(HOME, SCHOOL, "car", "2026-09-07T08:00:00.000Z", "origin")).toBe(
+      travelKey(HOME, SCHOOL, "car", "2026-09-07T14:00:00.000Z", "none"),
     );
+  });
+
+  it("geeft niets terug zonder begin- of eindpunt", () => {
+    expect(travelKey(null, SCHOOL, "transit", null, "none")).toBeNull();
+    expect(travelKey(HOME, null, "transit", null, "none")).toBeNull();
   });
 });

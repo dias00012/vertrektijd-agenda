@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_WALK_SPEED, transitParams, WALK_SPEEDS } from "./transitQuery";
+import { transitParams, WALK_SPEED_MS } from "./transitQuery";
 
 /**
  * Deze parameters bepalen het antwoord van de OV-planner. Een verkeerde stand
@@ -120,31 +120,17 @@ describe("transitParams", () => {
   });
 
   /**
-   * De loopsnelheid raakt elk loopstuk: naar de halte, de overstap en het
-   * laatste stuk naar de deur. Bij "normaal" mag er niets meegestuurd worden,
-   * anders schuift de app stilletjes alle bestaande reistijden op.
+   * Eén vaste loopsnelheid, voor elk loopstuk: naar de halte, de overstap en
+   * het laatste stuk naar de deur. Zakt deze waarde per ongeluk weg, dan valt
+   * de planner terug op zijn eigen voorzichtige tempo en wordt elke rit met
+   * drie loopstukken stilletjes tien minuten langer.
    */
-  it("stuurt geen loopsnelheid mee bij normaal lopen", () => {
-    expect(ask().get("pedestrianSpeed")).toBeNull();
-    expect(ask({ walk: "normal" }).get("pedestrianSpeed")).toBeNull();
+  it("rekent altijd met dezelfde loopsnelheid", () => {
+    expect(ask().get("pedestrianSpeed")).toBe("1.4");
+    expect(ask({ shape: "timetable" }).get("pedestrianSpeed")).toBe("1.4");
   });
 
-  it("stuurt de loopsnelheid mee zodra je zegt hoe je loopt", () => {
-    expect(ask({ walk: "fast" }).get("pedestrianSpeed")).toBe("1.4");
-    expect(ask({ walk: "slow" }).get("pedestrianSpeed")).toBe("0.9");
-  });
-
-  it("gaat standaard uit van stevig doorlopen, net als 9292", () => {
-    // Deze standaard bepaalt elke reistijd in de app. Gaat hij per ongeluk
-    // terug naar de voorzichtige snelheid van de planner, dan wordt elke rit
-    // met drie loopstukken stilletjes tien minuten langer.
-    expect(DEFAULT_WALK_SPEED).toBe("fast");
-    expect(ask({ walk: DEFAULT_WALK_SPEED }).get("pedestrianSpeed")).toBe("1.4");
-  });
-
-  it("houdt stevig doorlopen sneller dan rustig aan", () => {
-    expect(WALK_SPEEDS.fast).toBeGreaterThan(WALK_SPEEDS.slow as number);
-    // 5 km/h, waar 9292 mee rekent.
-    expect(WALK_SPEEDS.fast).toBeCloseTo(5000 / 3600, 1);
+  it("houdt die snelheid op 5 km/h", () => {
+    expect(WALK_SPEED_MS).toBeCloseTo(5000 / 3600, 1);
   });
 });

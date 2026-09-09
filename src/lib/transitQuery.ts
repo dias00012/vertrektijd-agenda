@@ -1,4 +1,4 @@
-import type { BikeEnds, GeoLocation, WalkSpeed } from "./types";
+import type { BikeEnds, GeoLocation } from "./types";
 
 /**
  * De vraag die we aan de OV-planner (MOTIS/transitous) stellen.
@@ -28,41 +28,17 @@ const MAX_WALK_SECONDS = 20 * 60;
 const MAX_DIRECT_SECONDS = 45 * 60;
 
 /**
- * Loopsnelheid in meters per seconde (`pedestrianSpeed`).
+ * Loopsnelheid in meters per seconde (`pedestrianSpeed`): 1,4 m/s, oftewel
+ * 5 km/h.
  *
- * De planner rekent zonder deze waarde met ongeveer 1,1 m/s (4 km/h) en dat
- * laten we ook zo bij "normaal": zonder waarde meesturen verandert er niets
- * aan wat je gewend bent. 9292 rekent met 5 km/h, dus wie zegt dat hij stevig
- * doorloopt krijgt dezelfde rekensom als daar — en bij drie loopstukken op één
- * reis scheelt dat al snel tien minuten.
+ * Dit was even een keuze in Instellingen — rustig, normaal of stevig — omdat
+ * de planner uit zichzelf voorzichtiger rekent (ongeveer 1,1 m/s) en dat op
+ * een reis met drie loopstukken zo tien minuten scheelt. Maar niemand gaat een
+ * loopsnelheid instellen om zijn vertrektijd te laten kloppen, en met drie
+ * standen gaf de app drie verschillende antwoorden op dezelfde vraag. Eén
+ * getal is duidelijker; wie wat extra tijd wil heeft de veiligheidsmarge.
  */
-export const WALK_SPEEDS: Record<WalkSpeed, number | null> = {
-  slow: 0.9,
-  normal: null,
-  fast: 1.4,
-};
-
-/**
- * Waar de planner zelf mee rekent, in meters per seconde. Bij "normaal" sturen
- * we bewust niets mee, maar om een loopstuk na te rekenen (`trimFinalWalk`) is
- * een getal nodig — en dan is dit het getal dat de planner zelf hanteert.
- */
-export const PLANNER_WALK_MS = 1.1;
-
-/** De loopsnelheid waar de app mee rekent, ook wanneer je niets koos. */
-export function walkSpeedMs(walk: WalkSpeed | undefined): number {
-  return (walk ? WALK_SPEEDS[walk] : null) ?? PLANNER_WALK_MS;
-}
-
-/**
- * Waar de app van uitgaat als je zelf niets kiest: stevig doorlopen, 5 km/h.
- *
- * Dezelfde aanname als 9292. De planner is uit zichzelf voorzichtiger (4 km/h)
- * en dat is geen fout, maar het maakt elke reis met drie loopstukken zo'n tien
- * minuten langer dan wat je gewend bent te zien — en dan lijkt de app trager
- * dan hij is. Wie rustiger loopt zet het in Instellingen terug.
- */
-export const DEFAULT_WALK_SPEED: WalkSpeed = "fast";
+export const WALK_SPEED_MS = 1.4;
 
 /**
  * Hoeveel opties de agenda opvraagt om er zelf de beste uit te kiezen. Klein,
@@ -88,8 +64,6 @@ export interface TransitQuery {
   arriveBy?: boolean;
   /** Aan welke kant van deze rit een fiets staat. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; leeg = de snelheid van de planner zelf. */
-  walk?: WalkSpeed;
   /** Gewenst aantal opties; alleen zinvol bij `shape: "timetable"`. */
   options?: number;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */
@@ -139,8 +113,7 @@ export function transitParams(query: TransitQuery): URLSearchParams {
   });
   applyStreetOptions(params, query.bike);
 
-  const speed = query.walk ? WALK_SPEEDS[query.walk] : null;
-  if (speed) params.set("pedestrianSpeed", String(speed));
+  params.set("pedestrianSpeed", String(WALK_SPEED_MS));
 
   /**
    * Ook de agenda vraagt een klein venster op, geen enkele rit.

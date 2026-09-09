@@ -9,7 +9,6 @@ import type {
   BikeEnds,
   TravelMode,
   TravelResult,
-  WalkSpeed,
 } from "./types";
 
 /** Een tekst in de taal die nu actief is. */
@@ -61,8 +60,6 @@ export interface TravelRequestOptions {
   mode: TravelMode;
   /** Aan welke kant van deze rit een fiets staat; alleen zinvol bij OV. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk. */
-  walk?: WalkSpeed;
   /** ISO-tijd: uiterlijk aankomen (heenreis met OV). */
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
@@ -92,8 +89,6 @@ export interface JourneySearchOptions {
   time?: string;
   /** Aan welke kant van de rit een fiets staat. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk. */
-  walk?: WalkSpeed;
   /** true = "uiterlijk aankomen om", false = "vertrekken vanaf". */
   arriveBy?: boolean;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */

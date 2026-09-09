@@ -327,13 +327,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             mode: plan.mode,
             arriveBy: plan.arriveBy,
             bike: plan.outboundBike,
-            walk: plan.walk,
           }),
           fetchTravel(activity.location, currentSettings.home, {
             mode: plan.mode,
             departAt: plan.departAt,
             bike: plan.returnBike,
-            walk: plan.walk,
           }),
           // Ga je hierna rechtstreeks ergens anders heen, dan is dat een derde
           // rit: van hier naar daar, zonder tussenstop thuis.
@@ -342,7 +340,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
                 mode: plan.mode,
                 departAt: plan.departAt,
                 bike: plan.onwardBike,
-                walk: plan.walk,
               })
             : Promise.resolve(null),
         ]);

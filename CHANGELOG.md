@@ -43,6 +43,14 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   gewoon klopt blijft staan, en wie "rustig" loopt houdt de tijden van de
   planner.
 
+- **De keuze rustig / normaal / stevig is weg.** De app rekent voortaan altijd
+  met 5 km/h. Die knop kwam er in 0.32.0 omdat de planner uit zichzelf
+  voorzichtiger rekent, maar niemand gaat een loopsnelheid instellen om zijn
+  vertrektijd te laten kloppen — en met drie standen gaf de app drie
+  verschillende antwoorden op dezelfde vraag. Wie wat extra tijd wil, heeft
+  daar de veiligheidsmarge voor. De instelling verdwijnt uit Instellingen; een
+  eerder gemaakte keuze wordt genegeerd en verandert niets aan je gegevens.
+
 - **De afstand van een OV-reis klopt weer.** Die telde alleen de loopstukken
   mee, want de planner zet bij een trein of bus geen afstand in zijn antwoord —
   alleen de getekende route. Een rit van 22 kilometer stond zo als 1,8
