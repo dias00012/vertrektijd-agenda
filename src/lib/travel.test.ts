@@ -5,7 +5,9 @@ import {
   computeReturn,
   departureDateTime,
   nextOccurrenceDate,
+  travelPlanFor,
   travelPlanForDate,
+  tripHasLeft,
 } from "./travel";
 import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
 
@@ -365,6 +367,54 @@ describe("nextOccurrenceDate", () => {
       recurrence: { freq: "weekly", weekdays: [1], until: null },
     });
     expect(nextOccurrenceDate(item, new Date(2026, 8, 14))).toBe("2026-09-14");
+  });
+
+  it("houdt vandaag vast zolang je nog terug moet", () => {
+    // Middenin de dag: de heenreis is gereden, maar de terugreis nog niet.
+    const item = activity({
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(nextOccurrenceDate(item, new Date(2026, 8, 14, 12, 0))).toBe("2026-09-14");
+  });
+
+  it("slaat vandaag over zodra de dag voorbij is", () => {
+    // 's Avonds om tien uur is de rit van vanochtend geen vraag meer. Erger:
+    // de planner heeft daar geen dienstregeling meer voor en verzint een
+    // omweg van twee uur, die de app dan als reistijd zou tonen.
+    const item = activity({
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(nextOccurrenceDate(item, new Date(2026, 8, 14, 22, 0))).toBe("2026-09-21");
+  });
+
+  it("laat iets van een hele dag staan tot de dag zelf om is", () => {
+    const vrij = activity({
+      allDay: true,
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(nextOccurrenceDate(vrij, new Date(2026, 8, 14, 22, 0))).toBe("2026-09-14");
+  });
+});
+
+describe("travelPlanFor en een rit die al gereden is", () => {
+  const bus = (patch = {}) =>
+    activity({ date: "2026-09-14", travelMode: "transit", ...patch });
+
+  it("geeft niets terug voor een losse activiteit die vanavond al voorbij is", () => {
+    expect(travelPlanFor(bus(), settings(), new Date(2026, 8, 14, 22, 0))).toBeNull();
+  });
+
+  it("geeft de rit gewoon terug zolang die nog moet komen", () => {
+    expect(travelPlanFor(bus(), settings(), new Date(2026, 8, 14, 7, 0))).not.toBeNull();
+  });
+
+  it("raakt de auto niet: die hangt niet van een tijdstip af", () => {
+    // Zonder dienstregeling is er ook geen rit die vertrokken kan zijn; een
+    // autorit duurt 's avonds even lang als 's ochtends.
+    const auto = activity({ date: "2026-09-14", travelMode: "car" });
+    const plan = travelPlanFor(auto, settings(), new Date(2026, 8, 14, 22, 0));
+    expect(plan).not.toBeNull();
+    expect(plan && tripHasLeft(plan, new Date(2026, 8, 14, 22, 0))).toBe(false);
   });
 });
 

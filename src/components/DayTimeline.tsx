@@ -63,7 +63,7 @@ function toKey(d: Date): string {
 function passedMinutesFor(entry: TimelineEntry): number {
   if (entry.kind === "activity") return timeToMinutes(entry.activity.endTime);
   if (entry.kind === "return" && entry.returnMinutes !== undefined) {
-    return entry.minutes + entry.returnMinutes;
+    return entry.homeMinutes ?? entry.minutes + entry.returnMinutes;
   }
   if (entry.kind === "onward" && entry.onward) {
     return timeToMinutes(entry.onward.arrival);
@@ -170,7 +170,7 @@ function TimelineRow({
                     ? "timeline.drive"
                     : "timeline.travel",
                 ),
-                time: minutesToTime(entry.minutes + entry.returnMinutes),
+                time: minutesToTime(entry.homeMinutes ?? entry.minutes + entry.returnMinutes),
               })}
             </span>
           ) : null}

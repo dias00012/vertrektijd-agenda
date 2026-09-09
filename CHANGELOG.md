@@ -8,6 +8,44 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.35.0
+
+Een ronde door de app op een telefoon en op een laptop, scherm voor scherm.
+Wat daar uitkwam had één ding gemeen: op hetzelfde scherm stonden twee
+verschillende antwoorden op dezelfde vraag.
+
+- **'s Avonds klopte je dagoverzicht niet meer.** De kaart bovenaan zei "vertrek
+  om 07:12, 54 minuten reizen"; het dagoverzicht eronder zei "1 u 55 min reizen"
+  en "2 u 43 min". Dat kwam doordat de app de rit van vanochtend nog aan de
+  planner vroeg, en die heeft van een tijdstip dat voorbij is geen
+  dienstregeling meer. Wat je terugkreeg was geen foutmelding maar een
+  geloofwaardige omweg: Almere naar Lelystad via Zeewolde en Harderwijk, zes
+  bussen, twee uur — terwijl de trein er elf minuten over doet.
+
+  De app vraagt nu geen ritten meer op die al gereden zijn. Bij een reeks
+  ("elke werkdag naar school") schuift hij door naar de eerstvolgende keer die
+  nog moet komen, zodra die van vandaag voorbij is.
+
+- **Hoe laat je thuis bent, stond er twee keer verschillend.** De kaart rekende
+  met de rit die je echt neemt (bus van 15:02, thuis om 15:46), het
+  dagoverzicht met eindtijd plus reisduur (15:44). Nu rekenen ze allebei met de
+  echte rit.
+
+- **"Op tijd · live" stond ook bij tijden van een andere dag.** Kijk je vooruit
+  naar donderdag, dan zijn de getoonde tijden die van de eerstvolgende dag die
+  al berekend is — dat staat er ook bij. Maar het groene "live" ging over de
+  trein van die andere dag. Dat vinkje verschijnt nu alleen nog bij tijden van
+  de dag zelf.
+
+- **Op de reisplanner lag "Zoek reis" achter de knop "Activiteit toevoegen".**
+  Op een telefoon stak hij er net bovenuit; je moest scrollen om te kunnen
+  zoeken, met een knop in beeld die iets heel anders doet. De zwevende knop is
+  daar weg — die pagina heeft zijn eigen hoofdknop.
+
+- **In het weekraster stond een auto boven een treinreis.** Dat icoontje lag
+  vast op de auto, ook bij een schooldag waar je met de trein heen gaat. Nu
+  hoort het bij het vervoermiddel van de rit.
+
 ## 0.34.0
 
 - **De agenda kiest nu zelf welke rit erbij hoort.** Bij "uiterlijk aankomen

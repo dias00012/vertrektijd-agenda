@@ -139,6 +139,14 @@ export interface TimelineEntry {
   activity: ActivityOccurrence;
   /** Alleen bij kind "return": de reistijd terug naar huis in minuten. */
   returnMinutes?: number;
+  /**
+   * Alleen bij kind "return": hoe laat je thuis bent, in minuten sinds
+   * middernacht. Bewust apart van "eindtijd plus reistijd": bij OV vertrekt je
+   * bus niet op het moment dat je les uit is. Zonder dit stond op hetzelfde
+   * scherm twee keer een andere thuiskomst — de kaart rekende met de echte
+   * rit, het dagoverzicht met de optelsom.
+   */
+  homeMinutes?: number;
   /** Alleen bij kind "onward": waar je rechtstreeks heen gaat. */
   onward?: OnwardInfo;
 }
@@ -209,6 +217,7 @@ export function buildTimeline(
         minutes: timeToMinutes(activity.endTime),
         activity,
         returnMinutes: back.travelMinutes,
+        homeMinutes: back.minutes,
       });
     }
   }

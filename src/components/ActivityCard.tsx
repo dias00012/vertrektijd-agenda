@@ -53,7 +53,12 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
   // Live informatie over de heenreis: rijdt hij, en zo ja, op tijd?
-  const legs = shown.travel?.legs;
+  //
+  // Alleen wanneer deze tijden echt van deze dag zijn. Komen ze van een andere
+  // dag — `dayTravel.exact` is dan false, zie de regel onderaan de kaart — dan
+  // is "op tijd · live" een belofte die de app niet waarmaakt: hij zou over de
+  // trein van vanochtend gaan terwijl je naar donderdag kijkt.
+  const legs = dayTravel.exact ? shown.travel?.legs : undefined;
   const delay = journeyDelay(legs);
   const live = hasRealTime(legs);
   const cancelled = isCancelled(legs);

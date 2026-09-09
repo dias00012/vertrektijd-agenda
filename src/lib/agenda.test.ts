@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findNextActivity, searchActivities } from "./agenda";
+import { buildTimeline, findNextActivity, searchActivities } from "./agenda";
 import type { Activity, Settings } from "./types";
 
 /**
@@ -170,5 +170,46 @@ describe("searchActivities", () => {
     );
 
     expect(resultaten[0]?.date).toBe("2026-08-12");
+  });
+});
+
+/**
+ * Het dagoverzicht en de kaart erboven staan op hetzelfde scherm. Rekenen ze
+ * verschillend, dan zie je twee keer een andere thuiskomst en weet je niet
+ * welke klopt.
+ */
+describe("buildTimeline en de thuiskomst", () => {
+  const bus = (patch = {}) => ({
+    durationMinutes: 44,
+    distanceKm: 22,
+    mode: "transit" as const,
+    provider: "motis",
+    computedAt: "2026-09-07T06:00:00.000Z",
+    key: "k",
+    ...patch,
+  });
+
+  it("neemt de aankomsttijd van de echte rit, niet eindtijd plus reisduur", () => {
+    // Je les is om 17:00 uit, maar de bus gaat pas om 17:02 en is er om 17:46.
+    // De optelsom zou 17:44 zeggen.
+    const item = activity({
+      location: { label: "School", lat: 52.49, lon: 6.07 },
+      travelMode: "transit",
+      returnTravel: bus({ plannedDeparture: "2026-09-07T15:02:00.000Z", plannedArrival: "2026-09-07T15:46:00.000Z" }),
+    });
+
+    const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
+    expect(back?.homeMinutes).toBe(17 * 60 + 46);
+  });
+
+  it("valt terug op de optelsom zolang er geen echte rit bekend is", () => {
+    const item = activity({
+      location: { label: "School", lat: 52.49, lon: 6.07 },
+      travelMode: "transit",
+      returnTravel: bus(),
+    });
+
+    const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
+    expect(back?.homeMinutes).toBe(17 * 60 + 44);
   });
 });

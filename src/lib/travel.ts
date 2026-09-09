@@ -58,9 +58,42 @@ export function nextOccurrenceDate(activity: Activity, now: Date = new Date()): 
   const today = toDateKey(now);
   for (let offset = 0; offset <= OCCURRENCE_LOOKAHEAD_DAYS; offset += 1) {
     const dateKey = addDaysToKey(today, offset);
-    if (occursOn(activity, dateKey)) return dateKey;
+    if (!occursOn(activity, dateKey)) continue;
+    // Vandaag telt mee zolang hij nog niet voorbij is. Zonder dat vroeg de app
+    // 's avonds nog de rit van vanochtend op — en daar heeft de planner geen
+    // dienstregeling meer voor. Wat je terugkreeg was geen foutmelding maar een
+    // geloofwaardige omweg: Almere-Lelystad via Zeewolde en Harderwijk, zes
+    // bussen, twee uur, terwijl de trein er elf minuten over doet.
+    if (offset === 0 && hasPassed(activity, dateKey, now)) continue;
+    return dateKey;
   }
   return activity.date;
+}
+
+/**
+ * Is deze dag van de activiteit voorbij?
+ *
+ * De eindtijd telt, want tot dan is er nog een terugreis. Ligt de starttijd
+ * later — dat gebeurt bij iets dat over middernacht heen loopt — dan die.
+ * Iets van een hele dag is pas voorbij als de dag zelf voorbij is.
+ */
+function hasPassed(activity: Activity, dateKey: string, now: Date): boolean {
+  if (activity.allDay) return addDaysToKey(dateKey, 1) <= toDateKey(now);
+  const start = toDateTime(dateKey, activity.startTime).getTime();
+  const end = toDateTime(dateKey, activity.endTime).getTime();
+  return Math.max(start, end) <= now.getTime();
+}
+
+/**
+ * Is de rit uit dit plan al vertrokken?
+ *
+ * Alleen het OV kent zo'n moment; een auto- of fietsrit duurt om acht uur 's
+ * avonds even lang als om acht uur 's ochtends. De terugreis is het laatste
+ * dat nog telt, dus die bepaalt het.
+ */
+export function tripHasLeft(plan: TravelPlan, now: Date = new Date()): boolean {
+  const last = plan.departAt ?? plan.arriveBy;
+  return last !== undefined && Date.parse(last) < now.getTime();
 }
 
 export function bufferFor(activity: Activity, settings: Settings): number {
@@ -96,7 +129,11 @@ export function travelPlanFor(
   now: Date = new Date(),
   onward?: GeoLocation | null,
 ): TravelPlan | null {
-  return travelPlanForDate(activity, settings, nextOccurrenceDate(activity, now), onward);
+  const plan = travelPlanForDate(activity, settings, nextOccurrenceDate(activity, now), onward);
+  // Een rit die al gereden is levert geen bruikbaar antwoord meer op; zie
+  // `tripHasLeft`. Niets teruggeven betekent: niets ophalen en niets tonen,
+  // en dat is beter dan een verzonnen reistijd van twee uur.
+  return plan && !tripHasLeft(plan, now) ? plan : null;
 }
 
 /**

@@ -161,15 +161,21 @@ export function AppShell({ children }: { children: ReactNode }) {
           style={{ background: "linear-gradient(to top, var(--canvas) 62%, transparent)" }}
         />
         <div className="relative mx-auto w-full max-w-2xl px-4 sm:px-6">
-          <div className="pointer-events-auto mb-3 flex justify-center">
-            <button
-              type="button"
-              className="btn btn-primary w-full shadow-lg sm:w-auto"
-              onClick={() => setFormOpen(true)}
-            >
-              <span aria-hidden>+</span> {t("shell.addActivity")}
-            </button>
-          </div>
+          {/* Niet op de reisplanner: die heeft zijn eigen hoofdknop ("Zoek
+              reis"), en die kwam er op een telefoon precies achter te liggen.
+              Je zag hem net boven de rand uitsteken en moest scrollen om te
+              kunnen zoeken — met een knop in beeld die iets heel anders doet. */}
+          {pathname === "/reizen" ? null : (
+            <div className="pointer-events-auto mb-3 flex justify-center">
+              <button
+                type="button"
+                className="btn btn-primary w-full shadow-lg sm:w-auto"
+                onClick={() => setFormOpen(true)}
+              >
+                <span aria-hidden>+</span> {t("shell.addActivity")}
+              </button>
+            </div>
+          )}
 
           <nav
             className="pointer-events-auto mb-[max(0.75rem,env(safe-area-inset-bottom))] grid grid-cols-5 gap-0.5 rounded-2xl border p-1.5"

@@ -10,6 +10,7 @@ import {
   type PositionedActivity,
 } from "@/lib/agenda";
 import { computeOnward } from "@/lib/travel";
+import { travelModeMeta } from "@/lib/travelModes";
 import {
   addDaysToKey,
   calendarWeekKeys,
@@ -487,6 +488,12 @@ function GridBlock({
   const t = useT();
   const category = categoryFor(item.occurrence.category);
   const color = activityColor(item.occurrence, category);
+  /**
+   * Het icoontje op het reisblok. Hier stond een auto vast, ook boven een
+   * schooldag waar je met de trein heen gaat — hetzelfde als wat het
+   * dagoverzicht ooit deed met het woord "rijden".
+   */
+  const travelEmoji = travelModeMeta(item.occurrence.travel?.mode ?? "car").emoji;
   const width = 100 / item.lanes;
   const left = item.lane * width;
 
@@ -639,7 +646,7 @@ function GridBlock({
               className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
-              &#128663; {minutesToTime(item.departureMinutes + startOffset)}
+              {travelEmoji} {minutesToTime(item.departureMinutes + startOffset)}
             </span>
           ) : null}
         </button>
@@ -752,7 +759,7 @@ function GridBlock({
               className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
-              {onward ? "⟶" : "↩️"}{" "}
+              {onward ? "\u27F6" : "\u21A9\uFE0F"}{" "}
               {minutesToTime(item.returnMinutes + endOffset)}
             </span>
           ) : null}
