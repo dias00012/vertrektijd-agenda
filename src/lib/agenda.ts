@@ -149,6 +149,10 @@ export interface TimelineEntry {
   homeMinutes?: number;
   /** Alleen bij kind "onward": waar je rechtstreeks heen gaat. */
   onward?: OnwardInfo;
+  /** Alleen bij kind "departure": true wanneer je hiermee te laat aankomt. */
+  late?: boolean;
+  /** Alleen bij kind "departure": hoe laat je dan aankomt (HH:mm). */
+  lateArrival?: string;
 }
 
 /** Volgorde op hetzelfde tijdstip: eerst vertrekken, dan de activiteit, dan terug. */
@@ -182,6 +186,8 @@ export function buildTimeline(
         time: departure.time,
         minutes: departure.minutes,
         activity,
+        late: departure.late,
+        lateArrival: departure.arrival,
       });
     }
     entries.push({

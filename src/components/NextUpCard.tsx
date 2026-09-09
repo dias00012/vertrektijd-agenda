@@ -127,6 +127,13 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
                   >
                     {departure.time}
                   </p>
+                  {/* Haalt de eerstvolgende rit je starttijd niet, dan hoort dat
+                      hier te staan en niet alleen in de reisdetails. */}
+                  {departure.late && departure.arrival ? (
+                    <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
+                      &#9888;&#65039; {t("activity.arriveLate", { time: departure.arrival })}
+                    </p>
+                  ) : null}
                   {shown.travel.mode === "transit" ? (
                     <JourneyStatus
                       cancelled={cancelled}

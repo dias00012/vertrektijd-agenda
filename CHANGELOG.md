@@ -8,6 +8,20 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.39.0
+
+- **De app zegt het nu wanneer je het niet haalt.** Rijdt er niets dat je op
+  tijd afzet, dan toont de app de eerstvolgende rit daarna — dat is beter dan
+  een leeg vak. Alleen stond er niet bij dat je daarmee te laat bent. Je volgde
+  een keurige vertrektijd op en kwam alsnog te laat, terwijl de app het allang
+  wist. Bij de vertrektijd staat nu "⚠️ je bent er pas om 09:32", op je
+  beginscherm, in de agenda en in het dagoverzicht. Bij een doorreis naar een
+  volgende afspraak stond zo'n waarschuwing al; de heenreis had hem niet.
+
+- **Leertijd na middernacht telde als nul.** Een leerblok van 23:00 tot 00:30
+  eindigt op de klok vóór het begint, en dat werd nul minuten. Je taak bleef op
+  "ingepland: 0 min" staan terwijl je er anderhalf uur voor had uitgetrokken.
+
 ## 0.38.0
 
 - **Met een gekoppeld rooster liep de app tegen zijn eigen limiet aan.** Een

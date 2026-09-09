@@ -240,6 +240,18 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                                 {t("activity.previousDay")}
                               </span>
                             ) : null}
+                            {/* Rijdt er niets dat het haalt, dan staat hier de
+                                eerstvolgende rit daarna. Zonder deze regel volg
+                                je een keurige vertrektijd op en kom je alsnog
+                                te laat. */}
+                            {departure.late && departure.arrival ? (
+                              <span
+                                className="ml-1.5 text-xs font-semibold"
+                                style={{ color: "var(--danger)" }}
+                              >
+                                &#9888;&#65039; {t("activity.arriveLate", { time: departure.arrival })}
+                              </span>
+                            ) : null}
                           </p>
 
                           {/* Alleen bij OV: bij auto en fiets bestaat er geen rit

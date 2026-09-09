@@ -137,6 +137,11 @@ function TimelineRow({
               <>&#8617;&#65039; {t("timeline.backHomeTitle")}</>
             )}
           </span>
+          {isDeparture && entry.late && entry.lateArrival ? (
+            <span className="block text-xs font-semibold" style={{ color: "var(--danger)" }}>
+              &#9888;&#65039; {t("activity.arriveLate", { time: entry.lateArrival })}
+            </span>
+          ) : null}
           {isDeparture && entry.activity.travel ? (
             <span className="block text-xs" style={{ color: "var(--muted)" }}>
               {t("timeline.travelTo", {

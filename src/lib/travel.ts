@@ -240,6 +240,23 @@ export interface DepartureInfo {
   bufferMinutes: number;
   /** true wanneer het vertrek op de vorige kalenderdag valt. */
   previousDay: boolean;
+  /**
+   * true wanneer je met deze rit ná de starttijd aankomt.
+   *
+   * Rijdt er niets dat het haalt, dan toont de app de eerstvolgende rit
+   * daarna: een reis laten zien is beter dan een leeg vak. Maar dan hoort
+   * erbij te staan dat je te laat bent. Anders is een keurige vertrektijd die
+   * je netjes opvolgt precies het verkeerde antwoord — je haalt het niet, en
+   * je leest nergens dat de app dat allang wist.
+   *
+   * Op kloktijd vergeleken, niet op moment. Dat is bewust: bij een reeks staat
+   * er één berekende rit voor alle dagen, en die van maandag hoort ook op
+   * donderdag "08:06, ruim op tijd" te zeggen. De aankomst valt daarbij op de
+   * dag van de activiteit — dezelfde aanname als `previousDay` hierboven.
+   */
+  late: boolean;
+  /** Hoe laat je aankomt (HH:mm); alleen bekend bij een echte rit. */
+  arrival?: string;
 }
 
 /**
@@ -280,15 +297,20 @@ export function computeDeparture(
     // Bij een vertrek de dag ervoor telt `minutes` negatief door, net als bij
     // de rekensom hieronder; daar rekent `departureDateTime` mee.
     const minutes = previousDay ? clockMinutes - MINUTES_PER_DAY : clockMinutes;
+    const arrivalMinutes = arrival ? localMinutes(arrival) : null;
     return {
       time: minutesToTime(minutes),
       minutes,
       travelMinutes,
       bufferMinutes: buffer,
       previousDay,
+      late: arrivalMinutes !== null && arrivalMinutes > startMinutes,
+      arrival: arrivalMinutes !== null ? minutesToTime(arrivalMinutes) : undefined,
     };
   }
 
+  // Zonder dienstregeling is de vertrektijd een aftreksom, en die komt per
+  // definitie op tijd uit: je gaat gewoon eerder weg.
   const minutes = startMinutes - travelMinutes - buffer;
   return {
     time: minutesToTime(minutes),
@@ -296,6 +318,7 @@ export function computeDeparture(
     travelMinutes,
     bufferMinutes: buffer,
     previousDay: minutes < 0,
+    late: false,
   };
 }
 

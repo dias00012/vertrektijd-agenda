@@ -538,3 +538,40 @@ describe("travelKey", () => {
     expect(travelKey(HOME, null, "transit", null, "none")).toBeNull();
   });
 });
+
+/**
+ * Rijdt er niets dat je starttijd haalt, dan toont de app de eerstvolgende
+ * rit daarna. Dat is beter dan een leeg vak — zolang er maar bij staat dat je
+ * te laat bent.
+ */
+describe("computeDeparture bij een rit die je niet op tijd afzet", () => {
+  const bus = (vertrek: string, aankomst: string) =>
+    travel({ mode: "transit", provider: "motis", plannedDeparture: vertrek, plannedArrival: aankomst });
+
+  it("zegt het wanneer je na de starttijd aankomt", () => {
+    // Les om 09:00, maar de eerste bus zet je pas om 09:32 af.
+    const result = computeDeparture(
+      activity({ travel: bus("2026-09-07T07:05:00.000Z", "2026-09-07T07:32:00.000Z") }),
+      settings(),
+    );
+
+    expect(result?.late).toBe(true);
+    expect(result?.arrival).toBe("09:32");
+  });
+
+  it("zegt niets wanneer je gewoon op tijd bent", () => {
+    const result = computeDeparture(
+      activity({ travel: bus("2026-09-07T06:00:00.000Z", "2026-09-07T06:45:00.000Z") }),
+      settings(),
+    );
+
+    expect(result?.late).toBe(false);
+    expect(result?.arrival).toBe("08:45");
+  });
+
+  it("is nooit te laat bij een rekensom zonder dienstregeling", () => {
+    // Auto en fiets kennen geen rit: daar ga je gewoon eerder weg.
+    const result = computeDeparture(activity({ travel: travel() }), settings());
+    expect(result?.late).toBe(false);
+  });
+});
