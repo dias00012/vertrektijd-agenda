@@ -3,6 +3,7 @@ import { say } from "@/lib/server/language";
 import { route } from "@/lib/server/routing";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
+import { DEFAULT_WALK_SPEED } from "@/lib/transitQuery";
 import type { BikeEnds, GeoLocation, TravelMode, WalkSpeed } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -37,9 +38,11 @@ function bikeOrNone(value: unknown): BikeEnds {
   return value === "origin" || value === "destination" || value === "both" ? value : "none";
 }
 
-/** Alleen de drie bekende loopsnelheden; anders die van de planner zelf. */
-function walkSpeedOrNormal(value: unknown): WalkSpeed {
-  return value === "slow" || value === "fast" ? value : "normal";
+/** Alleen de drie bekende loopsnelheden; anders waar de app van uitgaat. */
+function walkSpeed(value: unknown): WalkSpeed {
+  return value === "slow" || value === "fast" || value === "normal"
+    ? value
+    : DEFAULT_WALK_SPEED;
 }
 
 function isValidPoint(point: Partial<GeoLocation> | undefined): point is GeoLocation {
@@ -88,7 +91,7 @@ export async function POST(request: Request) {
       arriveBy: isoOrUndefined(body.arriveBy),
       departAt: isoOrUndefined(body.departAt),
       bike: bikeOrNone(body.bike),
-      walk: walkSpeedOrNormal(body.walk),
+      walk: walkSpeed(body.walk),
     });
     return NextResponse.json(result);
   } catch (error) {

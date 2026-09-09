@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { transitParams, WALK_SPEEDS } from "./transitQuery";
+import { DEFAULT_WALK_SPEED, transitParams, WALK_SPEEDS } from "./transitQuery";
 
 /**
  * Deze parameters bepalen het antwoord van de OV-planner. Een verkeerde stand
@@ -130,6 +130,14 @@ describe("transitParams", () => {
   it("stuurt de loopsnelheid mee zodra je zegt hoe je loopt", () => {
     expect(ask({ walk: "fast" }).get("pedestrianSpeed")).toBe("1.4");
     expect(ask({ walk: "slow" }).get("pedestrianSpeed")).toBe("0.9");
+  });
+
+  it("gaat standaard uit van stevig doorlopen, net als 9292", () => {
+    // Deze standaard bepaalt elke reistijd in de app. Gaat hij per ongeluk
+    // terug naar de voorzichtige snelheid van de planner, dan wordt elke rit
+    // met drie loopstukken stilletjes tien minuten langer.
+    expect(DEFAULT_WALK_SPEED).toBe("fast");
+    expect(ask({ walk: DEFAULT_WALK_SPEED }).get("pedestrianSpeed")).toBe("1.4");
   });
 
   it("houdt stevig doorlopen sneller dan rustig aan", () => {

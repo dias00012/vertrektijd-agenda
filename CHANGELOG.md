@@ -8,6 +8,17 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.33.0
+
+- **Stevig doorlopen is nu de standaard.** In 0.32.0 kon je de loopsnelheid
+  kiezen, met "normaal" (de voorzichtige 4 km/h van de planner) als startpunt.
+  Dat betekende dat je er eerst zelf achter moest komen dat die knop bestond
+  voordat je reistijden gingen kloppen met wat je gewend bent van 9292.
+
+  De app gaat nu uit van 5 km/h, dezelfde aanname als 9292, voor iedereen die
+  niets kiest. Wie rustiger loopt zet het in Instellingen terug op normaal of
+  rustig; die keuze blijft staan.
+
 ## 0.32.0
 
 - **Loopsnelheid instelbaar, zoals 9292 dat ook heeft.** De planner rekent uit
