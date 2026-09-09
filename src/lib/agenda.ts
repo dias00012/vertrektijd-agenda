@@ -7,7 +7,7 @@ import {
   nextOccurrenceDate,
   type OnwardInfo,
 } from "./travel";
-import { addDaysToKey, timeToMinutes, toDateKey, toDateTime } from "./time";
+import { addDaysToKey, MINUTES_PER_DAY, timeToMinutes, toDateKey, toDateTime } from "./time";
 import { lastOccurrenceDate, occurrencesOnDate, toOccurrence } from "./recurrence";
 import { assignTravelRoles } from "./stays";
 
@@ -294,11 +294,24 @@ export type TimeStatus = "past" | "now" | "upcoming";
 
 export function timeStatusFor(occurrence: ActivityOccurrence, now: Date): TimeStatus {
   const start = toDateTime(occurrence.date, occurrence.startTime).getTime();
-  const end = toDateTime(occurrence.date, occurrence.endTime).getTime();
   const t = now.getTime();
-  if (t >= end) return "past";
+  if (t >= endOfOccurrence(occurrence)) return "past";
   if (t >= start) return "now";
   return "upcoming";
+}
+
+/**
+ * Het moment waarop deze activiteit klaar is.
+ *
+ * Loopt hij over middernacht heen — een nachtdienst van 23:00 tot 01:00 — dan
+ * ligt de eindtijd op de kalender vóór de begintijd. Wie dat letterlijk neemt,
+ * noemt zo'n dienst de hele dag "geweest": om negen uur 's ochtends stond je
+ * nachtdienst al afgevinkt in je agenda.
+ */
+function endOfOccurrence(occurrence: ActivityOccurrence): number {
+  const start = toDateTime(occurrence.date, occurrence.startTime).getTime();
+  const end = toDateTime(occurrence.date, occurrence.endTime).getTime();
+  return end < start ? end + MINUTES_PER_DAY * 60_000 : end;
 }
 
 /* --- Positionering voor het weekraster --------------------------------- */
@@ -402,7 +415,11 @@ export function timeRangeFor(days: PositionedActivity[][]): { start: number; end
   for (const day of days) {
     for (const item of day) {
       earliest = Math.min(earliest, item.departureMinutes ?? item.startMinutes);
-      latest = Math.max(latest, item.returnMinutes ?? item.endMinutes);
+      // Ook de starttijd zelf telt mee, niet alleen het eind. Bij een dienst
+      // van 23:00 tot 01:00 ligt het eind (01:00) vóór het begin, en dan bleef
+      // het raster gewoon bij 01:00 staan: het blok werd wél getekend, maar op
+      // 23:00 — buiten het zichtbare deel. Je nachtdienst stond dus nergens.
+      latest = Math.max(latest, item.returnMinutes ?? item.endMinutes, item.startMinutes);
     }
   }
 

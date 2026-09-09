@@ -8,6 +8,29 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.36.0
+
+Verder gezocht met vreemde gegevens: een dienst die over middernacht heen loopt,
+een type dat de app niet kent, drie activiteiten tegelijk, een adres van vier
+regels lang. Het meeste hield stand; dit niet.
+
+- **Een nachtdienst stond nergens en was toch al "geweest".** Iets van 23:00 tot
+  01:00 eindigt op de kalender vóór het begint. Het weekraster liet zo'n blok
+  daardoor buiten beeld vallen, en in het dagoverzicht stond je nachtdienst al
+  om negen uur 's ochtends afgevinkt. Allebei kloppen ze nu: het raster loopt
+  door tot voorbij het laatste begin, en "geweest" begint pas als de dienst
+  echt om is.
+
+- **Een onbekend type deed zich voor als School.** Gooide je een eigen type weg
+  terwijl er nog activiteiten op stonden, of kwam er een agenda binnen met
+  `"sport"` in plaats van `"gym"`, dan werd dat stil een schooldag: blauw, met
+  het schoolgebouwtje ervoor. Nu staat het type er gewoon zoals het is, in
+  grijs, zodat je ziet dat er iets niet klopt. De [README](README.md) noemt nu
+  ook welke waarden `category` kan hebben.
+
+- **De legenda onder het weekraster zei "🚗 heen"**, ook bij een treinreis. Hij
+  wijst nu naar het icoontje op het blok zelf, dat sinds 0.35.0 bij de rit hoort.
+
 ## 0.35.0
 
 Een ronde door de app op een telefoon en op een laptop, scherm voor scherm.

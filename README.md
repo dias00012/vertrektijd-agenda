@@ -283,8 +283,12 @@ aan een toets is gekoppeld en een werkblok dat aan een opdracht is gekoppeld.
 **`exams[]` (toetsen):** zelfde `priority`/`status`/tijdstempels, met `id`, `subject`,
 `title?`, `date` (`YYYY-MM-DD`), `topics?` (string[]) en `prepMinutes?` (number).
 
-**`activities[]` (agenda):** het bestaande activiteitsmodel. Voor leer-/werkblokken uit het
-leerplan: zet `category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
+**`activities[]` (agenda):** het bestaande activiteitsmodel. `category` is een van de vijf
+ingebouwde types — `"school"`, `"werk"`, `"gym"`, `"koken"`, `"hobby"` — of de `id` van een
+eigen type uit `settings.customCategories`. Iets anders blijft staan zoals je het schrijft,
+maar komt er neutraal uit (grijs, met de tekst zelf als naam): de app doet niet alsof
+`"sport"` hetzelfde is als `"gym"`. Voor leer-/werkblokken uit het leerplan: zet
+`category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
 `linkedTaskId` of `linkedExamId` (de `id` van een taak of toets); de app toont dan bij die taak/
 toets hoeveel leertijd is ingepland en labelt het blok in de agenda.
 
