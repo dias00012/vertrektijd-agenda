@@ -43,6 +43,18 @@ export const WALK_SPEEDS: Record<WalkSpeed, number | null> = {
 };
 
 /**
+ * Waar de planner zelf mee rekent, in meters per seconde. Bij "normaal" sturen
+ * we bewust niets mee, maar om een loopstuk na te rekenen (`trimFinalWalk`) is
+ * een getal nodig — en dan is dit het getal dat de planner zelf hanteert.
+ */
+export const PLANNER_WALK_MS = 1.1;
+
+/** De loopsnelheid waar de app mee rekent, ook wanneer je niets koos. */
+export function walkSpeedMs(walk: WalkSpeed | undefined): number {
+  return (walk ? WALK_SPEEDS[walk] : null) ?? PLANNER_WALK_MS;
+}
+
+/**
  * Waar de app van uitgaat als je zelf niets kiest: stevig doorlopen, 5 km/h.
  *
  * Dezelfde aanname als 9292. De planner is uit zichzelf voorzichtiger (4 km/h)

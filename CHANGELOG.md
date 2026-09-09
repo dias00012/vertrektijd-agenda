@@ -24,6 +24,25 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   eronder is de reis die je echt maakt. Op deze route scheelt dat 23 minuten
   aan verzonnen wachttijd (77 minuten werd 54).
 
+- **Het laatste stukje lopen rekent de app zelf na.** De planner rekende dat
+  soms veel trager dan welke loopsnelheid ook. Van de halte Palazzo naar de
+  Donaustraat in Lelystad is het 916 meter, en daar zette hij 18 minuten voor —
+  3,1 km/h. Dat is geen loopsnelheid maar een vaste straftijd in zijn
+  kaartgegevens: de eerste 211 meter, door de Torenvalktunnel, rekent hij op
+  tien minuten, en dat blijft zo wat je ook instelt (zonder instelling 20
+  minuten, op 5 km/h 18, op 7,2 km/h nog altijd 15).
+
+  Loopt de planner op het laatste stuk meer dan 40% achter op jouw tempo, dan
+  rekent de app het zelf uit afstand en loopsnelheid, met een minuut extra voor
+  oversteken. Die 18 minuten worden zo 12, en de rit van 06:42 naar Lelystad
+  staat nu op 41 minuten in plaats van 47.
+
+  Bewust alleen het láátste loopstuk. Dat kan je hooguit eerder thuisbrengen;
+  minuten afhalen van het stuk naar de eerste halte of van een overstap zou
+  betekenen dat je later de deur uit moet en je trein mist. Een loopstuk dat
+  gewoon klopt blijft staan, en wie "rustig" loopt houdt de tijden van de
+  planner.
+
 - **De afstand van een OV-reis klopt weer.** Die telde alleen de loopstukken
   mee, want de planner zet bij een trein of bus geen afstand in zijn antwoord —
   alleen de getekende route. Een rit van 22 kilometer stond zo als 1,8

@@ -4,7 +4,8 @@ import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
 import { legMeters, motisPlan, toTravelLeg } from "./motis";
 import { pickItinerary } from "../itineraries";
 import { metersBetween } from "../polyline";
-import { place, transitParams, WALK_SPEEDS } from "../transitQuery";
+import { place, transitParams, WALK_SPEEDS, walkSpeedMs } from "../transitQuery";
+import { trimFinalWalk } from "../finalWalk";
 import type { BikeEnds, GeoLocation, TravelMode, TravelResult, WalkSpeed } from "../types";
 
 /**
@@ -233,7 +234,10 @@ async function planTransit(
   const data = await motisPlan(params);
   // Levert het OV niets op, dan is er soms nog wel een directe loop- of
   // fietsroute. Die tonen is beter dan zeggen dat er geen verbinding is.
-  const candidates = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  // Eerst het laatste loopstuk narekenen, dan pas kiezen: anders vergelijken we
+  // ritten op een aankomsttijd die van dat ene stuk een kwartier te somber is.
+  const candidates = found.map((itinerary) => trimFinalWalk(itinerary, walkSpeedMs(options.walk)));
   const best = pickItinerary(candidates, { arriveBy, time });
   if (!best?.duration || !best.startTime || !best.endTime) {
     throw new ProviderError("api.noTransit", 422);
