@@ -52,6 +52,14 @@ export const WALK_SPEEDS: Record<WalkSpeed, number | null> = {
  */
 export const DEFAULT_WALK_SPEED: WalkSpeed = "fast";
 
+/**
+ * Hoeveel opties de agenda opvraagt om er zelf de beste uit te kiezen. Klein,
+ * want het gaat om één antwoord; zie de uitleg bij `shape` in `transitParams`.
+ */
+const BEST_OPTIONS = 3;
+/** Het vertrekbord van de reisplanner, als er niets gevraagd wordt. */
+const TIMETABLE_OPTIONS = 5;
+
 export type TransitShape =
   /** Eén beste rit, voor de vertrektijd in de agenda. */
   | "best"
@@ -122,22 +130,29 @@ export function transitParams(query: TransitQuery): URLSearchParams {
   const speed = query.walk ? WALK_SPEEDS[query.walk] : null;
   if (speed) params.set("pedestrianSpeed", String(speed));
 
-  if (query.shape === "best") {
-    /**
-     * De agenda wil één antwoord: hoe laat moet ik weg. Precies waar
-     * `timetableView=false` voor is — de planner rekent wachten dan mee als
-     * reistijd en levert bij "uiterlijk aankomen om" de laatste vertrektijd
-     * die het haalt. In vertrekbord-stand (de standaard) krijg je in plaats
-     * daarvan een waaier opties waar je zelf uit moet kiezen, en dat ging
-     * eerder mis: de app pakte blind de eerste.
-     */
-    params.set("timetableView", "false");
-  } else {
-    // Het vertrekbord: een venster met opties. `numItineraries` is een
-    // ondergrens, geen bovengrens — de planner rekt het venster op tot hij er
-    // zoveel heeft.
-    params.set("numItineraries", String(query.options ?? 5));
-  }
+  /**
+   * Ook de agenda vraagt een klein venster op, geen enkele rit.
+   *
+   * Hier stond `timetableView=false`: dan rekent de planner wachten mee als
+   * reistijd en geeft hij bij "uiterlijk aankomen om" precies één rit terug,
+   * de laatste die het haalt. Dat leverde de goede vertrektijd op maar niet
+   * de goede rit. Almere Buiten naar Lelystad, uiterlijk 08:30: je moet om
+   * 07:12 weg, dat klopt — maar de rit die erbij kwam wachtte een half uur op
+   * het busstation en zette je om 08:29 voor de deur, één minuut voor je
+   * afspraak, terwijl je met dezelfde trein en een andere bus om 08:06 binnen
+   * bent. De planner mag dat kiezen: van alles wat op tijd is, is het de
+   * laatste vertrektijd.
+   *
+   * Met een venster kiest de app zelf, met `pickItinerary`: eerst zo laat
+   * mogelijk de deur uit, en bij een gelijke vertrektijd de kortste rit. Dat
+   * is precies waar die functie voor gemaakt is — hij kreeg alleen nooit iets
+   * te kiezen. `numItineraries` is een ondergrens, geen bovengrens: de planner
+   * rekt het venster op tot hij er zoveel heeft.
+   */
+  params.set(
+    "numItineraries",
+    String(query.shape === "best" ? BEST_OPTIONS : (query.options ?? TIMETABLE_OPTIONS)),
+  );
 
   // Bij bladeren bepaalt de cursor het tijdvenster; anders het gekozen tijdstip.
   if (query.cursor) {

@@ -38,6 +38,23 @@ describe("pickItinerary", () => {
     expect(best?.startTime).toBe("2026-09-07T08:12:00.000Z");
   });
 
+  it("neemt bij dezelfde vertrektijd de rit die je het eerst afzet", () => {
+    // Het geval Almere Buiten -> Lelystad: allebei de trein van 07:12, maar de
+    // een wacht een half uur op het busstation en zet je één minuut voor je
+    // afspraak af, de ander is een half uur eerder binnen.
+    const options = [
+      option("07:12", "08:29", { transfers: 1 }),
+      option("07:12", "08:06", { transfers: 1 }),
+    ];
+
+    const best = pickItinerary(options, {
+      arriveBy: true,
+      time: "2026-09-07T08:30:00.000Z",
+    });
+
+    expect(best?.endTime).toBe("2026-09-07T08:06:00.000Z");
+  });
+
   it("laat opties vallen die te laat aankomen", () => {
     const options = [
       option("08:30", "09:20"), // later weg, maar te laat

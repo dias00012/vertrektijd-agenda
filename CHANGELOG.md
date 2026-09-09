@@ -8,6 +8,33 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.34.0
+
+- **De agenda kiest nu zelf welke rit erbij hoort.** Bij "uiterlijk aankomen
+  om" vroeg de app de planner om precies één rit. Die geeft dan de laatste
+  vertrektijd die het haalt, en dat mag van hem ook een rit zijn die alle
+  speling opmaakt. Almere Buiten naar Lelystad, uiterlijk half negen: je moet
+  om 07:12 weg — dat klopte — maar de rit die je erbij zag wachtte een half uur
+  op het busstation en zette je om 08:29 voor de deur, één minuut voor tijd,
+  terwijl je met diezelfde trein en een andere bus om 08:06 binnen bent.
+
+  De app vraagt nu een paar opties op en kiest er zelf uit, met de regels die
+  daar al voor klaarlagen: zo laat mogelijk de deur uit, en bij een gelijke
+  vertrektijd de kortste rit. De vertrektijd blijft dus dezelfde, maar de reis
+  eronder is de reis die je echt maakt. Op deze route scheelt dat 23 minuten
+  aan verzonnen wachttijd (77 minuten werd 54).
+
+- **De afstand van een OV-reis klopt weer.** Die telde alleen de loopstukken
+  mee, want de planner zet bij een trein of bus geen afstand in zijn antwoord —
+  alleen de getekende route. Een rit van 22 kilometer stond zo als 1,8
+  kilometer in je back-up. De app meet die tekening nu zelf op.
+
+- **Lopen naar iets wat ver weg is zei "geen looproute gevonden".** Dat klopte
+  niet: de route bestond wel, maar duurde langer dan de vier uur die de app
+  aan een directe route toestond — Almere Buiten naar Lelystad is 19,5
+  kilometer, oftewel 4 uur en 18 minuten. Die grens staat voor lopen nu op acht
+  uur, en is het écht te ver, dan zegt de app dat ook zo.
+
 ## 0.33.0
 
 - **Stevig doorlopen is nu de standaard.** In 0.32.0 kon je de loopsnelheid

@@ -21,16 +21,18 @@ describe("transitParams", () => {
     expect(params.get("toPlace")).toBe("52.5168,5.4714");
   });
 
-  it("vraagt de agenda om één beste rit, niet om een vertrekbord", () => {
-    // timetableView=false laat MOTIS wachttijd meerekenen en levert bij
-    // "uiterlijk aankomen om" de laatst mogelijke vertrektijd.
+  it("vraagt de agenda een klein venster op om zelf uit te kiezen", () => {
+    // Niet timetableView=false: dan geeft MOTIS één rit terug en die is bij
+    // "uiterlijk aankomen om" de laatste die het haalt — desnoods met een half
+    // uur wachten erin en aankomst op de deadline. Met een paar opties kan
+    // `pickItinerary` bij een gelijke vertrektijd de kortste rit nemen.
     const params = ask({ arriveBy: true, time: "2026-09-07T09:00:00.000Z" });
-    expect(params.get("timetableView")).toBe("false");
+    expect(params.get("timetableView")).toBeNull(); // standaard is true
+    expect(params.get("numItineraries")).toBe("3");
     expect(params.get("arriveBy")).toBe("true");
-    expect(params.get("numItineraries")).toBeNull();
   });
 
-  it("vraagt de reisplanner wél om een vertrekbord met meerdere opties", () => {
+  it("vraagt de reisplanner om een vertrekbord met meer opties", () => {
     const params = ask({ shape: "timetable", options: 5 });
     expect(params.get("timetableView")).toBeNull(); // standaard is true
     expect(params.get("numItineraries")).toBe("5");

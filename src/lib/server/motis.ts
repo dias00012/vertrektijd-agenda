@@ -1,5 +1,6 @@
 import "server-only";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
+import { decodePolyline, pathMeters } from "../polyline";
 import type { TravelLeg, TravelLegMode } from "../types";
 
 /**
@@ -19,10 +20,17 @@ export interface MotisPlace {
   lon?: number;
 }
 
+/** De getekende route van een rit, als encoded polyline. */
+export interface MotisGeometry {
+  points?: string;
+  precision?: number;
+}
+
 export interface MotisLeg {
   mode?: string;
   duration?: number;
   distance?: number;
+  legGeometry?: MotisGeometry;
   startTime?: string;
   endTime?: string;
   scheduledStartTime?: string;
@@ -141,6 +149,22 @@ export async function motisGeocode(
       lon: item.lon as number,
       type: item.type ?? "",
     }));
+}
+
+/**
+ * Hoe lang dit stuk van de reis is, in meters.
+ *
+ * Bij lopen en fietsen staat de afstand er gewoon bij. Bij een trein of bus
+ * niet: die zit alleen in de tekening van de route. Zonder dat uitrekenen
+ * telde een OV-reis alleen zijn loopstukken mee, en dat was geen kleine
+ * afwijking maar een factor tien: 1,8 km voor een rit Almere-Lelystad.
+ */
+export function legMeters(leg: MotisLeg): number {
+  if (typeof leg.distance === "number") return leg.distance;
+
+  const points = leg.legGeometry?.points;
+  if (!points) return 0;
+  return pathMeters(decodePolyline(points, leg.legGeometry?.precision ?? 5));
 }
 
 /** Vertaalt een MOTIS-vervoerswijze naar onze eigen, compactere set. */
