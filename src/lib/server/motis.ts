@@ -1,5 +1,6 @@
 import "server-only";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
+import { decodePolyline, pathMeters } from "../polyline";
 import type { TravelLeg, TravelLegMode } from "../types";
 
 /**
@@ -19,10 +20,17 @@ export interface MotisPlace {
   lon?: number;
 }
 
+/** De getekende route van een rit, als encoded polyline. */
+export interface MotisGeometry {
+  points?: string;
+  precision?: number;
+}
+
 export interface MotisLeg {
   mode?: string;
   duration?: number;
   distance?: number;
+  legGeometry?: MotisGeometry;
   startTime?: string;
   endTime?: string;
   scheduledStartTime?: string;
@@ -143,6 +151,22 @@ export async function motisGeocode(
     }));
 }
 
+/**
+ * Hoe lang dit stuk van de reis is, in meters.
+ *
+ * Bij lopen en fietsen staat de afstand er gewoon bij. Bij een trein of bus
+ * niet: die zit alleen in de tekening van de route. Zonder dat uitrekenen
+ * telde een OV-reis alleen zijn loopstukken mee, en dat was geen kleine
+ * afwijking maar een factor tien: 1,8 km voor een rit Almere-Lelystad.
+ */
+export function legMeters(leg: MotisLeg): number {
+  if (typeof leg.distance === "number") return leg.distance;
+
+  const points = leg.legGeometry?.points;
+  if (!points) return 0;
+  return pathMeters(decodePolyline(points, leg.legGeometry?.precision ?? 5));
+}
+
 /** Vertaalt een MOTIS-vervoerswijze naar onze eigen, compactere set. */
 export function toLegMode(motisMode: string | undefined): TravelLegMode {
   switch ((motisMode ?? "").toUpperCase()) {
@@ -192,11 +216,32 @@ function minutesBetween(later: string | undefined, earlier: string | undefined):
   return Number.isNaN(diff) ? 0 : Math.round(diff / 60_000);
 }
 
+/**
+ * Hoe lang dit stuk duurt volgens de klok, en pas anders volgens het getal dat
+ * de planner erbij zet.
+ *
+ * Die twee zijn namelijk niet altijd hetzelfde. Voor 551 meter lopen geeft de
+ * planner 406 seconden, maar als tijden 18:30 → 18:36 — zes minuten. Namen we
+ * dan zijn getal, dan stond er "7 min reizen · thuis om 20:36" en klopte de
+ * som niet met wat eronder staat. De klok wint: daar plan je op.
+ */
+export function shownMinutes(
+  start: string | undefined,
+  end: string | undefined,
+  duration: number | undefined,
+): number {
+  if (start && end) {
+    const span = minutesBetween(end, start);
+    if (span >= 0) return span;
+  }
+  return Math.round((duration ?? 0) / 60);
+}
+
 export function toTravelLeg(leg: MotisLeg, fromLabel: string, toLabel: string): TravelLeg {
   const delay = minutesBetween(leg.startTime, leg.scheduledStartTime);
   return {
     mode: toLegMode(leg.mode),
-    durationMinutes: Math.round((leg.duration ?? 0) / 60),
+    durationMinutes: shownMinutes(leg.startTime, leg.endTime, leg.duration),
     distanceMeters: typeof leg.distance === "number" ? Math.round(leg.distance) : undefined,
     from: placeName(leg.from?.name, fromLabel, toLabel),
     to: placeName(leg.to?.name, fromLabel, toLabel),

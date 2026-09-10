@@ -1,5 +1,5 @@
-import type { Activity, ActivityOccurrence, Recurrence } from "./types";
-import { addDaysToKey, daysBetween, parseDateKey, startOfWeekKey } from "./time";
+import type { Activity, ActivityOccurrence, Recurrence, RecurrenceFreq } from "./types";
+import { addDaysToKey, daysBetween, isDateKey, parseDateKey, startOfWeekKey } from "./time";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -264,4 +264,54 @@ export function monthDayLabel(dateKey: string): string {
 /** Standaardpatroon zodra de gebruiker herhaling aanzet: dezelfde weekdag. */
 export function defaultRecurrence(dateKey: string): Recurrence {
   return { freq: "weekly", weekdays: [parseDateKey(dateKey).getDay()], until: null };
+}
+
+const FREQUENCIES: RecurrenceFreq[] = ["weekly", "biweekly", "monthly"];
+
+/**
+ * Maakt van een herhaling-uit-den-vreemde iets waar de app mee kan rekenen.
+ *
+ * Deze komt binnen uit een back-upbestand, uit de cloud en uit het
+ * uitwisselformaat dat de planner vult — allemaal buiten deze app om. Stond er
+ * `{ freq: "weekly" }` zonder weekdagen, dan liep `occursOn` stuk op
+ * `weekdays.includes(...)`, en omdat er geen scherm is dat zo'n fout opvangt
+ * was de hele agenda weg. Eén ontbrekend veld in een importbestand, en de
+ * gebruiker staat 's ochtends voor een wit scherm.
+ *
+ * Wat er van gemaakt wordt:
+ *
+ * - Een onbekende `freq` wordt "weekly". Dat is niet raden om het raden: er
+ *   stond dat dit hoort te herhalen, en van de drie patronen die de app kent
+ *   is dit het minst opdringerige. De gebruiker ziet het staan en kan het
+ *   veranderen. Er niets van maken zou de activiteit uit elke volgende week
+ *   laten verdwijnen, en dat is precies wat deze app niet mag doen.
+ * - Ontbrekende of onzinnige weekdagen worden de weekdag van de startdatum,
+ *   net als wanneer je herhaling zelf aanzet. Bij "monthly" doen weekdagen
+ *   niet mee en blijft de lijst leeg.
+ * - Een `until` die geen datum is, telt niet: dan loopt de reeks door in
+ *   plaats van dat hij stilletjes ophoudt.
+ *
+ * Is de startdatum zelf al geen datum, dan valt er niets te herhalen en komt
+ * er `null` uit — de activiteit blijft dan gewoon een losse dag.
+ */
+export function normalizeRecurrence(raw: unknown, dateKey: string): Recurrence | null {
+  if (!raw || typeof raw !== "object") return null;
+
+  const value = raw as Partial<Recurrence>;
+  const freq = FREQUENCIES.includes(value.freq as RecurrenceFreq)
+    ? (value.freq as RecurrenceFreq)
+    : "weekly";
+  const until = isDateKey(value.until) ? value.until : null;
+  const days = Array.isArray(value.weekdays)
+    ? sortWeekdays(
+        value.weekdays.filter(
+          (day): day is number => Number.isInteger(day) && day >= 0 && day <= 6,
+        ),
+      )
+    : [];
+
+  if (freq === "monthly") return { freq, weekdays: days, until };
+  if (days.length > 0) return { freq, weekdays: days, until };
+  if (!isDateKey(dateKey)) return null;
+  return { ...defaultRecurrence(dateKey), freq, until };
 }

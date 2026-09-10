@@ -163,6 +163,8 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
   // Alleen zinvol als de opgeslagen activiteit al een reeks is.
   const editingSeries = Boolean(activity?.recurrence);
 
+  const dialog = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -174,6 +176,20 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  /**
+   * De focus naar het formulier brengen zodra het opengaat.
+   *
+   * Zonder dit blijft hij achter op de knop eronder: wie met een toetsenbord
+   * of een schermlezer werkt staat dan nog steeds op de pagina achter het
+   * venster en moet er eerst doorheen tabben om bij "Naam" te komen.
+   */
+  useEffect(() => {
+    const eerste = dialog.current?.querySelector<HTMLElement>(
+      'input:not([type="hidden"]), select, textarea, button',
+    );
+    eerste?.focus();
+  }, []);
 
   const errors = useMemo<FormErrors>(() => {
     const next: FormErrors = {};
@@ -307,6 +323,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
 
   return (
     <div
+      ref={dialog}
       className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
       role="dialog"
@@ -862,7 +879,12 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            /* Bij het bewerken staan er vier knoppen naast elkaar, en dat past
+               niet op een telefoon: "Annuleren" en "Opslaan" vielen buiten het
+               scherm — op 390 px net zo goed als op 320. Je kon je wijziging
+               dus niet bewaren. Met flex-wrap zakken die twee naar een tweede
+               regel en blijven ze rechts staan. */
+            <div className="flex flex-wrap items-center gap-2">
               {isEdit ? (
                 <>
                   <button

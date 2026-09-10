@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_WALK_SPEED, transitParams, WALK_SPEEDS } from "./transitQuery";
+import { transitParams, WALK_SPEED_MS } from "./transitQuery";
 
 /**
  * Deze parameters bepalen het antwoord van de OV-planner. Een verkeerde stand
@@ -21,16 +21,18 @@ describe("transitParams", () => {
     expect(params.get("toPlace")).toBe("52.5168,5.4714");
   });
 
-  it("vraagt de agenda om één beste rit, niet om een vertrekbord", () => {
-    // timetableView=false laat MOTIS wachttijd meerekenen en levert bij
-    // "uiterlijk aankomen om" de laatst mogelijke vertrektijd.
+  it("vraagt de agenda een klein venster op om zelf uit te kiezen", () => {
+    // Niet timetableView=false: dan geeft MOTIS één rit terug en die is bij
+    // "uiterlijk aankomen om" de laatste die het haalt — desnoods met een half
+    // uur wachten erin en aankomst op de deadline. Met een paar opties kan
+    // `pickItinerary` bij een gelijke vertrektijd de kortste rit nemen.
     const params = ask({ arriveBy: true, time: "2026-09-07T09:00:00.000Z" });
-    expect(params.get("timetableView")).toBe("false");
+    expect(params.get("timetableView")).toBeNull(); // standaard is true
+    expect(params.get("numItineraries")).toBe("3");
     expect(params.get("arriveBy")).toBe("true");
-    expect(params.get("numItineraries")).toBeNull();
   });
 
-  it("vraagt de reisplanner wél om een vertrekbord met meerdere opties", () => {
+  it("vraagt de reisplanner om een vertrekbord met meer opties", () => {
     const params = ask({ shape: "timetable", options: 5 });
     expect(params.get("timetableView")).toBeNull(); // standaard is true
     expect(params.get("numItineraries")).toBe("5");
@@ -83,12 +85,13 @@ describe("transitParams", () => {
     expect(params.get("maxPostTransitTime")).toBe(String(30 * 60));
   });
 
-  it("laat overstappen over de echte straat berekenen", () => {
-    // De vaste looppaden bij de dienstregeling zijn niet compleet: ontbreekt
-    // er een tussen het perron en het busstation ernaast, dan bestaat die
-    // overstap voor de planner niet en kom je op een latere bus uit.
-    expect(ask().get("useRoutedTransfers")).toBe("true");
-    expect(ask({ shape: "timetable" }).get("useRoutedTransfers")).toBe("true");
+  it("rekent overstappen op de overstaptijd uit de dienstregeling", () => {
+    // Over de straat berekenen leek beter, maar loopt over dezelfde kaart die
+    // te traag rekent: een overstap die je haalt ziet er dan te krap uit en
+    // je krijgt een latere trein. Over 48 vergelijkingen won de overstaptijd
+    // uit de feed 20 keer en de straatberekening geen enkele keer.
+    expect(ask().get("useRoutedTransfers")).toBe("false");
+    expect(ask({ shape: "timetable" }).get("useRoutedTransfers")).toBe("false");
   });
 
   it("staat een directe loop- of fietsroute van drie kwartier toe", () => {
@@ -118,31 +121,17 @@ describe("transitParams", () => {
   });
 
   /**
-   * De loopsnelheid raakt elk loopstuk: naar de halte, de overstap en het
-   * laatste stuk naar de deur. Bij "normaal" mag er niets meegestuurd worden,
-   * anders schuift de app stilletjes alle bestaande reistijden op.
+   * Eén vaste loopsnelheid, voor elk loopstuk: naar de halte, de overstap en
+   * het laatste stuk naar de deur. Zakt deze waarde per ongeluk weg, dan valt
+   * de planner terug op zijn eigen voorzichtige tempo en wordt elke rit met
+   * drie loopstukken stilletjes tien minuten langer.
    */
-  it("stuurt geen loopsnelheid mee bij normaal lopen", () => {
-    expect(ask().get("pedestrianSpeed")).toBeNull();
-    expect(ask({ walk: "normal" }).get("pedestrianSpeed")).toBeNull();
+  it("rekent altijd met dezelfde loopsnelheid", () => {
+    expect(ask().get("pedestrianSpeed")).toBe("1.4");
+    expect(ask({ shape: "timetable" }).get("pedestrianSpeed")).toBe("1.4");
   });
 
-  it("stuurt de loopsnelheid mee zodra je zegt hoe je loopt", () => {
-    expect(ask({ walk: "fast" }).get("pedestrianSpeed")).toBe("1.4");
-    expect(ask({ walk: "slow" }).get("pedestrianSpeed")).toBe("0.9");
-  });
-
-  it("gaat standaard uit van stevig doorlopen, net als 9292", () => {
-    // Deze standaard bepaalt elke reistijd in de app. Gaat hij per ongeluk
-    // terug naar de voorzichtige snelheid van de planner, dan wordt elke rit
-    // met drie loopstukken stilletjes tien minuten langer.
-    expect(DEFAULT_WALK_SPEED).toBe("fast");
-    expect(ask({ walk: DEFAULT_WALK_SPEED }).get("pedestrianSpeed")).toBe("1.4");
-  });
-
-  it("houdt stevig doorlopen sneller dan rustig aan", () => {
-    expect(WALK_SPEEDS.fast).toBeGreaterThan(WALK_SPEEDS.slow as number);
-    // 5 km/h, waar 9292 mee rekent.
-    expect(WALK_SPEEDS.fast).toBeCloseTo(5000 / 3600, 1);
+  it("houdt die snelheid op 5 km/h", () => {
+    expect(WALK_SPEED_MS).toBeCloseTo(5000 / 3600, 1);
   });
 });

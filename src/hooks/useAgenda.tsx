@@ -34,7 +34,8 @@ import {
   type ImportMode,
   type ImportSummary,
 } from "@/lib/backup";
-import { needsTravelRefresh, travelPlanFor } from "@/lib/travel";
+import { needsTravelRefresh, nextOccurrenceDate, travelPlanFor } from "@/lib/travel";
+import { daysBetween, todayKey } from "@/lib/time";
 import { relocatePoint } from "@/lib/places";
 import { dayRoleFor } from "@/lib/agenda";
 import { track } from "@/lib/stats";
@@ -172,6 +173,21 @@ interface AgendaContextValue {
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
 
+/**
+ * Zo ver vooruit rekent de app uit zichzelf reistijden uit.
+ *
+ * Verder heeft weinig zin: vervoerders publiceren hun dienstregeling niet
+ * betrouwbaar over drie weken heen, en een gekoppeld rooster staat er voor een
+ * heel semester in. Dat betekende bij het opstarten honderden aanvragen
+ * tegelijk aan de gratis OV-dienst — waarvan het grootste deel stukliep op
+ * onze eigen verkeersdrempel, met lege vertrektijden als resultaat. Kijk je
+ * naar een dag die verder weg ligt, dan haalt `useOccurrenceTravel` die rit
+ * alsnog op, en dan gaat het om één dag in plaats van om alles tegelijk.
+ *
+ * Een week dekt waar de app voor is: vandaag, morgen en het weekoverzicht.
+ */
+const TRAVEL_HORIZON_DAYS = 7;
+
 /** Twee locaties op dezelfde plek gelden als dezelfde bewaarde locatie. */
 function placeKey(location: GeoLocation): string {
   return `${location.lat.toFixed(5)},${location.lon.toFixed(5)}`;
@@ -261,6 +277,27 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   /** Sleutels waarvoor de berekening faalde; niet automatisch opnieuw proberen. */
   const failedKeys = useRef<Set<string>>(new Set());
   const inFlight = useRef<Set<string>>(new Set());
+  /** Telt op zodra de verbinding terugkomt, om de reisberekening te herstarten. */
+  const [reconnected, setReconnected] = useState(0);
+
+  /**
+   * Kwam je weer online? Dan mogen mislukte reizen opnieuw.
+   *
+   * De app onthoudt een mislukking zodat hij niet blijft doorvragen aan een
+   * dienst die toch niet antwoordt. Maar "geen bereik" is geen storing die
+   * blijft: in de trein door een tunnel is je vertrektijd na tien seconden
+   * gewoon weer op te halen. Zonder dit bleef "geen verbinding" staan tot je
+   * zelf iets aanraakte — terwijl de app je juist belooft dat hij het opnieuw
+   * uitrekent.
+   */
+  useEffect(() => {
+    const backOnline = () => {
+      failedKeys.current.clear();
+      setReconnected((count) => count + 1);
+    };
+    window.addEventListener("online", backOnline);
+    return () => window.removeEventListener("online", backOnline);
+  }, []);
 
   useEffect(() => {
     setActivities(loadActivities());
@@ -327,13 +364,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
             mode: plan.mode,
             arriveBy: plan.arriveBy,
             bike: plan.outboundBike,
-            walk: plan.walk,
           }),
           fetchTravel(activity.location, currentSettings.home, {
             mode: plan.mode,
             departAt: plan.departAt,
             bike: plan.returnBike,
-            walk: plan.walk,
           }),
           // Ga je hierna rechtstreeks ergens anders heen, dan is dat een derde
           // rit: van hier naar daar, zonder tussenstop thuis.
@@ -342,7 +377,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
                 mode: plan.mode,
                 departAt: plan.departAt,
                 bike: plan.onwardBike,
-                walk: plan.walk,
               })
             : Promise.resolve(null),
         ]);
@@ -428,6 +462,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated || !settings.home) return;
     const now = new Date();
+    const today = todayKey(now);
+    const wachtrij: { activity: Activity; onward: GeoLocation | null; dag: string }[] = [];
+
     for (const activity of activities) {
       // De uren midden op een schooldag hebben geen eigen reis: je bent er al.
       // Zonder deze regel haalt een gekoppeld rooster tientallen routes op voor
@@ -435,13 +472,30 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const role = dayRoleFor(activity, activities, now);
       if (!activity.location || (role && !role.outbound && !role.inbound)) continue;
 
+      // Alleen wat binnenkort speelt. Een gekoppeld rooster staat er voor een
+      // heel semester in: 480 lesuren betekende 461 aanvragen ineens, waarvan
+      // er 446 stukliepen op onze eigen verkeersdrempel — en dus 446 lege
+      // vertrektijden. Verder vooruit heeft het ook weinig zin: zo ver
+      // publiceren vervoerders hun dienstregeling niet betrouwbaar. Kijk je
+      // wél naar zo'n dag, dan haalt `useOccurrenceTravel` hem alsnog op.
+      const dag = nextOccurrenceDate(activity, now);
+      const dagen = daysBetween(today, dag);
+      if (dagen < 0 || dagen > TRAVEL_HORIZON_DAYS) continue;
+
       const onward = role?.onward ?? null;
       if (!needsTravelRefresh(activity, settings, now, onward)) continue;
       const plan = travelPlanFor(activity, settings, now, onward);
       if (plan && failedKeys.current.has(plan.outboundKey)) continue;
-      void computeTravel(activity, settings, onward);
+      wachtrij.push({ activity, onward, dag });
     }
-  }, [activities, settings, hydrated, computeTravel]);
+
+    // Dichtstbijzijnde dag eerst. Loopt het toch tegen een grens aan, dan
+    // sneuvelt de verste dag en niet die van morgenochtend.
+    wachtrij.sort((a, b) => (a.dag < b.dag ? -1 : a.dag > b.dag ? 1 : 0));
+    for (const { activity, onward } of wachtrij) void computeTravel(activity, settings, onward);
+    // `reconnected` staat er bewust bij: het is het sein dat mislukte ritten
+    // weer een kans krijgen.
+  }, [activities, settings, hydrated, computeTravel, reconnected]);
 
   const addActivity = useCallback((draft: ActivityDraft): Activity => {
     // Alleen wat je zelf toevoegt telt; een geïmporteerd rooster zou de teller

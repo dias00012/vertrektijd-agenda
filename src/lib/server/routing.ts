@@ -1,10 +1,12 @@
 import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
-import { motisPlan, toTravelLeg } from "./motis";
+import { legMeters, motisPlan, shownMinutes, toTravelLeg } from "./motis";
 import { pickItinerary } from "../itineraries";
-import { place, transitParams, WALK_SPEEDS } from "../transitQuery";
-import type { BikeEnds, GeoLocation, TravelMode, TravelResult, WalkSpeed } from "../types";
+import { metersBetween } from "../polyline";
+import { place, transitParams, WALK_SPEED_MS } from "../transitQuery";
+import { applyWalkSpeed } from "../walkTimes";
+import type { BikeEnds, GeoLocation, TravelMode, TravelResult } from "../types";
 
 /**
  * Routering per vervoermiddel voor de agenda: één reis van A naar B.
@@ -30,8 +32,30 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
  * van meerdere kaarten en apparaten die tegelijk om dezelfde rit vragen.
  */
 const TRANSIT_CACHE_TTL_MS = 60 * 1000;
-/** Ruime bovengrens zodat ook lange fiets-/looproutes een antwoord geven. */
-const MAX_DIRECT_SECONDS = 4 * 60 * 60;
+/**
+ * Ruime bovengrens zodat ook lange fiets-/looproutes een antwoord geven.
+ *
+ * Voor lopen stond hier vier uur, en dat is korter dan het klinkt: Almere
+ * Buiten naar Lelystad is 19,5 km, oftewel 4 uur en 18 minuten lopen. Net
+ * erboven, dus de planner gaf niets terug en de app zei "geen looproute
+ * gevonden" — terwijl die route gewoon bestaat en je hem alleen niet wilt
+ * lopen. Op de fiets is vier uur nog altijd ruim honderd kilometer; die blijft
+ * staan, ook omdat een lagere grens `beyondReach` scherper maakt.
+ */
+const MAX_DIRECT_SECONDS: Record<"bike" | "walk", number> = {
+  walk: 8 * 60 * 60,
+  bike: 4 * 60 * 60,
+};
+/**
+ * Royale bovengrenzen voor de snelheid van een wandelaar en een fietser, in
+ * meters per seconde. Ze dienen maar één doel: uitrekenen of iets bewijsbaar
+ * te ver is. Hemelsbreed is de ondergrens van elke echte route, dus haal je
+ * die afstand op je hardst nog niet binnen de bovengrens, dan bestaat
+ * er geen route die het wél haalt. Expres aan de hoge kant: we willen alleen
+ * "te ver" zeggen als het zeker is.
+ */
+const FASTEST_WALK_MS = 1.6;
+const FASTEST_BIKE_MS = 6;
 
 export type RouteResult = TravelResult;
 
@@ -43,8 +67,6 @@ export interface RouteOptions {
   departAt?: string;
   /** Aan welke kant van deze rit een fiets staat; alleen zinvol bij OV. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk van een OV- of looproute. */
-  walk?: WalkSpeed;
 }
 
 /** Berekent de reis tussen twee punten voor het gekozen vervoermiddel. */
@@ -65,10 +87,7 @@ export async function route(
     mode === "transit" && options.bike && options.bike !== "none"
       ? `+${options.bike}`
       : "";
-  // En de loopsnelheid: anders krijg je na het omzetten de oude, langzamere
-  // uitkomst terug en lijkt de instelling niets te doen.
-  const walkPart = options.walk && options.walk !== "normal" ? `~${options.walk}` : "";
-  const key = `route:${config.provider}:${mode}${timePart}${bikePart}${walkPart}:${coord(from)}>${coord(to)}`;
+  const key = `route:${config.provider}:${mode}${timePart}${bikePart}:${coord(from)}>${coord(to)}`;
 
   const cached = cacheGet<RouteResult>(key);
   if (cached) return cached;
@@ -77,7 +96,7 @@ export async function route(
   if (mode === "transit") {
     result = await planTransit(from, to, options);
   } else if (mode === "bike" || mode === "walk") {
-    result = await planDirect(from, to, mode, options.walk);
+    result = await planDirect(from, to, mode);
   } else {
     result = await routeCar(from, to);
   }
@@ -125,35 +144,65 @@ async function routeCar(from: GeoLocation, to: GeoLocation): Promise<RouteResult
 
 /* --- Fiets en lopen via MOTIS ------------------------------------------- */
 
+/**
+ * Staat vast dat hier geen route van te maken is binnen de bovengrens?
+ *
+ * Een route over straat is nooit korter dan de rechte lijn, dus als die lijn
+ * al niet binnen de tijd te doen is, bestaat er geen route die het wel haalt.
+ */
+function beyondReach(from: GeoLocation, to: GeoLocation, mode: "bike" | "walk"): boolean {
+  const meters = metersBetween([from.lat, from.lon], [to.lat, to.lon]);
+  const speed = mode === "bike" ? FASTEST_BIKE_MS : FASTEST_WALK_MS;
+  return meters / speed > MAX_DIRECT_SECONDS[mode];
+}
+
 async function planDirect(
   from: GeoLocation,
   to: GeoLocation,
   mode: "bike" | "walk",
-  walk?: WalkSpeed,
 ): Promise<RouteResult> {
-  const params = new URLSearchParams({
-    fromPlace: place(from),
-    toPlace: place(to),
-    time: new Date().toISOString(),
-    directModes: mode === "bike" ? "BIKE" : "WALK",
-    // Leeg = geen OV meenemen; we willen puur de directe route.
-    transitModes: "",
-    maxDirectTime: String(MAX_DIRECT_SECONDS),
-  });
-  // Loop je zelf sneller dan de planner aanneemt, dan geldt dat ook voor een
-  // route die helemaal lopend is.
-  const speed = mode === "walk" && walk ? WALK_SPEEDS[walk] : null;
-  if (speed) params.set("pedestrianSpeed", String(speed));
+  const ask = async (limitSeconds: number) => {
+    const params = new URLSearchParams({
+      fromPlace: place(from),
+      toPlace: place(to),
+      time: new Date().toISOString(),
+      directModes: mode === "bike" ? "BIKE" : "WALK",
+      // Leeg = geen OV meenemen; we willen puur de directe route.
+      transitModes: "",
+      maxDirectTime: String(limitSeconds),
+    });
+    // Dezelfde loopsnelheid als bij een OV-reis, ook voor een route die
+    // helemaal lopend is.
+    if (mode === "walk") params.set("pedestrianSpeed", String(WALK_SPEED_MS));
 
-  const data = await motisPlan(params);
-  const best = data.direct?.[0];
+    const data = await motisPlan(params);
+    return data.direct?.[0];
+  };
+
+  const best = await ask(MAX_DIRECT_SECONDS[mode]);
   if (!best?.duration) {
-    throw new ProviderError(mode === "bike" ? "api.noBikeRoute" : "api.noWalkRoute", 422);
+    // Niets gevonden — maar waarom niet? "Er is geen looproute" is iets heel
+    // anders dan "je woont er 150 kilometer vandaan", en dat laatste is aan de
+    // hemelsbrede afstand te zien zonder het nog eens te gaan vragen.
+    const tooFar = beyondReach(from, to, mode);
+    const key = tooFar
+      ? mode === "bike"
+        ? "api.bikeTooFar"
+        : "api.walkTooFar"
+      : mode === "bike"
+        ? "api.noBikeRoute"
+        : "api.noWalkRoute";
+    throw new ProviderError(key, 422);
   }
 
-  const meters = (best.legs ?? []).reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
+  // Een route die helemaal lopend is, moet net zo lang duren als hetzelfde
+  // stuk lopen binnen een OV-reis. Fietsen blijft zoals de planner het geeft:
+  // daar zit een heel ander snelheidsmodel achter.
+  const walked = mode === "walk" ? applyWalkSpeed(best, WALK_SPEED_MS) : best;
+
+  const meters = (walked.legs ?? []).reduce((sum, leg) => sum + legMeters(leg), 0);
   return {
-    durationMinutes: Math.round(best.duration / 60),
+    durationMinutes: shownMinutes(walked.startTime, walked.endTime, walked.duration),
     distanceKm: meters / 1000,
     provider: "motis",
     mode,
@@ -177,13 +226,16 @@ async function planTransit(
     time,
     arriveBy,
     bike: options.bike,
-    walk: options.walk,
   });
 
   const data = await motisPlan(params);
   // Levert het OV niets op, dan is er soms nog wel een directe loop- of
   // fietsroute. Die tonen is beter dan zeggen dat er geen verbinding is.
-  const candidates = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  // Eerst de loopstukken narekenen, dan pas kiezen: anders vergelijken we
+  // ritten op tijden die er een paar minuten naast zitten, en bij een kapot
+  // stuk kaart een kwartier.
+  const candidates = found.map((itinerary) => applyWalkSpeed(itinerary, WALK_SPEED_MS));
   const best = pickItinerary(candidates, { arriveBy, time });
   if (!best?.duration || !best.startTime || !best.endTime) {
     throw new ProviderError("api.noTransit", 422);
@@ -194,10 +246,10 @@ async function planTransit(
   const legs = (best.legs ?? [])
     .map((leg) => toTravelLeg(leg, fromLabel, toLabel))
     .filter((leg) => leg.durationMinutes > 0 || leg.line);
-  const meters = (best.legs ?? []).reduce((sum, leg) => sum + (leg.distance ?? 0), 0);
+  const meters = (best.legs ?? []).reduce((sum, leg) => sum + legMeters(leg), 0);
 
   return {
-    durationMinutes: Math.round(best.duration / 60),
+    durationMinutes: shownMinutes(best.startTime, best.endTime, best.duration),
     distanceKm: meters / 1000,
     provider: "motis",
     mode: "transit",

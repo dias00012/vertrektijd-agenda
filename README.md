@@ -152,6 +152,21 @@ plaats van uit een rekensom. Ook de terugreis wordt als echte rit gepland, vanaf
 MOTIS vraagt om een herkenbare `User-Agent`; die hergebruiken we uit `NOMINATIM_USER_AGENT`.
 Zie de [gebruiksvoorwaarden van transitous](https://transitous.org/api/).
 
+De looproutes daarin komen uit OpenStreetMap. Klopt de kaart niet, dan klopt de
+vertrektijd niet, en daar valt in de app niets aan te doen — een kortere route
+verzinnen is precies wat deze app niet hoort te doen. Plekken waar dat speelt,
+met bewijs om ze te kunnen melden, staan in [`KAARTFOUTEN.md`](KAARTFOUTEN.md).
+
+De **looptijden** komen niet van de planner maar rekent de app zelf uit: de
+afstand van de kaart gedeeld door 5,04 km/h, naar boven op hele minuten
+(`src/lib/walkTimes.ts`). De planner telt daar straftijd bij op voor oversteken,
+stoplichten en hoogteverschil — over tien ritten gemeten 4,6 km/h in plaats van
+de 5,04 die we vragen, en bij een kapot stuk kaart veel erger. 9292 doet dat
+niet, dus zolang wij die straftijd erin lieten stond er bij elke reis een paar
+minuten meer dan de gebruiker ernaast zag staan. De marge die je wilt hebben
+staat los in je instellingen (standaard tien minuten); die hoort zichtbaar en
+zelf te kiezen te zijn, en niet verstopt in elk loopstuk.
+
 Omdat een OV-rit afhangt van het tijdstip, zit de dag en starttijd in de cache-sleutel: verandert
 de tijd of de dag, dan wordt de rit opnieuw opgezocht. Voor een herhalende activiteit plant de app
 op de **eerstvolgende dag** dat hij voorkomt.
@@ -283,8 +298,12 @@ aan een toets is gekoppeld en een werkblok dat aan een opdracht is gekoppeld.
 **`exams[]` (toetsen):** zelfde `priority`/`status`/tijdstempels, met `id`, `subject`,
 `title?`, `date` (`YYYY-MM-DD`), `topics?` (string[]) en `prepMinutes?` (number).
 
-**`activities[]` (agenda):** het bestaande activiteitsmodel. Voor leer-/werkblokken uit het
-leerplan: zet `category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
+**`activities[]` (agenda):** het bestaande activiteitsmodel. `category` is een van de vijf
+ingebouwde types — `"school"`, `"werk"`, `"gym"`, `"koken"`, `"hobby"` — of de `id` van een
+eigen type uit `settings.customCategories`. Iets anders blijft staan zoals je het schrijft,
+maar komt er neutraal uit (grijs, met de tekst zelf als naam): de app doet niet alsof
+`"sport"` hetzelfde is als `"gym"`. Voor leer-/werkblokken uit het leerplan: zet
+`category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
 `linkedTaskId` of `linkedExamId` (de `id` van een taak of toets); de app toont dan bij die taak/
 toets hoeveel leertijd is ingepland en labelt het blok in de agenda.
 

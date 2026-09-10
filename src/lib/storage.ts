@@ -1,8 +1,8 @@
 "use client";
 
-import { DEFAULT_WALK_SPEED } from "./transitQuery";
 import type { Activity, CalendarSubscription, Exam, Settings, Task } from "./types";
 import type { Deletion } from "./sync";
+import { normalizeActivity, normalizeExam, normalizeTask } from "./backup";
 
 /**
  * Persistente opslag. Voor de MVP is dit localStorage: de app werkt daarmee
@@ -29,14 +29,6 @@ const OWNER_KEY = "agenda.owner.v1";
  */
 const DELETIONS_KEY = "agenda.deletions.v1";
 
-/**
- * Schema-versie van de opgeslagen data. Wordt meegegeven bij export en gebruikt
- * bij import om te controleren of een bestand leesbaar is. Verhoogd naar 2 met
- * de komst van taken en toetsen; bestaande activiteiten en instellingen blijven
- * onder hun eigen v1-sleutels staan, dus er gaat geen data verloren.
- */
-export const SCHEMA_VERSION = 2;
-
 export const DEFAULT_SETTINGS: Settings = {
   home: null,
   savedPlaces: [],
@@ -45,7 +37,6 @@ export const DEFAULT_SETTINGS: Settings = {
   bufferMinutes: 10,
   travelMode: "car",
   transitBike: "none",
-  walkSpeed: DEFAULT_WALK_SPEED,
   timetable: null,
   calendars: [],
   reminderMinutes: null,
@@ -102,55 +93,49 @@ export function saveDeletions(deletions: Deletion[]): boolean {
   return write(DELETIONS_KEY, deletions);
 }
 
+/**
+ * Wat hier uit komt gaat door dezelfde controle als een importbestand.
+ *
+ * Dat leek eerst overdreven — dit heeft de app zelf weggeschreven. Maar het
+ * kwam er ooit in via een import of uit de cloud, en het kan uit een oudere
+ * versie komen of met de hand aangepast zijn. Zonder die controle sloopte één
+ * activiteit met `startTime: "banaan"` of een locatie zonder coordinaten de
+ * hele agenda: geen dagoverzicht, geen instellingen, alleen nog het
+ * foutscherm. En dat blijft zo bij elke keer openen, want de rommel staat in
+ * de opslag.
+ */
 export function loadActivities(): Activity[] {
-  const stored = read<Activity[]>(ACTIVITIES_KEY, []);
+  const stored = read<unknown[]>(ACTIVITIES_KEY, []);
   if (!Array.isArray(stored)) return [];
-  // Defensief: oude of handmatig aangepaste data mag de app niet slopen.
   return stored
-    .filter(
-      (item): item is Activity =>
-        !!item && typeof item.id === "string" && typeof item.date === "string",
-    )
-    .map((item) => ({
-      // Activiteiten uit een oudere versie missen de nieuwere velden.
-      ...item,
-      color: item.color ?? null,
-      source: item.source ?? null,
-      travelMode: item.travelMode ?? null,
-      recurrence: item.recurrence ?? null,
-      exceptions: Array.isArray(item.exceptions) ? item.exceptions : [],
-      returnTravel: item.returnTravel ?? null,
-      onwardTravel: item.onwardTravel ?? null,
-      endDate: typeof item.endDate === "string" ? item.endDate : null,
-      allDay: item.allDay === true,
-    }));
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+    .map(normalizeActivity);
 }
 
 export function saveActivities(activities: Activity[]): boolean {
   return write(ACTIVITIES_KEY, activities);
 }
 
+/** Zelfde controle als bij een importbestand; zie `loadActivities`. */
 export function loadTasks(): Task[] {
-  const stored = read<Task[]>(TASKS_KEY, []);
-  // Ontbrekende of stukke data mag de app niet slopen: val terug op [].
+  const stored = read<unknown[]>(TASKS_KEY, []);
   if (!Array.isArray(stored)) return [];
-  return stored.filter(
-    (item): item is Task =>
-      !!item && typeof item.id === "string" && typeof item.deadline === "string",
-  );
+  return stored
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+    .map(normalizeTask);
 }
 
 export function saveTasks(tasks: Task[]): boolean {
   return write(TASKS_KEY, tasks);
 }
 
+/** Zelfde controle als bij een importbestand; zie `loadActivities`. */
 export function loadExams(): Exam[] {
-  const stored = read<Exam[]>(EXAMS_KEY, []);
+  const stored = read<unknown[]>(EXAMS_KEY, []);
   if (!Array.isArray(stored)) return [];
-  return stored.filter(
-    (item): item is Exam =>
-      !!item && typeof item.id === "string" && typeof item.date === "string",
-  );
+  return stored
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+    .map(normalizeExam);
 }
 
 export function saveExams(exams: Exam[]): boolean {

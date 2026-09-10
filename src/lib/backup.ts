@@ -1,4 +1,13 @@
-import { SCHEMA_VERSION } from "./storage";
+import { normalizeRecurrence } from "./recurrence";
+
+/**
+ * Schema-versie van de opgeslagen data. Wordt meegegeven bij export en gebruikt
+ * bij import om te controleren of een bestand leesbaar is. Verhoogd naar 2 met
+ * de komst van taken en toetsen; bestaande activiteiten en instellingen blijven
+ * onder hun eigen v1-sleutels staan, dus er gaat geen data verloren.
+ */
+export const SCHEMA_VERSION = 2;
+import { isDateKey, isTimeKey } from "./time";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 import type {
@@ -9,11 +18,13 @@ import type {
   Settings,
   Task,
   TaskStep,
+  TransitBike,
+  TravelMode,
 } from "./types";
 
 /** Een tekst in de taal die nu actief is. */
-function say(key: TranslationKey): string {
-  return translate(getLanguage(), key);
+function say(key: TranslationKey, values?: Record<string, string | number>): string {
+  return translate(getLanguage(), key, values);
 }
 
 /**
@@ -60,6 +71,11 @@ export interface ParseResult {
 
 const PRIORITIES: SchoolworkPriority[] = ["high", "medium", "low", "later"];
 const STATUSES: SchoolworkStatus[] = ["todo", "doing", "done"];
+const TRAVEL_MODES: TravelMode[] = ["car", "bike", "walk", "transit"];
+const TRANSIT_BIKES: TransitBike[] = ["none", "start", "both"];
+/** Dezelfde grenzen als het instellingenscherm hanteert. */
+const DEFAULT_BUFFER_MINUTES = 10;
+const MAX_BUFFER_MINUTES = 120;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -120,7 +136,7 @@ export function parseBackup(text: string): ParseResult {
   if (raw.app !== APP_ID) {
     return {
       ok: false,
-      error: `Dit bestand hoort niet bij ${APP_ID} (app: ${str(raw.app, "onbekend")}).`,
+      error: say("backup.wrongApp", { app: APP_ID, found: str(raw.app, "?") }),
     };
   }
 
@@ -128,7 +144,7 @@ export function parseBackup(text: string): ParseResult {
   if (version < 1 || version > SCHEMA_VERSION) {
     return {
       ok: false,
-      error: `Onbekende bestandsversie (${version}). Deze app ondersteunt versie 1 t/m ${SCHEMA_VERSION}.`,
+      error: say("backup.unknownVersion", { version, max: SCHEMA_VERSION }),
     };
   }
 
@@ -136,7 +152,7 @@ export function parseBackup(text: string): ParseResult {
     app: APP_ID,
     version,
     exportedAt: str(raw.exportedAt, new Date().toISOString()),
-    settings: isRecord(raw.settings) ? (raw.settings as unknown as Settings) : null,
+    settings: isRecord(raw.settings) ? normalizeSettings(raw.settings) : null,
     activities: Array.isArray(raw.activities)
       ? raw.activities.filter(isRecord).map(normalizeActivity)
       : [],
@@ -147,9 +163,86 @@ export function parseBackup(text: string): ParseResult {
   return { ok: true, data };
 }
 
-/** Vult ontbrekende velden van een geïmporteerde activiteit aan. */
+/**
+ * Haalt de instellingen uit een importbestand door dezelfde zeef als de rest.
+ *
+ * Activiteiten, taken en toetsen werden al zorgvuldig nagelopen; de
+ * instellingen gingen er ongezien in. Dat is precies het veld waar het
+ * misgaat: `bufferMinutes: "veel"` gaf geen foutmelding maar `NaN:NaN` als
+ * vertrektijd op je beginscherm, en een `travelMode` die niet bestaat liet
+ * elke reisberekening stuklopen op de server.
+ *
+ * Wat klopt blijft staan, wat niet klopt valt terug op de standaardwaarde. Een
+ * veld dat er niet in zit blijft ook hier weg: bij "samenvoegen" hoort het je
+ * bestaande instelling niet te overschrijven.
+ */
+export function normalizeSettings(raw: Record<string, unknown>): Settings {
+  const kept: Partial<Settings> = {};
+  const keep = <K extends keyof Settings>(key: K, value: Settings[K] | undefined) => {
+    if (raw[key] !== undefined) kept[key] = value;
+  };
+
+  keep("home", isRecord(raw.home) ? (raw.home as unknown as Settings["home"]) : null);
+  keep("savedPlaces", Array.isArray(raw.savedPlaces) ? (raw.savedPlaces as Settings["savedPlaces"]) : []);
+  keep(
+    "categoryPlaces",
+    isRecord(raw.categoryPlaces) ? (raw.categoryPlaces as Settings["categoryPlaces"]) : {},
+  );
+  keep(
+    "customCategories",
+    Array.isArray(raw.customCategories) ? (raw.customCategories as Settings["customCategories"]) : [],
+  );
+  // Een marge van een half etmaal is geen marge meer; de app zelf staat ook
+  // niet meer dan twee uur toe.
+  keep(
+    "bufferMinutes",
+    Math.min(MAX_BUFFER_MINUTES, Math.max(0, Math.round(num(raw.bufferMinutes, DEFAULT_BUFFER_MINUTES)))),
+  );
+  keep("travelMode", TRAVEL_MODES.includes(raw.travelMode as TravelMode) ? (raw.travelMode as TravelMode) : "car");
+  keep(
+    "transitBike",
+    TRANSIT_BIKES.includes(raw.transitBike as TransitBike) ? (raw.transitBike as TransitBike) : "none",
+  );
+  keep("timetable", isRecord(raw.timetable) ? (raw.timetable as unknown as Settings["timetable"]) : null);
+  keep("calendars", Array.isArray(raw.calendars) ? (raw.calendars as Settings["calendars"]) : []);
+  keep(
+    "reminderMinutes",
+    typeof raw.reminderMinutes === "number" && Number.isFinite(raw.reminderMinutes)
+      ? Math.max(0, Math.round(raw.reminderMinutes))
+      : null,
+  );
+
+  return kept as Settings;
+}
+
+/**
+ * Een locatie is alleen bruikbaar met coordinaten erbij.
+ *
+ * Zonder die twee getallen kan er geen route mee opgevraagd worden, en dan
+ * gaat er een aanvraag de deur uit met "undefined,undefined" erin die als
+ * reisfout terugkomt. Een activiteit zonder locatie is duidelijker dan een
+ * locatie die niets doet: dan staat er tenminste niet dat de reis mislukt is.
+ */
+function normalizeLocation(raw: unknown): Activity["location"] {
+  if (!isRecord(raw)) return null;
+  const { label, lat, lon } = raw as Record<string, unknown>;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  return { label: str(label), lat: lat as number, lon: lon as number };
+}
+
+/**
+ * Vult ontbrekende velden van een geïmporteerde activiteit aan.
+ *
+ * Dit is de rand van de app: hier komt binnen wat een back-upbestand, de cloud
+ * of de planner heeft opgeschreven. Daarom worden datums en tijden hier niet
+ * alleen op "is het een string" gecontroleerd maar ook op hun vorm — een
+ * `startTime` van "banaan" overleeft een typecontrole moeiteloos en wordt
+ * daarna `NaN`, waarna de activiteit zonder mopperen uit het dagoverzicht
+ * verdwijnt.
+ */
 export function normalizeActivity(raw: Record<string, unknown>): Activity {
   const now = new Date().toISOString();
+  const date = isDateKey(raw.date) ? raw.date : now.slice(0, 10);
   return {
     id: str(raw.id) || createId(),
     // Elk niet-leeg type overnemen, ook een zelfgemaakt. Alleen de vijf
@@ -158,12 +251,12 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
     // uit de cloud haalde. `resolveCategory` kent de eigen types wel.
     category: str(raw.category) || "school",
     title: str(raw.title, "Activiteit"),
-    date: str(raw.date, now.slice(0, 10)),
-    endDate: typeof raw.endDate === "string" ? raw.endDate : null,
+    date,
+    endDate: isDateKey(raw.endDate) ? raw.endDate : null,
     allDay: raw.allDay === true,
-    startTime: str(raw.startTime, "09:00"),
-    endTime: str(raw.endTime, "10:00"),
-    location: isRecord(raw.location) ? (raw.location as unknown as Activity["location"]) : null,
+    startTime: isTimeKey(raw.startTime) ? raw.startTime : "09:00",
+    endTime: isTimeKey(raw.endTime) ? raw.endTime : "10:00",
+    location: normalizeLocation(raw.location),
     color: typeof raw.color === "string" ? raw.color : null,
     source: typeof raw.source === "string" ? raw.source : null,
     travelMode: (["car", "bike", "walk", "transit"] as const).includes(
@@ -171,15 +264,14 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
     )
       ? (raw.travelMode as Activity["travelMode"])
       : null,
-    recurrence: isRecord(raw.recurrence)
-      ? (raw.recurrence as unknown as Activity["recurrence"])
-      : null,
-    exceptions: Array.isArray(raw.exceptions)
-      ? raw.exceptions.filter((x): x is string => typeof x === "string")
-      : [],
+    recurrence: normalizeRecurrence(raw.recurrence, date),
+    exceptions: Array.isArray(raw.exceptions) ? raw.exceptions.filter(isDateKey) : [],
     travel: isRecord(raw.travel) ? (raw.travel as unknown as Activity["travel"]) : null,
     returnTravel: isRecord(raw.returnTravel)
       ? (raw.returnTravel as unknown as Activity["returnTravel"])
+      : null,
+    onwardTravel: isRecord(raw.onwardTravel)
+      ? (raw.onwardTravel as unknown as Activity["onwardTravel"])
       : null,
     travelError: typeof raw.travelError === "string" ? raw.travelError : null,
     bufferMinutes: typeof raw.bufferMinutes === "number" ? raw.bufferMinutes : null,
@@ -207,7 +299,7 @@ export function normalizeTask(raw: Record<string, unknown>): Task {
     subject: str(raw.subject, "Algemeen"),
     title: str(raw.title, "Opdracht"),
     description: typeof raw.description === "string" ? raw.description : undefined,
-    deadline: str(raw.deadline, now.slice(0, 10)),
+    deadline: isDateKey(raw.deadline) ? raw.deadline : now.slice(0, 10),
     estimatedMinutes: num(raw.estimatedMinutes, 0),
     priority: priority(raw.priority),
     status: status(raw.status),
@@ -223,7 +315,7 @@ export function normalizeExam(raw: Record<string, unknown>): Exam {
     id: str(raw.id) || createId(),
     subject: str(raw.subject, "Algemeen"),
     title: typeof raw.title === "string" ? raw.title : undefined,
-    date: str(raw.date, now.slice(0, 10)),
+    date: isDateKey(raw.date) ? raw.date : now.slice(0, 10),
     topics: Array.isArray(raw.topics)
       ? raw.topics.filter((x): x is string => typeof x === "string")
       : undefined,

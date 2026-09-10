@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { findNextActivity, searchActivities } from "./agenda";
+import {
+  buildTimeline,
+  findNextActivity,
+  layoutDay,
+  searchActivities,
+  timeRangeFor,
+  timeStatusFor,
+} from "./agenda";
 import type { Activity, Settings } from "./types";
 
 /**
@@ -170,5 +177,96 @@ describe("searchActivities", () => {
     );
 
     expect(resultaten[0]?.date).toBe("2026-08-12");
+  });
+});
+
+/**
+ * Het dagoverzicht en de kaart erboven staan op hetzelfde scherm. Rekenen ze
+ * verschillend, dan zie je twee keer een andere thuiskomst en weet je niet
+ * welke klopt.
+ */
+describe("buildTimeline en de thuiskomst", () => {
+  const bus = (patch = {}) => ({
+    durationMinutes: 44,
+    distanceKm: 22,
+    mode: "transit" as const,
+    provider: "motis",
+    computedAt: "2026-09-07T06:00:00.000Z",
+    key: "k",
+    ...patch,
+  });
+
+  it("neemt de aankomsttijd van de echte rit, niet eindtijd plus reisduur", () => {
+    // Je les is om 17:00 uit, maar de bus gaat pas om 17:02 en is er om 17:46.
+    // De optelsom zou 17:44 zeggen.
+    const item = activity({
+      location: { label: "School", lat: 52.49, lon: 6.07 },
+      travelMode: "transit",
+      returnTravel: bus({ plannedDeparture: "2026-09-07T15:02:00.000Z", plannedArrival: "2026-09-07T15:46:00.000Z" }),
+    });
+
+    const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
+    expect(back?.homeMinutes).toBe(17 * 60 + 46);
+  });
+
+  it("valt terug op de optelsom zolang er geen echte rit bekend is", () => {
+    const item = activity({
+      location: { label: "School", lat: 52.49, lon: 6.07 },
+      travelMode: "transit",
+      returnTravel: bus(),
+    });
+
+    const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
+    expect(back?.homeMinutes).toBe(17 * 60 + 44);
+  });
+});
+
+describe("timeRangeFor", () => {
+  it("laat een dienst tot over middernacht binnen het raster vallen", () => {
+    // 23:00 tot 01:00: het eind ligt vóór het begin. Zonder de starttijd mee
+    // te wegen bleef het raster bij 01:00 hangen en stond het blok op 23:00 —
+    // buiten beeld, dus onvindbaar.
+    const nacht = activity({ date: "2026-09-07", startTime: "23:00", endTime: "01:00" });
+    const range = timeRangeFor([layoutDay([nacht], settings(), "2026-09-07")]);
+
+    expect(range.end).toBeGreaterThanOrEqual(23 * 60);
+  });
+
+  it("houdt een gewone dag strak om de activiteiten heen", () => {
+    const les = activity({ date: "2026-09-07", startTime: "09:00", endTime: "17:00" });
+    const range = timeRangeFor([layoutDay([les], settings(), "2026-09-07")]);
+
+    expect(range.start).toBe(8 * 60);
+    expect(range.end).toBe(18 * 60);
+  });
+});
+
+describe("timeStatusFor bij een dienst over middernacht", () => {
+  const nacht = () => ({
+    ...activity({ date: "2026-09-07", startTime: "23:00", endTime: "01:00" }),
+    occurrenceId: "a1:2026-09-07",
+    recurring: false,
+    travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null },
+  });
+
+  it("noemt hem 's ochtends niet al geweest", () => {
+    // 09:00 die dag: de dienst moet nog beginnen.
+    expect(timeStatusFor(nacht() as never, new Date(2026, 8, 7, 9, 0))).toBe("upcoming");
+  });
+
+  it("zet hem op bezig zodra hij loopt", () => {
+    expect(timeStatusFor(nacht() as never, new Date(2026, 8, 7, 23, 30))).toBe("now");
+  });
+
+  it("noemt hem pas geweest als hij echt om is", () => {
+    expect(timeStatusFor(nacht() as never, new Date(2026, 8, 8, 1, 30))).toBe("past");
+  });
+
+  it("laat een gewone activiteit met rust", () => {
+    const les = { ...activity({ date: "2026-09-07", startTime: "09:00", endTime: "17:00" }),
+      occurrenceId: "a1:2026-09-07", recurring: false,
+      travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null } };
+    expect(timeStatusFor(les as never, new Date(2026, 8, 7, 18, 0))).toBe("past");
+    expect(timeStatusFor(les as never, new Date(2026, 8, 7, 12, 0))).toBe("now");
   });
 });

@@ -9,7 +9,6 @@ import type {
   BikeEnds,
   TravelMode,
   TravelResult,
-  WalkSpeed,
 } from "./types";
 
 /** Een tekst in de taal die nu actief is. */
@@ -31,6 +30,24 @@ export function headers(extra: Record<string, string> = {}): Record<string, stri
  * externe provider of sleutel; alles loopt via /api/*.
  */
 
+/**
+ * `fetch` met een fatsoenlijke melding als er geen verbinding is.
+ *
+ * Zonder dit kwam de tekst van de browser op het scherm: "Failed to fetch", in
+ * het Engels, precies op de plek waar je vertrektijd hoort te staan. Een
+ * afgebroken aanvraag houdt zijn eigen AbortError — die vangen de aanroepers
+ * bewust af, want dat is geen storing maar een zoekopdracht die je zelf
+ * overtypte.
+ */
+async function request(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new Error(say("error.noConnection"));
+  }
+}
+
 async function parseError(response: Response, fallback: string): Promise<string> {
   try {
     const data = (await response.json()) as { error?: string };
@@ -46,7 +63,7 @@ export async function searchLocations(
   includeStops = false,
 ): Promise<GeocodeResult[]> {
   const stops = includeStops ? "&stops=1" : "";
-  const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}${stops}`, {
+  const response = await request(`/api/geocode?q=${encodeURIComponent(query)}${stops}`, {
     signal,
     headers: headers(),
   });
@@ -61,8 +78,6 @@ export interface TravelRequestOptions {
   mode: TravelMode;
   /** Aan welke kant van deze rit een fiets staat; alleen zinvol bij OV. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk. */
-  walk?: WalkSpeed;
   /** ISO-tijd: uiterlijk aankomen (heenreis met OV). */
   arriveBy?: string;
   /** ISO-tijd: op zijn vroegst vertrekken (terugreis met OV). */
@@ -75,7 +90,7 @@ export async function fetchTravel(
   options: TravelRequestOptions,
   signal?: AbortSignal,
 ): Promise<TravelResult> {
-  const response = await fetch("/api/travel", {
+  const response = await request("/api/travel", {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ from, to, ...options }),
@@ -92,8 +107,6 @@ export interface JourneySearchOptions {
   time?: string;
   /** Aan welke kant van de rit een fiets staat. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk. */
-  walk?: WalkSpeed;
   /** true = "uiterlijk aankomen om", false = "vertrekken vanaf". */
   arriveBy?: boolean;
   /** Cursor uit een eerder antwoord, om eerder/later te bladeren. */
@@ -124,7 +137,7 @@ export async function fetchJourneys(
   options: JourneySearchOptions = {},
   signal?: AbortSignal,
 ): Promise<JourneySearchResult> {
-  const response = await fetch("/api/journeys", {
+  const response = await request("/api/journeys", {
     method: "POST",
     headers: headers({ "Content-Type": "application/json" }),
     body: JSON.stringify({ from, to, ...options }),

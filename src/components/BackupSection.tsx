@@ -113,11 +113,17 @@ export function BackupSection() {
         >
           &#11014;&#65039; {t("backup.import")}
         </button>
+        {/* De knop hierboven is de echte bediening; dit veld wordt daardoor
+            aangeklikt. Zonder deze twee attributen kwam een schermlezer een
+            naamloos bestandsveld tegen, en liep je met de tab-toets tegen een
+            invoerveld aan dat niet te zien is. */}
         <input
           ref={fileInput}
           type="file"
           accept="application/json,.json"
           className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={handleFile}
         />
       </div>

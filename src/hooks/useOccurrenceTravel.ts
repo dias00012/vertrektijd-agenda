@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchTravel } from "@/lib/api";
-import { travelModeFor, travelPlanForDate } from "@/lib/travel";
+import { travelModeFor, travelPlanForDate, tripHasLeft } from "@/lib/travel";
 import { toDateKey, toDateTime } from "@/lib/time";
 import type { ActivityOccurrence, Settings, TravelInfo, TravelResult } from "@/lib/types";
 
@@ -77,7 +77,10 @@ export function useOccurrenceTravel(
   );
   const offset = daysBetween(toDateKey(new Date()), activity.date);
   const inRange = offset >= 0 && offset <= MAX_LOOKAHEAD_DAYS;
-  const shouldFetch = Boolean(plan) && !alreadyExact && inRange;
+  // En de rit moet nog moeten rijden. Van vanochtend heeft de planner geen
+  // dienstregeling meer; wat hij dan teruggeeft ziet er echt uit maar klopt
+  // niet. Zie `tripHasLeft`.
+  const shouldFetch = Boolean(plan) && !alreadyExact && inRange && !(plan && tripHasLeft(plan));
 
   const [fetched, setFetched] = useState<{
     key: string;
@@ -146,13 +149,11 @@ export function useOccurrenceTravel(
                 mode: plan.mode,
                 arriveBy: plan.arriveBy,
                 bike: plan.outboundBike,
-                walk: plan.walk,
               }),
               fetchTravel(destination, home, {
                 mode: plan.mode,
                 departAt: plan.departAt,
                 bike: plan.returnBike,
-                walk: plan.walk,
               }),
             ]).then(([outbound, inbound]) => ({ outbound, inbound }));
             cache.set(tripKey, { at: Date.now(), value });

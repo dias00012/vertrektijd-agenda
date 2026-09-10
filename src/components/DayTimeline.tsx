@@ -5,7 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
-import { formatDuration, minutesToTime, timeToMinutes } from "@/lib/time";
+import { formatDuration, MINUTES_PER_DAY, minutesToTime, timeToMinutes } from "@/lib/time";
 import { travelModeMeta } from "@/lib/travelModes";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
@@ -61,9 +61,15 @@ function toKey(d: Date): string {
 
 /** Het moment (minuten sinds middernacht) waarop een regel "voorbij" is. */
 function passedMinutesFor(entry: TimelineEntry): number {
-  if (entry.kind === "activity") return timeToMinutes(entry.activity.endTime);
+  if (entry.kind === "activity") {
+    const start = timeToMinutes(entry.activity.startTime);
+    const end = timeToMinutes(entry.activity.endTime);
+    // Een nachtdienst van 23:00 tot 01:00 eindigt op de kalender vóór hij
+    // begint. Letterlijk genomen is hij de hele dag al "geweest".
+    return end < start ? MINUTES_PER_DAY : end;
+  }
   if (entry.kind === "return" && entry.returnMinutes !== undefined) {
-    return entry.minutes + entry.returnMinutes;
+    return entry.homeMinutes ?? entry.minutes + entry.returnMinutes;
   }
   if (entry.kind === "onward" && entry.onward) {
     return timeToMinutes(entry.onward.arrival);
@@ -131,6 +137,11 @@ function TimelineRow({
               <>&#8617;&#65039; {t("timeline.backHomeTitle")}</>
             )}
           </span>
+          {isDeparture && entry.late && entry.lateArrival ? (
+            <span className="block text-xs font-semibold" style={{ color: "var(--danger)" }}>
+              &#9888;&#65039; {t("activity.arriveLate", { time: entry.lateArrival })}
+            </span>
+          ) : null}
           {isDeparture && entry.activity.travel ? (
             <span className="block text-xs" style={{ color: "var(--muted)" }}>
               {t("timeline.travelTo", {
@@ -170,7 +181,7 @@ function TimelineRow({
                     ? "timeline.drive"
                     : "timeline.travel",
                 ),
-                time: minutesToTime(entry.minutes + entry.returnMinutes),
+                time: minutesToTime(entry.homeMinutes ?? entry.minutes + entry.returnMinutes),
               })}
             </span>
           ) : null}

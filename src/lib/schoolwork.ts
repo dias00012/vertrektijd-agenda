@@ -5,7 +5,7 @@ import { translate, type TranslationKey } from "./i18n/dictionary";
 function word(key: TranslationKey, values?: Record<string, string | number>): string {
   return translate(getLanguage(), key, values);
 }
-import { parseDateKey, timeToMinutes, todayKey } from "./time";
+import { MINUTES_PER_DAY, parseDateKey, timeToMinutes, todayKey } from "./time";
 
 /** Weergave-informatie per prioriteit. */
 export const PRIORITY_META: Record<
@@ -71,9 +71,18 @@ export function taskProgress(task: Task): { done: number; total: number } {
 
 /* --- Koppeling agenda <-> schoolwerk ------------------------------------ */
 
-/** Duur van een activiteit in minuten (eindtijd minus starttijd). */
+/**
+ * Duur van een activiteit in minuten.
+ *
+ * Loopt het blok over middernacht — leren van 23:00 tot 00:30 — dan ligt de
+ * eindtijd op de klok vóór de starttijd. De aftreksom gaf dan nul, en je taak
+ * bleef op "ingepland: 0 min" staan terwijl je er anderhalf uur voor had
+ * uitgetrokken.
+ */
 export function activityMinutes(activity: Pick<Activity, "startTime" | "endTime">): number {
-  return Math.max(0, timeToMinutes(activity.endTime) - timeToMinutes(activity.startTime));
+  const start = timeToMinutes(activity.startTime);
+  const end = timeToMinutes(activity.endTime);
+  return end < start ? end + MINUTES_PER_DAY - start : end - start;
 }
 
 /** De activiteiten die aan een taak zijn gekoppeld. */

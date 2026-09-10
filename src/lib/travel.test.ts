@@ -5,7 +5,9 @@ import {
   computeReturn,
   departureDateTime,
   nextOccurrenceDate,
+  travelPlanFor,
   travelPlanForDate,
+  tripHasLeft,
 } from "./travel";
 import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
 
@@ -366,6 +368,54 @@ describe("nextOccurrenceDate", () => {
     });
     expect(nextOccurrenceDate(item, new Date(2026, 8, 14))).toBe("2026-09-14");
   });
+
+  it("houdt vandaag vast zolang je nog terug moet", () => {
+    // Middenin de dag: de heenreis is gereden, maar de terugreis nog niet.
+    const item = activity({
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(nextOccurrenceDate(item, new Date(2026, 8, 14, 12, 0))).toBe("2026-09-14");
+  });
+
+  it("slaat vandaag over zodra de dag voorbij is", () => {
+    // 's Avonds om tien uur is de rit van vanochtend geen vraag meer. Erger:
+    // de planner heeft daar geen dienstregeling meer voor en verzint een
+    // omweg van twee uur, die de app dan als reistijd zou tonen.
+    const item = activity({
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(nextOccurrenceDate(item, new Date(2026, 8, 14, 22, 0))).toBe("2026-09-21");
+  });
+
+  it("laat iets van een hele dag staan tot de dag zelf om is", () => {
+    const vrij = activity({
+      allDay: true,
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(nextOccurrenceDate(vrij, new Date(2026, 8, 14, 22, 0))).toBe("2026-09-14");
+  });
+});
+
+describe("travelPlanFor en een rit die al gereden is", () => {
+  const bus = (patch = {}) =>
+    activity({ date: "2026-09-14", travelMode: "transit", ...patch });
+
+  it("geeft niets terug voor een losse activiteit die vanavond al voorbij is", () => {
+    expect(travelPlanFor(bus(), settings(), new Date(2026, 8, 14, 22, 0))).toBeNull();
+  });
+
+  it("geeft de rit gewoon terug zolang die nog moet komen", () => {
+    expect(travelPlanFor(bus(), settings(), new Date(2026, 8, 14, 7, 0))).not.toBeNull();
+  });
+
+  it("raakt de auto niet: die hangt niet van een tijdstip af", () => {
+    // Zonder dienstregeling is er ook geen rit die vertrokken kan zijn; een
+    // autorit duurt 's avonds even lang als 's ochtends.
+    const auto = activity({ date: "2026-09-14", travelMode: "car" });
+    const plan = travelPlanFor(auto, settings(), new Date(2026, 8, 14, 22, 0));
+    expect(plan).not.toBeNull();
+    expect(plan && tripHasLeft(plan, new Date(2026, 8, 14, 22, 0))).toBe(false);
+  });
 });
 
 describe("travelPlanForDate", () => {
@@ -459,28 +509,69 @@ describe("travelPlanForDate", () => {
   });
 });
 
+/**
+ * De sleutel bepaalt of een eerder berekende reis nog geldig is. Zit er iets
+ * niet in wat de uitkomst wél verandert, dan blijft de app de oude reistijd
+ * tonen zonder dat iemand ziet dat hij niet meer klopt.
+ */
+describe("travelKey", () => {
+  it("hoort bij een OV-rit ook het tijdstip te bevatten", () => {
+    const ochtend = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none");
+    const middag = travelKey(HOME, SCHOOL, "transit", "2026-09-07T14:00:00.000Z", "none");
+    expect(ochtend).not.toBe(middag);
+  });
+
+  it("verandert zodra de fiets meegaat naar de halte", () => {
+    const lopend = travelKey(HOME, SCHOOL, "transit", null, "none");
+    const fietsend = travelKey(HOME, SCHOOL, "transit", null, "origin");
+    expect(lopend).not.toBe(fietsend);
+  });
+
+  it("laat de auto met rust: die kent geen dienstregeling en geen fiets", () => {
+    expect(travelKey(HOME, SCHOOL, "car", "2026-09-07T08:00:00.000Z", "origin")).toBe(
+      travelKey(HOME, SCHOOL, "car", "2026-09-07T14:00:00.000Z", "none"),
+    );
+  });
+
+  it("geeft niets terug zonder begin- of eindpunt", () => {
+    expect(travelKey(null, SCHOOL, "transit", null, "none")).toBeNull();
+    expect(travelKey(HOME, null, "transit", null, "none")).toBeNull();
+  });
+});
 
 /**
- * De loopsnelheid hoort bij de sleutel. Zonder dat bleef de app na het omzetten
- * de eerder berekende, langzamere reis geldig vinden en veranderde er niets op
- * het scherm — precies het soort instelling dat "niets lijkt te doen".
+ * Rijdt er niets dat je starttijd haalt, dan toont de app de eerstvolgende
+ * rit daarna. Dat is beter dan een leeg vak — zolang er maar bij staat dat je
+ * te laat bent.
  */
-describe("travelKey en de loopsnelheid", () => {
-  it("geeft een andere sleutel zodra je sneller loopt", () => {
-    const normal = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none", "normal");
-    const fast = travelKey(HOME, SCHOOL, "transit", "2026-09-07T08:00:00.000Z", "none", "fast");
-    expect(normal).not.toBe(fast);
-  });
+describe("computeDeparture bij een rit die je niet op tijd afzet", () => {
+  const bus = (vertrek: string, aankomst: string) =>
+    travel({ mode: "transit", provider: "motis", plannedDeparture: vertrek, plannedArrival: aankomst });
 
-  it("laat de sleutel met rust bij de standaardsnelheid", () => {
-    const zonder = travelKey(HOME, SCHOOL, "transit", null, "none");
-    const normaal = travelKey(HOME, SCHOOL, "transit", null, "none", "normal");
-    expect(normaal).toBe(zonder);
-  });
-
-  it("raakt de auto niet: die loopt nergens", () => {
-    expect(travelKey(HOME, SCHOOL, "car", null, "none", "fast")).toBe(
-      travelKey(HOME, SCHOOL, "car", null, "none", "normal"),
+  it("zegt het wanneer je na de starttijd aankomt", () => {
+    // Les om 09:00, maar de eerste bus zet je pas om 09:32 af.
+    const result = computeDeparture(
+      activity({ travel: bus("2026-09-07T07:05:00.000Z", "2026-09-07T07:32:00.000Z") }),
+      settings(),
     );
+
+    expect(result?.late).toBe(true);
+    expect(result?.arrival).toBe("09:32");
+  });
+
+  it("zegt niets wanneer je gewoon op tijd bent", () => {
+    const result = computeDeparture(
+      activity({ travel: bus("2026-09-07T06:00:00.000Z", "2026-09-07T06:45:00.000Z") }),
+      settings(),
+    );
+
+    expect(result?.late).toBe(false);
+    expect(result?.arrival).toBe("08:45");
+  });
+
+  it("is nooit te laat bij een rekensom zonder dienstregeling", () => {
+    // Auto en fiets kennen geen rit: daar ga je gewoon eerder weg.
+    const result = computeDeparture(activity({ travel: travel() }), settings());
+    expect(result?.late).toBe(false);
   });
 });
