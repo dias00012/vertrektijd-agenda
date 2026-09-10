@@ -1,4 +1,13 @@
-import { SCHEMA_VERSION } from "./storage";
+import { normalizeRecurrence } from "./recurrence";
+
+/**
+ * Schema-versie van de opgeslagen data. Wordt meegegeven bij export en gebruikt
+ * bij import om te controleren of een bestand leesbaar is. Verhoogd naar 2 met
+ * de komst van taken en toetsen; bestaande activiteiten en instellingen blijven
+ * onder hun eigen v1-sleutels staan, dus er gaat geen data verloren.
+ */
+export const SCHEMA_VERSION = 2;
+import { isDateKey, isTimeKey } from "./time";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 import type {
@@ -206,9 +215,34 @@ export function normalizeSettings(raw: Record<string, unknown>): Settings {
   return kept as Settings;
 }
 
-/** Vult ontbrekende velden van een geïmporteerde activiteit aan. */
+/**
+ * Een locatie is alleen bruikbaar met coordinaten erbij.
+ *
+ * Zonder die twee getallen kan er geen route mee opgevraagd worden, en dan
+ * gaat er een aanvraag de deur uit met "undefined,undefined" erin die als
+ * reisfout terugkomt. Een activiteit zonder locatie is duidelijker dan een
+ * locatie die niets doet: dan staat er tenminste niet dat de reis mislukt is.
+ */
+function normalizeLocation(raw: unknown): Activity["location"] {
+  if (!isRecord(raw)) return null;
+  const { label, lat, lon } = raw as Record<string, unknown>;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  return { label: str(label), lat: lat as number, lon: lon as number };
+}
+
+/**
+ * Vult ontbrekende velden van een geïmporteerde activiteit aan.
+ *
+ * Dit is de rand van de app: hier komt binnen wat een back-upbestand, de cloud
+ * of de planner heeft opgeschreven. Daarom worden datums en tijden hier niet
+ * alleen op "is het een string" gecontroleerd maar ook op hun vorm — een
+ * `startTime` van "banaan" overleeft een typecontrole moeiteloos en wordt
+ * daarna `NaN`, waarna de activiteit zonder mopperen uit het dagoverzicht
+ * verdwijnt.
+ */
 export function normalizeActivity(raw: Record<string, unknown>): Activity {
   const now = new Date().toISOString();
+  const date = isDateKey(raw.date) ? raw.date : now.slice(0, 10);
   return {
     id: str(raw.id) || createId(),
     // Elk niet-leeg type overnemen, ook een zelfgemaakt. Alleen de vijf
@@ -217,12 +251,12 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
     // uit de cloud haalde. `resolveCategory` kent de eigen types wel.
     category: str(raw.category) || "school",
     title: str(raw.title, "Activiteit"),
-    date: str(raw.date, now.slice(0, 10)),
-    endDate: typeof raw.endDate === "string" ? raw.endDate : null,
+    date,
+    endDate: isDateKey(raw.endDate) ? raw.endDate : null,
     allDay: raw.allDay === true,
-    startTime: str(raw.startTime, "09:00"),
-    endTime: str(raw.endTime, "10:00"),
-    location: isRecord(raw.location) ? (raw.location as unknown as Activity["location"]) : null,
+    startTime: isTimeKey(raw.startTime) ? raw.startTime : "09:00",
+    endTime: isTimeKey(raw.endTime) ? raw.endTime : "10:00",
+    location: normalizeLocation(raw.location),
     color: typeof raw.color === "string" ? raw.color : null,
     source: typeof raw.source === "string" ? raw.source : null,
     travelMode: (["car", "bike", "walk", "transit"] as const).includes(
@@ -230,15 +264,14 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
     )
       ? (raw.travelMode as Activity["travelMode"])
       : null,
-    recurrence: isRecord(raw.recurrence)
-      ? (raw.recurrence as unknown as Activity["recurrence"])
-      : null,
-    exceptions: Array.isArray(raw.exceptions)
-      ? raw.exceptions.filter((x): x is string => typeof x === "string")
-      : [],
+    recurrence: normalizeRecurrence(raw.recurrence, date),
+    exceptions: Array.isArray(raw.exceptions) ? raw.exceptions.filter(isDateKey) : [],
     travel: isRecord(raw.travel) ? (raw.travel as unknown as Activity["travel"]) : null,
     returnTravel: isRecord(raw.returnTravel)
       ? (raw.returnTravel as unknown as Activity["returnTravel"])
+      : null,
+    onwardTravel: isRecord(raw.onwardTravel)
+      ? (raw.onwardTravel as unknown as Activity["onwardTravel"])
       : null,
     travelError: typeof raw.travelError === "string" ? raw.travelError : null,
     bufferMinutes: typeof raw.bufferMinutes === "number" ? raw.bufferMinutes : null,
@@ -266,7 +299,7 @@ export function normalizeTask(raw: Record<string, unknown>): Task {
     subject: str(raw.subject, "Algemeen"),
     title: str(raw.title, "Opdracht"),
     description: typeof raw.description === "string" ? raw.description : undefined,
-    deadline: str(raw.deadline, now.slice(0, 10)),
+    deadline: isDateKey(raw.deadline) ? raw.deadline : now.slice(0, 10),
     estimatedMinutes: num(raw.estimatedMinutes, 0),
     priority: priority(raw.priority),
     status: status(raw.status),
@@ -282,7 +315,7 @@ export function normalizeExam(raw: Record<string, unknown>): Exam {
     id: str(raw.id) || createId(),
     subject: str(raw.subject, "Algemeen"),
     title: typeof raw.title === "string" ? raw.title : undefined,
-    date: str(raw.date, now.slice(0, 10)),
+    date: isDateKey(raw.date) ? raw.date : now.slice(0, 10),
     topics: Array.isArray(raw.topics)
       ? raw.topics.filter((x): x is string => typeof x === "string")
       : undefined,

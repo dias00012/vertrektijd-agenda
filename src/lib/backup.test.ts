@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APP_ID, normalizeActivity, parseBackup } from "./backup";
+import { APP_ID, normalizeActivity, normalizeExam, normalizeTask, parseBackup } from "./backup";
 
 /**
  * Import en cloud-sync lopen allebei door deze normalisatie heen. Wat hier
@@ -124,5 +124,70 @@ describe("parseBackup en de instellingen", () => {
     expect(settings?.home?.label).toBe("Thuis");
     expect(settings?.bufferMinutes).toBe(20);
     expect(settings?.transitBike).toBe("start");
+  });
+});
+
+describe("normalizeActivity aan de rand", () => {
+  it("laat een kapotte herhaling de agenda niet slopen", () => {
+    // Het uitwisselformaat wordt door de planner geschreven, niet door deze
+    // app. Een `recurrence` zonder weekdagen liet `occursOn` omvallen.
+    const activity = normalizeActivity({
+      id: "a1",
+      date: "2026-09-11",
+      recurrence: { freq: "weekly" },
+    });
+    expect(activity.recurrence).toEqual({ freq: "weekly", weekdays: [5], until: null });
+  });
+
+  it("vervangt een tijd die geen tijd is", () => {
+    // "banaan" overleeft een typecontrole moeiteloos en wordt daarna NaN,
+    // waarna de activiteit zonder mopperen uit het dagoverzicht verdwijnt.
+    const activity = normalizeActivity({ startTime: "banaan", endTime: "99:99" });
+    expect(activity.startTime).toBe("09:00");
+    expect(activity.endTime).toBe("10:00");
+  });
+
+  it("houdt een tijd die wel klopt", () => {
+    const activity = normalizeActivity({ startTime: "08:30", endTime: "15:00" });
+    expect(activity.startTime).toBe("08:30");
+    expect(activity.endTime).toBe("15:00");
+  });
+
+  it("vervangt een datum die niet bestaat door vandaag", () => {
+    expect(normalizeActivity({ date: "2026-02-31" }).date).not.toBe("2026-02-31");
+    expect(normalizeActivity({ date: "gisteren" }).date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(normalizeActivity({ date: "2026-09-11" }).date).toBe("2026-09-11");
+  });
+
+  it("gooit een einddatum en losse uitzonderingen weg die geen datum zijn", () => {
+    const activity = normalizeActivity({
+      endDate: "ooit",
+      exceptions: ["2026-09-11", "morgen", 42, "2026-02-31"],
+    });
+    expect(activity.endDate).toBeNull();
+    expect(activity.exceptions).toEqual(["2026-09-11"]);
+  });
+
+  it("laat een locatie zonder coordinaten vallen", () => {
+    // Anders gaat er een routeaanvraag de deur uit met "undefined,undefined"
+    // erin, en staat er bij de activiteit dat de reis mislukt is.
+    expect(normalizeActivity({ location: { label: "Ergens" } }).location).toBeNull();
+    expect(normalizeActivity({ location: { label: "X", lat: "52", lon: 5 } }).location).toBeNull();
+    expect(normalizeActivity({ location: { label: "School", lat: 52.4, lon: 5.5 } }).location).toEqual(
+      { label: "School", lat: 52.4, lon: 5.5 },
+    );
+  });
+});
+
+describe("taken en toetsen aan de rand", () => {
+  it("vervangt een deadline die geen datum is", () => {
+    expect(normalizeTask({ deadline: "ooit" }).deadline).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(normalizeTask({ deadline: "2026-02-31" }).deadline).not.toBe("2026-02-31");
+    expect(normalizeTask({ deadline: "2026-09-11" }).deadline).toBe("2026-09-11");
+  });
+
+  it("vervangt een toetsdatum die geen datum is", () => {
+    expect(normalizeExam({ date: "volgende week" }).date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(normalizeExam({ date: "2026-09-11" }).date).toBe("2026-09-11");
   });
 });

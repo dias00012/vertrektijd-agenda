@@ -8,6 +8,37 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.46.0
+
+- **Eén activiteit met rommel erin sloopte de hele app.** Het uitwisselformaat
+  wordt door de planner geschreven, niet door deze app, en er werd alleen
+  gecontroleerd of een veld een string was — niet of het ergens op sloeg. Drie
+  gevallen legden alles plat, tot en met de instellingenpagina:
+
+  | wat er stond | wat er gebeurde |
+  | --- | --- |
+  | `recurrence: { freq: "weekly" }` zonder weekdagen | `weekdays.includes` op niets |
+  | `startTime: "banaan"` | `NaN` → `Invalid time value` |
+  | `location: { label: "Ergens" }` zonder coordinaten | `lat.toFixed` op niets |
+
+  Datums en tijden worden nu op hun vorm gecontroleerd (`isDateKey`,
+  `isTimeKey`) in plaats van alleen op hun type. 31 februari valt daar ook
+  onder: `new Date` schuift die stilletjes door naar maart, en dan staat je
+  activiteit op een dag die je niet gekozen hebt.
+
+  Een kapotte herhaling wordt gerepareerd in plaats van weggegooid: ontbreken
+  de weekdagen, dan wordt het de weekdag van de startdatum — net als wanneer je
+  herhaling zelf aanzet. Een onbekend patroon wordt wekelijks. Er niets van
+  maken zou de activiteit uit elke volgende week laten verdwijnen, en dat is
+  precies wat deze app niet mag doen.
+
+- **Wat uit de opslag komt gaat door dezelfde controle als een importbestand.**
+  Dat was niet zo, en daar zat het venijn: de import repareerde netjes, maar
+  bij de volgende keer openen kwam dezelfde rommel ongefilterd uit
+  localStorage. Het foutscherm bleef dan staan bij elke keer openen, want de
+  rommel bleef in de opslag. Nu gaan alle drie de ingangen — import, cloud en
+  opslag — door `normalizeActivity`, `normalizeTask` en `normalizeExam`.
+
 ## 0.45.0
 
 - **De snelste rit, in plaats van een geloofwaardige omweg.** De app liet de
