@@ -15,7 +15,7 @@
  *   GOOGLE_MAPS_API_KEY=... node scripts/vergelijk-google.mjs
  *   GOOGLE_MAPS_API_KEY=... node scripts/vergelijk-google.mjs "van" "naar"
  *
- * Een sleutel met alleen de Directions API is genoeg. Het vaste lijstje kost
+ * Een sleutel met alleen de Routes API is genoeg. Het vaste lijstje kost
  * acht aanvragen.
  */
 
@@ -123,42 +123,72 @@ async function onzeRit(van, naar, tijd) {
 
 /* --- Google ------------------------------------------------------------- */
 
-async function googleRit(van, naar, tijd) {
-  const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
-  url.searchParams.set("origin", `${van.lat},${van.lon}`);
-  url.searchParams.set("destination", `${naar.lat},${naar.lon}`);
-  url.searchParams.set("mode", "transit");
-  url.searchParams.set("departure_time", String(Math.floor(tijd.getTime() / 1000)));
-  url.searchParams.set("language", "nl");
-  url.searchParams.set("region", "nl");
-  url.searchParams.set("key", SLEUTEL);
+/**
+ * De Routes API, niet de oude Directions API: die laatste is bij Google
+ * "legacy" en wordt voor nieuwe projecten niet meer aangezet.
+ */
+const VELDEN = [
+  "routes.duration",
+  "routes.legs.duration",
+  "routes.legs.steps.travelMode",
+  "routes.legs.steps.distanceMeters",
+  "routes.legs.steps.staticDuration",
+  "routes.legs.steps.transitDetails",
+].join(",");
 
-  const data = await get(url.toString());
-  if (data.status === "ZERO_RESULTS") return null;
-  if (data.status !== "OK") {
+/** "1234s" -> 1234 */
+function seconden(waarde) {
+  const n = Number.parseFloat(String(waarde ?? "0").replace("s", ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function googleRit(van, naar, tijd) {
+  const response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": SLEUTEL,
+      "X-Goog-FieldMask": VELDEN,
+    },
+    body: JSON.stringify({
+      origin: { location: { latLng: { latitude: van.lat, longitude: van.lon } } },
+      destination: { location: { latLng: { latitude: naar.lat, longitude: naar.lon } } },
+      travelMode: "TRANSIT",
+      departureTime: tijd.toISOString(),
+      languageCode: "nl",
+      regionCode: "NL",
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
     // De sleutel zelf komt nooit in de uitvoer terecht.
-    throw new Error(`${data.status}: ${data.error_message ?? "geen toelichting"}`);
+    throw new Error(`${response.status}: ${data?.error?.message ?? "geen toelichting"}`);
   }
 
-  const leg = data.routes?.[0]?.legs?.[0];
+  const route = data.routes?.[0];
+  const leg = route?.legs?.[0];
   if (!leg) return null;
 
   let loopMeters = 0;
   let loopSeconden = 0;
+  let vertrek = null;
   const lijnen = [];
+
   for (const stap of leg.steps ?? []) {
-    if (stap.travel_mode === "WALKING") {
-      loopMeters += stap.distance?.value ?? 0;
-      loopSeconden += stap.duration?.value ?? 0;
-    } else if (stap.transit_details?.line) {
-      const lijn = stap.transit_details.line;
-      lijnen.push(lijn.short_name || lijn.name || "?");
+    if (stap.travelMode === "WALK") {
+      loopMeters += stap.distanceMeters ?? 0;
+      loopSeconden += seconden(stap.staticDuration);
+    } else if (stap.transitDetails) {
+      const lijn = stap.transitDetails.transitLine ?? {};
+      lijnen.push(lijn.nameShort || lijn.name || "?");
+      vertrek ??= stap.transitDetails.stopDetails?.departureTime ?? null;
     }
   }
 
   return {
-    minuten: Math.round((leg.duration?.value ?? 0) / 60),
-    vertrek: leg.departure_time?.value ? new Date(leg.departure_time.value * 1000).toISOString() : null,
+    minuten: Math.round(seconden(route.duration ?? leg.duration) / 60),
+    vertrek,
     loopMeters,
     loopMinuten: Math.round(loopSeconden / 60),
     lijnen,
@@ -175,7 +205,7 @@ if (!SLEUTEL) {
   console.error(
     "Geen sleutel gevonden. Zet GOOGLE_MAPS_API_KEY in de omgeving:\n" +
       "  GOOGLE_MAPS_API_KEY=... node scripts/vergelijk-google.mjs\n\n" +
-      "Een sleutel met alleen de Directions API is genoeg.",
+      "Een sleutel met alleen de Routes API is genoeg.",
   );
   process.exit(1);
 }
