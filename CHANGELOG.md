@@ -8,6 +8,21 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.42.0
+
+- **Meetinstrument om onze loopstukken naast 9292 te leggen.**
+  `node scripts/loop-vergelijking.mjs` draait een rijtje ritten door heel
+  Nederland en drukt per loopstuk de meters en de minuten af — precies de
+  getallen die ook in een 9292-schermafbeelding staan, zodat je ze naast elkaar
+  kunt leggen zonder te tellen. Met twee argumenten doet hij één eigen rit.
+
+  De eerste meting: over 8 ritten en 22 loopstukken loopt de app gemiddeld
+  4,4 km/h, met het gros tussen 4,6 en 4,9. 9292 rekent blijkens zijn eigen
+  schermen met ongeveer 4,1. Onze loopstukken zijn dus gemiddeld eerder sneller
+  dan die van 9292, niet trager. De 3,1 km/h bij halte Palazzo in Lelystad —
+  waar dit mee begon — was een uitzondering, en die wordt sinds 0.34.0 al
+  automatisch rechtgezet.
+
 ## 0.41.0
 
 - **Waarom onze tijden een minuut langer zijn dan die van 9292 staat nu
