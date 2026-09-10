@@ -10,6 +10,13 @@ Dit bestand houdt de plekken bij waar dat speelt, met genoeg bewijs erbij om ze
 te kunnen melden of zelf in OpenStreetMap recht te zetten. Zodra zo'n punt is
 opgelost, mag het hier weg.
 
+Kandidaten zoeken kan met `node scripts/omweg.mjs`: dat legt elk loopstuk naast
+de rechte lijn ertussen en zet de krommste bovenaan. Let op wat dat wel en niet
+zegt — Nederland ligt vol water, spoor en snelwegen, en daar loop je omheen.
+Over twintig ritten is de mediaan 1,42× de rechte lijn, wat voor een stad
+normaal is. Het script geeft dus een volgorde om in te kijken, geen lijst
+fouten; of er echt iets mis is, blijkt pas uit een blik op de kaart.
+
 ---
 
 ## Lelystad, halte Palazzo → Donaustraat
