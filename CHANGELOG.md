@@ -8,6 +8,32 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.45.0
+
+- **De snelste rit, in plaats van een geloofwaardige omweg.** De app liet de
+  planner elke overstap uitlopen over de straat (`useRoutedTransfers`) in
+  plaats van de overstaptijd te gebruiken die bij de dienstregeling zit. Dat
+  stond er met een reden — vaste looppaden zouden ontbreken — maar het loopt
+  over dezelfde kaart die te traag rekent. Een overstap die je in het echt
+  haalt zag er dan te krap uit, en dan pakte de planner een latere trein.
+
+  Nagemeten over 48 vergelijkingen (12 ritten op 4 tijdstippen, van elke stand
+  de vroegste aankomst):
+
+  | | |
+  | --- | --- |
+  | gelijk | 28 |
+  | overstaptijd uit de dienstregeling sneller | 20 (samen 106 min) |
+  | over de straat berekend sneller | **0** |
+
+  Nul keer. Haarlem → Utrecht scheelde 21 minuten, Almere → Utrecht 12,
+  Amsterdam → Rotterdam 6. En de rit waar dat oude comment over ging — Almere
+  naar de Donaustraat, met de overstap van het perron in Lelystad Centrum naar
+  de bushalte ernaast — geeft op zes tijdstippen exact dezelfde rit in beide
+  standen. Die vlieger ging dus niet meer op.
+
+  Na te meten met `node scripts/overstap-vergelijking.mjs`.
+
 ## 0.44.0
 
 - **De looptijden kloppen nu met 9292, op elke reis.** De planner geeft per

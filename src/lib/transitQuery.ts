@@ -99,17 +99,32 @@ export function transitParams(query: TransitQuery): URLSearchParams {
     toPlace: place(query.to),
     maxDirectTime: String(MAX_DIRECT_SECONDS),
     /**
-     * Overstappen over de echte straat berekenen in plaats van uit de vaste
-     * looppaden die bij de dienstregeling zitten (`useRoutedTransfers` staat
-     * standaard uit).
+     * Overstappen op de overstaptijden die bij de dienstregeling zitten, niet
+     * op een looproute over de straat (`useRoutedTransfers` staat standaard
+     * uit, en dat is hier ook de goede stand).
      *
-     * Die vaste looppaden zijn niet compleet. Ontbreekt er een tussen het
-     * perron en het busstation ernaast, dan bestaat die overstap voor de
-     * planner niet — ook al loop je het in drie minuten — en komt hij uit op
-     * een latere bus vanaf een halte die wél in de lijst staat. Precies het
-     * soort omweg dat er geloofwaardig uitziet en een kwartier kost.
+     * Hier stond "true", omdat die vaste looppaden niet compleet zouden zijn:
+     * ontbreekt er een tussen het perron en het busstation ernaast, dan
+     * bestaat die overstap voor de planner niet en kom je op een latere bus
+     * uit. Nagemeten klopt dat niet meer. Over 48 vergelijkingen — 12 ritten
+     * op 4 tijdstippen, steeds de vroegste aankomst van beide standen:
+     *
+     *     gelijk                          28
+     *     overstaptijd uit de feed sneller 20  (samen 106 minuten)
+     *     over de straat berekend sneller   0
+     *
+     * Nul keer. En de rit waar dat comment over ging — Almere naar de
+     * Donaustraat, met de overstap van het perron in Lelystad Centrum naar de
+     * bushalte ernaast — geeft op zes tijdstippen exact dezelfde rit in beide
+     * standen. Wat er wél gebeurde: overstappen over de straat lopen over
+     * dezelfde kaart die te traag rekent (zie `walkTimes.ts`), dus een
+     * overstap die je in het echt haalt, ziet er te krap uit en dan pakt de
+     * planner een latere trein. Haarlem → Utrecht kostte zo 21 minuten,
+     * Amsterdam → Rotterdam 6, Almere → Utrecht 12.
+     *
+     * Zelf nameten: `node scripts/overstap-vergelijking.mjs`.
      */
-    useRoutedTransfers: "true",
+    useRoutedTransfers: "false",
   });
   applyStreetOptions(params, query.bike);
 

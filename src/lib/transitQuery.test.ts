@@ -85,12 +85,13 @@ describe("transitParams", () => {
     expect(params.get("maxPostTransitTime")).toBe(String(30 * 60));
   });
 
-  it("laat overstappen over de echte straat berekenen", () => {
-    // De vaste looppaden bij de dienstregeling zijn niet compleet: ontbreekt
-    // er een tussen het perron en het busstation ernaast, dan bestaat die
-    // overstap voor de planner niet en kom je op een latere bus uit.
-    expect(ask().get("useRoutedTransfers")).toBe("true");
-    expect(ask({ shape: "timetable" }).get("useRoutedTransfers")).toBe("true");
+  it("rekent overstappen op de overstaptijd uit de dienstregeling", () => {
+    // Over de straat berekenen leek beter, maar loopt over dezelfde kaart die
+    // te traag rekent: een overstap die je haalt ziet er dan te krap uit en
+    // je krijgt een latere trein. Over 48 vergelijkingen won de overstaptijd
+    // uit de feed 20 keer en de straatberekening geen enkele keer.
+    expect(ask().get("useRoutedTransfers")).toBe("false");
+    expect(ask({ shape: "timetable" }).get("useRoutedTransfers")).toBe("false");
   });
 
   it("staat een directe loop- of fietsroute van drie kwartier toe", () => {
