@@ -16,8 +16,8 @@ opgelost, mag het hier weg.
 
 **Wat je merkt.** Reis je met bus 207 richting Harderwijk naar de Donaustraat in
 Lelystad, dan zegt de app dat je 916 meter moet lopen. 9292 zegt 693 meter over
-hetzelfde stuk. Dat scheelt ongeveer een minuut op de hele reis — de app zit er
-dus een minuut naast, aan de veilige kant.
+hetzelfde stuk. Dat scheelt twee minuten op de hele reis — de app zit er dus
+twee minuten naast, aan de veilige kant.
 
 **Wat er aan de hand lijkt te zijn.** Twee dingen, waarvan de eerste hard te
 meten is.
@@ -104,8 +104,10 @@ curl -s "https://api.transitous.org/api/v6/plan?fromPlace=52.491467,5.485912\
 
 ### Wat de app er ondertussen mee doet
 
-De app rekent sinds 0.34.0 het láátste loopstuk zelf na op de eigen loopsnelheid
-(`src/lib/finalWalk.ts`), waardoor die 18 minuten op 12 uitkomen. De afstand
-blijft die van de kaart: 916 meter. Zolang die 223 meter erin zit, is de app op
-deze route ongeveer een minuut voorzichtiger dan 9292 — en dat is de goede kant
-om aan te zitten.
+De app rekent sinds 0.44.0 elk loopstuk zelf na op de eigen loopsnelheid
+(`src/lib/walkTimes.ts`), waardoor die 18 minuten op 11 uitkomen. De afstand
+blijft die van de kaart: 916 meter. De hele rit van de Gran Canariastraat naar
+de Donaustraat komt daarmee op **42 minuten**, tegen 40 bij 9292. Die twee
+minuten zijn precies de 223 meter hierboven (223 m op 5,04 km/h is 2,7 minuten):
+wat er van het verschil met 9292 overblijft, staat dus helemaal in deze
+kaartfout — en de app zit aan de voorzichtige kant.

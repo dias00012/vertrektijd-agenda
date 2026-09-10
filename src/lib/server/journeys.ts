@@ -3,7 +3,7 @@ import { ProviderError } from "./config";
 import { lastPlanVersion, motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
 import { tidyItineraries } from "../itineraries";
 import { transitParams, WALK_SPEED_MS } from "../transitQuery";
-import { trimFinalWalk } from "../finalWalk";
+import { applyWalkSpeed } from "../walkTimes";
 import type { BikeEnds, GeoLocation, Journey } from "../types";
 
 /**
@@ -74,11 +74,11 @@ export async function planJourneys(
   // Rijdt er niets, dan is er soms nog wel een directe loop- of fietsroute.
   // Die tonen is beter dan zeggen dat er geen verbinding is.
   const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
-  // Het laatste loopstuk narekenen voordat er iets wordt weggestreept: welke
-  // optie een andere overbodig maakt hangt van de aankomsttijd af, en die
-  // klopt pas na deze correctie. Zo staat er in de reisplanner ook hetzelfde
-  // als in de agenda.
-  const walked = found.map((itinerary) => trimFinalWalk(itinerary, WALK_SPEED_MS));
+  // De loopstukken narekenen voordat er iets wordt weggestreept: welke optie
+  // een andere overbodig maakt hangt van de vertrek- en aankomsttijd af, en
+  // die kloppen pas na deze correctie. Zo staat er in de reisplanner ook
+  // hetzelfde als in de agenda.
+  const walked = found.map((itinerary) => applyWalkSpeed(itinerary, WALK_SPEED_MS));
   // Opties die op geen enkel punt winnen eruit, en op vertrektijd sorteren:
   // de volgorde waarin de planner ze teruggeeft ligt namelijk niet vast.
   const itineraries = tidyItineraries(walked);

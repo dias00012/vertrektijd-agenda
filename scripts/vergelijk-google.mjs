@@ -66,13 +66,11 @@ async function geocode(query) {
 
 /* --- Onze kant ---------------------------------------------------------- */
 
-/** Zie `src/lib/finalWalk.ts`: het laatste loopstuk rekent de app zelf na. */
-function onzeLooptijd(leg, isLaatste) {
+/** Zie `src/lib/walkTimes.ts`: de app rekent elk loopstuk zelf na. */
+function onzeLooptijd(leg) {
   const seconden = leg.duration ?? 0;
-  if (!isLaatste || typeof leg.distance !== "number" || leg.distance <= 0) return seconden;
-  const verwacht = leg.distance / WALK_SPEED_MS;
-  if (seconden <= verwacht * 1.4) return seconden;
-  return Math.min(seconden, Math.ceil((verwacht + 60) / 60) * 60);
+  if (typeof leg.distance !== "number" || leg.distance <= 0) return seconden;
+  return Math.min(seconden, Math.ceil(leg.distance / WALK_SPEED_MS / 60) * 60);
 }
 
 async function onzeRit(van, naar, tijd) {
@@ -95,7 +93,6 @@ async function onzeRit(van, naar, tijd) {
   if (!rit) return null;
 
   const legs = rit.legs ?? [];
-  const laatste = legs.length - 1;
   let loopMeters = 0;
   let loopSeconden = 0;
   const lijnen = [];
@@ -103,8 +100,10 @@ async function onzeRit(van, naar, tijd) {
 
   for (const [i, leg] of legs.entries()) {
     if ((leg.mode ?? "").toUpperCase() === "WALK") {
-      const seconden = onzeLooptijd(leg, i === laatste);
-      gewonnen += (leg.duration ?? 0) - seconden;
+      const seconden = onzeLooptijd(leg);
+      // Alleen de twee uiteinden maken de reis korter; een kortere overstap
+      // levert wachttijd op. Zie de uitleg in `src/lib/walkTimes.ts`.
+      if (i === 0 || i === legs.length - 1) gewonnen += (leg.duration ?? 0) - seconden;
       loopMeters += Math.round(leg.distance ?? 0);
       loopSeconden += seconden;
     } else if (leg.routeShortName) {

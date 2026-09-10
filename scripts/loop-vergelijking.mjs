@@ -85,16 +85,14 @@ const klok = (iso) =>
   iso ? new Date(iso).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Amsterdam" }) : "??:??";
 
 /**
- * Wat de app met dit loopstuk doet: boven een bepaalde traagheid rekent hij het
- * laatste stuk zelf na. Zie `src/lib/finalWalk.ts` — hier alleen om te laten
- * zien welk getal de gebruiker te zien krijgt.
+ * Wat de app met dit loopstuk doet: hij rekent elk loopstuk na op de eigen
+ * loopsnelheid, net als 9292. Zie `src/lib/walkTimes.ts` — hier alleen om te
+ * laten zien welk getal de gebruiker te zien krijgt.
  */
-function getoondeLooptijd(leg, isLaatste) {
+function getoondeLooptijd(leg) {
   const seconden = leg.duration ?? 0;
-  if (!isLaatste || typeof leg.distance !== "number" || leg.distance <= 0) return seconden;
-  const verwacht = leg.distance / WALK_SPEED_MS;
-  if (seconden <= verwacht * 1.4) return seconden;
-  return Math.min(seconden, Math.ceil((verwacht + 60) / 60) * 60);
+  if (typeof leg.distance !== "number" || leg.distance <= 0) return seconden;
+  return Math.min(seconden, Math.ceil(leg.distance / WALK_SPEED_MS / 60) * 60);
 }
 
 async function toon(vanTekst, naarTekst, tijd) {
@@ -106,14 +104,13 @@ async function toon(vanTekst, naarTekst, tijd) {
   }
 
   const legs = rit.legs ?? [];
-  const laatsteIndex = legs.length - 1;
   let loopMeters = 0;
   let loopSeconden = 0;
   const regels = [];
 
-  for (const [i, leg] of legs.entries()) {
+  for (const leg of legs) {
     if ((leg.mode ?? "").toUpperCase() === "WALK") {
-      const seconden = getoondeLooptijd(leg, i === laatsteIndex);
+      const seconden = getoondeLooptijd(leg);
       const meters = Math.round(leg.distance ?? 0);
       loopMeters += meters;
       loopSeconden += seconden;
@@ -126,8 +123,13 @@ async function toon(vanTekst, naarTekst, tijd) {
     }
   }
 
-  const totaal = Math.round((rit.duration ?? 0) / 60);
-  const gecorrigeerd = totaal - Math.round(((legs.at(-1)?.duration ?? 0) - getoondeLooptijd(legs.at(-1) ?? {}, true)) / 60);
+  // Alleen de twee uiteinden maken de reis korter: een kortere overstap levert
+  // wachttijd op, geen tijdwinst. Zie de uitleg in `src/lib/walkTimes.ts`.
+  const uiteinden = legs.length > 1 ? [legs[0], legs.at(-1)] : [legs[0]];
+  const winst = uiteinden
+    .filter((leg) => (leg?.mode ?? "").toUpperCase() === "WALK")
+    .reduce((som, leg) => som + ((leg.duration ?? 0) - getoondeLooptijd(leg)), 0);
+  const gecorrigeerd = Math.round(((rit.duration ?? 0) - winst) / 60);
   console.log(`\n${vanTekst} → ${naarTekst}`);
   console.log(`  ${klok(rit.startTime)} → ${klok(rit.endTime)}   ${gecorrigeerd} min, ${rit.transfers ?? 0} overstap(pen)`);
   for (const regel of regels) console.log(regel);

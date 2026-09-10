@@ -157,6 +157,16 @@ vertrektijd niet, en daar valt in de app niets aan te doen — een kortere route
 verzinnen is precies wat deze app niet hoort te doen. Plekken waar dat speelt,
 met bewijs om ze te kunnen melden, staan in [`KAARTFOUTEN.md`](KAARTFOUTEN.md).
 
+De **looptijden** komen niet van de planner maar rekent de app zelf uit: de
+afstand van de kaart gedeeld door 5,04 km/h, naar boven op hele minuten
+(`src/lib/walkTimes.ts`). De planner telt daar straftijd bij op voor oversteken,
+stoplichten en hoogteverschil — over tien ritten gemeten 4,6 km/h in plaats van
+de 5,04 die we vragen, en bij een kapot stuk kaart veel erger. 9292 doet dat
+niet, dus zolang wij die straftijd erin lieten stond er bij elke reis een paar
+minuten meer dan de gebruiker ernaast zag staan. De marge die je wilt hebben
+staat los in je instellingen (standaard tien minuten); die hoort zichtbaar en
+zelf te kiezen te zijn, en niet verstopt in elk loopstuk.
+
 Omdat een OV-rit afhangt van het tijdstip, zit de dag en starttijd in de cache-sleutel: verandert
 de tijd of de dag, dan wordt de rit opnieuw opgezocht. Voor een herhalende activiteit plant de app
 op de **eerstvolgende dag** dat hij voorkomt.

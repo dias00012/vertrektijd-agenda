@@ -5,7 +5,7 @@ import { legMeters, motisPlan, toTravelLeg } from "./motis";
 import { pickItinerary } from "../itineraries";
 import { metersBetween } from "../polyline";
 import { place, transitParams, WALK_SPEED_MS } from "../transitQuery";
-import { trimFinalWalk } from "../finalWalk";
+import { applyWalkSpeed } from "../walkTimes";
 import type { BikeEnds, GeoLocation, TravelMode, TravelResult } from "../types";
 
 /**
@@ -195,9 +195,14 @@ async function planDirect(
     throw new ProviderError(key, 422);
   }
 
-  const meters = (best.legs ?? []).reduce((sum, leg) => sum + legMeters(leg), 0);
+  // Een route die helemaal lopend is, moet net zo lang duren als hetzelfde
+  // stuk lopen binnen een OV-reis. Fietsen blijft zoals de planner het geeft:
+  // daar zit een heel ander snelheidsmodel achter.
+  const walked = mode === "walk" ? applyWalkSpeed(best, WALK_SPEED_MS) : best;
+
+  const meters = (walked.legs ?? []).reduce((sum, leg) => sum + legMeters(leg), 0);
   return {
-    durationMinutes: Math.round(best.duration / 60),
+    durationMinutes: Math.round((walked.duration ?? best.duration) / 60),
     distanceKm: meters / 1000,
     provider: "motis",
     mode,
@@ -227,9 +232,10 @@ async function planTransit(
   // Levert het OV niets op, dan is er soms nog wel een directe loop- of
   // fietsroute. Die tonen is beter dan zeggen dat er geen verbinding is.
   const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
-  // Eerst het laatste loopstuk narekenen, dan pas kiezen: anders vergelijken we
-  // ritten op een aankomsttijd die van dat ene stuk een kwartier te somber is.
-  const candidates = found.map((itinerary) => trimFinalWalk(itinerary, WALK_SPEED_MS));
+  // Eerst de loopstukken narekenen, dan pas kiezen: anders vergelijken we
+  // ritten op tijden die er een paar minuten naast zitten, en bij een kapot
+  // stuk kaart een kwartier.
+  const candidates = found.map((itinerary) => applyWalkSpeed(itinerary, WALK_SPEED_MS));
   const best = pickItinerary(candidates, { arriveBy, time });
   if (!best?.duration || !best.startTime || !best.endTime) {
     throw new ProviderError("api.noTransit", 422);

@@ -8,6 +8,32 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.44.0
+
+- **De looptijden kloppen nu met 9292, op elke reis.** De planner geeft per
+  loopstuk een afstand en een tijd, maar die tijd is niet de afstand gedeeld
+  door de loopsnelheid die we meesturen: er zit straftijd in uit de
+  kaartgegevens voor oversteken, stoplichten, trappen en hoogteverschil. Over
+  tien ritten gemeten kwam dat neer op 4,6 km/h terwijl we om 5,04 vragen, en
+  bij een kapot stuk kaart (Lelystad Palazzo) op 1,2 km/h.
+
+  9292 doet dat niet: daar is een loopstuk de afstand gedeeld door je
+  loopsnelheid. De app doet dat nu ook, voor élk loopstuk in plaats van alleen
+  het laatste (`src/lib/walkTimes.ts`, was `finalWalk.ts`). Welk uiteinde van
+  een loopstuk blijft staan, ligt vast door wat er niet op je wacht: het stuk
+  naar de eerste halte eindigt bij de trein, dus je gaat later de deur uit; elk
+  ander stuk begint als je uitstapt, dus je bent eerder waar je wezen moet. Een
+  kortere overstap levert daarom wachttijd op en geen tijdwinst.
+
+  De marge die je wilt hebben staat los in je instellingen (standaard tien
+  minuten). Die hoort daar — zichtbaar en zelf te kiezen — en niet verstopt als
+  een vaste minuut in elk loopstuk, want zo telde hij dubbel.
+
+  Wat dat scheelt op de rit uit Almere naar de Donaustraat in Lelystad: 53 → 42
+  minuten. 9292 zegt 40. Die laatste twee minuten zijn de 223 meter omweg die in
+  [`KAARTFOUTEN.md`](KAARTFOUTEN.md) staat — het verschil met 9292 zit daarmee
+  helemaal in de kaart en niet meer in ons model.
+
 ## 0.43.0
 
 - **Onze reistijden naast die van Google leggen.**
