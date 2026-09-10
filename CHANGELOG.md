@@ -34,6 +34,11 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 
   Na te meten met `node scripts/overstap-vergelijking.mjs`.
 
+  Twee andere knoppen bleken al goed te staan, en dat staat nu bij de code
+  zodat niemand het nog eens hoeft uit te zoeken: meer opties opvragen (8 in
+  plaats van 3) gaf over 30 ritten geen enkele keer een latere vertrektijd, en
+  verder mogen lopen naar de halte (35 minuten in plaats van 20) evenmin.
+
 ## 0.44.0
 
 - **De looptijden kloppen nu met 9292, op elke reis.** De planner geeft per
