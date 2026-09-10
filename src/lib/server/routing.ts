@@ -1,7 +1,7 @@
 import "server-only";
 import { cacheGet, cacheSet } from "./cache";
 import { fetchWithTimeout, getProviderConfig, ProviderError } from "./config";
-import { legMeters, motisPlan, toTravelLeg } from "./motis";
+import { legMeters, motisPlan, shownMinutes, toTravelLeg } from "./motis";
 import { pickItinerary } from "../itineraries";
 import { metersBetween } from "../polyline";
 import { place, transitParams, WALK_SPEED_MS } from "../transitQuery";
@@ -202,7 +202,7 @@ async function planDirect(
 
   const meters = (walked.legs ?? []).reduce((sum, leg) => sum + legMeters(leg), 0);
   return {
-    durationMinutes: Math.round((walked.duration ?? best.duration) / 60),
+    durationMinutes: shownMinutes(walked.startTime, walked.endTime, walked.duration),
     distanceKm: meters / 1000,
     provider: "motis",
     mode,
@@ -249,7 +249,7 @@ async function planTransit(
   const meters = (best.legs ?? []).reduce((sum, leg) => sum + legMeters(leg), 0);
 
   return {
-    durationMinutes: Math.round(best.duration / 60),
+    durationMinutes: shownMinutes(best.startTime, best.endTime, best.duration),
     distanceKm: meters / 1000,
     provider: "motis",
     mode: "transit",

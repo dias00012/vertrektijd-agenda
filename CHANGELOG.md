@@ -34,6 +34,12 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   [`KAARTFOUTEN.md`](KAARTFOUTEN.md) staat — het verschil met 9292 zit daarmee
   helemaal in de kaart en niet meer in ons model.
 
+- **De minuten kloppen nu met de tijden die eronder staan.** De planner geeft
+  soms een duur die niet gelijk is aan zijn eigen vertrek- en aankomsttijd: 551
+  meter lopen is bij hem 406 seconden, maar als tijden 18:30 → 18:36. Namen we
+  dan zijn getal, dan stond er "7 min reizen · thuis om 20:36" en klopte de som
+  niet. De klok wint nu — daar plan je op.
+
 ## 0.43.0
 
 - **Onze reistijden naast die van Google leggen.**

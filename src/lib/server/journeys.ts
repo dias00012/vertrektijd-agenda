@@ -1,6 +1,12 @@
 import "server-only";
 import { ProviderError } from "./config";
-import { lastPlanVersion, motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
+import {
+  lastPlanVersion,
+  motisPlan,
+  shownMinutes,
+  toTravelLeg,
+  type MotisItinerary,
+} from "./motis";
 import { tidyItineraries } from "../itineraries";
 import { transitParams, WALK_SPEED_MS } from "../transitQuery";
 import { applyWalkSpeed } from "../walkTimes";
@@ -167,7 +173,7 @@ function toJourney(
       .join(">")}`,
     departure: itinerary.startTime,
     arrival: itinerary.endTime,
-    durationMinutes: Math.round(itinerary.duration / 60),
+    durationMinutes: shownMinutes(itinerary.startTime, itinerary.endTime, itinerary.duration),
     transfers: itinerary.transfers ?? 0,
     legs,
     delayMinutes,
