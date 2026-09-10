@@ -8,6 +8,24 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.43.0
+
+- **Onze reistijden naast die van Google leggen.**
+  `GOOGLE_MAPS_API_KEY=... node scripts/vergelijk-google.mjs` draait hetzelfde
+  rijtje ritten door onze planner én door Google Maps, en zet ze per rit naast
+  elkaar: totale reistijd, meters lopen, minuten lopen en welke lijnen.
+
+  Waarom Google en niet 9292: de OV-gegevens komen bij allebei uit dezelfde
+  landelijke feed, dus de treinen en bussen horen exact gelijk te zijn. De
+  looproutes komen wél uit verschillende kaarten — bij ons OpenStreetMap, bij
+  Google hun eigen. Juist daar zat het verschil met 9292. Een vaste plus of min
+  over alle ritten wijst dan op iets in ons model; losse uitschieters op een
+  plek in de kaart.
+
+  De sleutel komt uit de omgeving, staat nooit in de code en komt ook niet in de
+  uitvoer terecht. De app zelf raakt Google niet aan en heeft de sleutel nooit
+  nodig.
+
 ## 0.42.0
 
 - **Meetinstrument om onze loopstukken naast 9292 te leggen.**
