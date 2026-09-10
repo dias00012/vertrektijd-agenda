@@ -152,6 +152,11 @@ plaats van uit een rekensom. Ook de terugreis wordt als echte rit gepland, vanaf
 MOTIS vraagt om een herkenbare `User-Agent`; die hergebruiken we uit `NOMINATIM_USER_AGENT`.
 Zie de [gebruiksvoorwaarden van transitous](https://transitous.org/api/).
 
+De looproutes daarin komen uit OpenStreetMap. Klopt de kaart niet, dan klopt de
+vertrektijd niet, en daar valt in de app niets aan te doen — een kortere route
+verzinnen is precies wat deze app niet hoort te doen. Plekken waar dat speelt,
+met bewijs om ze te kunnen melden, staan in [`KAARTFOUTEN.md`](KAARTFOUTEN.md).
+
 Omdat een OV-rit afhangt van het tijdstip, zit de dag en starttijd in de cache-sleutel: verandert
 de tijd of de dag, dan wordt de rit opnieuw opgezocht. Voor een herhalende activiteit plant de app
 op de **eerstvolgende dag** dat hij voorkomt.

@@ -8,6 +8,17 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.41.0
+
+- **Waarom onze tijden een minuut langer zijn dan die van 9292 staat nu
+  opgeschreven.** Op de rit naar de Donaustraat in Lelystad loopt de app 916
+  meter vanaf halte Palazzo, 9292 loopt er 693. Dat is geen rekenfout meer maar
+  een verschil in de looproute die uit OpenStreetMap komt, en dat kan de app niet
+  zelf rechtzetten: een kortere route verzinnen is precies wat deze app niet
+  hoort te doen. Alle metingen staan in [`KAARTFOUTEN.md`](KAARTFOUTEN.md), met
+  de OSM-nodes erbij en de commando's om het na te meten, zodat het te melden of
+  zelf te herstellen is.
+
 ## 0.40.0
 
 - **Op een telefoon kon je een wijziging niet opslaan.** Open je een bestaande
