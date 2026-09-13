@@ -208,7 +208,9 @@ overschrijft de categoriekleur in alle weergaven. `Standaard` zet hem terug.
 
 De agenda heeft vier tabbladen:
 
-- **Vandaag** en **Morgen**: lijst met alle details per activiteit.
+- **Vandaag** en **Morgen**: lijst met alle details per activiteit. Staat er iets tegelijk —
+  twee activiteiten over elkaar, of een reistijd die over een andere activiteit valt — dan staat
+  dat erbij. Het houdt je nergens tegen; soms boek je met opzet dubbel.
 - **Week**: een raster van ma t/m zo op een tijdas. De reistijd staat als
   gestreept blok direct boven de activiteit, dus je ziet je vertrekmoment op de
   tijdlijn staan. Overlappende activiteiten komen naast elkaar. Met de knop

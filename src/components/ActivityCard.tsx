@@ -7,7 +7,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { linkedWorkDone } from "@/lib/schoolwork";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
-import { timeStatusFor } from "@/lib/agenda";
+import { clashesFor, onwardTarget, timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
 import { describeRecurrence } from "@/lib/recurrence";
 import {
@@ -32,7 +32,8 @@ import type { ActivityOccurrence } from "@/lib/types";
  * gedempt te tonen ("geweest") en de lopende activiteit te markeren ("bezig").
  */
 export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; now?: Date }) {
-  const { settings, calculatingIds, retryTravel, tasks, exams, categoryFor } = useAgenda();
+  const { activities, settings, calculatingIds, retryTravel, tasks, exams, categoryFor } =
+    useAgenda();
   const [editing, setEditing] = useState(false);
   const t = useT();
 
@@ -50,7 +51,14 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
-  const onward = computeOnward(shown, null);
+  /*
+   * Waar je na deze activiteit rechtstreeks heen gaat. Die bestemming hoort
+   * erbij: zonder haar kon `computeOnward` nooit vaststellen dat je te laat
+   * aankomt, en dan stond die waarschuwing wel in het dagoverzicht en niet op
+   * de kaart van dezelfde activiteit.
+   */
+  const nextStop = onwardTarget(activity, activities);
+  const onward = computeOnward(shown, nextStop?.startTime ?? null);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
   // Live informatie over de heenreis: rijdt hij, en zo ja, op tijd?
@@ -70,6 +78,13 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
   // Is het werk waar dit blok voor staat al af? Dan is die tijd vrij, en dat
   // hoort te zien te zijn zonder dat je de taak erbij zoekt.
   const workDone = linkedWorkDone(activity, tasks, exams);
+  // Wat er op ditzelfde moment nog meer staat. Je agenda wordt door meer
+  // gevuld dan door jou alleen, en in een lijst valt dubbel geboekt niet op.
+  const clashes = clashesFor(activity, activities, settings).filter(
+    // Ga je daar rechtstreeks heen, dan staat het al bij de doorreis, en
+    // preciezer: met de tijd waarop je aankomt.
+    (clash) => !(clash.travelOnly && clash.other.occurrenceId === nextStop?.occurrenceId),
+  );
 
   const status = now ? timeStatusFor(activity, now) : "upcoming";
   const isPast = status === "past";
@@ -179,6 +194,23 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                   &#128257; {describeRecurrence(activity.recurrence, activity.date)}
                 </p>
               ) : null}
+
+              {/* Twee dingen tegelijk. Geen foutmelding — soms doe je dat met
+                  opzet — maar het hoort er wel te staan. */}
+              {clashes.slice(0, 2).map((clash) => (
+                <p
+                  key={clash.other.occurrenceId}
+                  className="mt-1 text-xs font-medium"
+                  style={{ color: "#b45309" }}
+                >
+                  &#9888;&#65039;{" "}
+                  {t(clash.travelOnly ? "activity.clashTravel" : "activity.clash", {
+                    title: clash.other.title,
+                    from: clash.other.startTime,
+                    to: clash.other.endTime,
+                  })}
+                </p>
+              ))}
 
               {linkedTask ? (
                 <p className="mt-1 truncate text-xs" style={{ color: "var(--muted)" }}>

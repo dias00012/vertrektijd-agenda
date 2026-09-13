@@ -8,6 +8,39 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.50.0
+
+- **"Je komt te laat" stond er nooit bij een doorreis.** Ga je van school
+  rechtstreeks door naar training, dan rekent de app die rit uit en zet erbij
+  hoe laat je aankomt. Of dat te laat is, wist hij ook — alleen kreeg
+  `computeOnward` op de kaarten steeds `null` mee als starttijd van waar je heen
+  gaat, en dan kán die vlag niet waar worden. Op drie plekken (de dagkaart, de
+  kaart van je eerstvolgende activiteit en het weekraster) stond die
+  waarschuwing dus in de code maar kwam hij nooit in beeld, terwijl het
+  dagoverzicht hem wél toonde: twee schermen over dezelfde dag, met een ander
+  antwoord.
+
+  Ze halen die bestemming nu alle drie op met dezelfde regel als het
+  dagoverzicht (`onwardTarget`). School tot 15:00, 24 minuten rijden, training
+  om 15:15: er staat nu "om 15:24 daar · je komt te laat".
+
+- **Twee dingen tegelijk in je agenda werden nergens benoemd.** Je agenda wordt
+  niet alleen door jou gevuld: een leerplan, een gekoppeld rooster en een
+  geabonneerde agenda schrijven er alle drie in. In het weekraster zie je twee
+  blokken dan naast elkaar staan, maar in een lijst valt het niet op — en dan
+  kom je erachter als je er al zit.
+
+  Er staat nu een regel bij: "⚠️ Staat tegelijk met Bijles wiskunde (14:00 –
+  15:30)". En voor de stille variant, waarbij de activiteiten zelf niet
+  overlappen maar je reistijd eroverheen valt: "⚠️ Je reistijd valt over
+  Training (15:15 – 16:30)" — je moet weg terwijl het andere nog bezig is.
+
+  Geen foutmelding en niets dat je tegenhoudt: soms boek je met opzet dubbel.
+  Aansluitend telt niet mee (om 15:00 uit en om 15:00 verder is precies wat een
+  schooldag doet), en iets dat de hele dag duurt evenmin: "herfstvakantie" botst
+  met niets. Gaat het om de plek waar je rechtstreeks heen reist, dan blijft de
+  waarschuwing weg: die staat al bij de doorreis, mét de tijd waarop je aankomt.
+
 ## 0.49.0
 
 - **Werk dat af is, staat nu doorgestreept in je agenda.** Vink je een opdracht

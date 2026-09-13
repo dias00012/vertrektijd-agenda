@@ -6,6 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import {
   activitiesOnDate,
   layoutDay,
+  onwardTarget,
   timeRangeFor,
   type PositionedActivity,
 } from "@/lib/agenda";
@@ -485,7 +486,7 @@ function GridBlock({
   onSelect: () => void;
   onDrop: (occurrence: ActivityOccurrence, target: DropTarget) => void;
 }) {
-  const { categoryFor, tasks, exams } = useAgenda();
+  const { activities, categoryFor, tasks, exams } = useAgenda();
   const t = useT();
   const category = categoryFor(item.occurrence.category);
   const color = activityColor(item.occurrence, category);
@@ -612,7 +613,10 @@ function GridBlock({
   const returnHeight =
     item.returnMinutes === null ? 0 : (item.returnMinutes - item.endMinutes) * PX_PER_MINUTE;
   /** Ga je hierna rechtstreeks door, dan heet het blok erna anders. */
-  const onward = computeOnward(item.occurrence, null);
+  const onward = computeOnward(
+    item.occurrence,
+    onwardTarget(item.occurrence, activities)?.startTime ?? null,
+  );
 
   /** Gestreepte opmaak voor reisblokken: leest als "onderweg". */
   const travelStyle = {

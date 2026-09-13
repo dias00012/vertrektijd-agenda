@@ -5,7 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { useCatchUpTravel } from "@/hooks/useCatchUpTravel";
-import { minutesUntilDeparture } from "@/lib/agenda";
+import { clashesFor, minutesUntilDeparture, onwardTarget } from "@/lib/agenda";
 import { linkedWorkDone } from "@/lib/schoolwork";
 import {
   computeDeparture,
@@ -32,7 +32,7 @@ import type { ActivityOccurrence } from "@/lib/types";
  * reistijd, vertrektijd en een aftelling.
  */
 export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; now: Date }) {
-  const { settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
+  const { activities, settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
   const t = useT();
   const category = categoryFor(activity.category);
   const color = activityColor(activity, category);
@@ -46,7 +46,17 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
-  const onward = computeOnward(shown, null);
+  // Mét de bestemming erbij, anders kan "je komt te laat" nooit waar worden.
+  const nextStop = onwardTarget(activity, activities);
+  const onward = computeOnward(shown, nextStop?.startTime ?? null);
+  /*
+   * Staat er iets tegelijk met wat je nu gaat doen? Dan is dít het moment om
+   * het te weten. De doorreis laten we eruit: die staat er al met de tijd
+   * waarop je aankomt.
+   */
+  const clash = clashesFor(activity, activities, settings).find(
+    (item) => !(item.travelOnly && item.other.occurrenceId === nextStop?.occurrenceId),
+  );
   const untilDeparture = minutesUntilDeparture(shown, settings, now);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
@@ -143,6 +153,16 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             {activity.location ? (
               <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
                 &#128205; {activity.location.label}
+              </p>
+            ) : null}
+            {clash ? (
+              <p className="mt-1 text-sm font-medium" style={{ color: "#b45309" }}>
+                &#9888;&#65039;{" "}
+                {t(clash.travelOnly ? "activity.clashTravel" : "activity.clash", {
+                  title: clash.other.title,
+                  from: clash.other.startTime,
+                  to: clash.other.endTime,
+                })}
               </p>
             ) : null}
           </div>

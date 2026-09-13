@@ -200,7 +200,7 @@ export function buildTimeline(
 
     // Ga je rechtstreeks door, dan is dat één regel in plaats van thuiskomen
     // en daarna weer vertrekken.
-    const next = day.slice(index + 1).find((item) => item.travelRole.arrivesFrom);
+    const next = nextOnDirectRoute(day, index);
     const onward = computeOnward(activity, next?.startTime ?? null);
     if (onward) {
       entries.push({
@@ -318,6 +318,130 @@ function endOfOccurrence(occurrence: ActivityOccurrence): number {
   const start = toDateTime(occurrence.date, occurrence.startTime).getTime();
   const end = toDateTime(occurrence.date, occurrence.endTime).getTime();
   return end < start ? end + MINUTES_PER_DAY * 60_000 : end;
+}
+
+/**
+ * De activiteit waar je na deze rechtstreeks heen reist.
+ *
+ * Eén regel, op één plek, want hij bepaalt of er "je komt te laat" bij komt te
+ * staan. Stond die regel in het dagoverzicht wel en op de kaart niet, dan zeiden
+ * twee schermen iets anders over dezelfde dag.
+ */
+function nextOnDirectRoute(
+  day: ActivityOccurrence[],
+  index: number,
+): ActivityOccurrence | undefined {
+  return day.slice(index + 1).find((item) => item.travelRole.arrivesFrom);
+}
+
+/** Waar je na deze activiteit rechtstreeks heen gaat, of null. */
+export function onwardTarget(
+  occurrence: ActivityOccurrence,
+  activities: Activity[],
+): ActivityOccurrence | null {
+  const day = activitiesOnDate(activities, occurrence.date);
+  const index = day.findIndex((item) => item.occurrenceId === occurrence.occurrenceId);
+  if (index === -1) return null;
+  return nextOnDirectRoute(day, index) ?? null;
+}
+
+/* --- Wat er tegelijk staat ---------------------------------------------- */
+
+/** Eén botsing: met welke activiteit, en of alleen je reistijd eroverheen valt. */
+export interface Clash {
+  other: ActivityOccurrence;
+  /**
+   * true wanneer de activiteiten zelf niet overlappen, maar je reis ernaartoe
+   * of ervandaan wel over de andere heen valt. Dat is een ander probleem: je
+   * bent niet op twee plekken tegelijk, je moet weg terwijl je nog ergens zit.
+   */
+  travelOnly: boolean;
+}
+
+/** Begin en eind in minuten, waarbij een blok over middernacht doorloopt. */
+function span(occurrence: ActivityOccurrence): { from: number; to: number } {
+  const from = timeToMinutes(occurrence.startTime);
+  const to = timeToMinutes(occurrence.endTime);
+  return { from, to: to < from ? to + MINUTES_PER_DAY : to };
+}
+
+function overlaps(a: { from: number; to: number }, b: { from: number; to: number }): boolean {
+  return a.from < b.to && b.from < a.to;
+}
+
+/**
+ * Wat er op deze dag tegelijk staat.
+ *
+ * Je agenda wordt niet alleen door jou gevuld: een leerplan, een gekoppeld
+ * rooster en een geabonneerde agenda schrijven er alle drie in. Twee dingen op
+ * hetzelfde moment zie je in het weekraster wel naast elkaar staan, maar in een
+ * lijst valt het niet op — en juist dan kom je er pas achter als je er al zit.
+ *
+ * Twee soorten botsing, want het zijn twee verschillende problemen:
+ *
+ *  - de activiteiten zelf overlappen: je moet op twee plekken tegelijk zijn;
+ *  - alleen je reistijd valt eroverheen: je moet vertrekken terwijl het andere
+ *    nog bezig is. Dat is de stille variant, want op de klok lijkt er niets aan
+ *    de hand.
+ *
+ * Activiteiten die de hele dag duren tellen niet mee: "herfstvakantie" botst
+ * met niets. Aansluitend is geen botsing — om 15:00 uit en om 15:00 verder is
+ * precies wat een schooldag doet.
+ */
+export function clashesOnDate(
+  activities: Activity[],
+  settings: Settings,
+  dateKey: string,
+): Map<string, Clash[]> {
+  const items = activitiesOnDate(activities, dateKey)
+    .filter((occurrence) => !occurrence.allDay)
+    .map((occurrence) => {
+      const own = span(occurrence);
+      const departure = computeDeparture(occurrence, settings);
+      const back = computeReturn(occurrence, settings);
+      const onward = computeOnward(occurrence, null);
+      // Vertrekken kan op de vorige dag vallen en thuiskomen op de volgende;
+      // dan houdt de dag zelf de grens vast in plaats van een tijd van gisteren.
+      const from = departure && !departure.previousDay ? Math.min(departure.minutes, own.from) : own.from;
+      const until = back?.nextDay
+        ? own.to + MINUTES_PER_DAY
+        : Math.max(own.to, back?.minutes ?? own.to, onward ? timeToMinutes(onward.arrival) : own.to);
+      return { occurrence, own, busy: { from, to: until } };
+    });
+
+  const clashes = new Map<string, Clash[]>();
+  const add = (id: string, clash: Clash) => {
+    const list = clashes.get(id);
+    if (list) list.push(clash);
+    else clashes.set(id, [clash]);
+  };
+
+  for (let i = 0; i < items.length; i += 1) {
+    for (let j = i + 1; j < items.length; j += 1) {
+      const a = items[i];
+      const b = items[j];
+      const together = overlaps(a.own, b.own);
+      // Alleen de reis van de een over de ander: dan hoort de waarschuwing bij
+      // degene die moet reizen, want daar is er iets te kiezen.
+      const travelA = !together && overlaps(a.busy, b.own);
+      const travelB = !together && overlaps(b.busy, a.own);
+      if (!together && !travelA && !travelB) continue;
+
+      if (together || travelA) add(a.occurrence.occurrenceId, { other: b.occurrence, travelOnly: !together });
+      if (together || travelB) add(b.occurrence.occurrenceId, { other: a.occurrence, travelOnly: !together });
+    }
+  }
+
+  return clashes;
+}
+
+/** De botsingen van één activiteit; leeg als er niets tegelijk staat. */
+export function clashesFor(
+  occurrence: ActivityOccurrence,
+  activities: Activity[],
+  settings: Settings,
+): Clash[] {
+  return clashesOnDate(activities, settings, occurrence.date).get(occurrence.occurrenceId) ?? [];
 }
 
 /* --- Positionering voor het weekraster --------------------------------- */

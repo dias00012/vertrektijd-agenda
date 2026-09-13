@@ -314,6 +314,8 @@ export const nl = {
   /* --- Activiteitkaart --------------------------------------------------- */
   "activity.past": "✓ geweest",
   "activity.workDone": "af",
+  "activity.clash": "Staat tegelijk met {title} ({from} \u2013 {to})",
+  "activity.clashTravel": "Je reistijd valt over {title} ({from} \u2013 {to})",
   "activity.freeAgain": "Die tijd is vrij: het werk is af.",
   "schoolworkToday.doneShare": "waarvan {duration} al af",
   "activity.now": "● bezig",
@@ -1180,6 +1182,8 @@ export const en: Record<TranslationKey, string> = {
 
   "activity.past": "✓ done",
   "activity.workDone": "done",
+  "activity.clash": "At the same time as {title} ({from} \u2013 {to})",
+  "activity.clashTravel": "Your travel time overlaps {title} ({from} \u2013 {to})",
   "activity.freeAgain": "That time is free: the work is finished.",
   "schoolworkToday.doneShare": "{duration} of it already done",
   "activity.now": "● now",
