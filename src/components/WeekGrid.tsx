@@ -11,6 +11,7 @@ import {
 } from "@/lib/agenda";
 import { computeOnward } from "@/lib/travel";
 import { travelModeMeta } from "@/lib/travelModes";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import {
   addDaysToKey,
   calendarWeekKeys,
@@ -484,10 +485,12 @@ function GridBlock({
   onSelect: () => void;
   onDrop: (occurrence: ActivityOccurrence, target: DropTarget) => void;
 }) {
-  const { categoryFor } = useAgenda();
+  const { categoryFor, tasks, exams } = useAgenda();
   const t = useT();
   const category = categoryFor(item.occurrence.category);
   const color = activityColor(item.occurrence, category);
+  /** Werk dat af is: doorgestreept, zodat je in het weekbeeld ziet wat vrij is. */
+  const workDone = linkedWorkDone(item.occurrence, tasks, exams);
   /**
    * Het icoontje op het reisblok. Hier stond een auto vast, ook boven een
    * schooldag waar je met de trein heen gaat — hetzelfde als wat het
@@ -698,7 +701,10 @@ function GridBlock({
             </span>
           ) : (
             <>
-              <span className="truncate text-[0.65rem] font-semibold leading-tight">
+              <span
+                className="truncate text-[0.65rem] font-semibold leading-tight"
+                style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+              >
                 {item.occurrence.title}
               </span>
               <span

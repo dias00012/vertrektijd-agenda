@@ -5,6 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { weekdayHeadings } from "@/lib/recurrence";
 import { useAgenda } from "@/hooks/useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import { isSameMonth, monthGridKeys, parseDateKey, toDateKey } from "@/lib/time";
 
 /** Meer stippen dan dit passen niet in een dagvakje. */
@@ -31,7 +32,7 @@ export function MonthGrid({
   onSelect: (dateKey: string) => void;
   now: Date;
 }) {
-  const { activities, settings, categoryFor } = useAgenda();
+  const { activities, settings, categoryFor, tasks, exams } = useAgenda();
   const t = useT();
   const dayLabels = weekdayHeadings();
   const dateKeys = monthGridKeys(month);
@@ -115,7 +116,14 @@ export function MonthGrid({
                         className="h-1.5 w-1.5 shrink-0 rounded-full"
                         style={{ background: color }}
                       />
-                      <span className="truncate">
+                      <span
+                        className="truncate"
+                        style={
+                          linkedWorkDone(activity, tasks, exams)
+                            ? { textDecoration: "line-through", color: "var(--muted)" }
+                            : undefined
+                        }
+                      >
                         {activity.allDay ? null : (
                           <span className="tabular-nums" style={{ color: "var(--muted)" }}>
                             {activity.startTime}{" "}

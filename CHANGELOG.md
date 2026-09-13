@@ -8,6 +8,26 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.49.0
+
+- **Werk dat af is, staat nu doorgestreept in je agenda.** Vink je een opdracht
+  of toets af op Schoolwerk, dan blijven de leerblokken die eraan gekoppeld zijn
+  gewoon in je agenda staan — en dat hoort ook, je wilt kunnen zien waar je tijd
+  heen ging. Maar er viel nergens aan te zien dat er niets meer te doen viel: om
+  acht uur vanavond stond er "Wiskunde leren" alsof je nog moest beginnen.
+
+  Nu staat de titel doorgestreept met een groen ✓ af erbij, in elke weergave:
+  de dagkaarten, het dagoverzicht, het weekraster, het maandraster en de kaart
+  van je eerstvolgende activiteit. Op het dashboard staat er bovendien bij
+  hoeveel van je geplande leertijd vandaag al af is — "3 u 15 min leren gepland
+  (3 blokken) · waarvan 2 u 15 min al af" — want dat is de vraag die je 's
+  ochtends stelt: moet ik vanavond nog achter mijn bureau, of is die tijd vrij.
+
+  Een leerblok zonder koppeling (los uit een leerplan) blijft zoals het was:
+  daar weet de app niet van of het werk gedaan is, en dan iets doorstrepen zou
+  een belofte zijn die hij niet waarmaakt. Hetzelfde geldt voor een blok
+  waarvan de taak is verwijderd.
+
 ## 0.48.0
 
 - **De vertrektijd van gisteravond bleef staan.** Een OV-rit werd bewaard onder

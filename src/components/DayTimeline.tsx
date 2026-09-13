@@ -7,6 +7,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
 import { formatDuration, MINUTES_PER_DAY, minutesToTime, timeToMinutes } from "@/lib/time";
 import { travelModeMeta } from "@/lib/travelModes";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -86,9 +87,11 @@ function TimelineRow({
   passed: boolean;
   onSelect: () => void;
 }) {
-  const { categoryFor } = useAgenda();
+  const { categoryFor, tasks, exams } = useAgenda();
   const t = useT();
   const category = categoryFor(entry.activity.category);
+  // Werk dat af is: het blok blijft staan, maar die tijd is vrij.
+  const workDone = entry.kind === "activity" && linkedWorkDone(entry.activity, tasks, exams);
   const color = activityColor(entry.activity, category);
   const isDeparture = entry.kind === "departure";
   const isReturn = entry.kind === "return";
@@ -195,15 +198,31 @@ function TimelineRow({
         >
           <span className="flex items-baseline gap-2">
             <span aria-hidden>{category.emoji}</span>
-            <span className="truncate text-sm font-semibold">{entry.activity.title}</span>
-            {entry.activity.source === "leerplan" ||
-            entry.activity.linkedTaskId ||
-            entry.activity.linkedExamId ? (
+            <span
+              className="truncate text-sm font-semibold"
+              style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+            >
+              {entry.activity.title}
+            </span>
+            {/* Is het werk af, dan zegt het vinkje hiernaast al dat dit een
+                leerblok was; het boekje erbij maakt de regel alleen smaller. */}
+            {!workDone &&
+            (entry.activity.source === "leerplan" ||
+              entry.activity.linkedTaskId ||
+              entry.activity.linkedExamId) ? (
               <span aria-hidden title={t("timeline.studyBlock")}>
                 📚
               </span>
             ) : null}
-            {passed ? (
+            {workDone ? (
+              <span
+                className="shrink-0 text-[0.6rem] font-semibold"
+                style={{ color: "#16a34a" }}
+                title={t("activity.workDone")}
+              >
+                &#10003; {t("activity.workDone")}
+              </span>
+            ) : passed ? (
               <span className="text-[0.6rem] font-semibold" style={{ color: "var(--muted)" }}>
                 ✓
               </span>

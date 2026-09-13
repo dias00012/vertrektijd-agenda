@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
 import { timeStatusFor } from "@/lib/agenda";
@@ -66,6 +67,10 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
+  // Is het werk waar dit blok voor staat al af? Dan is die tijd vrij, en dat
+  // hoort te zien te zijn zonder dat je de taak erbij zoekt.
+  const workDone = linkedWorkDone(activity, tasks, exams);
+
   const status = now ? timeStatusFor(activity, now) : "upcoming";
   const isPast = status === "past";
   const isNow = status === "now";
@@ -93,14 +98,29 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-2">
-                <h3 className="truncate text-[0.95rem] font-semibold">{activity.title}</h3>
+                <h3
+                  className="truncate text-[0.95rem] font-semibold"
+                  style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+                >
+                  {activity.title}
+                </h3>
                 <span
                   className="text-[0.7rem] font-semibold uppercase tracking-wide"
                   style={{ color }}
                 >
                   {category.label}
                 </span>
-                {isPast ? (
+                {workDone ? (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
+                    style={{
+                      background: "color-mix(in srgb, #16a34a 16%, transparent)",
+                      color: "#16a34a",
+                    }}
+                  >
+                    &#10003; {t("activity.workDone")}
+                  </span>
+                ) : isPast ? (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}

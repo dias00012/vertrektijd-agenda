@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   activityMinutes,
   daysUntil,
+  linkedWorkDone,
   plannedMinutesForTask,
   plannedProgress,
   sortExams,
@@ -109,5 +110,36 @@ describe("daysUntil", () => {
 
   it("is negatief voor een datum die voorbij is", () => {
     expect(daysUntil("2026-09-07", new Date(2026, 8, 9, 8, 0))).toBe(-2);
+  });
+});
+
+describe("linkedWorkDone", () => {
+  const taken = [task({ id: "t1", status: "done" }), task({ id: "t2", status: "doing" })];
+  const toetsen = [
+    { id: "e1", status: "done" } as Exam,
+    { id: "e2", status: "todo" } as Exam,
+  ];
+
+  it("streept een blok door waarvan de taak af is", () => {
+    expect(linkedWorkDone({ linkedTaskId: "t1", linkedExamId: null }, taken, toetsen)).toBe(true);
+  });
+
+  it("laat een blok staan waarvan de taak nog loopt", () => {
+    expect(linkedWorkDone({ linkedTaskId: "t2", linkedExamId: null }, taken, toetsen)).toBe(false);
+  });
+
+  it("doet hetzelfde voor een toets", () => {
+    expect(linkedWorkDone({ linkedTaskId: null, linkedExamId: "e1" }, taken, toetsen)).toBe(true);
+    expect(linkedWorkDone({ linkedTaskId: null, linkedExamId: "e2" }, taken, toetsen)).toBe(false);
+  });
+
+  it("laat een leerblok zonder koppeling met rust", () => {
+    // Uit een leerplan: de app weet niet of dat werk gedaan is.
+    expect(linkedWorkDone({ linkedTaskId: null, linkedExamId: null }, taken, toetsen)).toBe(false);
+  });
+
+  it("streept niets door als de taak niet meer bestaat", () => {
+    // Verwijderd schoolwerk laat een blok achter; dat is geen "af".
+    expect(linkedWorkDone({ linkedTaskId: "weg", linkedExamId: null }, taken, toetsen)).toBe(false);
   });
 });

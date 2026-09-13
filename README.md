@@ -252,6 +252,13 @@ Leer- en werkblokken uit je planner komen binnen als gewone activiteiten met
 `category: "school"` en `source: "leerplan"`; ze lopen mee in alle agenda-weergaven en krijgen
 daar een subtiel **📚 leerplan**-label.
 
+Zet je een opdracht of toets op **klaar**, dan staan de blokken die eraan gekoppeld zijn
+(`linkedTaskId` / `linkedExamId`) in je agenda **doorgestreept**, met een groen ✓ af erbij — in
+de dag- en weekweergave, het maandraster, het dagoverzicht en op de kaart van je eerstvolgende
+activiteit. Het blok blijft staan, want je wilt kunnen zien waar je tijd heen ging, maar je ziet
+in één blik dat die twee uur vanavond vrij zijn. Op het dashboard staat er bovendien bij hoeveel
+van je geplande leertijd vandaag al af is.
+
 ## Back-up & synchronisatie (import/export)
 
 Onder **Instellingen → Back-up** deel je exact dezelfde data met je planner via

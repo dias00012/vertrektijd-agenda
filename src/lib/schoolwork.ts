@@ -85,6 +85,32 @@ export function activityMinutes(activity: Pick<Activity, "startTime" | "endTime"
   return end < start ? end + MINUTES_PER_DAY - start : end - start;
 }
 
+/**
+ * Staat het schoolwerk waar dit blok voor staat al op "af"?
+ *
+ * Een leerblok is ingeplande tijd voor één opdracht of toets. Vink je die af,
+ * dan blijft het blok gewoon in je agenda staan — en dat hoort ook, je wilt
+ * kunnen zien waar je tijd heen ging — maar er valt niets meer te doen. De
+ * agenda streept het daarom door: zo zie je in één blik dat die twee uur
+ * vanavond vrij zijn.
+ *
+ * Een leerblok zonder koppeling (uit een leerplan) telt niet als af: daar weet
+ * de app niet van of het werk gedaan is.
+ */
+export function linkedWorkDone(
+  activity: Pick<Activity, "linkedTaskId" | "linkedExamId">,
+  tasks: readonly Pick<Task, "id" | "status">[],
+  exams: readonly Pick<Exam, "id" | "status">[],
+): boolean {
+  if (activity.linkedTaskId) {
+    return tasks.find((task) => task.id === activity.linkedTaskId)?.status === "done";
+  }
+  if (activity.linkedExamId) {
+    return exams.find((exam) => exam.id === activity.linkedExamId)?.status === "done";
+  }
+  return false;
+}
+
 /** De activiteiten die aan een taak zijn gekoppeld. */
 export function activitiesForTask(activities: Activity[], taskId: string): Activity[] {
   return activities.filter((a) => a.linkedTaskId === taskId);

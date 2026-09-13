@@ -313,6 +313,9 @@ export const nl = {
 
   /* --- Activiteitkaart --------------------------------------------------- */
   "activity.past": "✓ geweest",
+  "activity.workDone": "af",
+  "activity.freeAgain": "Die tijd is vrij: het werk is af.",
+  "schoolworkToday.doneShare": "waarvan {duration} al af",
   "activity.now": "● bezig",
   "activity.studyFor": "Leerblok voor: {subject}, {title}",
   "activity.studyForExam": "Leren voor toets: {subject}",
@@ -1176,6 +1179,9 @@ export const en: Record<TranslationKey, string> = {
   "timeline.backHomeTitle": "Head back home",
 
   "activity.past": "✓ done",
+  "activity.workDone": "done",
+  "activity.freeAgain": "That time is free: the work is finished.",
+  "schoolworkToday.doneShare": "{duration} of it already done",
   "activity.now": "● now",
   "activity.studyFor": "Study block for: {subject}, {title}",
   "activity.studyForExam": "Studying for test: {subject}",

@@ -6,6 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { useCatchUpTravel } from "@/hooks/useCatchUpTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import {
   computeDeparture,
   computeOnward,
@@ -55,6 +56,8 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
   const cancelled = isCancelled(legs);
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
+  /** Werk dat al af is: dan hoef je hier niets meer te doen. */
+  const workDone = linkedWorkDone(activity, tasks, exams);
 
   // Een aftelling is alleen zinvol binnen een halve dag; daarbuiten zegt het
   // datumlabel ("maandag 7 september") al genoeg.
@@ -113,7 +116,17 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             {category.emoji}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold">{activity.title}</h2>
+            <h2
+              className="truncate text-lg font-semibold"
+              style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+            >
+              {activity.title}
+            </h2>
+            {workDone ? (
+              <p className="text-sm font-semibold" style={{ color: "#16a34a" }}>
+                &#10003; {t("activity.freeAgain")}
+              </p>
+            ) : null}
             <p className="text-sm tabular-nums" style={{ color: "var(--muted)" }}>
               {formatDateLabel(activity.date, now)} &middot; {activity.startTime} &ndash;{" "}
               {activity.endTime}
