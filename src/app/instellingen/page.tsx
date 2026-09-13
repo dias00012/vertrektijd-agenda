@@ -12,6 +12,7 @@ import { TimetableImport } from "@/components/TimetableImport";
 import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
 import { LanguageSection } from "@/components/LanguageSection";
 import { ThemeSection } from "@/components/ThemeSection";
+import { SettingsGroup, SettingsRow } from "@/components/SettingsRow";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
@@ -20,8 +21,58 @@ import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 const MAX_BUFFER_MINUTES = 120;
 
-/** Instellingen: thuislocatie en veiligheidsmarge. */
+/**
+ * Instellingen: alles wat de app over jou en je reis weet.
+ *
+ * Vier groepen, en binnen een groep staat elk onderdeel dichtgeklapt met eronder
+ * wat er nu is ingesteld. Alles tegelijk openzetten gaf een scherm waarin je elke
+ * keer opnieuw moest zoeken waar die ene regel ook alweer stond, terwijl je
+ * meestal alleen even wilt zien wat er staat.
+ */
 export default function SettingsPage() {
+  const t = useT();
+
+  return (
+    <div>
+      <header className="mb-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>
+          {t("settings.subtitle")}
+        </p>
+      </header>
+
+      <SettingsGroup title={t("settings.group.travel")}>
+        <TravelSection />
+        <SavedPlaces />
+        <RemindersSection />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.group.agenda")}>
+        <TimetableImport />
+        <CalendarSubscriptions />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.group.look")}>
+        <LanguageSection />
+        <ThemeSection />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.group.account")}>
+        <AccountSection />
+        <BackupSection />
+        <IntroSection />
+      </SettingsGroup>
+
+      <p className="mt-6 px-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+        <span className="font-semibold">{t("settings.aboutTitle")}</span> &middot;{" "}
+        {t("settings.aboutBody")}
+      </p>
+    </div>
+  );
+}
+
+/** Thuislocatie, marge en waarmee je standaard reist: samen je vertrektijd. */
+function TravelSection() {
   const { settings, hydrated, updateSettings, activities } = useAgenda();
   const t = useT();
   const [home, setHome] = useState<GeoLocation | null>(null);
@@ -46,6 +97,9 @@ export default function SettingsPage() {
   ]);
 
   const activitiesWithLocation = activities.filter((activity) => activity.location).length;
+  /* Zonder thuisadres rekent de app geen enkele vertrektijd uit. Dat hoort te
+     zien te zijn zonder dat je ergens op klikt, dus rood en meteen open. */
+  const missingHome = hydrated && !settings.home;
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -73,38 +127,38 @@ export default function SettingsPage() {
   }
 
   return (
-    <div>
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          {t("settings.subtitle")}
-        </p>
-      </header>
-
-      <LanguageSection />
-      <ThemeSection />
-      {hydrated ? <AccountSection /> : null}
-
+    <SettingsRow
+      icon={"\u{1F3E0}"}
+      title={t("settings.row.travel")}
+      attention={missingHome}
+      openWhen={missingHome}
+      summary={
+        !hydrated
+          ? undefined
+          : settings.home
+            ? `${settings.home.label} · ${t("settings.summary.buffer", {
+                count: settings.bufferMinutes,
+              })}`
+            : t("settings.summary.noHome")
+      }
+    >
       {!hydrated ? (
-        <div className="card mt-4 px-5 py-10 text-center">
+        <div className="py-4 text-center">
           <Spinner size={18} label={t("settings.loading")} />
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate className="card mt-4 space-y-5 px-5 py-5">
-          <div>
-            <h2 className="mb-3 text-base font-semibold">&#127968; {t("settings.home")}</h2>
-            <LocationInput
-              label={t("settings.homeLabel")}
-              value={home}
-              onChange={(value) => {
-                setHome(value);
-                setSaved(false);
-              }}
-              required
-              placeholder={t("settings.homePlaceholder")}
-              hint={t("settings.homeHint")}
-            />
-          </div>
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <LocationInput
+            label={t("settings.homeLabel")}
+            value={home}
+            onChange={(value) => {
+              setHome(value);
+              setSaved(false);
+            }}
+            required
+            placeholder={t("settings.homePlaceholder")}
+            hint={t("settings.homeHint")}
+          />
 
           <div>
             <label className="label" htmlFor="buffer">
@@ -234,21 +288,7 @@ export default function SettingsPage() {
           </button>
         </form>
       )}
-
-      {hydrated ? <TimetableImport /> : null}
-      {hydrated ? <CalendarSubscriptions /> : null}
-      {hydrated ? <RemindersSection /> : null}
-      {hydrated ? <SavedPlaces /> : null}
-      {hydrated ? <BackupSection /> : null}
-      <IntroSection />
-
-      <section className="card mt-4 px-5 py-4">
-        <h2 className="text-sm font-semibold">{t("settings.aboutTitle")}</h2>
-        <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-          {t("settings.aboutBody")}
-        </p>
-      </section>
-    </div>
+    </SettingsRow>
   );
 }
 
@@ -262,9 +302,12 @@ function IntroSection() {
   if (!intro) return null;
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128075; {t("settings.intro.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow
+      icon={"\u{1F44B}"}
+      title={t("settings.intro.title")}
+      summary={t("settings.intro.summary")}
+    >
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("settings.intro.body")}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -275,13 +318,13 @@ function IntroSection() {
           {t("settings.intro.again")}
         </button>
       </div>
-    </section>
+    </SettingsRow>
   );
 }
 
 /** Overzicht van bewaarde locaties, met de categorieën die ze als vaste plek gebruiken. */
 function SavedPlaces() {
-  const { settings, forgetPlace, renamePlace, movePlace, categoryFor } = useAgenda();
+  const { settings, forgetPlace, renamePlace, movePlace, categoryFor, hydrated } = useAgenda();
   const t = useT();
   const places = sortedPlaces(settings);
   /** De locatie waarvan je op dit moment de naam aanpast. */
@@ -291,18 +334,29 @@ function SavedPlaces() {
   const [readdressing, setReaddressing] = useState<string | null>(null);
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128205; {t("places.title")}</h2>
-      <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+    <SettingsRow
+      icon={"\u{1F4CD}"}
+      title={t("places.title")}
+      summary={
+        !hydrated
+          ? undefined
+          : places.length === 0
+            ? t("places.none")
+            : places.length === 1
+              ? t("places.countOne")
+              : t("places.count", { count: places.length })
+      }
+    >
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("places.body")}
       </p>
 
       {places.length === 0 ? (
-        <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>
+        <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
           {t("places.empty")}
         </p>
       ) : (
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-3 space-y-2">
           {places.map((place) => {
             const categories = categoriesUsingPlace(settings, place.id);
             return (
@@ -436,6 +490,6 @@ function SavedPlaces() {
           })}
         </ul>
       )}
-    </section>
+    </SettingsRow>
   );
 }

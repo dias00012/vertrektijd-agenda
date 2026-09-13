@@ -108,6 +108,35 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+/*
+ * Instellingen staan als rijen onder elkaar in één kaart. De haarlijn staat
+ * tússen twee rijen en niet eromheen, anders komt hij tegen de rand van de
+ * kaart aan te liggen.
+ */
+.settings-row + .settings-row {
+  border-top: 1px solid var(--line);
+}
+
+.settings-row-button {
+  transition: background 120ms ease;
+}
+
+@media (hover: hover) {
+  .settings-row-button:hover {
+    background: var(--surface-soft);
+  }
+}
+
+/*
+ * De rand van de kaart snijdt een focusring die eromheen ligt doormidden. Bij
+ * een rij leggen we hem daarom net binnen die rand, zodat je met de tab-toets
+ * blijft zien waar je bent.
+ */
+.settings-row-button:focus-visible {
+  outline-offset: -3px;
+  border-radius: 0;
+}
+
 .field {
   width: 100%;
   padding: 0.65rem 0.85rem;

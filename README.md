@@ -136,7 +136,7 @@ Eigen types staan in `Settings.customCategories` en werken overal in de app.
 ### Vervoermiddel en OV-reisplanner
 
 Per activiteit kies je **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV** (of "Standaard", dan geldt de
-instelling uit **Instellingen → Standaard vervoermiddel**).
+instelling uit **Instellingen → Thuis en vertrektijd → Standaard vervoermiddel**).
 
 Bij **OV** werkt de app als een reisplanner: hij zoekt een echte rit die je vóór de starttijd
 (min de marge) laat aankomen, en toont de hele reis: lopen naar de halte, de lijn, de richting,
@@ -245,7 +245,7 @@ daar een subtiel **📚 leerplan**-label.
 
 ## Back-up & synchronisatie (import/export)
 
-Onder **Instellingen → Back-up & synchronisatie** deel je exact dezelfde data met je planner via
+Onder **Instellingen → Back-up** deel je exact dezelfde data met je planner via
 één JSON-bestand:
 
 ```json

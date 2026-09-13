@@ -6,6 +6,7 @@ import { getLanguage } from "@/lib/i18n/locale";
 import { translate } from "@/lib/i18n/dictionary";
 import { useAgenda } from "@/hooks/useAgenda";
 import { parseBackup, type ImportMode, type ImportSummary } from "@/lib/backup";
+import { SettingsRow } from "./SettingsRow";
 
 /**
  * Back-up & synchronisatie: exporteer de volledige agenda als één JSON-bestand
@@ -60,13 +61,12 @@ export function BackupSection() {
   }
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128260; {t("backup.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow icon={"\u{1F504}"} title={t("backup.title")} summary={t("backup.summary")}>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("backup.body")}
       </p>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <p className="label">{t("backup.mode")}</p>
         <div
           className="flex rounded-xl border p-0.5"
@@ -147,7 +147,7 @@ export function BackupSection() {
           </ul>
         </div>
       ) : null}
-    </section>
+    </SettingsRow>
   );
 }
 

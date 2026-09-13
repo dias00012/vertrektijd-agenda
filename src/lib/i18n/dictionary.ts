@@ -150,7 +150,7 @@ export const nl = {
   "tour.agenda.body": "Je planning per dag, week of maand. In het weekraster zie je de reistijd als gestreepte blokken vóór en ná elke activiteit. Zo zie je in één oogopslag hoeveel van je dag onderweg opgaat.",
   "tour.travel.body": "Een losse reisplanner, zoals 9292. Kies van en naar: een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
   "tour.schoolwork.body": "Je opdrachten op deadline en je toetsen op datum, met een kleur voor hoe dringend het is. Per opdracht kun je stappen afvinken, en je ziet hoeveel leertijd je er al voor hebt ingepland.",
-  "tour.settings.body": "Je thuislocatie en standaard vervoermiddel, herinneringen vóór vertrek, opgeslagen locaties, en een back-up van alles als één bestand. Ook je account, als je je agenda tussen telefoon en laptop wilt delen.",
+  "tour.settings.body": "Vier groepen, dichtgeklapt: onder elke titel zie je meteen wat er nu staat. Je thuislocatie en standaard vervoermiddel, herinneringen vóór vertrek, opgeslagen locaties, een back-up van alles als één bestand, en je account als je je agenda tussen telefoon en laptop wilt delen.",
 
   /* --- Bouwstenen, schoolwerk en inloggen -------------------------------- */
   "ui.busy": "Bezig…",
@@ -555,7 +555,7 @@ export const nl = {
 
   /* --- Instellingen en locaties ------------------------------------------ */
   "settings.title": "Instellingen",
-  "settings.subtitle": "Vanaf deze plek worden alle reistijden berekend.",
+  "settings.subtitle": "Kies een onderdeel om het te openen.",
   "settings.loading": "Instellingen laden…",
   "settings.home": "Mijn thuislocatie",
   "settings.homeLabel": "Adres of plaats",
@@ -613,7 +613,7 @@ export const nl = {
   "calendars.none": "Geen afspraken gevonden in de komende {weeks} weken.",
   "calendars.offline": "Geen verbinding met de server.",
   "calendars.privacy": "De link blijft op dit apparaat staan en gaat alleen naar onze eigen server om je agenda op te halen. Loskoppelen haalt de afspraken er ook weer uit.",
-  "backup.title": "Back-up & synchronisatie",
+  "backup.title": "Back-up",
   "backup.body": "Exporteer je hele agenda (instellingen, activiteiten, taken en toetsen) als één JSON-bestand, of importeer een bestand van je planner. Zo werken app en planner met precies dezelfde gegevens.",
   "backup.mode": "Importmodus",
   "backup.merge": "Samenvoegen",
@@ -854,6 +854,32 @@ export const nl = {
   "status.live": "live",
   "status.scheduled": "Volgens dienstregeling",
   "status.noLive": "Geen live informatie voor deze rit",
+
+  /* --- Instellingen: de rij zelf ----------------------------------------- */
+  "settings.group.travel": "Reizen",
+  "settings.group.agenda": "Agenda",
+  "settings.group.look": "Weergave",
+  "settings.group.account": "Account en gegevens",
+  "settings.row.travel": "Thuis en vertrektijd",
+  "settings.summary.noHome": "Thuisadres nog niet ingesteld",
+  "settings.summary.buffer": "{count} min marge",
+  "settings.intro.summary": "Nog een keer bekijken",
+  "places.count": "{count} locaties",
+  "places.countOne": "1 locatie",
+  "places.none": "Nog geen locaties",
+  "calendars.count": "{count} agenda\u2019s",
+  "calendars.countOne": "1 agenda",
+  "calendars.noneYet": "Nog geen agenda\u2019s",
+  "timetable.summaryLinked": "Gekoppeld, wordt zelf bijgewerkt",
+  "timetable.summaryLessons": "{count} lessen in je agenda",
+  "timetable.summaryNone": "Nog niet gekoppeld",
+  "reminders.summaryOn": "{count} min van tevoren",
+  "reminders.summaryOff": "Uit",
+  "reminders.summaryBlocked": "Geblokkeerd in je browser",
+  "reminders.summaryUnsupported": "Niet mogelijk in deze browser",
+  "account.summaryOut": "Niet ingelogd",
+  "account.summaryOff": "Nog niet ingesteld",
+  "backup.summary": "Opslaan als bestand of terugzetten",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -987,7 +1013,7 @@ export const en: Record<TranslationKey, string> = {
   "tour.agenda.body": "Your plan by day, week or month. In the week grid, travel time appears as striped blocks before and after each activity, so you can see at a glance how much of your day goes into travelling.",
   "tour.travel.body": "A journey planner in its own right. Pick from and to: a station, an address, your current location, or one tap on Home, School or Gym. You get real departures with live delays, platforms and changes.",
   "tour.schoolwork.body": "Your assignments by deadline and your tests by date, coloured by how urgent they are. You can tick off steps per assignment, and see how much study time you have already planned for it.",
-  "tour.settings.body": "Your home location and default way of travelling, reminders before you leave, saved places, and a backup of everything in one file. Your account lives here too, if you want your calendar on both your phone and laptop.",
+  "tour.settings.body": "Four groups, folded shut: under every title you see what is set right now. Your home location and default way of travelling, reminders before you leave, saved places, a backup of everything in one file, and your account if you want your calendar on both your phone and laptop.",
 
   "ui.busy": "Working…",
   "schoolwork.priority.high": "High",
@@ -1380,7 +1406,7 @@ export const en: Record<TranslationKey, string> = {
   "reminders.notification.body": "{title} starts at {start}. You need to leave in {count} minutes.",
 
   "settings.title": "Settings",
-  "settings.subtitle": "All travel times are calculated from this place.",
+  "settings.subtitle": "Choose a section to open it.",
   "settings.loading": "Loading settings…",
   "settings.home": "My home location",
   "settings.homeLabel": "Address or town",
@@ -1437,7 +1463,7 @@ export const en: Record<TranslationKey, string> = {
   "calendars.none": "No appointments found in the next {weeks} weeks.",
   "calendars.offline": "No connection to the server.",
   "calendars.privacy": "The link stays on this device and only goes to our own server to fetch your calendar. Disconnecting removes the appointments again.",
-  "backup.title": "Backup & syncing",
+  "backup.title": "Backup",
   "backup.body": "Export your whole calendar (settings, activities, tasks and tests) as one JSON file, or import a file from your planner. That way the app and the planner work from exactly the same data.",
   "backup.mode": "Import mode",
   "backup.merge": "Merge",
@@ -1670,6 +1696,32 @@ export const en: Record<TranslationKey, string> = {
   "status.live": "live",
   "status.scheduled": "Scheduled time",
   "status.noLive": "No live information for this service",
+
+  /* --- Settings: the row itself ------------------------------------------ */
+  "settings.group.travel": "Travel",
+  "settings.group.agenda": "Calendar",
+  "settings.group.look": "Appearance",
+  "settings.group.account": "Account and data",
+  "settings.row.travel": "Home and departure",
+  "settings.summary.noHome": "Home address not set yet",
+  "settings.summary.buffer": "{count} min buffer",
+  "settings.intro.summary": "Watch it again",
+  "places.count": "{count} places",
+  "places.countOne": "1 place",
+  "places.none": "No places yet",
+  "calendars.count": "{count} calendars",
+  "calendars.countOne": "1 calendar",
+  "calendars.noneYet": "No calendars yet",
+  "timetable.summaryLinked": "Connected, updates itself",
+  "timetable.summaryLessons": "{count} lessons in your calendar",
+  "timetable.summaryNone": "Not connected yet",
+  "reminders.summaryOn": "{count} min before",
+  "reminders.summaryOff": "Off",
+  "reminders.summaryBlocked": "Blocked in your browser",
+  "reminders.summaryUnsupported": "Not possible in this browser",
+  "account.summaryOut": "Not signed in",
+  "account.summaryOff": "Not set up yet",
+  "backup.summary": "Save as a file or restore one",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

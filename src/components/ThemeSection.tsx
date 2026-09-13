@@ -11,6 +11,7 @@ import {
   storedTheme,
   storedTint,
 } from "@/lib/theme";
+import { SettingsRow } from "./SettingsRow";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 /**
@@ -50,10 +51,15 @@ export function ThemeSection() {
     }
   }
 
+  const current = THEMES.find((option) => option.id === theme) ?? THEMES[0];
+
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#127912; {t("theme.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow
+      icon={"\u{1F3A8}"}
+      title={t("theme.title")}
+      summary={t(current.nameKey as TranslationKey)}
+    >
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("theme.body")}
       </p>
 
@@ -101,6 +107,6 @@ export function ThemeSection() {
           <span style={{ color: "var(--muted)" }}>{t("theme.tintHint")}</span>
         </span>
       </label>
-    </section>
+    </SettingsRow>
   );
 }

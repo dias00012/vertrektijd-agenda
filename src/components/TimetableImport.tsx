@@ -10,6 +10,7 @@ import { LocationInput } from "./LocationInput";
 import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
 import { Spinner } from "./ui";
+import { SettingsRow } from "./SettingsRow";
 import type { ActivityDraft, GeoLocation } from "@/lib/types";
 
 /** Alles wat via deze weg binnenkomt krijgt deze herkomst. */
@@ -144,10 +145,15 @@ export function TimetableImport() {
   const preview = events?.slice(0, 6) ?? [];
   const lastDate = events?.[events.length - 1]?.date;
 
+  const summary = settings.timetable?.url
+    ? t("timetable.summaryLinked")
+    : existing.length > 0
+      ? t("timetable.summaryLessons", { count: existing.length })
+      : t("timetable.summaryNone");
+
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#127979; {t("timetable.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow icon={"\u{1F3EB}"} title={t("timetable.title")} summary={summary}>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("timetable.body")}
       </p>
 
@@ -352,6 +358,6 @@ export function TimetableImport() {
           date: formatDateLabel(addDaysToKey(todayKey(), WEEKS_AHEAD * 7), new Date()),
         })}
       </p>
-    </section>
+    </SettingsRow>
   );
 }

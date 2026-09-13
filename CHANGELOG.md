@@ -8,6 +8,30 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.47.0
+
+- **De instellingenpagina was te druk.** Elf onderdelen stonden allemaal open
+  onder elkaar: op een telefoon bijna zes schermen scrollen langs 35 knoppen en
+  invulvelden om te zien wat er eigenlijk stond ingesteld. Nu staan ze in vier
+  groepen (Reizen, Agenda, Weergave, Account en gegevens) als rijen die
+  dichtgeklapt beginnen — 1,8 scherm, 10 bedienbare dingen in beeld.
+
+  Onder elke titel staat wat er nu is ingesteld, zodat je het antwoord meestal
+  al kunt lezen zonder ergens op te klikken: je thuisadres en je marge, hoeveel
+  locaties je bewaard hebt, of de meldingen aanstaan en met hoeveel minuten, of
+  het rooster gekoppeld is, in welke taal en welke kleur. Dat was precies wat er
+  ontbrak: alles stond open, maar niets stond er *samengevat*.
+
+  Twee dingen blijven opvallen. Is je thuisadres nog niet ingevuld, dan staat
+  die rij meteen open en de regel eronder in het rood — zonder thuisadres rekent
+  de app geen enkele vertrektijd uit. En herinneringen staan nu onder Reizen en
+  niet onder Agenda: het is het aantal minuten vóór je vertrektijd.
+
+  Een dichtgeklapte rij blijft in de pagina staan en wordt alleen verborgen, dus
+  een half ingetypte agenda-link ben je niet kwijt als je hem even dichtdoet.
+  Met de tab-toets bereik je alleen wat openstaat, en de focusring ligt nu net
+  binnen de rand van de kaart in plaats van eronder afgesneden te worden.
+
 ## 0.46.0
 
 - **Eén activiteit met rommel erin sloopte de hele app.** Het uitwisselformaat
