@@ -8,6 +8,39 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.51.0
+
+- **Een overstap van twee minuten voor 196 meter.** Bij Lelystad Centrum staat
+  er 196 meter tussen het perron en het busstation, en de dienstregeling geeft
+  daar twee minuten voor: 5,9 km/h. Dat is sneller dan de 5,04 waarmee deze app
+  élk ander loopstuk narekent, dus beloofden we een aansluiting die je alleen
+  haalt als je rent en de trein op tijd is. 9292 rekent er drie minuten voor en
+  biedt die bus niet aan.
+
+  De app vraagt de planner nu één minuut extra voor elke overstap
+  (`additionalTransferTime`). Nagemeten tegen drie echte 9292-schermen van
+  maandag 14 september, de rit van huis naar school om 07:00:
+
+  | | vertrek → aankomst | bus |
+  | --- | --- | --- |
+  | zonder die minuut | 07:12 → 07:52 | 207 van 07:35 naar Palazzo |
+  | met die minuut | 07:12 → 08:06 | 6 van 07:50 naar Zwartezeestraat |
+  | 9292 | 07:12 → 08:01 | 16 van 07:36 naar Zwartezeestraat |
+
+  Zonder die minuut kwamen we negen minuten eerder aan dan 9292 zegt, op een
+  overstap die 9292 niet aanbiedt. Met die minuut komen we bij dezelfde halte
+  uit, maar op een latere bus: 9292 stapt op een bus die vertrekt op precies de
+  minuut waarop je aankomt, en dat laat de planner niet toe. Eén bus verschil,
+  aan de veilige kant. Voor het advies dat de agenda geeft maakt het op deze rit
+  niets uit: om uiterlijk 08:20 op school te zijn zegt elk van de drie
+  "vertrek 07:12".
+
+  Wat het kost, over 40 vergelijkingen: 32 keer dezelfde aankomst, 8 keer later
+  (samen 38 minuten, hoogste 10), 0 keer eerder. Die acht zijn precies de ritten
+  die op zo'n krappe overstap leunden. Na te meten met
+  `node scripts/krappe-overstap.mjs`; over 48 ritten zat er in 19 een overstap
+  die krapper was dan onze eigen loopsnelheid.
+
 ## 0.50.0
 
 - **"Je komt te laat" stond er nooit bij een doorreis.** Ga je van school

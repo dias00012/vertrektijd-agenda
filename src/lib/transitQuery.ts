@@ -134,6 +134,44 @@ export function transitParams(query: TransitQuery): URLSearchParams {
      * Zelf nameten: `node scripts/overstap-vergelijking.mjs`.
      */
     useRoutedTransfers: "false",
+    /**
+     * Eén minuut extra voor elke overstap (`additionalTransferTime` staat
+     * standaard op 0).
+     *
+     * De overstaptijd uit de dienstregeling is niet altijd een looptijd. Bij
+     * Lelystad Centrum staat er 196 meter tussen het perron en het busstation
+     * en geeft de dienstregeling er twee minuten voor: 5,9 km/h, sneller dan
+     * de 5,04 waarmee deze app elk ander loopstuk narekent. Wij boden daardoor
+     * een bus aan die je alleen haalt als je rent en de trein op tijd is.
+     *
+     * Nagemeten tegen drie echte 9292-schermen van maandag 14 september 2026.
+     * De rit van huis naar school om 07:00:
+     *
+     *     zonder deze minuut  07:12 → 07:52  bus 207 van 07:35 naar Palazzo
+     *     met deze minuut     07:12 → 08:06  bus 6 van 07:50 naar Zwartezeestraat
+     *     9292                07:12 → 08:01  bus 16 van 07:36 naar Zwartezeestraat
+     *
+     * Zonder die minuut stappen we op een bus die 9292 niet eens aanbiedt, en
+     * komen we negen minuten eerder aan dan 9292 zegt. Met die minuut komen we
+     * bij dezelfde halte uit als 9292, maar op een latere bus: 9292 stapt op
+     * een bus die vertrekt op precies de minuut waarop je aankomt, en dat laat
+     * de planner niet toe — hij wil dat de bus daarná vertrekt. Dat is één bus
+     * verschil, geen rekenfout, en de veilige kant ervan.
+     *
+     * Voor het advies dat de agenda geeft maakt het op deze rit niets uit: om
+     * uiterlijk 08:20 op school te zijn zegt elk van de drie "vertrek 07:12".
+     *
+     * Wat het kost, over 40 vergelijkingen (10 ritten op 4 tijdstippen):
+     *
+     *     zelfde aankomst  32
+     *     later aan         8  (samen 38 min, hoogste 10)
+     *     eerder aan        0
+     *
+     * Die acht zijn precies de ritten die op zo'n krappe overstap leunden. Het
+     * is dus geen verloren tijd maar acht aansluitingen die we niet meer
+     * beloven. Zelf nameten: `node scripts/krappe-overstap.mjs`.
+     */
+    additionalTransferTime: "1",
   });
   applyStreetOptions(params, query.bike);
 

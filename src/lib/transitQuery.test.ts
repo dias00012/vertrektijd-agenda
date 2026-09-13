@@ -94,6 +94,13 @@ describe("transitParams", () => {
     expect(ask({ shape: "timetable" }).get("useRoutedTransfers")).toBe("false");
   });
 
+  it("vraagt een minuut extra voor elke overstap", () => {
+    // De overstaptijd uit de dienstregeling is niet altijd een looptijd: 196
+    // meter in twee minuten is 5,9 km/h. Zie de uitleg bij de parameter.
+    expect(ask().get("additionalTransferTime")).toBe("1");
+    expect(ask({ shape: "timetable" }).get("additionalTransferTime")).toBe("1");
+  });
+
   it("staat een directe loop- of fietsroute van drie kwartier toe", () => {
     // MOTIS staat zelf op 1800 seconden.
     expect(ask().get("maxDirectTime")).toBe(String(45 * 60));
