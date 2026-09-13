@@ -8,6 +8,53 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.48.0
+
+- **De vertrektijd van gisteravond bleef staan.** Een OV-rit werd bewaard onder
+  een sleutel die zegt *welke* rit je zoekt: van hier naar daar, uiterlijk
+  aankomen om. Klopte die sleutel nog, dan gold de opgeslagen uitkomst als
+  exact en werd er niets meer opgehaald. Vertragingen, uitval en een gewijzigde
+  dienstregeling komen ná de berekening binnen en veranderen die sleutel niet.
+
+  Dus stond de vertrektijd die gisteravond werd uitgerekend er vanochtend nog,
+  met "op tijd · live" eronder, terwijl je trein een kwartier later reed of
+  helemaal niet. Juist de eerstvolgende activiteit — de enige waar je echt op
+  afgaat — raakte zo nooit ververst: voor die dag klopte de sleutel immers.
+
+  Nagelopen in de browser met een rit die zes weken eerder was uitgerekend, drie
+  kwartier voor de start: nul aanvragen, en de onzin uit de opslag gewoon op de
+  kaart. Nu telt binnen het verversvenster (vanaf drie uur voor de start tot het
+  einde) ook de ouderdom mee: is wat we laten zien ouder dan twee minuten, dan
+  gaat het opnieuw. Daarbuiten verandert er niets — een rit van volgende week
+  hoeft niet om de twee minuten opnieuw.
+
+  Daarbij hoort dat `computedAt` nu het moment van ophalen is en niet van
+  binnenkomen. Kwam een uitkomst uit de cache van deze sessie, dan werd hij
+  gestempeld alsof hij vers was, en stelde hij het volgende verversen telkens
+  opnieuw uit.
+
+- **"Vertrektijd is verstreken" en verder niets.** Je sliep uit, of je zag de
+  bus wegrijden. De kaart bleef de rit tonen die je net gemist hebt — de enige
+  rit op het scherm die zeker niet meer gaat — met daaronder de mededeling dat
+  je te laat bent. Precies op dat moment wil je één ding weten: gaat er nog
+  iets, en red ik het nog.
+
+  Er staat nu bij wat er nog wél rijdt: `🚆 Volgende rit: 14:41 → 15:24 · 3 min
+  te laat`, of "nog op tijd" als je het haalt. Rijdt er vandaag niets meer dat
+  je er op tijd brengt, dan staat dat er. Alleen bij OV, alleen vandaag en
+  alleen zolang je activiteit nog moet beginnen: een auto vertrekt wanneer jij
+  wilt, en aan morgen is niets gemist.
+
+- **De overstapboete nagemeten** (geen wijziging). De agenda kiest de laatste
+  vertrektijd die je starttijd haalt, maar telt elke overstap als vijf minuten
+  later vertrekken. Die weging stond er zonder cijfers bij. Over 48
+  vergelijkingen koos hij 43 keer dezelfde rit; in de 5 gevallen dat het
+  scheelde ging je samen 9 minuten eerder de deur uit en had je er telkens een
+  overstap minder voor terug. Het duurste geval was drie minuten. Dat is de ruil
+  die de boete hoort te maken, dus hij blijft staan — nu met de meting erbij in
+  `src/lib/itineraries.ts` en na te rekenen met
+  `node scripts/overstapboete.mjs`.
+
 ## 0.47.0
 
 - **De instellingenpagina was te druk.** Elf onderdelen stonden allemaal open

@@ -4,6 +4,7 @@ import type {
   BikeEnds,
   GeoLocation,
   Settings,
+  TravelInfo,
   TravelMode,
 } from "./types";
 import {
@@ -94,6 +95,28 @@ function hasPassed(activity: Activity, dateKey: string, now: Date): boolean {
 export function tripHasLeft(plan: TravelPlan, now: Date = new Date()): boolean {
   const last = plan.departAt ?? plan.arriveBy;
   return last !== undefined && Date.parse(last) < now.getTime();
+}
+
+/**
+ * Is deze uitkomst te oud om nog te laten zien?
+ *
+ * Een OV-rit heeft twee soorten houdbaarheid. De sleutel zegt of het nog wel
+ * de rit is die je zoekt (zelfde dag, zelfde adres, zelfde marge). Deze
+ * functie zegt of wat we van die rit weten nog van nu is: vertragingen en
+ * uitval komen ná de berekening binnen en veranderen de sleutel niet.
+ *
+ * Ontbreekt de datum of is hij onleesbaar, dan telt dat als te oud. Liever een
+ * keer te vaak opnieuw rekenen dan een vertrektijd van onbekende leeftijd.
+ */
+export function travelIsStale(
+  computedAt: string | undefined,
+  maxAgeMs: number,
+  now: Date = new Date(),
+): boolean {
+  if (!computedAt) return true;
+  const at = Date.parse(computedAt);
+  if (Number.isNaN(at)) return true;
+  return now.getTime() - at >= maxAgeMs;
 }
 
 export function bufferFor(activity: Activity, settings: Settings): number {
@@ -223,6 +246,45 @@ export function needsTravelRefresh(
   // Een doorreis die er hoort te zijn maar nog niet is, of een oude die er nog
   // staat terwijl je inmiddels gewoon naar huis gaat.
   return (activity.onwardTravel?.key ?? null) !== (plan.onwardKey ?? null);
+}
+
+/**
+ * De rit die je nu nog kunt halen, in woorden: hoe laat je weg moet, hoe laat
+ * je er dan bent, en hoeveel te laat dat is.
+ *
+ * Dit hoort bij het moment waarop je vertrektijd verstreken is. De app zei dan
+ * alleen dát, en liet de rit staan die je net gemist hebt — terwijl je op dat
+ * moment maar één ding wilt weten: gaat er nog iets, en red ik het nog.
+ */
+export interface CatchUp {
+  /** Hoe laat de eerstvolgende rit vertrekt. */
+  time: string;
+  /** En hoe laat je dan aankomt. */
+  arrival: string;
+  /** Minuten na de starttijd; 0 = je bent nog op tijd. */
+  lateMinutes: number;
+}
+
+export function describeCatchUp(
+  travel: Pick<TravelInfo, "plannedDeparture" | "plannedArrival"> | null | undefined,
+  startTime: string,
+): CatchUp | null {
+  const departureIso = travel?.plannedDeparture;
+  const arrivalIso = travel?.plannedArrival;
+  if (!departureIso || !arrivalIso) return null;
+
+  const departure = localMinutes(departureIso);
+  const arrival = localMinutes(arrivalIso);
+  if (Number.isNaN(departure) || Number.isNaN(arrival)) return null;
+
+  // Kom je op papier eerder aan dan je vertrekt, dan liep de rit over
+  // middernacht; dan is "te laat" geen zinnige uitspraak meer.
+  const late = arrival >= departure ? arrival - timeToMinutes(startTime) : 0;
+  return {
+    time: minutesToTime(departure),
+    arrival: minutesToTime(arrival),
+    lateMinutes: late > 0 ? late : 0,
+  };
 }
 
 /** Minuten sinds middernacht van een ISO-tijdstip, in lokale tijd. */

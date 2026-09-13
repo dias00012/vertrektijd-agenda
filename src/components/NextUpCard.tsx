@@ -4,9 +4,16 @@ import { activityColor } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
+import { useCatchUpTravel } from "@/hooks/useCatchUpTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
-import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
-import { formatDateLabel, formatDuration } from "@/lib/time";
+import {
+  computeDeparture,
+  computeOnward,
+  computeReturn,
+  describeCatchUp,
+  travelPlanForDate,
+} from "@/lib/travel";
+import { formatDateLabel, formatDuration, toDateKey, toDateTime } from "@/lib/time";
 import {
   hasRealTime,
   isCancelled,
@@ -62,6 +69,27 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
           : t("next.leavePassed");
 
   const urgent = untilDeparture !== null && untilDeparture <= 15;
+
+  /*
+   * Je vertrektijd is voorbij en je activiteit moet nog beginnen. Dan staat er
+   * een rit op het scherm die zeker niet meer gaat; wat je wilt weten is wat er
+   * nog wél rijdt. Alleen vandaag en alleen bij OV: een auto vertrekt wanneer
+   * jij wilt, en voor morgen is er niets gemist.
+   */
+  const plan = travelPlanForDate(activity, settings, activity.date);
+  const missedRide =
+    shown.travel?.mode === "transit" &&
+    activity.date === toDateKey(now) &&
+    untilDeparture !== null &&
+    untilDeparture <= -5 &&
+    now < toDateTime(activity.date, activity.startTime);
+  const catchUpTravel = useCatchUpTravel(
+    settings.home,
+    activity.location,
+    plan?.outboundBike ?? "none",
+    Boolean(missedRide),
+  );
+  const catchUp = describeCatchUp(catchUpTravel.travel, activity.startTime);
 
   return (
     <section
@@ -230,6 +258,30 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             ) : !settings.home ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("next.needHome")}
+              </p>
+            ) : null}
+
+            {/* Wat er nog rijdt nu je vertrektijd voorbij is. */}
+            {missedRide && !calculating ? (
+              <p
+                className="mt-2 text-sm font-semibold tabular-nums"
+                style={{ color: catchUp && catchUp.lateMinutes > 0 ? "var(--danger)" : "var(--ink)" }}
+              >
+                {catchUp ? (
+                  <>
+                    &#128646; {t("next.catchUp", { time: catchUp.time, arrival: catchUp.arrival })}
+                    <span className="font-normal">
+                      {" · "}
+                      {catchUp.lateMinutes > 0
+                        ? t("next.catchUpLate", { count: catchUp.lateMinutes })
+                        : t("next.catchUpOnTime")}
+                    </span>
+                  </>
+                ) : catchUpTravel.nothingLeft ? (
+                  t("next.catchUpNone")
+                ) : catchUpTravel.loading ? (
+                  <Spinner size={12} label={t("next.catchUpSearching")} />
+                ) : null}
               </p>
             ) : null}
 

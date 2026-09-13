@@ -7,6 +7,7 @@ import {
   nextOccurrenceDate,
   travelPlanFor,
   travelPlanForDate,
+  travelIsStale,
   tripHasLeft,
 } from "./travel";
 import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
@@ -573,5 +574,39 @@ describe("computeDeparture bij een rit die je niet op tijd afzet", () => {
     // Auto en fiets kennen geen rit: daar ga je gewoon eerder weg.
     const result = computeDeparture(activity({ travel: travel() }), settings());
     expect(result?.late).toBe(false);
+  });
+});
+
+describe("travelIsStale", () => {
+  const nu = new Date("2026-09-07T07:00:00.000Z");
+  const TWEE_MINUTEN = 2 * 60 * 1000;
+
+  it("laat een verse berekening met rust", () => {
+    expect(travelIsStale("2026-09-07T06:59:10.000Z", TWEE_MINUTEN, nu)).toBe(false);
+  });
+
+  it("vindt de berekening van gisteravond te oud", () => {
+    // Dit is het geval waar het om gaat: dezelfde rit, dezelfde sleutel, maar
+    // de vertraging van vanochtend zit er niet in.
+    expect(travelIsStale("2026-09-06T20:14:00.000Z", TWEE_MINUTEN, nu)).toBe(true);
+  });
+
+  it("telt precies op de grens als te oud", () => {
+    expect(travelIsStale("2026-09-07T06:58:00.000Z", TWEE_MINUTEN, nu)).toBe(true);
+  });
+
+  it("vertrouwt een reis zonder datum niet", () => {
+    expect(travelIsStale(undefined, TWEE_MINUTEN, nu)).toBe(true);
+  });
+
+  it("vertrouwt een onleesbare datum niet", () => {
+    // Uit een importbestand kan van alles komen; dan liever opnieuw rekenen.
+    expect(travelIsStale("banaan", TWEE_MINUTEN, nu)).toBe(true);
+  });
+
+  it("houdt een berekening uit de toekomst voor vers", () => {
+    // Staat de klok van een ander apparaat voor, dan is dat geen reden om
+    // eindeloos opnieuw op te halen.
+    expect(travelIsStale("2026-09-07T07:30:00.000Z", TWEE_MINUTEN, nu)).toBe(false);
   });
 });

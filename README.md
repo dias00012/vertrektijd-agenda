@@ -171,6 +171,15 @@ Omdat een OV-rit afhangt van het tijdstip, zit de dag en starttijd in de cache-s
 de tijd of de dag, dan wordt de rit opnieuw opgezocht. Voor een herhalende activiteit plant de app
 op de **eerstvolgende dag** dat hij voorkomt.
 
+Die sleutel zegt *welke* rit je zoekt, niet hoe laat die vandaag echt rijdt. Vanaf drie uur voor
+je activiteit tot het einde ervan wordt een OV-rit daarom elke twee minuten opnieuw opgehaald, en
+meteen zodra je de app weer voor je neus haalt — ook als er al een uitkomst met dezelfde sleutel
+staat. Anders blijft de vertrektijd van gisteravond staan, met "op tijd" erbij, terwijl je trein
+een kwartier later rijdt.
+
+Is je vertrektijd toch verstreken en moet je activiteit nog beginnen, dan zoekt de app de rit die
+je nu nog kunt halen en zet erbij hoe laat je dan aankomt — en hoeveel te laat dat is.
+
 
 ### Opgeslagen locaties
 

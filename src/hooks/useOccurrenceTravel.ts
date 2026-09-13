@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchTravel } from "@/lib/api";
-import { travelModeFor, travelPlanForDate, tripHasLeft } from "@/lib/travel";
+import { travelIsStale, travelModeFor, travelPlanForDate, tripHasLeft } from "@/lib/travel";
 import { toDateKey, toDateTime } from "@/lib/time";
 import type { ActivityOccurrence, Settings, TravelInfo, TravelResult } from "@/lib/types";
 
@@ -77,11 +77,6 @@ export function useOccurrenceTravel(
   );
   const offset = daysBetween(toDateKey(new Date()), activity.date);
   const inRange = offset >= 0 && offset <= MAX_LOOKAHEAD_DAYS;
-  // En de rit moet nog moeten rijden. Van vanochtend heeft de planner geen
-  // dienstregeling meer; wat hij dan teruggeeft ziet er echt uit maar klopt
-  // niet. Zie `tripHasLeft`.
-  const shouldFetch = Boolean(plan) && !alreadyExact && inRange && !(plan && tripHasLeft(plan));
-
   const [fetched, setFetched] = useState<{
     key: string;
     travel: TravelInfo;
@@ -110,6 +105,30 @@ export function useOccurrenceTravel(
   const endsAt = toDateTime(activity.date, activity.endTime).getTime();
   const worthRefreshing =
     offset === 0 && nowMs >= startsAt - REFRESH_WINDOW_MS && nowMs <= endsAt;
+
+  /*
+   * En een rit die er al staat is niet vanzelf nog waar.
+   *
+   * De sleutel gaat over wélke rit je zoekt — van hier naar daar, uiterlijk
+   * aankomen om — en niet over hoe laat die rit vandaag echt rijdt. Klopte de
+   * sleutel, dan gold de opgeslagen uitkomst als exact en werd er niets meer
+   * opgehaald: de vertrektijd die gisteravond werd uitgerekend stond er
+   * vanochtend nog, met "op tijd" erbij, terwijl je trein een kwartier later
+   * reed of helemaal niet. Juist de eerstvolgende activiteit, waar je op
+   * afgaat, raakte zo nooit ververst.
+   *
+   * Daarom telt binnen het verversvenster ook de ouderdom van wat we laten
+   * zien. Daarbuiten verandert er niets: een rit van volgende week hoeft niet
+   * om de twee minuten opnieuw.
+   */
+  const shownAt =
+    fetched?.key === tripKey ? fetched.travel.computedAt : activity.travel?.computedAt;
+  const stale = worthRefreshing && travelIsStale(shownAt, REFRESH_MS, new Date(nowMs));
+  // En de rit moet nog moeten rijden. Van vanochtend heeft de planner geen
+  // dienstregeling meer; wat hij dan teruggeeft ziet er echt uit maar klopt
+  // niet. Zie `tripHasLeft`.
+  const shouldFetch =
+    Boolean(plan) && (!alreadyExact || stale) && inRange && !(plan && tripHasLeft(plan));
 
   useEffect(() => {
     if (!isTransit || !worthRefreshing) return;
@@ -140,9 +159,9 @@ export function useOccurrenceTravel(
     // aanvraag in plaats van er allebei een te doen.
     const maxAge = reloadAt > 0 ? FRESH_MS : CACHE_TTL_MS;
     const cached = cache.get(tripKey);
-    const request =
+    const entry =
       cached && Date.now() - cached.at < maxAge
-        ? cached.value
+        ? cached
         : (() => {
             const value = Promise.all([
               fetchTravel(home, destination, {
@@ -156,17 +175,22 @@ export function useOccurrenceTravel(
                 bike: plan.returnBike,
               }),
             ]).then(([outbound, inbound]) => ({ outbound, inbound }));
-            cache.set(tripKey, { at: Date.now(), value });
+            const fresh = { at: Date.now(), value };
+            cache.set(tripKey, fresh);
             // Een mislukte reis niet vasthouden: morgen mag het opnieuw.
             value.catch(() => cache.delete(tripKey));
-            return value;
+            return fresh;
           })();
 
     setLoading(true);
-    request
+    entry.value
       .then(({ outbound, inbound }) => {
         if (!active) return;
-        const computedAt = new Date().toISOString();
+        // Het moment van ophalen, niet van binnenkomen: komt dit uit de cache
+        // van deze sessie, dan is het antwoord zo oud als die cache. Anders zou
+        // een hergebruikte uitkomst zich als vers voordoen en het verversen
+        // telkens opnieuw uitstellen.
+        const computedAt = new Date(entry.at).toISOString();
         setFetched({
           key: tripKey,
           travel: { ...outbound, computedAt, key: plan.outboundKey },
@@ -188,8 +212,9 @@ export function useOccurrenceTravel(
   }, [shouldFetch, tripKey, reloadAt]);
 
   if (!isTransit) return { ...stored, loading: false, exact: true };
-  if (alreadyExact) return { ...stored, loading: false, exact: true };
 
+  // Een verse uitkomst wint van wat er in de activiteit staat, ook als dat
+  // dezelfde rit is: die van hiernaast kent de vertraging van dit moment.
   if (fetched && fetched.key === tripKey) {
     return {
       travel: fetched.travel,
@@ -198,6 +223,10 @@ export function useOccurrenceTravel(
       exact: true,
     };
   }
+
+  // Nog niets nieuws binnen: laat zien wat er staat. Dat is de goede rit, en
+  // wachten op een verversing met een leeg scherm helpt niemand.
+  if (alreadyExact) return { ...stored, loading: false, exact: true };
 
   return { ...stored, loading: loading && shouldFetch, exact: false };
 }
