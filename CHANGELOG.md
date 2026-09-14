@@ -8,6 +8,45 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.52.0
+
+- **Claude kan nu rechtstreeks bij de agenda.** Tot nu toe ging een planning via
+  een bestand: exporteren, in een gesprek plakken, het antwoord weer
+  importeren. Vier handelingen per keer, en Claude zag alleen de momentopname
+  in dat bestand.
+
+  De app biedt nu één adres aan, `/api/mcp`, dat het Model Context Protocol
+  spreekt. Je maakt in **Instellingen → Claude-connector** een sleutel aan,
+  plakt adres en sleutel in Claude onder *Connectors → Aangepaste connector
+  toevoegen*, en daarna vraag je gewoon om een planning.
+
+  Drie gereedschappen, bewust niet meer:
+
+  | Gereedschap | Wat het doet |
+  | --- | --- |
+  | `read_agenda` | De agenda over een periode, herhalingen al uitgerekend tot losse dagen, met vertrektijd en reisduur per activiteit. Plus het open huiswerk en de komende toetsen. |
+  | `save_activities` | Blokken toevoegen of wijzigen. Zonder `id` komt er een blok bij; met een bestaand `id` vervangt het dat blok — zo verplaats je iets. |
+  | `delete_activities` | Blokken weghalen op hun `id`, met een grafsteen zodat ze niet terugkomen bij de volgende sync. |
+
+  Wat de connector **niet** mag: huiswerk afvinken, instellingen aanpassen, aan
+  je account komen. En hij kijkt nooit uit zichzelf mee — er gebeurt alleen iets
+  wanneer jij in een gesprek iets vraagt.
+
+  De vertrektijd die de planner ziet is dezelfde som die de app op het scherm
+  zet (`computeDeparture`), niet een tweede berekening die er na een half jaar
+  naast ligt. Datzelfde geldt voor het opslaan: dat gaat door
+  `normalizeActivity`, precies zoals de import.
+
+- **Van de sleutel staat alleen een hash in de database.** De leesbare vorm
+  bestaat één keer, op het scherm waar je hem aanmaakt. Raakt die tabel op
+  straat, dan ligt daarmee niemands agenda open — en het verklaart ook waarom we
+  hem niet nog eens kunnen tonen. Kwijt is geen ramp: maak een nieuwe en trek de
+  oude in.
+
+- **Aanzetten vergt één SQL-bestand.** [`supabase/connector.sql`](supabase/connector.sql)
+  in de SQL-editor draaien; verder zijn er geen instellingen. Stap 10 van
+  [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md) loopt het na.
+
 ## 0.51.0
 
 - **Een overstap van twee minuten voor 196 meter.** Bij Lelystad Centrum staat

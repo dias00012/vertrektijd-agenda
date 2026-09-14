@@ -802,6 +802,9 @@ export const nl = {
   "api.deleteNotConfigured": "Automatisch verwijderen is nog niet ingesteld. Mail ons en we verwijderen je account handmatig.",
   "api.deleteFailed": "Het account kon niet worden verwijderd. Probeer het later opnieuw.",
   "api.deleteTooMany": "Te veel pogingen. Probeer het later opnieuw.",
+  "api.connectorOff": "De Claude-connector is op deze server nog niet ingesteld.",
+  "api.connectorFailed": "De sleutel kon niet worden opgeslagen. Probeer het later opnieuw.",
+  "api.connectorTooMany": "Te veel sleutels achter elkaar aangemaakt. Probeer het later opnieuw.",
   "api.needUrl": "Vul de link naar je rooster in.",
   "api.badUrl": "Dat is geen geldig webadres.",
   "api.httpOnly": "Alleen adressen die met http of https beginnen.",
@@ -890,6 +893,34 @@ export const nl = {
   "account.summaryOut": "Niet ingelogd",
   "account.summaryOff": "Nog niet ingesteld",
   "backup.summary": "Opslaan als bestand of terugzetten",
+  "connector.title": "Claude-connector",
+  "connector.summaryOne": "1 sleutel",
+  "connector.summaryMany": "{count} sleutels",
+  "connector.summaryNone": "Nog geen sleutel",
+  "connector.summaryOff": "Log eerst in",
+  "connector.intro":
+    "Geef Claude toegang tot deze agenda, zodat je in een gesprek kunt vragen om " +
+    "een planning. Claude leest wat er staat en zet de blokken er zelf in. Er wordt " +
+    "nooit uit zichzelf meegekeken: alleen wanneer jij erom vraagt.",
+  "connector.create": "Sleutel aanmaken",
+  "connector.creating": "Bezig…",
+  "connector.labelPlaceholder": "Waarvoor is deze sleutel? (bv. telefoon)",
+  "connector.once":
+    "Kopieer hem nu — hierna is hij niet meer te zien. Raak je hem kwijt, dan maak " +
+    "je gewoon een nieuwe aan en trek je deze in.",
+  "connector.copy": "Kopiëren",
+  "connector.copied": "Gekopieerd",
+  "connector.url": "Adres van de connector",
+  "connector.howto":
+    "In Claude: Instellingen → Connectors → Aangepaste connector toevoegen. Plak het " +
+    "adres hierboven en geef de sleutel op als bearer-token.",
+  "connector.never": "Nog niet gebruikt",
+  "connector.lastUsed": "Laatst gebruikt {when}",
+  "connector.revoke": "Intrekken",
+  "connector.revoked": "De sleutel is ingetrokken.",
+  "connector.failed": "Dat lukte niet. Probeer het nog eens.",
+  "connector.needsAccount":
+    "Hiervoor heb je een account nodig: de connector leest je agenda uit je account.",
 } as const;
 
 export type TranslationKey = keyof typeof nl;
@@ -1658,6 +1689,9 @@ export const en: Record<TranslationKey, string> = {
   "api.deleteNotConfigured": "Automatic deletion has not been set up yet. Email us and we will delete your account by hand.",
   "api.deleteFailed": "The account could not be deleted. Try again later.",
   "api.deleteTooMany": "Too many attempts. Try again later.",
+  "api.connectorOff": "The Claude connector has not been set up on this server yet.",
+  "api.connectorFailed": "The key could not be saved. Try again later.",
+  "api.connectorTooMany": "Too many keys created in a row. Try again later.",
   "api.needUrl": "Enter the link to your timetable.",
   "api.badUrl": "That is not a valid web address.",
   "api.httpOnly": "Only addresses starting with http or https.",
@@ -1742,6 +1776,34 @@ export const en: Record<TranslationKey, string> = {
   "account.summaryOut": "Not signed in",
   "account.summaryOff": "Not set up yet",
   "backup.summary": "Save as a file or restore one",
+  "connector.title": "Claude connector",
+  "connector.summaryOne": "1 key",
+  "connector.summaryMany": "{count} keys",
+  "connector.summaryNone": "No key yet",
+  "connector.summaryOff": "Sign in first",
+  "connector.intro":
+    "Give Claude access to this agenda, so you can ask for a plan in a chat. " +
+    "Claude reads what is there and adds the blocks itself. It never looks in on " +
+    "its own: only when you ask.",
+  "connector.create": "Create key",
+  "connector.creating": "Working…",
+  "connector.labelPlaceholder": "What is this key for? (e.g. phone)",
+  "connector.once":
+    "Copy it now — you will not see it again. If you lose it, just create a new " +
+    "one and revoke this one.",
+  "connector.copy": "Copy",
+  "connector.copied": "Copied",
+  "connector.url": "Connector address",
+  "connector.howto":
+    "In Claude: Settings → Connectors → Add custom connector. Paste the address " +
+    "above and give the key as a bearer token.",
+  "connector.never": "Not used yet",
+  "connector.lastUsed": "Last used {when}",
+  "connector.revoke": "Revoke",
+  "connector.revoked": "The key has been revoked.",
+  "connector.failed": "That did not work. Try again.",
+  "connector.needsAccount":
+    "This needs an account: the connector reads your agenda from your account.",
 };
 
 const TABLES: Record<Language, Record<TranslationKey, string>> = { nl, en };

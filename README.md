@@ -334,6 +334,38 @@ instelstappen (project, database-schema, sleutels in Vercel) staan in
 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` blijft alles lokaal en verandert er
 niets. Elke gebruiker heeft alleen toegang tot zijn eigen data (Row Level Security).
 
+## Claude-connector (MCP)
+
+Naast import/export kan Claude ook rechtstreeks bij de agenda. Dat scheelt het heen en weer
+slepen van een bestand: je vraagt in een gesprek om een planning, Claude leest wat er staat en
+zet de blokken er zelf in.
+
+**Hoe het werkt.** De app biedt één adres aan, `/api/mcp`, dat het
+[Model Context Protocol](https://modelcontextprotocol.io) spreekt over HTTP. Je maakt in
+**Instellingen → Claude-connector** een sleutel aan en plakt adres en sleutel in Claude onder
+*Connectors → Aangepaste connector toevoegen*. Vanaf dan heeft Claude drie gereedschappen:
+
+| Gereedschap | Wat het doet |
+| --- | --- |
+| `read_agenda` | De agenda over een periode, herhalingen al uitgerekend tot losse dagen, met vertrektijd en reisduur per activiteit. Plus het open huiswerk en de komende toetsen. |
+| `save_activities` | Blokken toevoegen of wijzigen. Zonder `id` komt er een blok bij; met een bestaand `id` vervangt het dat blok — zo verplaats je iets. |
+| `delete_activities` | Blokken weghalen op hun `id`, met een grafsteen zodat ze niet terugkomen bij de volgende sync. |
+
+**Waar de grenzen liggen.** Bewust klein gehouden:
+
+- De connector leest en schrijft **activiteiten**. Taken en toetsen leest hij wel, maar hij past
+  ze niet aan — huiswerk afvinken blijft iets wat je zelf doet.
+- Blokken uit je schoolrooster of een gekoppelde agenda kun je weghalen, maar die komen bij de
+  eerstvolgende verversing gewoon terug. Dat zijn kopieën, geen eigen blokken.
+- De data gaat door dezelfde rij als de synchronisatie (`user_data`). De app haalt die op bij het
+  openen, dus een planning die Claude nu schrijft zie je op je telefoon zodra je hem weer opent.
+- Claude kijkt nooit uit zichzelf mee; er gebeurt alleen iets wanneer jij erom vraagt.
+
+**Beveiliging.** Van de sleutel staat alleen een SHA-256 in de database, nooit de sleutel zelf —
+raakt die tabel op straat, dan ligt daarmee niemands agenda open. De sleutel wijst naar precies
+één gebruiker en de route kan bij niets anders. Een sleutel intrekken kan op elk moment in de
+instellingen. Zie [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md) stap 10 voor het aanzetten.
+
 ## Klaar voor later
 
 Het model is bewust ruim opgezet, maar deze functies zijn nog **niet** gebouwd:

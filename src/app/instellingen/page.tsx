@@ -7,6 +7,7 @@ import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces, misse
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
+import { ConnectorSection } from "@/components/ConnectorSection";
 import { RemindersSection } from "@/components/RemindersSection";
 import { TimetableImport } from "@/components/TimetableImport";
 import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
@@ -59,6 +60,7 @@ export default function SettingsPage() {
 
       <SettingsGroup title={t("settings.group.account")}>
         <AccountSection />
+        <ConnectorSection />
         <BackupSection />
         <IntroSection />
       </SettingsGroup>
