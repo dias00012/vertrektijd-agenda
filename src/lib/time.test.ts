@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   addDaysToKey,
   formatDuration,
+  isDateKey,
   isoWeekNumber,
+  isTimeKey,
   minutesToTime,
   timeToMinutes,
   toDateKey,
@@ -93,5 +95,37 @@ describe("isoWeekNumber", () => {
   it("geeft elke dag van dezelfde week hetzelfde nummer", () => {
     const week = ["2026-09-07", "2026-09-08", "2026-09-11", "2026-09-13"];
     expect(new Set(week.map(isoWeekNumber)).size).toBe(1);
+  });
+});
+
+describe("isDateKey en isTimeKey", () => {
+  it("herkent een echte datum", () => {
+    expect(isDateKey("2026-09-11")).toBe(true);
+    expect(isDateKey("2026-02-28")).toBe(true);
+  });
+
+  it("wijst een datum af die niet bestaat", () => {
+    // new Date schuift 31 februari door naar maart; dan staat je activiteit op
+    // een dag die je niet gekozen hebt.
+    expect(isDateKey("2026-02-31")).toBe(false);
+    expect(isDateKey("2026-13-01")).toBe(false);
+  });
+
+  it("wijst af wat er alleen uitziet als een datum", () => {
+    for (const waarde of ["gisteren", "", "2026-9-1", "11-09-2026", null, 20260911, {}]) {
+      expect(isDateKey(waarde)).toBe(false);
+    }
+  });
+
+  it("herkent een tijd op de klok", () => {
+    expect(isTimeKey("00:00")).toBe(true);
+    expect(isTimeKey("09:00")).toBe(true);
+    expect(isTimeKey("23:59")).toBe(true);
+  });
+
+  it("wijst een tijd af die niet op de klok staat", () => {
+    for (const waarde of ["24:00", "99:99", "9:00", "banaan", "", null, 900]) {
+      expect(isTimeKey(waarde)).toBe(false);
+    }
   });
 });

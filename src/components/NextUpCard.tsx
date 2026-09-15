@@ -4,9 +4,17 @@ import { activityColor } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
-import { minutesUntilDeparture } from "@/lib/agenda";
-import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
-import { formatDateLabel, formatDuration } from "@/lib/time";
+import { useCatchUpTravel } from "@/hooks/useCatchUpTravel";
+import { clashesFor, minutesUntilDeparture, onwardTarget } from "@/lib/agenda";
+import { linkedWorkDone } from "@/lib/schoolwork";
+import {
+  computeDeparture,
+  computeOnward,
+  computeReturn,
+  describeCatchUp,
+  travelPlanForDate,
+} from "@/lib/travel";
+import { formatDateLabel, formatDuration, toDateKey, toDateTime } from "@/lib/time";
 import {
   hasRealTime,
   isCancelled,
@@ -24,7 +32,7 @@ import type { ActivityOccurrence } from "@/lib/types";
  * reistijd, vertrektijd en een aftelling.
  */
 export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; now: Date }) {
-  const { settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
+  const { activities, settings, calculatingIds, tasks, exams, categoryFor } = useAgenda();
   const t = useT();
   const category = categoryFor(activity.category);
   const color = activityColor(activity, category);
@@ -38,7 +46,17 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
-  const onward = computeOnward(shown, null);
+  // Mét de bestemming erbij, anders kan "je komt te laat" nooit waar worden.
+  const nextStop = onwardTarget(activity, activities);
+  const onward = computeOnward(shown, nextStop?.startTime ?? null);
+  /*
+   * Staat er iets tegelijk met wat je nu gaat doen? Dan is dít het moment om
+   * het te weten. De doorreis laten we eruit: die staat er al met de tijd
+   * waarop je aankomt.
+   */
+  const clash = clashesFor(activity, activities, settings).find(
+    (item) => !(item.travelOnly && item.other.occurrenceId === nextStop?.occurrenceId),
+  );
   const untilDeparture = minutesUntilDeparture(shown, settings, now);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
@@ -48,6 +66,8 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
   const cancelled = isCancelled(legs);
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
+  /** Werk dat al af is: dan hoef je hier niets meer te doen. */
+  const workDone = linkedWorkDone(activity, tasks, exams);
 
   // Een aftelling is alleen zinvol binnen een halve dag; daarbuiten zegt het
   // datumlabel ("maandag 7 september") al genoeg.
@@ -62,6 +82,27 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
           : t("next.leavePassed");
 
   const urgent = untilDeparture !== null && untilDeparture <= 15;
+
+  /*
+   * Je vertrektijd is voorbij en je activiteit moet nog beginnen. Dan staat er
+   * een rit op het scherm die zeker niet meer gaat; wat je wilt weten is wat er
+   * nog wél rijdt. Alleen vandaag en alleen bij OV: een auto vertrekt wanneer
+   * jij wilt, en voor morgen is er niets gemist.
+   */
+  const plan = travelPlanForDate(activity, settings, activity.date);
+  const missedRide =
+    shown.travel?.mode === "transit" &&
+    activity.date === toDateKey(now) &&
+    untilDeparture !== null &&
+    untilDeparture <= -5 &&
+    now < toDateTime(activity.date, activity.startTime);
+  const catchUpTravel = useCatchUpTravel(
+    settings.home,
+    activity.location,
+    plan?.outboundBike ?? "none",
+    Boolean(missedRide),
+  );
+  const catchUp = describeCatchUp(catchUpTravel.travel, activity.startTime);
 
   return (
     <section
@@ -85,7 +126,17 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             {category.emoji}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold">{activity.title}</h2>
+            <h2
+              className="truncate text-lg font-semibold"
+              style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+            >
+              {activity.title}
+            </h2>
+            {workDone ? (
+              <p className="text-sm font-semibold" style={{ color: "#16a34a" }}>
+                &#10003; {t("activity.freeAgain")}
+              </p>
+            ) : null}
             <p className="text-sm tabular-nums" style={{ color: "var(--muted)" }}>
               {formatDateLabel(activity.date, now)} &middot; {activity.startTime} &ndash;{" "}
               {activity.endTime}
@@ -102,6 +153,16 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             {activity.location ? (
               <p className="mt-1 truncate text-sm" style={{ color: "var(--muted)" }}>
                 &#128205; {activity.location.label}
+              </p>
+            ) : null}
+            {clash ? (
+              <p className="mt-1 text-sm font-medium" style={{ color: "#b45309" }}>
+                &#9888;&#65039;{" "}
+                {t(clash.travelOnly ? "activity.clashTravel" : "activity.clash", {
+                  title: clash.other.title,
+                  from: clash.other.startTime,
+                  to: clash.other.endTime,
+                })}
               </p>
             ) : null}
           </div>
@@ -127,6 +188,13 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
                   >
                     {departure.time}
                   </p>
+                  {/* Haalt de eerstvolgende rit je starttijd niet, dan hoort dat
+                      hier te staan en niet alleen in de reisdetails. */}
+                  {departure.late && departure.arrival ? (
+                    <p className="text-xs font-semibold" style={{ color: "var(--danger)" }}>
+                      &#9888;&#65039; {t("activity.arriveLate", { time: departure.arrival })}
+                    </p>
+                  ) : null}
                   {shown.travel.mode === "transit" ? (
                     <JourneyStatus
                       cancelled={cancelled}
@@ -223,6 +291,30 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             ) : !settings.home ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("next.needHome")}
+              </p>
+            ) : null}
+
+            {/* Wat er nog rijdt nu je vertrektijd voorbij is. */}
+            {missedRide && !calculating ? (
+              <p
+                className="mt-2 text-sm font-semibold tabular-nums"
+                style={{ color: catchUp && catchUp.lateMinutes > 0 ? "var(--danger)" : "var(--ink)" }}
+              >
+                {catchUp ? (
+                  <>
+                    &#128646; {t("next.catchUp", { time: catchUp.time, arrival: catchUp.arrival })}
+                    <span className="font-normal">
+                      {" · "}
+                      {catchUp.lateMinutes > 0
+                        ? t("next.catchUpLate", { count: catchUp.lateMinutes })
+                        : t("next.catchUpOnTime")}
+                    </span>
+                  </>
+                ) : catchUpTravel.nothingLeft ? (
+                  t("next.catchUpNone")
+                ) : catchUpTravel.loading ? (
+                  <Spinner size={12} label={t("next.catchUpSearching")} />
+                ) : null}
               </p>
             ) : null}
 

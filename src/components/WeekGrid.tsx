@@ -6,10 +6,13 @@ import { useAgenda } from "@/hooks/useAgenda";
 import {
   activitiesOnDate,
   layoutDay,
+  onwardTarget,
   timeRangeFor,
   type PositionedActivity,
 } from "@/lib/agenda";
 import { computeOnward } from "@/lib/travel";
+import { travelModeMeta } from "@/lib/travelModes";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import {
   addDaysToKey,
   calendarWeekKeys,
@@ -483,10 +486,18 @@ function GridBlock({
   onSelect: () => void;
   onDrop: (occurrence: ActivityOccurrence, target: DropTarget) => void;
 }) {
-  const { categoryFor } = useAgenda();
+  const { activities, categoryFor, tasks, exams } = useAgenda();
   const t = useT();
   const category = categoryFor(item.occurrence.category);
   const color = activityColor(item.occurrence, category);
+  /** Werk dat af is: doorgestreept, zodat je in het weekbeeld ziet wat vrij is. */
+  const workDone = linkedWorkDone(item.occurrence, tasks, exams);
+  /**
+   * Het icoontje op het reisblok. Hier stond een auto vast, ook boven een
+   * schooldag waar je met de trein heen gaat — hetzelfde als wat het
+   * dagoverzicht ooit deed met het woord "rijden".
+   */
+  const travelEmoji = travelModeMeta(item.occurrence.travel?.mode ?? "car").emoji;
   const width = 100 / item.lanes;
   const left = item.lane * width;
 
@@ -602,7 +613,10 @@ function GridBlock({
   const returnHeight =
     item.returnMinutes === null ? 0 : (item.returnMinutes - item.endMinutes) * PX_PER_MINUTE;
   /** Ga je hierna rechtstreeks door, dan heet het blok erna anders. */
-  const onward = computeOnward(item.occurrence, null);
+  const onward = computeOnward(
+    item.occurrence,
+    onwardTarget(item.occurrence, activities)?.startTime ?? null,
+  );
 
   /** Gestreepte opmaak voor reisblokken: leest als "onderweg". */
   const travelStyle = {
@@ -639,7 +653,7 @@ function GridBlock({
               className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
-              &#128663; {minutesToTime(item.departureMinutes + startOffset)}
+              {travelEmoji} {minutesToTime(item.departureMinutes + startOffset)}
             </span>
           ) : null}
         </button>
@@ -691,7 +705,10 @@ function GridBlock({
             </span>
           ) : (
             <>
-              <span className="truncate text-[0.65rem] font-semibold leading-tight">
+              <span
+                className="truncate text-[0.65rem] font-semibold leading-tight"
+                style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+              >
                 {item.occurrence.title}
               </span>
               <span
@@ -752,7 +769,7 @@ function GridBlock({
               className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
-              {onward ? "⟶" : "↩️"}{" "}
+              {onward ? "\u27F6" : "\u21A9\uFE0F"}{" "}
               {minutesToTime(item.returnMinutes + endOffset)}
             </span>
           ) : null}

@@ -219,6 +219,13 @@ export interface Activity {
   travelMode?: TravelMode | null;
   /** Optioneel: koppeling naar een taak (huiswerk) waar dit blok bij hoort. */
   linkedTaskId?: string | null;
+  /**
+   * Optioneel: de stap binnen die taak waar dit blok voor is. Plan je een
+   * opdracht in losse blokken ("samenvatting", "opgaven maken"), dan hoort elk
+   * blok bij één stap — en is het blok af zodra die stap af is, niet pas als de
+   * hele opdracht af is.
+   */
+  linkedStepId?: string | null;
   /** Optioneel: koppeling naar een toets waar dit blok bij hoort. */
   linkedExamId?: string | null;
   createdAt: string;
@@ -246,6 +253,8 @@ export interface ActivityDraft {
    * omdat het formulier deze velden dan niet meestuurt.
    */
   linkedTaskId?: string | null;
+  /** De stap binnen de taak waar dit blok voor is; zie `Activity`. */
+  linkedStepId?: string | null;
   linkedExamId?: string | null;
   /** Herkomst, bv. "leerplan". Standaard leeg. */
   source?: string | null;
@@ -352,17 +361,6 @@ export interface SavedPlace {
   createdAt: string;
 }
 
-/**
- * Hoe snel je loopt. Elk loopstuk in een OV-reis hangt hieraan: naar de halte,
- * de overstap, en het laatste stuk naar de deur.
- *
- * De planner rekent zelf met ongeveer 4 km/h. Dat is voorzichtig — 9292 gaat
- * uit van 5 km/h — en op een reis met drie loopstukken scheelt dat zo tien
- * minuten. Voorzichtig is niet verkeerd (je mist geen bus), maar wie sneller
- * loopt hoort dat te kunnen zeggen in plaats van elke rit te lang te krijgen.
- */
-export type WalkSpeed = "slow" | "normal" | "fast";
-
 export interface Settings {
   home: GeoLocation | null;
   /** Bewaarde locaties, herbruikbaar bij het toevoegen van een activiteit. */
@@ -380,9 +378,7 @@ export interface Settings {
    * of een OV-fiets. Lopend duurt dezelfde reis al snel een half uur langer.
    */
   transitBike?: TransitBike;
-  /** Hoe snel je loopt; standaard de snelheid van de planner zelf. */
-  walkSpeed?: WalkSpeed;
-  /**
+    /**
    * Je gekoppelde rooster, zodat de app het zelf bij kan houden. Zonder deze
    * gegevens zou je na elke roosterwijziging opnieuw alles moeten invullen.
    */

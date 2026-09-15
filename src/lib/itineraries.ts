@@ -34,6 +34,18 @@ export interface PickOptions {
  * Wat een overstap waard is in de vergelijking. Vijf minuten later van huis is
  * fijn, maar niet als je er een extra overstap voor terugkrijgt: die kost tijd
  * op het perron en is het eerste wat misgaat zodra er iets vertraagd is.
+ *
+ * Nagemeten of die vijf minuten niet te duur zijn, over 48 vergelijkingen (12
+ * ritten op 4 tijdstippen, steeds "uiterlijk aankomen om"):
+ *
+ *     zelfde rit gekozen         43
+ *     boete kost vertrektijd      5  (samen 9 minuten)
+ *     boete levert vertrektijd op 0
+ *
+ * Het duurste geval was drie minuten eerder de deur uit, en daar stond een
+ * overstap minder tegenover (Zierikzee → Goes: 12:30 met twee overstappen in
+ * plaats van 12:33 met drie). Dat is precies de ruil die deze boete hoort te
+ * maken. Zelf nameten: `node scripts/overstapboete.mjs`.
  */
 const TRANSFER_PENALTY_MINUTES = 5;
 const MINUTE_MS = 60_000;

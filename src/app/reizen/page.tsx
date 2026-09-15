@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { fetchJourneys, type JourneyDiagnostics } from "@/lib/api";
-import { DEFAULT_WALK_SPEED } from "@/lib/transitQuery";
 import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
@@ -137,7 +136,6 @@ export default function TravelPlannerPage() {
               : settings.transitBike === "start"
                 ? "origin"
                 : "none",
-          walk: settings.walkSpeed ?? DEFAULT_WALK_SPEED,
         });
         track("reis_gezocht");
         setCursors({ previous: result.previousCursor, next: result.nextCursor });
@@ -162,7 +160,7 @@ export default function TravelPlannerPage() {
         setLoading(false);
       }
     },
-    [from, to, when, dateTime, t, settings.transitBike, settings.walkSpeed],
+    [from, to, when, dateTime, t, settings.transitBike],
   );
 
   function useMyLocation() {

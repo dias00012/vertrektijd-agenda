@@ -1,9 +1,16 @@
 import "server-only";
 import { ProviderError } from "./config";
-import { lastPlanVersion, motisPlan, toTravelLeg, type MotisItinerary } from "./motis";
+import {
+  lastPlanVersion,
+  motisPlan,
+  shownMinutes,
+  toTravelLeg,
+  type MotisItinerary,
+} from "./motis";
 import { tidyItineraries } from "../itineraries";
-import { transitParams } from "../transitQuery";
-import type { BikeEnds, GeoLocation, Journey, WalkSpeed } from "../types";
+import { transitParams, WALK_SPEED_MS } from "../transitQuery";
+import { applyWalkSpeed } from "../walkTimes";
+import type { BikeEnds, GeoLocation, Journey } from "../types";
 
 /**
  * De reisplanner: meerdere reismogelijkheden naast elkaar, met live
@@ -23,8 +30,6 @@ export interface JourneySearch {
   count?: number;
   /** Aan welke kant van de rit een fiets staat. */
   bike?: BikeEnds;
-  /** Hoe snel je loopt; bepaalt elk loopstuk van de rit. */
-  walk?: WalkSpeed;
 }
 
 export interface JourneyResult {
@@ -68,7 +73,6 @@ export async function planJourneys(
     time: search.time ?? new Date().toISOString(),
     arriveBy: search.arriveBy,
     bike: search.bike,
-    walk: search.walk,
     cursor: search.cursor,
   });
 
@@ -76,9 +80,14 @@ export async function planJourneys(
   // Rijdt er niets, dan is er soms nog wel een directe loop- of fietsroute.
   // Die tonen is beter dan zeggen dat er geen verbinding is.
   const found = data.itineraries?.length ? data.itineraries : (data.direct ?? []);
+  // De loopstukken narekenen voordat er iets wordt weggestreept: welke optie
+  // een andere overbodig maakt hangt van de vertrek- en aankomsttijd af, en
+  // die kloppen pas na deze correctie. Zo staat er in de reisplanner ook
+  // hetzelfde als in de agenda.
+  const walked = found.map((itinerary) => applyWalkSpeed(itinerary, WALK_SPEED_MS));
   // Opties die op geen enkel punt winnen eruit, en op vertrektijd sorteren:
   // de volgorde waarin de planner ze teruggeeft ligt namelijk niet vast.
-  const itineraries = tidyItineraries(found);
+  const itineraries = tidyItineraries(walked);
 
   if (itineraries.length === 0) {
     // Bij bladeren is een lege pagina geen fout maar het einde van de
@@ -164,7 +173,7 @@ function toJourney(
       .join(">")}`,
     departure: itinerary.startTime,
     arrival: itinerary.endTime,
-    durationMinutes: Math.round(itinerary.duration / 60),
+    durationMinutes: shownMinutes(itinerary.startTime, itinerary.endTime, itinerary.duration),
     transfers: itinerary.transfers ?? 0,
     legs,
     delayMinutes,

@@ -40,6 +40,30 @@ export function addDaysToKey(dateKey: string, days: number): string {
   return toDateKey(d);
 }
 
+/**
+ * Is dit echt een "YYYY-MM-DD" die bestaat?
+ *
+ * De app krijgt datums binnen die zij niet zelf geschreven heeft: uit een
+ * back-upbestand, uit de cloud en uit het uitwisselformaat dat de planner
+ * vult. Een `Number("gisteren")` wordt `NaN` en vanaf daar rekent alles stil
+ * door met onzin, dus wordt er aan de rand gekeken of het klopt. Ook 31
+ * februari valt hier af: `new Date` schuift die door naar maart, en dan staat
+ * je activiteit op een dag die je niet gekozen hebt.
+ */
+export function isDateKey(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return (
+    date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d
+  );
+}
+
+/** Is dit echt een "HH:mm" op de klok? */
+export function isTimeKey(value: unknown): value is string {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 export function parseDateKey(dateKey: string): Date {
   const [y, m, d] = dateKey.split("-").map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1);

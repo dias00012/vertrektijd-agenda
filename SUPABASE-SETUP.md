@@ -256,6 +256,50 @@ De gebeurtenissen die geteld worden: `dag_geopend`, `activiteit_toegevoegd`,
 `rooster_gewijzigd`. Andere namen weigert de server, zodat niemand de tabel kan
 volschrijven.
 
+## 10. Claude bij je agenda laten (optioneel)
+
+Hiermee kun je in een gesprek met Claude vragen om een planning, zonder bestanden heen en weer
+te slepen. Claude leest je agenda en zet de blokken er zelf in.
+
+### 10.1 De tabel
+
+**SQL Editor** → nieuwe query → de inhoud van [`supabase/connector.sql`](supabase/connector.sql)
+plakken → **Run**.
+
+Daarin staat per gebruiker welke sleutels er zijn — niet de sleutel zelf, alleen een SHA-256
+ervan. De leesbare vorm bestaat één keer, op het scherm waar je hem aanmaakt.
+
+`SUPABASE_SERVICE_ROLE_KEY` moet er al staan; die gebruikt de server om de sleutel op te zoeken.
+Andere instellingen zijn er niet: zodra de tabel bestaat werkt het.
+
+### 10.2 Een sleutel aanmaken
+
+Open de app → **Instellingen → Claude-connector** → geef hem een naam (bv. "telefoon") →
+**Sleutel aanmaken**. Kopieer hem meteen; daarna is hij niet meer te zien. Kwijt is geen ramp:
+maak een nieuwe aan en trek de oude in.
+
+Op datzelfde scherm staat het adres van de connector, iets als
+`https://jouw-app.vercel.app/api/mcp`.
+
+### 10.3 Koppelen in Claude
+
+In Claude: **Instellingen → Connectors → Aangepaste connector toevoegen**. Plak het adres en geef
+de sleutel op als bearer-token. Daarna kun je vragen als "plan mijn week" of "verplaats mijn
+leerblok van dinsdag naar woensdagavond".
+
+### 10.4 Wat Claude wel en niet mag
+
+- Lezen: je activiteiten (met vertrektijden), je open huiswerk en je komende toetsen.
+- Schrijven: activiteiten toevoegen, wijzigen en weghalen.
+- **Niet**: huiswerk afvinken, je instellingen aanpassen of je account raken.
+
+Claude kijkt nooit uit zichzelf mee — alleen wanneer jij in een gesprek iets vraagt. Wil je het
+weer dichtzetten, trek de sleutel dan in bij **Instellingen → Claude-connector**; dat werkt
+meteen.
+
+Let op: de app haalt je agenda op bij het openen. Een planning die Claude nu schrijft zie je op
+je telefoon zodra je de app weer opent.
+
 ## Klaar
 
 Open de app → **Instellingen → Account & synchronisatie** → maak een account aan of

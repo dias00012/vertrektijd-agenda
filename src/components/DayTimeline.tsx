@@ -5,8 +5,9 @@ import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
-import { formatDuration, minutesToTime, timeToMinutes } from "@/lib/time";
+import { formatDuration, MINUTES_PER_DAY, minutesToTime, timeToMinutes } from "@/lib/time";
 import { travelModeMeta } from "@/lib/travelModes";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import { ActivityForm } from "./ActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -61,9 +62,15 @@ function toKey(d: Date): string {
 
 /** Het moment (minuten sinds middernacht) waarop een regel "voorbij" is. */
 function passedMinutesFor(entry: TimelineEntry): number {
-  if (entry.kind === "activity") return timeToMinutes(entry.activity.endTime);
+  if (entry.kind === "activity") {
+    const start = timeToMinutes(entry.activity.startTime);
+    const end = timeToMinutes(entry.activity.endTime);
+    // Een nachtdienst van 23:00 tot 01:00 eindigt op de kalender vóór hij
+    // begint. Letterlijk genomen is hij de hele dag al "geweest".
+    return end < start ? MINUTES_PER_DAY : end;
+  }
   if (entry.kind === "return" && entry.returnMinutes !== undefined) {
-    return entry.minutes + entry.returnMinutes;
+    return entry.homeMinutes ?? entry.minutes + entry.returnMinutes;
   }
   if (entry.kind === "onward" && entry.onward) {
     return timeToMinutes(entry.onward.arrival);
@@ -80,9 +87,11 @@ function TimelineRow({
   passed: boolean;
   onSelect: () => void;
 }) {
-  const { categoryFor } = useAgenda();
+  const { categoryFor, tasks, exams } = useAgenda();
   const t = useT();
   const category = categoryFor(entry.activity.category);
+  // Werk dat af is: het blok blijft staan, maar die tijd is vrij.
+  const workDone = entry.kind === "activity" && linkedWorkDone(entry.activity, tasks, exams);
   const color = activityColor(entry.activity, category);
   const isDeparture = entry.kind === "departure";
   const isReturn = entry.kind === "return";
@@ -131,6 +140,11 @@ function TimelineRow({
               <>&#8617;&#65039; {t("timeline.backHomeTitle")}</>
             )}
           </span>
+          {isDeparture && entry.late && entry.lateArrival ? (
+            <span className="block text-xs font-semibold" style={{ color: "var(--danger)" }}>
+              &#9888;&#65039; {t("activity.arriveLate", { time: entry.lateArrival })}
+            </span>
+          ) : null}
           {isDeparture && entry.activity.travel ? (
             <span className="block text-xs" style={{ color: "var(--muted)" }}>
               {t("timeline.travelTo", {
@@ -170,7 +184,7 @@ function TimelineRow({
                     ? "timeline.drive"
                     : "timeline.travel",
                 ),
-                time: minutesToTime(entry.minutes + entry.returnMinutes),
+                time: minutesToTime(entry.homeMinutes ?? entry.minutes + entry.returnMinutes),
               })}
             </span>
           ) : null}
@@ -184,15 +198,31 @@ function TimelineRow({
         >
           <span className="flex items-baseline gap-2">
             <span aria-hidden>{category.emoji}</span>
-            <span className="truncate text-sm font-semibold">{entry.activity.title}</span>
-            {entry.activity.source === "leerplan" ||
-            entry.activity.linkedTaskId ||
-            entry.activity.linkedExamId ? (
+            <span
+              className="truncate text-sm font-semibold"
+              style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+            >
+              {entry.activity.title}
+            </span>
+            {/* Is het werk af, dan zegt het vinkje hiernaast al dat dit een
+                leerblok was; het boekje erbij maakt de regel alleen smaller. */}
+            {!workDone &&
+            (entry.activity.source === "leerplan" ||
+              entry.activity.linkedTaskId ||
+              entry.activity.linkedExamId) ? (
               <span aria-hidden title={t("timeline.studyBlock")}>
                 📚
               </span>
             ) : null}
-            {passed ? (
+            {workDone ? (
+              <span
+                className="shrink-0 text-[0.6rem] font-semibold"
+                style={{ color: "#16a34a" }}
+                title={t("activity.workDone")}
+              >
+                &#10003; {t("activity.workDone")}
+              </span>
+            ) : passed ? (
               <span className="text-[0.6rem] font-semibold" style={{ color: "var(--muted)" }}>
                 ✓
               </span>

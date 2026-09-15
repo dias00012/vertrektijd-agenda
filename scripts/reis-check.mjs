@@ -127,9 +127,14 @@ await serverConfig();
 // 1. Precies zoals de reisplanner in de app het nu vraagt.
 report("Zoals de reisplanner het vraagt (v6)", await plan(from, to));
 
-// 2. Zoals de agenda het vraagt: één beste rit in plaats van een vertrekbord.
+// 2. Zoals de agenda het vraagt: een klein venster waar de app zelf de beste
+//    rit uit kiest (zo laat mogelijk weg, bij gelijkspel de kortste rit).
+report("Zoals de agenda het vraagt (v6, drie opties)", await plan(from, to, { numItineraries: "3" }));
+
+// 2b. Zoals de agenda het tot 0.34.0 vroeg: één rit, gekozen door de planner.
+//     Bij "uiterlijk aankomen om" zit daar het wachten in dat je niet wilt.
 report(
-  "Zoals de agenda het vraagt (v6, timetableView=false)",
+  "Zoals het tot 0.34.0 ging (timetableView=false)",
   await plan(from, to, { timetableView: "false", numItineraries: "1" }),
 );
 

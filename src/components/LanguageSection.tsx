@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/hooks/useLanguage";
 import { LANGUAGES } from "@/lib/i18n/locale";
+import { SettingsRow } from "./SettingsRow";
 
 /**
  * Taalkeuze. Bewust op dit apparaat en niet in je account: je telefoon en je
@@ -11,10 +12,11 @@ import { LANGUAGES } from "@/lib/i18n/locale";
 export function LanguageSection() {
   const { language, setLanguage, t } = useLanguage();
 
+  const current = LANGUAGES.find((option) => option.id === language);
+
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#127760; {t("language.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow icon={"\u{1F310}"} title={t("language.title")} summary={current?.label}>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("language.body")}
       </p>
 
@@ -45,6 +47,6 @@ export function LanguageSection() {
           );
         })}
       </div>
-    </section>
+    </SettingsRow>
   );
 }

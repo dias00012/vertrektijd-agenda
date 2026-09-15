@@ -7,29 +7,80 @@ import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces, misse
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
+import { ConnectorSection } from "@/components/ConnectorSection";
 import { RemindersSection } from "@/components/RemindersSection";
 import { TimetableImport } from "@/components/TimetableImport";
 import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
 import { LanguageSection } from "@/components/LanguageSection";
 import { ThemeSection } from "@/components/ThemeSection";
+import { SettingsGroup, SettingsRow } from "@/components/SettingsRow";
 import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
-import { DEFAULT_WALK_SPEED } from "@/lib/transitQuery";
-import type { GeoLocation, TransitBike, TravelMode, WalkSpeed } from "@/lib/types";
+import type { GeoLocation, TransitBike, TravelMode } from "@/lib/types";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 const MAX_BUFFER_MINUTES = 120;
 
-/** Instellingen: thuislocatie en veiligheidsmarge. */
+/**
+ * Instellingen: alles wat de app over jou en je reis weet.
+ *
+ * Vier groepen, en binnen een groep staat elk onderdeel dichtgeklapt met eronder
+ * wat er nu is ingesteld. Alles tegelijk openzetten gaf een scherm waarin je elke
+ * keer opnieuw moest zoeken waar die ene regel ook alweer stond, terwijl je
+ * meestal alleen even wilt zien wat er staat.
+ */
 export default function SettingsPage() {
+  const t = useT();
+
+  return (
+    <div>
+      <header className="mb-1">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
+        <p className="text-sm" style={{ color: "var(--muted)" }}>
+          {t("settings.subtitle")}
+        </p>
+      </header>
+
+      <SettingsGroup title={t("settings.group.travel")}>
+        <TravelSection />
+        <SavedPlaces />
+        <RemindersSection />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.group.agenda")}>
+        <TimetableImport />
+        <CalendarSubscriptions />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.group.look")}>
+        <LanguageSection />
+        <ThemeSection />
+      </SettingsGroup>
+
+      <SettingsGroup title={t("settings.group.account")}>
+        <AccountSection />
+        <ConnectorSection />
+        <BackupSection />
+        <IntroSection />
+      </SettingsGroup>
+
+      <p className="mt-6 px-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+        <span className="font-semibold">{t("settings.aboutTitle")}</span> &middot;{" "}
+        {t("settings.aboutBody")}
+      </p>
+    </div>
+  );
+}
+
+/** Thuislocatie, marge en waarmee je standaard reist: samen je vertrektijd. */
+function TravelSection() {
   const { settings, hydrated, updateSettings, activities } = useAgenda();
   const t = useT();
   const [home, setHome] = useState<GeoLocation | null>(null);
   const [buffer, setBuffer] = useState("10");
   const [mode, setMode] = useState<TravelMode>("car");
   const [bike, setBike] = useState<TransitBike>("none");
-  const [walk, setWalk] = useState<WalkSpeed>(DEFAULT_WALK_SPEED);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,17 +90,18 @@ export default function SettingsPage() {
     setBuffer(String(settings.bufferMinutes));
     setMode(settings.travelMode);
     setBike(settings.transitBike ?? "none");
-    setWalk(settings.walkSpeed ?? DEFAULT_WALK_SPEED);
   }, [
     hydrated,
     settings.home,
     settings.bufferMinutes,
     settings.travelMode,
     settings.transitBike,
-    settings.walkSpeed,
   ]);
 
   const activitiesWithLocation = activities.filter((activity) => activity.location).length;
+  /* Zonder thuisadres rekent de app geen enkele vertrektijd uit. Dat hoort te
+     zien te zijn zonder dat je ergens op klikt, dus rood en meteen open. */
+  const missingHome = hydrated && !settings.home;
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -72,44 +124,43 @@ export default function SettingsPage() {
       bufferMinutes: Math.round(parsed),
       travelMode: mode,
       transitBike: bike,
-      walkSpeed: walk,
     });
     setSaved(true);
   }
 
   return (
-    <div>
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
-        <p className="text-sm" style={{ color: "var(--muted)" }}>
-          {t("settings.subtitle")}
-        </p>
-      </header>
-
-      <LanguageSection />
-      <ThemeSection />
-      {hydrated ? <AccountSection /> : null}
-
+    <SettingsRow
+      icon={"\u{1F3E0}"}
+      title={t("settings.row.travel")}
+      attention={missingHome}
+      openWhen={missingHome}
+      summary={
+        !hydrated
+          ? undefined
+          : settings.home
+            ? `${settings.home.label} · ${t("settings.summary.buffer", {
+                count: settings.bufferMinutes,
+              })}`
+            : t("settings.summary.noHome")
+      }
+    >
       {!hydrated ? (
-        <div className="card mt-4 px-5 py-10 text-center">
+        <div className="py-4 text-center">
           <Spinner size={18} label={t("settings.loading")} />
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate className="card mt-4 space-y-5 px-5 py-5">
-          <div>
-            <h2 className="mb-3 text-base font-semibold">&#127968; {t("settings.home")}</h2>
-            <LocationInput
-              label={t("settings.homeLabel")}
-              value={home}
-              onChange={(value) => {
-                setHome(value);
-                setSaved(false);
-              }}
-              required
-              placeholder={t("settings.homePlaceholder")}
-              hint={t("settings.homeHint")}
-            />
-          </div>
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
+          <LocationInput
+            label={t("settings.homeLabel")}
+            value={home}
+            onChange={(value) => {
+              setHome(value);
+              setSaved(false);
+            }}
+            required
+            placeholder={t("settings.homePlaceholder")}
+            hint={t("settings.homeHint")}
+          />
 
           <div>
             <label className="label" htmlFor="buffer">
@@ -215,49 +266,6 @@ export default function SettingsPage() {
             </p>
           </fieldset>
 
-          {/* De planner rekent uit zichzelf met zo'n 4 km/h. Wie stevig
-              doorloopt kreeg daardoor elke rit met drie loopstukken tien
-              minuten te lang — zonder dat daar iets over te zeggen viel. */}
-          <fieldset>
-            <legend className="label">&#128694; {t("settings.walk.title")}</legend>
-            <p className="mb-2 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-              {t("settings.walk.body")}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {(["slow", "normal", "fast"] as const).map((option) => {
-                const active = walk === option;
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    aria-pressed={active}
-                    title={t(`settings.walk.${option}Hint` as TranslationKey)}
-                    onClick={() => {
-                      setWalk(option);
-                      setSaved(false);
-                    }}
-                    className="rounded-xl border px-2 py-2.5 text-center text-xs font-medium transition-colors"
-                    style={{
-                      borderColor: active ? "var(--accent)" : "var(--line)",
-                      background: active
-                        ? "color-mix(in srgb, var(--accent) 12%, transparent)"
-                        : "transparent",
-                      color: active ? "var(--accent)" : "var(--muted)",
-                    }}
-                  >
-                    <span aria-hidden className="block text-base leading-none">
-                      {option === "slow" ? "\u{1F422}" : option === "fast" ? "\u{1F3C3}" : "\u{1F6B6}"}
-                    </span>
-                    {t(`settings.walk.${option}` as TranslationKey)}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-              {t(`settings.walk.${walk}Hint` as TranslationKey)}
-            </p>
-          </fieldset>
-
           {error ? (
             <p className="text-sm" style={{ color: "var(--danger)" }} role="alert">
               &#9888;&#65039; {error}
@@ -282,21 +290,7 @@ export default function SettingsPage() {
           </button>
         </form>
       )}
-
-      {hydrated ? <TimetableImport /> : null}
-      {hydrated ? <CalendarSubscriptions /> : null}
-      {hydrated ? <RemindersSection /> : null}
-      {hydrated ? <SavedPlaces /> : null}
-      {hydrated ? <BackupSection /> : null}
-      <IntroSection />
-
-      <section className="card mt-4 px-5 py-4">
-        <h2 className="text-sm font-semibold">{t("settings.aboutTitle")}</h2>
-        <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-          {t("settings.aboutBody")}
-        </p>
-      </section>
-    </div>
+    </SettingsRow>
   );
 }
 
@@ -310,9 +304,12 @@ function IntroSection() {
   if (!intro) return null;
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128075; {t("settings.intro.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow
+      icon={"\u{1F44B}"}
+      title={t("settings.intro.title")}
+      summary={t("settings.intro.summary")}
+    >
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("settings.intro.body")}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -323,13 +320,13 @@ function IntroSection() {
           {t("settings.intro.again")}
         </button>
       </div>
-    </section>
+    </SettingsRow>
   );
 }
 
 /** Overzicht van bewaarde locaties, met de categorieën die ze als vaste plek gebruiken. */
 function SavedPlaces() {
-  const { settings, forgetPlace, renamePlace, movePlace, categoryFor } = useAgenda();
+  const { settings, forgetPlace, renamePlace, movePlace, categoryFor, hydrated } = useAgenda();
   const t = useT();
   const places = sortedPlaces(settings);
   /** De locatie waarvan je op dit moment de naam aanpast. */
@@ -339,18 +336,29 @@ function SavedPlaces() {
   const [readdressing, setReaddressing] = useState<string | null>(null);
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128205; {t("places.title")}</h2>
-      <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>
+    <SettingsRow
+      icon={"\u{1F4CD}"}
+      title={t("places.title")}
+      summary={
+        !hydrated
+          ? undefined
+          : places.length === 0
+            ? t("places.none")
+            : places.length === 1
+              ? t("places.countOne")
+              : t("places.count", { count: places.length })
+      }
+    >
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("places.body")}
       </p>
 
       {places.length === 0 ? (
-        <p className="mt-4 text-sm" style={{ color: "var(--muted)" }}>
+        <p className="mt-3 text-sm" style={{ color: "var(--muted)" }}>
           {t("places.empty")}
         </p>
       ) : (
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-3 space-y-2">
           {places.map((place) => {
             const categories = categoriesUsingPlace(settings, place.id);
             return (
@@ -484,6 +492,6 @@ function SavedPlaces() {
           })}
         </ul>
       )}
-    </section>
+    </SettingsRow>
   );
 }
