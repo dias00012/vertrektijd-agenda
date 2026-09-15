@@ -1,4 +1,11 @@
-import type { Activity, Exam, SchoolworkPriority, SchoolworkStatus, Task } from "./types";
+import type {
+  Activity,
+  Exam,
+  SchoolworkPriority,
+  SchoolworkStatus,
+  Task,
+  TaskStep,
+} from "./types";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -98,17 +105,86 @@ export function activityMinutes(activity: Pick<Activity, "startTime" | "endTime"
  * de app niet van of het werk gedaan is.
  */
 export function linkedWorkDone(
-  activity: Pick<Activity, "linkedTaskId" | "linkedExamId">,
-  tasks: readonly Pick<Task, "id" | "status">[],
+  activity: Pick<Activity, "title" | "linkedTaskId" | "linkedStepId" | "linkedExamId">,
+  tasks: readonly Pick<Task, "id" | "status" | "steps">[],
   exams: readonly Pick<Exam, "id" | "status">[],
 ): boolean {
   if (activity.linkedTaskId) {
-    return tasks.find((task) => task.id === activity.linkedTaskId)?.status === "done";
+    const task = tasks.find((item) => item.id === activity.linkedTaskId);
+    if (!task) return false;
+    if (task.status === "done") return true;
+    // De hele opdracht is nog niet af, maar dit blok misschien wel: wie zijn
+    // werk in stappen plant, vinkt stap voor stap af en is met dít blok klaar
+    // zodra die ene stap af is.
+    return stepForActivity(activity, task)?.done === true;
   }
   if (activity.linkedExamId) {
     return exams.find((exam) => exam.id === activity.linkedExamId)?.status === "done";
   }
   return false;
+}
+
+/**
+ * Tot welke stap van een opdracht hoort dit blok?
+ *
+ * Bij voorkeur via `linkedStepId`: dan staat het er gewoon. Maar de blokken die
+ * er al stonden voordat dat veld bestond hebben het niet, en die zijn wel per
+ * stap ingepland — vandaar dat we anders naar de titel kijken. "BE –
+ * samenvatting H3" hoort bij de stap "Samenvatting H3".
+ *
+ * De langste treffer wint. Staan er stappen "T4.1 Gouda" en "T4.1 Gouda + T4.2
+ * Van Dam", dan hoort een blok met die hele tweede naam bij de tweede — anders
+ * zou het doorgestreept worden zodra alleen het eerste deel af is.
+ */
+export function stepForActivity(
+  activity: Pick<Activity, "title" | "linkedStepId">,
+  task: Pick<Task, "steps">,
+): TaskStep | null {
+  const steps = task.steps ?? [];
+  if (steps.length === 0) return null;
+
+  if (activity.linkedStepId) {
+    return steps.find((step) => step.id === activity.linkedStepId) ?? null;
+  }
+
+  let best: TaskStep | null = null;
+  let bestLength = 0;
+  for (const step of steps) {
+    if (!titleMentionsStep(activity.title, step.title)) continue;
+    const length = normalizeForMatch(step.title).length;
+    if (length > bestLength) {
+      best = step;
+      bestLength = length;
+    }
+  }
+  return best;
+}
+
+/**
+ * Kale vorm van een titel: kleine letters, zonder accenten, en elk leesteken
+ * wordt een spatie. Zo vallen "H4.1 t/m 4.4" en "h4 1 t m 4 4" samen, en doet
+ * het er niet toe of iemand een streepje of een koppelteken gebruikt.
+ */
+function normalizeForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Staat de naam van deze stap in de titel van het blok?
+ *
+ * Met spaties eromheen, zodat "H3" niet matcht op "H30": we vergelijken hele
+ * woorden, geen letterreeksen.
+ */
+function titleMentionsStep(activityTitle: unknown, stepTitle: string): boolean {
+  if (typeof activityTitle !== "string") return false;
+  const needle = normalizeForMatch(stepTitle);
+  if (!needle) return false;
+  return ` ${normalizeForMatch(activityTitle)} `.includes(` ${needle} `);
 }
 
 /** De activiteiten die aan een taak zijn gekoppeld. */

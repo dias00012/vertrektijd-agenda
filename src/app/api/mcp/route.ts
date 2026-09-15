@@ -75,7 +75,9 @@ const TOOLS: ToolDefinition[] = [
       "een bestaand `id` vervangt dat blok — zo verplaats je iets. Gebruik " +
       "`source: \"leerplan\"` voor leer- en werkblokken, en `linkedTaskId` of " +
       "`linkedExamId` om ze aan huiswerk of een toets te koppelen: dan krijgen " +
-      "ze een streep zodra dat werk af is.",
+      "ze een streep zodra dat werk af is. Plan je een opdracht in losse blokken " +
+      "per stap, zet dan ook `linkedStepId`: dat blok is dan af zodra die ene " +
+      "stap is afgevinkt, niet pas als de hele opdracht af is.",
     inputSchema: {
       type: "object",
       properties: {
@@ -97,6 +99,10 @@ const TOOLS: ToolDefinition[] = [
               allDay: { type: "boolean" },
               source: { type: "string" },
               linkedTaskId: { type: "string" },
+              linkedStepId: {
+                type: "string",
+                description: "De `id` van een stap uit `steps` van die taak.",
+              },
               linkedExamId: { type: "string" },
             },
             required: ["title", "date"],

@@ -8,6 +8,38 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.53.0
+
+- **Een afgevinkte stap streept nu ook het blok door.** Je werkt een avond door,
+  vinkt "Samenvatting H3" en "Samenvatting H4.1 t/m 4.4" af — en in je agenda
+  staan die twee blokken er nog steeds bij alsof ze moeten gebeuren. De streep
+  keek alleen naar de status van de héle opdracht, en die stond nog op "te doen"
+  omdat er nog vier stappen open waren.
+
+  Dat klopte niet met hoe je een opdracht van zes uur plant: niet als één blok,
+  maar in stukken, en elk stuk is af op zijn eigen moment.
+
+  Een blok is nu doorgestreept zodra de stap waar het bij hoort is afgevinkt.
+  Welke stap dat is, staat bij voorkeur in het nieuwe veld `linkedStepId`. Staat
+  het er niet — en bij blokken die er al stonden staat het er niet — dan wordt de
+  stap herkend aan de titel: "BE – samenvatting H3" hoort bij "Samenvatting H3".
+
+  Dat herkennen kijkt naar hele woorden, niet naar letterreeksen, dus "H3" matcht
+  niet op "H30". Hoofdletters, streepjes en accenten doen niet mee. En past er
+  meer dan één stap in de titel, dan wint de langste: staan er stappen "T4.1
+  Gouda" en "T4.1 Gouda + T4.2 Van Dam", dan wordt een blok met die hele tweede
+  naam niet doorgestreept zodra alleen het eerste deel af is.
+
+  Nagelopen in de draaiende app met precies die opdracht: de twee afgevinkte
+  blokken van dinsdagavond doorgestreept met ✓ af, de gitaarles ertussen gewoon,
+  en het MC-vragenblok van woensdag onaangeroerd — in het dagoverzicht, de
+  agendalijst en het weekraster.
+
+- **De connector ziet de stappen nu ook.** `read_agenda` geeft per opdracht de
+  stappen terug (met hun `id`, of ze af zijn en hoeveel tijd ze kosten), en
+  `save_activities` accepteert `linkedStepId`. Zo kan een planning per stap een
+  blok zetten dat vanzelf goed afstreept.
+
 ## 0.52.0
 
 - **Claude kan nu rechtstreeks bij de agenda.** Tot nu toe ging een planning via

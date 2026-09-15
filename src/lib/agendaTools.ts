@@ -61,6 +61,8 @@ interface ReadActivity {
   /** "leerplan" voor blokken die uit een leerplan komen, anders afwezig. */
   source?: string;
   linkedTaskId?: string;
+  /** De stap binnen die taak waar dit blok voor is. */
+  linkedStepId?: string;
   linkedExamId?: string;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring?: boolean;
@@ -88,6 +90,8 @@ export interface ReadResult {
     estimatedMinutes: number;
     priority: string;
     status: string;
+    /** De stappen van deze opdracht, met hun `id` voor `linkedStepId`. */
+    steps?: { id: string; title: string; estimatedMinutes?: number; done: boolean }[];
   }[];
   exams: {
     id: string;
@@ -158,6 +162,7 @@ export function readAgenda(
         }
         if (occurrence.source) entry.source = occurrence.source;
         if (occurrence.linkedTaskId) entry.linkedTaskId = occurrence.linkedTaskId;
+        if (occurrence.linkedStepId) entry.linkedStepId = occurrence.linkedStepId;
         if (occurrence.linkedExamId) entry.linkedExamId = occurrence.linkedExamId;
         if (occurrence.recurring) entry.recurring = true;
         return entry;
@@ -187,6 +192,14 @@ export function readAgenda(
         estimatedMinutes: task.estimatedMinutes,
         priority: task.priority,
         status: task.status,
+        // Met de stappen erbij kan een planning per stap een blok zetten, en
+        // weet de planner welke delen al af zijn.
+        steps: task.steps?.map((step) => ({
+          id: step.id,
+          title: step.title,
+          estimatedMinutes: step.estimatedMinutes,
+          done: step.done,
+        })),
       })),
     exams: data.exams
       .filter((exam) => exam.status !== "done" && exam.date >= today)

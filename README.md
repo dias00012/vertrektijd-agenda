@@ -261,6 +261,15 @@ activiteit. Het blok blijft staan, want je wilt kunnen zien waar je tijd heen gi
 in één blik dat die twee uur vanavond vrij zijn. Op het dashboard staat er bovendien bij hoeveel
 van je geplande leertijd vandaag al af is.
 
+Dat werkt ook **per stap**. Een opdracht van zes uur plan je zelden in één blok; je hakt hem in
+stukken ("samenvatting", "opgaven maken") en vinkt die stuk voor stuk af. Een blok dat bij zo'n
+stap hoort is doorgestreept zodra die stap af is — de hele opdracht hoeft nog niet klaar te zijn.
+Bij voorkeur staat die koppeling er expliciet in (`linkedStepId`, de `id` van een stap uit
+`steps`); staat hij er niet, dan herkent de app de stap aan de titel van het blok, zodat blokken
+die er al stonden ook meedoen. "BE – samenvatting H3" hoort bij de stap "Samenvatting H3".
+Hele woorden tellen, dus "H3" matcht niet op "H30", en staat er meer dan één stap in de titel dan
+wint de langste.
+
 ## Back-up & synchronisatie (import/export)
 
 Onder **Instellingen → Back-up** deel je exact dezelfde data met je planner via

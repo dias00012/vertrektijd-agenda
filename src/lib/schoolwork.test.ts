@@ -121,25 +121,105 @@ describe("linkedWorkDone", () => {
   ];
 
   it("streept een blok door waarvan de taak af is", () => {
-    expect(linkedWorkDone({ linkedTaskId: "t1", linkedExamId: null }, taken, toetsen)).toBe(true);
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "t1", linkedExamId: null }, taken, toetsen)).toBe(true);
   });
 
   it("laat een blok staan waarvan de taak nog loopt", () => {
-    expect(linkedWorkDone({ linkedTaskId: "t2", linkedExamId: null }, taken, toetsen)).toBe(false);
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "t2", linkedExamId: null }, taken, toetsen)).toBe(false);
   });
 
   it("doet hetzelfde voor een toets", () => {
-    expect(linkedWorkDone({ linkedTaskId: null, linkedExamId: "e1" }, taken, toetsen)).toBe(true);
-    expect(linkedWorkDone({ linkedTaskId: null, linkedExamId: "e2" }, taken, toetsen)).toBe(false);
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: "e1" }, taken, toetsen)).toBe(true);
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: "e2" }, taken, toetsen)).toBe(false);
   });
 
   it("laat een leerblok zonder koppeling met rust", () => {
     // Uit een leerplan: de app weet niet of dat werk gedaan is.
-    expect(linkedWorkDone({ linkedTaskId: null, linkedExamId: null }, taken, toetsen)).toBe(false);
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: null }, taken, toetsen)).toBe(false);
   });
 
   it("streept niets door als de taak niet meer bestaat", () => {
     // Verwijderd schoolwerk laat een blok achter; dat is geen "af".
-    expect(linkedWorkDone({ linkedTaskId: "weg", linkedExamId: null }, taken, toetsen)).toBe(false);
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "weg", linkedExamId: null }, taken, toetsen)).toBe(false);
+  });
+});
+
+describe("linkedWorkDone per stap", () => {
+  // Een echte opdracht uit de app: zes stappen, de eerste twee afgevinkt, de
+  // opdracht zelf nog op "te doen".
+  const bedrijfseconomie = task({
+    id: "be",
+    subject: "Bedrijfseconomie",
+    title: "BE week 2 - H3 + H4.1 t/m 4.4",
+    status: "todo",
+    steps: [
+      { id: "s1", title: "Samenvatting H3", done: true },
+      { id: "s2", title: "Samenvatting H4.1 t/m 4.4", done: true },
+      { id: "s3", title: "MC-vragen H3 + H4", done: false },
+      { id: "s4", title: "T4.1 Gouda + T4.2 Van Dam", done: false },
+      { id: "s5", title: "Foute onderwerpen herlezen", done: false },
+    ],
+  });
+  const taken = [bedrijfseconomie];
+  const toetsen: Exam[] = [];
+
+  const leerblok = (title: string, patch: Record<string, unknown> = {}) =>
+    ({ title, linkedTaskId: "be", linkedExamId: null, ...patch }) as unknown as Activity;
+
+  it("streept een blok door waarvan de stap af is", () => {
+    // Waar het om begonnen was: je werkt door, vinkt de stap af, en ziet dat
+    // meteen terug in je agenda — ook al is de hele opdracht nog niet af.
+    expect(linkedWorkDone(leerblok("BE - samenvatting H3"), taken, toetsen)).toBe(true);
+    expect(linkedWorkDone(leerblok("BE - samenvatting H4.1 t/m 4.4"), taken, toetsen)).toBe(true);
+  });
+
+  it("laat een blok staan waarvan de stap nog open is", () => {
+    expect(linkedWorkDone(leerblok("BE - MC-vragen H3 + H4"), taken, toetsen)).toBe(false);
+  });
+
+  it("gebruikt linkedStepId wanneer die er is, en niet de titel", () => {
+    // Een expliciete koppeling gaat altijd voor; zo kan een blok heten wat je wilt.
+    expect(linkedWorkDone(leerblok("Blokje leren", { linkedStepId: "s1" }), taken, toetsen)).toBe(true);
+    expect(linkedWorkDone(leerblok("BE - samenvatting H3", { linkedStepId: "s3" }), taken, toetsen)).toBe(false);
+  });
+
+  it("negeert een linkedStepId die niet bestaat", () => {
+    expect(linkedWorkDone(leerblok("BE - samenvatting H3", { linkedStepId: "weg" }), taken, toetsen)).toBe(false);
+  });
+
+  it("valt terug op de opdracht wanneer geen stap past", () => {
+    // Een blok met een eigen naam hoort bij de opdracht als geheel.
+    expect(linkedWorkDone(leerblok("BE leren"), taken, toetsen)).toBe(false);
+    const af = [task({ ...bedrijfseconomie, status: "done" })];
+    expect(linkedWorkDone(leerblok("BE leren"), af, toetsen)).toBe(true);
+  });
+
+  it("kijkt naar hele woorden, niet naar letterreeksen", () => {
+    // "H3" mag niet matchen op "H30".
+    expect(linkedWorkDone(leerblok("BE - samenvatting H30"), taken, toetsen)).toBe(false);
+  });
+
+  it("trekt zich niets aan van hoofdletters, streepjes of accenten", () => {
+    expect(linkedWorkDone(leerblok("BE — SAMENVATTING h3!"), taken, toetsen)).toBe(true);
+  });
+
+  it("kiest de langste passende stap", () => {
+    // Anders zou "T4.1 Gouda + T4.2 Van Dam" doorgestreept worden zodra alleen
+    // het eerste deel af is.
+    const metDeelstap = [
+      task({
+        ...bedrijfseconomie,
+        steps: [
+          { id: "a", title: "T4.1 Gouda", done: true },
+          { id: "b", title: "T4.1 Gouda + T4.2 Van Dam", done: false },
+        ],
+      }),
+    ];
+    expect(linkedWorkDone(leerblok("BE - T4.1 Gouda + T4.2 Van Dam"), metDeelstap, toetsen)).toBe(false);
+    expect(linkedWorkDone(leerblok("BE - T4.1 Gouda"), metDeelstap, toetsen)).toBe(true);
+  });
+
+  it("valt niet om op een blok zonder titel", () => {
+    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "be", linkedExamId: null } as unknown as Activity, taken, toetsen)).toBe(false);
   });
 });

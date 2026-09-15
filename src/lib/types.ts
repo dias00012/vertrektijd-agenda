@@ -219,6 +219,13 @@ export interface Activity {
   travelMode?: TravelMode | null;
   /** Optioneel: koppeling naar een taak (huiswerk) waar dit blok bij hoort. */
   linkedTaskId?: string | null;
+  /**
+   * Optioneel: de stap binnen die taak waar dit blok voor is. Plan je een
+   * opdracht in losse blokken ("samenvatting", "opgaven maken"), dan hoort elk
+   * blok bij één stap — en is het blok af zodra die stap af is, niet pas als de
+   * hele opdracht af is.
+   */
+  linkedStepId?: string | null;
   /** Optioneel: koppeling naar een toets waar dit blok bij hoort. */
   linkedExamId?: string | null;
   createdAt: string;
@@ -246,6 +253,8 @@ export interface ActivityDraft {
    * omdat het formulier deze velden dan niet meestuurt.
    */
   linkedTaskId?: string | null;
+  /** De stap binnen de taak waar dit blok voor is; zie `Activity`. */
+  linkedStepId?: string | null;
   linkedExamId?: string | null;
   /** Herkomst, bv. "leerplan". Standaard leeg. */
   source?: string | null;

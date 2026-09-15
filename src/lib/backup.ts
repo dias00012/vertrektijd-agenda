@@ -276,6 +276,7 @@ export function normalizeActivity(raw: Record<string, unknown>): Activity {
     travelError: typeof raw.travelError === "string" ? raw.travelError : null,
     bufferMinutes: typeof raw.bufferMinutes === "number" ? raw.bufferMinutes : null,
     linkedTaskId: typeof raw.linkedTaskId === "string" ? raw.linkedTaskId : null,
+    linkedStepId: typeof raw.linkedStepId === "string" ? raw.linkedStepId : null,
     linkedExamId: typeof raw.linkedExamId === "string" ? raw.linkedExamId : null,
     createdAt: str(raw.createdAt, now),
     updatedAt: str(raw.updatedAt, now),
