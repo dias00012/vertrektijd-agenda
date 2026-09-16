@@ -8,6 +8,36 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.55.0
+
+- **Je rooster stond dubbel op je tweede apparaat.** Twee fouten die elkaar
+  versterkten, en samen je hele agenda verdubbelden.
+
+  Bij het verversen van een gekoppelde agenda werd de hele reeks vervangen: weg
+  met de oude blokken, terug met nieuwe. Die nieuwe kregen een willekeurig id.
+  Dezelfde les van dezelfde donderdag kreeg op je telefoon dus een ander id dan
+  op je laptop, en het samenvoegen -- dat op id werkt -- zag er twee losse
+  blokken in. Elke verversing op elk apparaat legde er een laag bovenop.
+
+  Tegelijk liet dat vervangen geen grafsteen achter. Wat het ene apparaat
+  weghaalde, kende het andere nog, dus bij de eerstvolgende synchronisatie kwam
+  het gewoon terug -- naast het nieuwe.
+
+  Nu leidt een blok uit een gekoppelde agenda zijn id af van de afspraak zelf
+  (`feed:<agenda>:<uid>`). Op elk apparaat hetzelfde, hoe vaak er ook ververst
+  wordt, dus het samenvoegen ziet er één blok in. En verdwijnt er echt iets --
+  een vervallen uur, een losgekoppelde agenda -- dan legt dat nu wel een
+  grafsteen neer, zodat het ook op je andere apparaat weggaat.
+
+  Wat er al dubbel stond ruimt zichzelf op bij de eerstvolgende verversing: die
+  vervangt alles van die agenda door de afgeleide ids en zet grafstenen voor de
+  oude.
+
+- **"Nu opnieuw ophalen" bij je gekoppelde rooster.** Normaal kijkt de app
+  hoogstens eens per twaalf uur. Prima voor een rooster dat af en toe wijzigt,
+  vervelend wanneer je nú wilt zien of het klopt -- of wanneer je niet wilt
+  wachten tot de dubbele blokken vanzelf verdwijnen.
+
 ## 0.54.0
 
 - **Alle stappen afgevinkt betekent nu ook: opdracht af.** Het stuk dat in 0.53.0

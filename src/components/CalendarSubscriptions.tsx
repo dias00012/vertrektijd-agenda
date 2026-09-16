@@ -4,7 +4,7 @@ import { useState } from "react";
 import { headers } from "@/lib/api";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { parseIcs } from "@/lib/ical";
+import { parseIcs, feedActivityId } from "@/lib/ical";
 import { formatDateLabel } from "@/lib/time";
 import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
@@ -91,7 +91,11 @@ export function CalendarSubscriptions() {
         syncedAt: new Date().toISOString(),
       };
 
-      const drafts: ActivityDraft[] = found.map((event) => ({
+      // Zie TimetableImport: het id komt uit de afspraak, niet uit een
+      // toevalsgenerator, anders staat dezelfde afspraak op twee apparaten
+      // twee keer in je agenda.
+      const drafts: (ActivityDraft & { id: string })[] = found.map((event) => ({
+        id: feedActivityId(subscriptionSource(subscription.id), event.uid),
         category,
         title: event.location ? `${event.title} (${event.location})` : event.title,
         date: event.date,

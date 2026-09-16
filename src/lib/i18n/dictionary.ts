@@ -843,6 +843,8 @@ export const nl = {
   "timetable.linked": "Je rooster is gekoppeld en wordt automatisch bijgehouden. Laatst opgehaald: {when}.",
   "timetable.never": "nog niet",
   "timetable.unlink": "Koppeling verbreken",
+  "timetable.refreshNow": "Nu opnieuw ophalen",
+  "timetable.refreshing": "Bezig met ophalen\u2026",
   "timetable.unlinked": "De koppeling is verbroken. Je lessen blijven in je agenda staan.",
   "timetable.keepLink": "Rooster gekoppeld houden en automatisch bijwerken",
 
@@ -1728,6 +1730,8 @@ export const en: Record<TranslationKey, string> = {
   "timetable.linked": "Your timetable is connected and kept up to date automatically. Last fetched: {when}.",
   "timetable.never": "not yet",
   "timetable.unlink": "Disconnect",
+  "timetable.refreshNow": "Fetch again now",
+  "timetable.refreshing": "Fetching\u2026",
   "timetable.unlinked": "Disconnected. Your lessons stay in your calendar.",
   "timetable.keepLink": "Keep the timetable connected and update it automatically",
 

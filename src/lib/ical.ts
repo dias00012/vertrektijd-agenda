@@ -478,3 +478,19 @@ function expand(start: Date, event: RawEvent, fromMs: number, toMs: number, zone
 
   return dates;
 }
+
+/**
+ * Het id van een activiteit die uit een gekoppelde agenda komt.
+ *
+ * Afgeleid van de agenda en de sleutel van de afspraak zelf, en dus op elk
+ * apparaat hetzelfde. Dat is niet netjesheid maar noodzaak: bij het verversen
+ * wordt de hele reeks vervangen, en met een willekeurig id kreeg dezelfde les
+ * op je telefoon een ander id dan op je laptop. Het samenvoegen kent de twee
+ * dan niet als hetzelfde blok en zet ze allebei in je agenda -- en zo stond na
+ * een paar dagen je hele rooster dubbel.
+ *
+ * Met een afgeleid id vallen de twee samen, hoe vaak er ook ververst wordt.
+ */
+export function feedActivityId(source: string, uid: string): string {
+  return `feed:${source}:${uid}`;
+}
