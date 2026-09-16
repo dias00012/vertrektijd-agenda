@@ -11,6 +11,7 @@ import { track } from "@/lib/stats";
 import { subscriptionSource } from "@/hooks/useTimetableSync";
 import { LocationInput } from "./LocationInput";
 import { Spinner } from "./ui";
+import { SettingsRow } from "./SettingsRow";
 import type { ActivityDraft, CalendarSubscription, GeoLocation } from "@/lib/types";
 
 /** Zo ver vooruit halen we afspraken op; gelijk aan het rooster. */
@@ -133,10 +134,16 @@ export function CalendarSubscriptions() {
     setDone(t("calendars.removed", { name: calendar.name }));
   }
 
+  const summary =
+    calendars.length === 0
+      ? t("calendars.noneYet")
+      : calendars.length === 1
+        ? t("calendars.countOne")
+        : t("calendars.count", { count: calendars.length });
+
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128197; {t("calendars.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow icon={"\u{1F4C5}"} title={t("calendars.title")} summary={summary}>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("calendars.body")}
       </p>
 
@@ -286,6 +293,6 @@ export function CalendarSubscriptions() {
       <p className="mt-3 text-[0.7rem]" style={{ color: "var(--muted)" }}>
         {t("calendars.privacy")}
       </p>
-    </section>
+    </SettingsRow>
   );
 }

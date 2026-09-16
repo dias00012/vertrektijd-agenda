@@ -434,8 +434,12 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
           ) : null}
         </div>
 
+        {/* Bij het bewerken staan hier drie knoppen naast elkaar en viel
+            "Opslaan" van het scherm af, ook op een gewone telefoon. Je kon je
+            wijziging dus niet bewaren. Met flex-wrap zakt de knoppengroep naar
+            een tweede regel. */}
         <footer
-          className="flex items-center gap-2 border-t px-5 py-4"
+          className="flex flex-wrap items-center gap-2 border-t px-5 py-4"
           style={{ borderColor: "var(--line)" }}
         >
           {isEdit ? (

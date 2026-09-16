@@ -5,6 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { disablePush, enablePush, pushEnabled, pushSupported } from "@/lib/push";
 import { track } from "@/lib/stats";
+import { SettingsRow } from "./SettingsRow";
 
 const CHOICES = [5, 10, 15, 30];
 
@@ -37,9 +38,7 @@ export function RemindersSection() {
     void pushEnabled().then(setBackground);
   }, []);
 
-  if (!hydrated) return null;
-
-  const minutes = settings.reminderMinutes ?? null;
+  const minutes = hydrated ? settings.reminderMinutes ?? null : null;
   const enabled = minutes !== null && permission === "granted";
 
   /** Aan- of afmelden voor meldingen terwijl de app dicht is. */
@@ -90,10 +89,18 @@ export function RemindersSection() {
     }
   }
 
+  const summary =
+    permission === "unsupported"
+      ? t("reminders.summaryUnsupported")
+      : permission === "denied"
+        ? t("reminders.summaryBlocked")
+        : enabled && minutes !== null
+          ? t("reminders.summaryOn", { count: minutes })
+          : t("reminders.summaryOff");
+
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128276; {t("reminders.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow icon={"\u{1F514}"} title={t("reminders.title")} summary={summary}>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("reminders.body")}
       </p>
 
@@ -174,6 +181,6 @@ export function RemindersSection() {
         <strong>{t("reminders.noteLabel")}</strong>{" "}
         {background ? t("reminders.noteBackground") : t("reminders.note")}
       </p>
-    </section>
+    </SettingsRow>
   );
 }

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { findNextActivity, searchActivities } from "./agenda";
+import {
+  activitiesOnDate,
+  buildTimeline,
+  clashesFor,
+  findNextActivity,
+  layoutDay,
+  searchActivities,
+  timeRangeFor,
+  timeStatusFor,
+} from "./agenda";
 import type { Activity, Settings } from "./types";
 
 /**
@@ -170,5 +179,167 @@ describe("searchActivities", () => {
     );
 
     expect(resultaten[0]?.date).toBe("2026-08-12");
+  });
+});
+
+/**
+ * Het dagoverzicht en de kaart erboven staan op hetzelfde scherm. Rekenen ze
+ * verschillend, dan zie je twee keer een andere thuiskomst en weet je niet
+ * welke klopt.
+ */
+describe("buildTimeline en de thuiskomst", () => {
+  const bus = (patch = {}) => ({
+    durationMinutes: 44,
+    distanceKm: 22,
+    mode: "transit" as const,
+    provider: "motis",
+    computedAt: "2026-09-07T06:00:00.000Z",
+    key: "k",
+    ...patch,
+  });
+
+  it("neemt de aankomsttijd van de echte rit, niet eindtijd plus reisduur", () => {
+    // Je les is om 17:00 uit, maar de bus gaat pas om 17:02 en is er om 17:46.
+    // De optelsom zou 17:44 zeggen.
+    const item = activity({
+      location: { label: "School", lat: 52.49, lon: 6.07 },
+      travelMode: "transit",
+      returnTravel: bus({ plannedDeparture: "2026-09-07T15:02:00.000Z", plannedArrival: "2026-09-07T15:46:00.000Z" }),
+    });
+
+    const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
+    expect(back?.homeMinutes).toBe(17 * 60 + 46);
+  });
+
+  it("valt terug op de optelsom zolang er geen echte rit bekend is", () => {
+    const item = activity({
+      location: { label: "School", lat: 52.49, lon: 6.07 },
+      travelMode: "transit",
+      returnTravel: bus(),
+    });
+
+    const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
+    expect(back?.homeMinutes).toBe(17 * 60 + 44);
+  });
+});
+
+describe("timeRangeFor", () => {
+  it("laat een dienst tot over middernacht binnen het raster vallen", () => {
+    // 23:00 tot 01:00: het eind ligt vóór het begin. Zonder de starttijd mee
+    // te wegen bleef het raster bij 01:00 hangen en stond het blok op 23:00 —
+    // buiten beeld, dus onvindbaar.
+    const nacht = activity({ date: "2026-09-07", startTime: "23:00", endTime: "01:00" });
+    const range = timeRangeFor([layoutDay([nacht], settings(), "2026-09-07")]);
+
+    expect(range.end).toBeGreaterThanOrEqual(23 * 60);
+  });
+
+  it("houdt een gewone dag strak om de activiteiten heen", () => {
+    const les = activity({ date: "2026-09-07", startTime: "09:00", endTime: "17:00" });
+    const range = timeRangeFor([layoutDay([les], settings(), "2026-09-07")]);
+
+    expect(range.start).toBe(8 * 60);
+    expect(range.end).toBe(18 * 60);
+  });
+});
+
+describe("timeStatusFor bij een dienst over middernacht", () => {
+  const nacht = () => ({
+    ...activity({ date: "2026-09-07", startTime: "23:00", endTime: "01:00" }),
+    occurrenceId: "a1:2026-09-07",
+    recurring: false,
+    travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null },
+  });
+
+  it("noemt hem 's ochtends niet al geweest", () => {
+    // 09:00 die dag: de dienst moet nog beginnen.
+    expect(timeStatusFor(nacht() as never, new Date(2026, 8, 7, 9, 0))).toBe("upcoming");
+  });
+
+  it("zet hem op bezig zodra hij loopt", () => {
+    expect(timeStatusFor(nacht() as never, new Date(2026, 8, 7, 23, 30))).toBe("now");
+  });
+
+  it("noemt hem pas geweest als hij echt om is", () => {
+    expect(timeStatusFor(nacht() as never, new Date(2026, 8, 8, 1, 30))).toBe("past");
+  });
+
+  it("laat een gewone activiteit met rust", () => {
+    const les = { ...activity({ date: "2026-09-07", startTime: "09:00", endTime: "17:00" }),
+      occurrenceId: "a1:2026-09-07", recurring: false,
+      travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null } };
+    expect(timeStatusFor(les as never, new Date(2026, 8, 7, 18, 0))).toBe("past");
+    expect(timeStatusFor(les as never, new Date(2026, 8, 7, 12, 0))).toBe("now");
+  });
+});
+
+describe("clashesOnDate", () => {
+  const school = activity({
+    id: "school", title: "School", startTime: "08:30", endTime: "15:00",
+    location: { label: "School", lat: 52.49, lon: 6.07 },
+  });
+  /** Een reis van een half uur, zoals de app hem opslaat. */
+  const rit = (minuten: number) => ({
+    durationMinutes: minuten, distanceKm: 20, mode: "car" as const, provider: "osrm",
+    computedAt: "2026-09-07T06:00:00.000Z", key: "k",
+  });
+
+  function botsingen(activiteiten: Activity[], id: string) {
+    const dag = activitiesOnDate(activiteiten, "2026-09-07");
+    const mij = dag.find((item) => item.id === id);
+    if (!mij) throw new Error(`${id} niet gevonden`);
+    return clashesFor(mij, activiteiten, settings());
+  }
+
+  it("ziet twee dingen op hetzelfde moment", () => {
+    const bijbaan = activity({ id: "bijbaan", title: "Bijbaan", startTime: "14:00", endTime: "18:00" });
+    const botsing = botsingen([school, bijbaan], "school");
+
+    expect(botsing).toHaveLength(1);
+    expect(botsing[0].other.title).toBe("Bijbaan");
+    expect(botsing[0].travelOnly).toBe(false);
+  });
+
+  it("meldt het bij allebei", () => {
+    const bijbaan = activity({ id: "bijbaan", title: "Bijbaan", startTime: "14:00", endTime: "18:00" });
+    expect(botsingen([school, bijbaan], "bijbaan")).toHaveLength(1);
+  });
+
+  it("noemt aansluitend geen botsing", () => {
+    // Om 15:00 uit en om 15:00 verder is precies wat een schooldag doet.
+    const training = activity({ id: "training", title: "Training", startTime: "15:00", endTime: "16:00" });
+    expect(botsingen([school, training], "school")).toEqual([]);
+  });
+
+  it("ziet dat je weg moet terwijl je er nog zit", () => {
+    // Training begint pas na school, maar je moet er een half uur voor rijden.
+    const training = activity({
+      id: "training", title: "Training", startTime: "15:15", endTime: "16:30",
+      location: { label: "Sporthal", lat: 52.4, lon: 5.3 },
+      travel: rit(30),
+    });
+    const botsing = botsingen([school, training], "training");
+
+    expect(botsing).toHaveLength(1);
+    expect(botsing[0].other.title).toBe("School");
+    expect(botsing[0].travelOnly).toBe(true);
+  });
+
+  it("laat een dag zonder botsingen met rust", () => {
+    const avond = activity({ id: "avond", title: "Avondeten", startTime: "18:00", endTime: "19:00" });
+    expect(botsingen([school, avond], "school")).toEqual([]);
+    expect(botsingen([school, avond], "avond")).toEqual([]);
+  });
+
+  it("telt een activiteit van de hele dag niet mee", () => {
+    // "Herfstvakantie" botst met niets; het is de context, geen moment.
+    const vakantie = activity({ id: "vrij", title: "Herfstvakantie", allDay: true });
+    expect(botsingen([school, vakantie], "school")).toEqual([]);
+  });
+
+  it("ziet een blok dat over middernacht loopt", () => {
+    const nacht = activity({ id: "nacht", title: "Nachtdienst", startTime: "23:00", endTime: "00:30" });
+    const laat = activity({ id: "laat", title: "Feest", startTime: "22:00", endTime: "23:30" });
+    expect(botsingen([nacht, laat], "nacht")).toHaveLength(1);
   });
 });

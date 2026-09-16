@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
+import { linkedWorkDone } from "@/lib/schoolwork";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
-import { timeStatusFor } from "@/lib/agenda";
+import { clashesFor, onwardTarget, timeStatusFor } from "@/lib/agenda";
 import { formatDistance, formatDuration } from "@/lib/time";
 import { describeRecurrence } from "@/lib/recurrence";
 import {
@@ -31,7 +32,8 @@ import type { ActivityOccurrence } from "@/lib/types";
  * gedempt te tonen ("geweest") en de lopende activiteit te markeren ("bezig").
  */
 export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; now?: Date }) {
-  const { settings, calculatingIds, retryTravel, tasks, exams, categoryFor } = useAgenda();
+  const { activities, settings, calculatingIds, retryTravel, tasks, exams, categoryFor } =
+    useAgenda();
   const [editing, setEditing] = useState(false);
   const t = useT();
 
@@ -49,17 +51,40 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
   const departure = computeDeparture(shown, settings);
   const back = computeReturn(shown, settings);
-  const onward = computeOnward(shown, null);
+  /*
+   * Waar je na deze activiteit rechtstreeks heen gaat. Die bestemming hoort
+   * erbij: zonder haar kon `computeOnward` nooit vaststellen dat je te laat
+   * aankomt, en dan stond die waarschuwing wel in het dagoverzicht en niet op
+   * de kaart van dezelfde activiteit.
+   */
+  const nextStop = onwardTarget(activity, activities);
+  const onward = computeOnward(shown, nextStop?.startTime ?? null);
   const calculating = calculatingIds.has(activity.id) || dayTravel.loading;
 
   // Live informatie over de heenreis: rijdt hij, en zo ja, op tijd?
-  const legs = shown.travel?.legs;
+  //
+  // Alleen wanneer deze tijden echt van deze dag zijn. Komen ze van een andere
+  // dag — `dayTravel.exact` is dan false, zie de regel onderaan de kaart — dan
+  // is "op tijd · live" een belofte die de app niet waarmaakt: hij zou over de
+  // trein van vanochtend gaan terwijl je naar donderdag kijkt.
+  const legs = dayTravel.exact ? shown.travel?.legs : undefined;
   const delay = journeyDelay(legs);
   const live = hasRealTime(legs);
   const cancelled = isCancelled(legs);
   const plannedTime = legTime(scheduledDeparture(legs));
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
+
+  // Is het werk waar dit blok voor staat al af? Dan is die tijd vrij, en dat
+  // hoort te zien te zijn zonder dat je de taak erbij zoekt.
+  const workDone = linkedWorkDone(activity, tasks, exams);
+  // Wat er op ditzelfde moment nog meer staat. Je agenda wordt door meer
+  // gevuld dan door jou alleen, en in een lijst valt dubbel geboekt niet op.
+  const clashes = clashesFor(activity, activities, settings).filter(
+    // Ga je daar rechtstreeks heen, dan staat het al bij de doorreis, en
+    // preciezer: met de tijd waarop je aankomt.
+    (clash) => !(clash.travelOnly && clash.other.occurrenceId === nextStop?.occurrenceId),
+  );
 
   const status = now ? timeStatusFor(activity, now) : "upcoming";
   const isPast = status === "past";
@@ -88,14 +113,29 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-baseline gap-x-2">
-                <h3 className="truncate text-[0.95rem] font-semibold">{activity.title}</h3>
+                <h3
+                  className="truncate text-[0.95rem] font-semibold"
+                  style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+                >
+                  {activity.title}
+                </h3>
                 <span
                   className="text-[0.7rem] font-semibold uppercase tracking-wide"
                   style={{ color }}
                 >
                   {category.label}
                 </span>
-                {isPast ? (
+                {workDone ? (
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
+                    style={{
+                      background: "color-mix(in srgb, #16a34a 16%, transparent)",
+                      color: "#16a34a",
+                    }}
+                  >
+                    &#10003; {t("activity.workDone")}
+                  </span>
+                ) : isPast ? (
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
@@ -154,6 +194,23 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                   &#128257; {describeRecurrence(activity.recurrence, activity.date)}
                 </p>
               ) : null}
+
+              {/* Twee dingen tegelijk. Geen foutmelding — soms doe je dat met
+                  opzet — maar het hoort er wel te staan. */}
+              {clashes.slice(0, 2).map((clash) => (
+                <p
+                  key={clash.other.occurrenceId}
+                  className="mt-1 text-xs font-medium"
+                  style={{ color: "#b45309" }}
+                >
+                  &#9888;&#65039;{" "}
+                  {t(clash.travelOnly ? "activity.clashTravel" : "activity.clash", {
+                    title: clash.other.title,
+                    from: clash.other.startTime,
+                    to: clash.other.endTime,
+                  })}
+                </p>
+              ))}
 
               {linkedTask ? (
                 <p className="mt-1 truncate text-xs" style={{ color: "var(--muted)" }}>
@@ -233,6 +290,18 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                                 style={{ color: "var(--muted)" }}
                               >
                                 {t("activity.previousDay")}
+                              </span>
+                            ) : null}
+                            {/* Rijdt er niets dat het haalt, dan staat hier de
+                                eerstvolgende rit daarna. Zonder deze regel volg
+                                je een keurige vertrektijd op en kom je alsnog
+                                te laat. */}
+                            {departure.late && departure.arrival ? (
+                              <span
+                                className="ml-1.5 text-xs font-semibold"
+                                style={{ color: "var(--danger)" }}
+                              >
+                                &#9888;&#65039; {t("activity.arriveLate", { time: departure.arrival })}
                               </span>
                             ) : null}
                           </p>

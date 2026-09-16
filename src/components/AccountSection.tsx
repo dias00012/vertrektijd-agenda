@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAgenda } from "@/hooks/useAgenda";
 import { getSupabase } from "@/lib/supabase";
 import { Spinner } from "./ui";
+import { SettingsRow } from "./SettingsRow";
 
 /**
  * Account & synchronisatie: inloggen of registreren met e-mail + wachtwoord.
@@ -67,12 +68,15 @@ export function AccountSection() {
   // beheerder de sleutels heeft toegevoegd. De app werkt lokaal gewoon door.
   if (!configured) {
     return (
-      <section className="card mt-4 px-5 py-5">
-        <h2 className="text-base font-semibold">&#128100; {t("account.title")}</h2>
-        <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+      <SettingsRow
+        icon={"\u{1F464}"}
+        title={t("account.title")}
+        summary={t("account.summaryOff")}
+      >
+        <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
           {t("account.notConfigured")}
         </p>
-      </section>
+      </SettingsRow>
     );
   }
 
@@ -108,15 +112,17 @@ export function AccountSection() {
   }
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128100; {t("account.title")}</h2>
-
+    <SettingsRow
+      icon={"\u{1F464}"}
+      title={t("account.title")}
+      summary={user ? user.email : ready ? t("account.summaryOut") : undefined}
+    >
       {!ready ? (
-        <div className="mt-3">
+        <div>
           <Spinner size={16} label={t("common.loading")} />
         </div>
       ) : user ? (
-        <div className="mt-3 space-y-3">
+        <div className="space-y-3">
           <p className="text-sm">
             {t("account.loggedInAs")} <strong>{user.email}</strong>
           </p>
@@ -187,7 +193,7 @@ export function AccountSection() {
         </div>
       ) : (
         <>
-          <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
             {mode === "reset"
               ? t("account.resetIntro")
               : t("account.loginIntro")}
@@ -319,7 +325,7 @@ export function AccountSection() {
           <PrivacyLink />
         </>
       )}
-    </section>
+    </SettingsRow>
   );
 }
 

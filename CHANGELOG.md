@@ -8,6 +8,581 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.54.0
+
+- **Alle stappen afgevinkt betekent nu ook: opdracht af.** Het stuk dat in 0.53.0
+  nog ontbrak. Je werkte je zes stappen weg, het laatste hokje ging aan — en de
+  opdracht bleef op "te doen" staan, want die status zette je zelf. Je agenda
+  geloofde die status, en toonde de leerblokken dus nog steeds alsof er werk lag.
+
+  Vink je het laatste hokje aan, dan gaat de opdracht op "af" en zijn alle
+  gekoppelde blokken doorgestreept. Haal je er daarna weer een weg, dan springt
+  hij terug op "bezig": je bent er kennelijk toch nog mee bezig. Een opdracht
+  zonder stappen blijft met rust gelaten; daar is de status het enige wat we
+  weten, en die zet je zelf.
+
+  De statusknoppen blijven gewoon werken. De status is en blijft de enige
+  waarheid — het afvinken zet hem alleen voor je om.
+
+## 0.53.0
+
+- **Een afgevinkte stap streept nu ook het blok door.** Je werkt een avond door,
+  vinkt "Samenvatting H3" en "Samenvatting H4.1 t/m 4.4" af — en in je agenda
+  staan die twee blokken er nog steeds bij alsof ze moeten gebeuren. De streep
+  keek alleen naar de status van de héle opdracht, en die stond nog op "te doen"
+  omdat er nog vier stappen open waren.
+
+  Dat klopte niet met hoe je een opdracht van zes uur plant: niet als één blok,
+  maar in stukken, en elk stuk is af op zijn eigen moment.
+
+  Een blok is nu doorgestreept zodra de stap waar het bij hoort is afgevinkt.
+  Welke stap dat is, staat bij voorkeur in het nieuwe veld `linkedStepId`. Staat
+  het er niet — en bij blokken die er al stonden staat het er niet — dan wordt de
+  stap herkend aan de titel: "BE – samenvatting H3" hoort bij "Samenvatting H3".
+
+  Dat herkennen kijkt naar hele woorden, niet naar letterreeksen, dus "H3" matcht
+  niet op "H30". Hoofdletters, streepjes en accenten doen niet mee. En past er
+  meer dan één stap in de titel, dan wint de langste: staan er stappen "T4.1
+  Gouda" en "T4.1 Gouda + T4.2 Van Dam", dan wordt een blok met die hele tweede
+  naam niet doorgestreept zodra alleen het eerste deel af is.
+
+  Nagelopen in de draaiende app met precies die opdracht: de twee afgevinkte
+  blokken van dinsdagavond doorgestreept met ✓ af, de gitaarles ertussen gewoon,
+  en het MC-vragenblok van woensdag onaangeroerd — in het dagoverzicht, de
+  agendalijst en het weekraster.
+
+- **De connector ziet de stappen nu ook.** `read_agenda` geeft per opdracht de
+  stappen terug (met hun `id`, of ze af zijn en hoeveel tijd ze kosten), en
+  `save_activities` accepteert `linkedStepId`. Zo kan een planning per stap een
+  blok zetten dat vanzelf goed afstreept.
+
+## 0.52.0
+
+- **Claude kan nu rechtstreeks bij de agenda.** Tot nu toe ging een planning via
+  een bestand: exporteren, in een gesprek plakken, het antwoord weer
+  importeren. Vier handelingen per keer, en Claude zag alleen de momentopname
+  in dat bestand.
+
+  De app biedt nu één adres aan, `/api/mcp`, dat het Model Context Protocol
+  spreekt. Je maakt in **Instellingen → Claude-connector** een sleutel aan,
+  plakt adres en sleutel in Claude onder *Connectors → Aangepaste connector
+  toevoegen*, en daarna vraag je gewoon om een planning.
+
+  Drie gereedschappen, bewust niet meer:
+
+  | Gereedschap | Wat het doet |
+  | --- | --- |
+  | `read_agenda` | De agenda over een periode, herhalingen al uitgerekend tot losse dagen, met vertrektijd en reisduur per activiteit. Plus het open huiswerk en de komende toetsen. |
+  | `save_activities` | Blokken toevoegen of wijzigen. Zonder `id` komt er een blok bij; met een bestaand `id` vervangt het dat blok — zo verplaats je iets. |
+  | `delete_activities` | Blokken weghalen op hun `id`, met een grafsteen zodat ze niet terugkomen bij de volgende sync. |
+
+  Wat de connector **niet** mag: huiswerk afvinken, instellingen aanpassen, aan
+  je account komen. En hij kijkt nooit uit zichzelf mee — er gebeurt alleen iets
+  wanneer jij in een gesprek iets vraagt.
+
+  De vertrektijd die de planner ziet is dezelfde som die de app op het scherm
+  zet (`computeDeparture`), niet een tweede berekening die er na een half jaar
+  naast ligt. Datzelfde geldt voor het opslaan: dat gaat door
+  `normalizeActivity`, precies zoals de import.
+
+- **Van de sleutel staat alleen een hash in de database.** De leesbare vorm
+  bestaat één keer, op het scherm waar je hem aanmaakt. Raakt die tabel op
+  straat, dan ligt daarmee niemands agenda open — en het verklaart ook waarom we
+  hem niet nog eens kunnen tonen. Kwijt is geen ramp: maak een nieuwe en trek de
+  oude in.
+
+- **Aanzetten vergt één SQL-bestand.** [`supabase/connector.sql`](supabase/connector.sql)
+  in de SQL-editor draaien; verder zijn er geen instellingen. Stap 10 van
+  [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md) loopt het na.
+
+## 0.51.0
+
+- **Een overstap van twee minuten voor 196 meter.** Bij Lelystad Centrum staat
+  er 196 meter tussen het perron en het busstation, en de dienstregeling geeft
+  daar twee minuten voor: 5,9 km/h. Dat is sneller dan de 5,04 waarmee deze app
+  élk ander loopstuk narekent, dus beloofden we een aansluiting die je alleen
+  haalt als je rent en de trein op tijd is. 9292 rekent er drie minuten voor en
+  biedt die bus niet aan.
+
+  De app vraagt de planner nu één minuut extra voor elke overstap
+  (`additionalTransferTime`). Nagemeten tegen drie echte 9292-schermen van
+  maandag 14 september, de rit van huis naar school om 07:00:
+
+  | | vertrek → aankomst | bus |
+  | --- | --- | --- |
+  | zonder die minuut | 07:12 → 07:52 | 207 van 07:35 naar Palazzo |
+  | met die minuut | 07:12 → 08:06 | 6 van 07:50 naar Zwartezeestraat |
+  | 9292 | 07:12 → 08:01 | 16 van 07:36 naar Zwartezeestraat |
+
+  Zonder die minuut kwamen we negen minuten eerder aan dan 9292 zegt, op een
+  overstap die 9292 niet aanbiedt. Met die minuut komen we bij dezelfde halte
+  uit, maar op een latere bus: 9292 stapt op een bus die vertrekt op precies de
+  minuut waarop je aankomt, en dat laat de planner niet toe. Eén bus verschil,
+  aan de veilige kant. Voor het advies dat de agenda geeft maakt het op deze rit
+  niets uit: om uiterlijk 08:20 op school te zijn zegt elk van de drie
+  "vertrek 07:12".
+
+  Wat het kost, over 40 vergelijkingen: 32 keer dezelfde aankomst, 8 keer later
+  (samen 38 minuten, hoogste 10), 0 keer eerder. Die acht zijn precies de ritten
+  die op zo'n krappe overstap leunden. Na te meten met
+  `node scripts/krappe-overstap.mjs`; over 48 ritten zat er in 19 een overstap
+  die krapper was dan onze eigen loopsnelheid.
+
+## 0.50.0
+
+- **"Je komt te laat" stond er nooit bij een doorreis.** Ga je van school
+  rechtstreeks door naar training, dan rekent de app die rit uit en zet erbij
+  hoe laat je aankomt. Of dat te laat is, wist hij ook — alleen kreeg
+  `computeOnward` op de kaarten steeds `null` mee als starttijd van waar je heen
+  gaat, en dan kán die vlag niet waar worden. Op drie plekken (de dagkaart, de
+  kaart van je eerstvolgende activiteit en het weekraster) stond die
+  waarschuwing dus in de code maar kwam hij nooit in beeld, terwijl het
+  dagoverzicht hem wél toonde: twee schermen over dezelfde dag, met een ander
+  antwoord.
+
+  Ze halen die bestemming nu alle drie op met dezelfde regel als het
+  dagoverzicht (`onwardTarget`). School tot 15:00, 24 minuten rijden, training
+  om 15:15: er staat nu "om 15:24 daar · je komt te laat".
+
+- **Twee dingen tegelijk in je agenda werden nergens benoemd.** Je agenda wordt
+  niet alleen door jou gevuld: een leerplan, een gekoppeld rooster en een
+  geabonneerde agenda schrijven er alle drie in. In het weekraster zie je twee
+  blokken dan naast elkaar staan, maar in een lijst valt het niet op — en dan
+  kom je erachter als je er al zit.
+
+  Er staat nu een regel bij: "⚠️ Staat tegelijk met Bijles wiskunde (14:00 –
+  15:30)". En voor de stille variant, waarbij de activiteiten zelf niet
+  overlappen maar je reistijd eroverheen valt: "⚠️ Je reistijd valt over
+  Training (15:15 – 16:30)" — je moet weg terwijl het andere nog bezig is.
+
+  Geen foutmelding en niets dat je tegenhoudt: soms boek je met opzet dubbel.
+  Aansluitend telt niet mee (om 15:00 uit en om 15:00 verder is precies wat een
+  schooldag doet), en iets dat de hele dag duurt evenmin: "herfstvakantie" botst
+  met niets. Gaat het om de plek waar je rechtstreeks heen reist, dan blijft de
+  waarschuwing weg: die staat al bij de doorreis, mét de tijd waarop je aankomt.
+
+## 0.49.0
+
+- **Werk dat af is, staat nu doorgestreept in je agenda.** Vink je een opdracht
+  of toets af op Schoolwerk, dan blijven de leerblokken die eraan gekoppeld zijn
+  gewoon in je agenda staan — en dat hoort ook, je wilt kunnen zien waar je tijd
+  heen ging. Maar er viel nergens aan te zien dat er niets meer te doen viel: om
+  acht uur vanavond stond er "Wiskunde leren" alsof je nog moest beginnen.
+
+  Nu staat de titel doorgestreept met een groen ✓ af erbij, in elke weergave:
+  de dagkaarten, het dagoverzicht, het weekraster, het maandraster en de kaart
+  van je eerstvolgende activiteit. Op het dashboard staat er bovendien bij
+  hoeveel van je geplande leertijd vandaag al af is — "3 u 15 min leren gepland
+  (3 blokken) · waarvan 2 u 15 min al af" — want dat is de vraag die je 's
+  ochtends stelt: moet ik vanavond nog achter mijn bureau, of is die tijd vrij.
+
+  Een leerblok zonder koppeling (los uit een leerplan) blijft zoals het was:
+  daar weet de app niet van of het werk gedaan is, en dan iets doorstrepen zou
+  een belofte zijn die hij niet waarmaakt. Hetzelfde geldt voor een blok
+  waarvan de taak is verwijderd.
+
+## 0.48.0
+
+- **De vertrektijd van gisteravond bleef staan.** Een OV-rit werd bewaard onder
+  een sleutel die zegt *welke* rit je zoekt: van hier naar daar, uiterlijk
+  aankomen om. Klopte die sleutel nog, dan gold de opgeslagen uitkomst als
+  exact en werd er niets meer opgehaald. Vertragingen, uitval en een gewijzigde
+  dienstregeling komen ná de berekening binnen en veranderen die sleutel niet.
+
+  Dus stond de vertrektijd die gisteravond werd uitgerekend er vanochtend nog,
+  met "op tijd · live" eronder, terwijl je trein een kwartier later reed of
+  helemaal niet. Juist de eerstvolgende activiteit — de enige waar je echt op
+  afgaat — raakte zo nooit ververst: voor die dag klopte de sleutel immers.
+
+  Nagelopen in de browser met een rit die zes weken eerder was uitgerekend, drie
+  kwartier voor de start: nul aanvragen, en de onzin uit de opslag gewoon op de
+  kaart. Nu telt binnen het verversvenster (vanaf drie uur voor de start tot het
+  einde) ook de ouderdom mee: is wat we laten zien ouder dan twee minuten, dan
+  gaat het opnieuw. Daarbuiten verandert er niets — een rit van volgende week
+  hoeft niet om de twee minuten opnieuw.
+
+  Daarbij hoort dat `computedAt` nu het moment van ophalen is en niet van
+  binnenkomen. Kwam een uitkomst uit de cache van deze sessie, dan werd hij
+  gestempeld alsof hij vers was, en stelde hij het volgende verversen telkens
+  opnieuw uit.
+
+- **"Vertrektijd is verstreken" en verder niets.** Je sliep uit, of je zag de
+  bus wegrijden. De kaart bleef de rit tonen die je net gemist hebt — de enige
+  rit op het scherm die zeker niet meer gaat — met daaronder de mededeling dat
+  je te laat bent. Precies op dat moment wil je één ding weten: gaat er nog
+  iets, en red ik het nog.
+
+  Er staat nu bij wat er nog wél rijdt: `🚆 Volgende rit: 14:41 → 15:24 · 3 min
+  te laat`, of "nog op tijd" als je het haalt. Rijdt er vandaag niets meer dat
+  je er op tijd brengt, dan staat dat er. Alleen bij OV, alleen vandaag en
+  alleen zolang je activiteit nog moet beginnen: een auto vertrekt wanneer jij
+  wilt, en aan morgen is niets gemist.
+
+- **De overstapboete nagemeten** (geen wijziging). De agenda kiest de laatste
+  vertrektijd die je starttijd haalt, maar telt elke overstap als vijf minuten
+  later vertrekken. Die weging stond er zonder cijfers bij. Over 48
+  vergelijkingen koos hij 43 keer dezelfde rit; in de 5 gevallen dat het
+  scheelde ging je samen 9 minuten eerder de deur uit en had je er telkens een
+  overstap minder voor terug. Het duurste geval was drie minuten. Dat is de ruil
+  die de boete hoort te maken, dus hij blijft staan — nu met de meting erbij in
+  `src/lib/itineraries.ts` en na te rekenen met
+  `node scripts/overstapboete.mjs`.
+
+## 0.47.0
+
+- **De instellingenpagina was te druk.** Elf onderdelen stonden allemaal open
+  onder elkaar: op een telefoon bijna zes schermen scrollen langs 35 knoppen en
+  invulvelden om te zien wat er eigenlijk stond ingesteld. Nu staan ze in vier
+  groepen (Reizen, Agenda, Weergave, Account en gegevens) als rijen die
+  dichtgeklapt beginnen — 1,8 scherm, 10 bedienbare dingen in beeld.
+
+  Onder elke titel staat wat er nu is ingesteld, zodat je het antwoord meestal
+  al kunt lezen zonder ergens op te klikken: je thuisadres en je marge, hoeveel
+  locaties je bewaard hebt, of de meldingen aanstaan en met hoeveel minuten, of
+  het rooster gekoppeld is, in welke taal en welke kleur. Dat was precies wat er
+  ontbrak: alles stond open, maar niets stond er *samengevat*.
+
+  Twee dingen blijven opvallen. Is je thuisadres nog niet ingevuld, dan staat
+  die rij meteen open en de regel eronder in het rood — zonder thuisadres rekent
+  de app geen enkele vertrektijd uit. En herinneringen staan nu onder Reizen en
+  niet onder Agenda: het is het aantal minuten vóór je vertrektijd.
+
+  Een dichtgeklapte rij blijft in de pagina staan en wordt alleen verborgen, dus
+  een half ingetypte agenda-link ben je niet kwijt als je hem even dichtdoet.
+  Met de tab-toets bereik je alleen wat openstaat, en de focusring ligt nu net
+  binnen de rand van de kaart in plaats van eronder afgesneden te worden.
+
+## 0.46.0
+
+- **Eén activiteit met rommel erin sloopte de hele app.** Het uitwisselformaat
+  wordt door de planner geschreven, niet door deze app, en er werd alleen
+  gecontroleerd of een veld een string was — niet of het ergens op sloeg. Drie
+  gevallen legden alles plat, tot en met de instellingenpagina:
+
+  | wat er stond | wat er gebeurde |
+  | --- | --- |
+  | `recurrence: { freq: "weekly" }` zonder weekdagen | `weekdays.includes` op niets |
+  | `startTime: "banaan"` | `NaN` → `Invalid time value` |
+  | `location: { label: "Ergens" }` zonder coordinaten | `lat.toFixed` op niets |
+
+  Datums en tijden worden nu op hun vorm gecontroleerd (`isDateKey`,
+  `isTimeKey`) in plaats van alleen op hun type. 31 februari valt daar ook
+  onder: `new Date` schuift die stilletjes door naar maart, en dan staat je
+  activiteit op een dag die je niet gekozen hebt.
+
+  Een kapotte herhaling wordt gerepareerd in plaats van weggegooid: ontbreken
+  de weekdagen, dan wordt het de weekdag van de startdatum — net als wanneer je
+  herhaling zelf aanzet. Een onbekend patroon wordt wekelijks. Er niets van
+  maken zou de activiteit uit elke volgende week laten verdwijnen, en dat is
+  precies wat deze app niet mag doen.
+
+- **Wat uit de opslag komt gaat door dezelfde controle als een importbestand.**
+  Dat was niet zo, en daar zat het venijn: de import repareerde netjes, maar
+  bij de volgende keer openen kwam dezelfde rommel ongefilterd uit
+  localStorage. Het foutscherm bleef dan staan bij elke keer openen, want de
+  rommel bleef in de opslag. Nu gaan alle drie de ingangen — import, cloud en
+  opslag — door `normalizeActivity`, `normalizeTask` en `normalizeExam`.
+
+## 0.45.0
+
+- **De snelste rit, in plaats van een geloofwaardige omweg.** De app liet de
+  planner elke overstap uitlopen over de straat (`useRoutedTransfers`) in
+  plaats van de overstaptijd te gebruiken die bij de dienstregeling zit. Dat
+  stond er met een reden — vaste looppaden zouden ontbreken — maar het loopt
+  over dezelfde kaart die te traag rekent. Een overstap die je in het echt
+  haalt zag er dan te krap uit, en dan pakte de planner een latere trein.
+
+  Nagemeten over 48 vergelijkingen (12 ritten op 4 tijdstippen, van elke stand
+  de vroegste aankomst):
+
+  | | |
+  | --- | --- |
+  | gelijk | 28 |
+  | overstaptijd uit de dienstregeling sneller | 20 (samen 106 min) |
+  | over de straat berekend sneller | **0** |
+
+  Nul keer. Haarlem → Utrecht scheelde 21 minuten, Almere → Utrecht 12,
+  Amsterdam → Rotterdam 6. En de rit waar dat oude comment over ging — Almere
+  naar de Donaustraat, met de overstap van het perron in Lelystad Centrum naar
+  de bushalte ernaast — geeft op zes tijdstippen exact dezelfde rit in beide
+  standen. Die vlieger ging dus niet meer op.
+
+  Na te meten met `node scripts/overstap-vergelijking.mjs`.
+
+  Twee andere knoppen bleken al goed te staan, en dat staat nu bij de code
+  zodat niemand het nog eens hoeft uit te zoeken: meer opties opvragen (8 in
+  plaats van 3) gaf over 30 ritten geen enkele keer een latere vertrektijd, en
+  verder mogen lopen naar de halte (35 minuten in plaats van 20) evenmin.
+
+## 0.44.0
+
+- **De looptijden kloppen nu met 9292, op elke reis.** De planner geeft per
+  loopstuk een afstand en een tijd, maar die tijd is niet de afstand gedeeld
+  door de loopsnelheid die we meesturen: er zit straftijd in uit de
+  kaartgegevens voor oversteken, stoplichten, trappen en hoogteverschil. Over
+  tien ritten gemeten kwam dat neer op 4,6 km/h terwijl we om 5,04 vragen, en
+  bij een kapot stuk kaart (Lelystad Palazzo) op 1,2 km/h.
+
+  9292 doet dat niet: daar is een loopstuk de afstand gedeeld door je
+  loopsnelheid. De app doet dat nu ook, voor élk loopstuk in plaats van alleen
+  het laatste (`src/lib/walkTimes.ts`, was `finalWalk.ts`). Welk uiteinde van
+  een loopstuk blijft staan, ligt vast door wat er niet op je wacht: het stuk
+  naar de eerste halte eindigt bij de trein, dus je gaat later de deur uit; elk
+  ander stuk begint als je uitstapt, dus je bent eerder waar je wezen moet. Een
+  kortere overstap levert daarom wachttijd op en geen tijdwinst.
+
+  De marge die je wilt hebben staat los in je instellingen (standaard tien
+  minuten). Die hoort daar — zichtbaar en zelf te kiezen — en niet verstopt als
+  een vaste minuut in elk loopstuk, want zo telde hij dubbel.
+
+  Wat dat scheelt op de rit uit Almere naar de Donaustraat in Lelystad: 53 → 42
+  minuten. 9292 zegt 40. Die laatste twee minuten zijn de 223 meter omweg die in
+  [`KAARTFOUTEN.md`](KAARTFOUTEN.md) staat — het verschil met 9292 zit daarmee
+  helemaal in de kaart en niet meer in ons model.
+
+- **De minuten kloppen nu met de tijden die eronder staan.** De planner geeft
+  soms een duur die niet gelijk is aan zijn eigen vertrek- en aankomsttijd: 551
+  meter lopen is bij hem 406 seconden, maar als tijden 18:30 → 18:36. Namen we
+  dan zijn getal, dan stond er "7 min reizen · thuis om 20:36" en klopte de som
+  niet. De klok wint nu — daar plan je op.
+
+## 0.43.0
+
+- **Onze reistijden naast die van Google leggen.**
+  `GOOGLE_MAPS_API_KEY=... node scripts/vergelijk-google.mjs` draait hetzelfde
+  rijtje ritten door onze planner én door Google Maps, en zet ze per rit naast
+  elkaar: totale reistijd, meters lopen, minuten lopen en welke lijnen.
+
+  Waarom Google en niet 9292: de OV-gegevens komen bij allebei uit dezelfde
+  landelijke feed, dus de treinen en bussen horen exact gelijk te zijn. De
+  looproutes komen wél uit verschillende kaarten — bij ons OpenStreetMap, bij
+  Google hun eigen. Juist daar zat het verschil met 9292. Een vaste plus of min
+  over alle ritten wijst dan op iets in ons model; losse uitschieters op een
+  plek in de kaart.
+
+  De sleutel komt uit de omgeving, staat nooit in de code en komt ook niet in de
+  uitvoer terecht. De app zelf raakt Google niet aan en heeft de sleutel nooit
+  nodig.
+
+## 0.42.0
+
+- **Meetinstrument om onze loopstukken naast 9292 te leggen.**
+  `node scripts/loop-vergelijking.mjs` draait een rijtje ritten door heel
+  Nederland en drukt per loopstuk de meters en de minuten af — precies de
+  getallen die ook in een 9292-schermafbeelding staan, zodat je ze naast elkaar
+  kunt leggen zonder te tellen. Met twee argumenten doet hij één eigen rit.
+
+  De eerste meting: over 8 ritten en 22 loopstukken loopt de app gemiddeld
+  4,4 km/h, met het gros tussen 4,6 en 4,9. 9292 rekent blijkens zijn eigen
+  schermen met ongeveer 4,1. Onze loopstukken zijn dus gemiddeld eerder sneller
+  dan die van 9292, niet trager. De 3,1 km/h bij halte Palazzo in Lelystad —
+  waar dit mee begon — was een uitzondering, en die wordt sinds 0.34.0 al
+  automatisch rechtgezet.
+
+## 0.41.0
+
+- **Waarom onze tijden een minuut langer zijn dan die van 9292 staat nu
+  opgeschreven.** Op de rit naar de Donaustraat in Lelystad loopt de app 916
+  meter vanaf halte Palazzo, 9292 loopt er 693. Dat is geen rekenfout meer maar
+  een verschil in de looproute die uit OpenStreetMap komt, en dat kan de app niet
+  zelf rechtzetten: een kortere route verzinnen is precies wat deze app niet
+  hoort te doen. Alle metingen staan in [`KAARTFOUTEN.md`](KAARTFOUTEN.md), met
+  de OSM-nodes erbij en de commando's om het na te meten, zodat het te melden of
+  zelf te herstellen is.
+
+## 0.40.0
+
+- **Op een telefoon kon je een wijziging niet opslaan.** Open je een bestaande
+  activiteit, dan staan er vier knoppen onderaan: Verwijderen, Dupliceren,
+  Annuleren en Opslaan. Die pasten niet naast elkaar, en juist de laatste twee
+  vielen buiten het scherm — op een gewone telefoon van 390 pixels net zo goed
+  als op een smalle van 320. Je kon je aanpassing dus wel maken maar niet
+  bewaren. Hetzelfde gold voor het bewerken van een opdracht bij Schoolwerk,
+  waar "Opslaan" van het scherm af viel. Beide knoppenrijen zakken nu netjes
+  door naar een tweede regel.
+
+## 0.39.0
+
+- **De app zegt het nu wanneer je het niet haalt.** Rijdt er niets dat je op
+  tijd afzet, dan toont de app de eerstvolgende rit daarna — dat is beter dan
+  een leeg vak. Alleen stond er niet bij dat je daarmee te laat bent. Je volgde
+  een keurige vertrektijd op en kwam alsnog te laat, terwijl de app het allang
+  wist. Bij de vertrektijd staat nu "⚠️ je bent er pas om 09:32", op je
+  beginscherm, in de agenda en in het dagoverzicht. Bij een doorreis naar een
+  volgende afspraak stond zo'n waarschuwing al; de heenreis had hem niet.
+
+- **Leertijd na middernacht telde als nul.** Een leerblok van 23:00 tot 00:30
+  eindigt op de klok vóór het begint, en dat werd nul minuten. Je taak bleef op
+  "ingepland: 0 min" staan terwijl je er anderhalf uur voor had uitgetrokken.
+
+## 0.38.0
+
+- **Met een gekoppeld rooster liep de app tegen zijn eigen limiet aan.** Een
+  semester aan lesuren (bijna 500 activiteiten) betekende bij het opstarten
+  461 aanvragen ineens, waarvan er 446 werden geweigerd door de
+  verkeersdrempel die de gratis OV-dienst moet beschermen. Resultaat: een
+  scherm vol lege vertrektijden en acht seconden wachten.
+
+  De app rekent nu uit zichzelf alleen de komende week door — vandaag, morgen
+  en het weekoverzicht, precies waar de app voor is. Dat is 47 aanvragen in
+  plaats van 461, en geen enkele die stukloopt. Kijk je naar een dag die
+  verder weg ligt, dan wordt die rit alsnog opgehaald op het moment dat je
+  hem bekijkt. De dichtstbijzijnde dag gaat bovendien eerst, zodat bij drukte
+  de verste dag sneuvelt en niet die van morgenochtend.
+
+- **"Controleer je internetverbinding" stond er ook als het aan de andere
+  kant lag.** Is de kaarten- of reisdienst zelf even onbereikbaar, dan is er
+  met jouw wifi niets mis; die melding stuurde je het verkeerde bos in. Nu
+  zegt hij wat er aan de hand is.
+
+- **Het formulier pakte de focus niet.** Wie met een toetsenbord of
+  schermlezer werkt, bleef achter op de knop eronder en moest eerst door de
+  hele pagina heen tabben om bij "Naam" te komen.
+
+- **Het verborgen bestandsveld bij Importeren** werd door een schermlezer
+  aangekondigd als naamloos invoerveld, en je kon er met de tab-toets in
+  belanden zonder het te zien. De knop ernaast is de bediening; het veld is
+  nu overgeslagen.
+
+## 0.37.0
+
+- **Zonder bereik stond er "Failed to fetch" op je beginscherm.** De tekst van
+  de browser, in het Engels, precies op de plek waar je vertrektijd hoort te
+  staan. Nu staat er wat er aan de hand is: geen verbinding, en de app rekent
+  het opnieuw uit zodra je weer bereik hebt.
+
+- **En dat doet hij nu ook echt.** Een mislukte berekening werd onthouden en
+  nooit meer vanzelf geprobeerd — je moest de app aanraken. Kom je weer online,
+  dan pakt hij het zelf op. Handig in de trein: even door een tunnel en je
+  vertrektijd staat er tien seconden later gewoon weer.
+
+- **Een importbestand met rommel in de instellingen sloopte je beginscherm.**
+  Activiteiten, taken en toetsen werden bij import zorgvuldig nagelopen, de
+  instellingen niet. `bufferMinutes: "veel"` gaf geen foutmelding maar
+  `NaN:NaN` als vertrektijd, en een vervoermiddel dat niet bestaat liet elke
+  reisberekening stuklopen. Die gaan nu door dezelfde zeef: wat klopt blijft
+  staan, wat niet klopt valt terug op de standaard, en een veld dat niet in het
+  bestand staat blijft ook hier weg.
+
+- **Twee foutmeldingen bij import waren altijd Nederlands**, ook in de Engelse
+  app: die over een bestand van een andere app, en die over een onbekende
+  bestandsversie.
+
+## 0.36.0
+
+Verder gezocht met vreemde gegevens: een dienst die over middernacht heen loopt,
+een type dat de app niet kent, drie activiteiten tegelijk, een adres van vier
+regels lang. Het meeste hield stand; dit niet.
+
+- **Een nachtdienst stond nergens en was toch al "geweest".** Iets van 23:00 tot
+  01:00 eindigt op de kalender vóór het begint. Het weekraster liet zo'n blok
+  daardoor buiten beeld vallen, en in het dagoverzicht stond je nachtdienst al
+  om negen uur 's ochtends afgevinkt. Allebei kloppen ze nu: het raster loopt
+  door tot voorbij het laatste begin, en "geweest" begint pas als de dienst
+  echt om is.
+
+- **Een onbekend type deed zich voor als School.** Gooide je een eigen type weg
+  terwijl er nog activiteiten op stonden, of kwam er een agenda binnen met
+  `"sport"` in plaats van `"gym"`, dan werd dat stil een schooldag: blauw, met
+  het schoolgebouwtje ervoor. Nu staat het type er gewoon zoals het is, in
+  grijs, zodat je ziet dat er iets niet klopt. De [README](README.md) noemt nu
+  ook welke waarden `category` kan hebben.
+
+- **De legenda onder het weekraster zei "🚗 heen"**, ook bij een treinreis. Hij
+  wijst nu naar het icoontje op het blok zelf, dat sinds 0.35.0 bij de rit hoort.
+
+## 0.35.0
+
+Een ronde door de app op een telefoon en op een laptop, scherm voor scherm.
+Wat daar uitkwam had één ding gemeen: op hetzelfde scherm stonden twee
+verschillende antwoorden op dezelfde vraag.
+
+- **'s Avonds klopte je dagoverzicht niet meer.** De kaart bovenaan zei "vertrek
+  om 07:12, 54 minuten reizen"; het dagoverzicht eronder zei "1 u 55 min reizen"
+  en "2 u 43 min". Dat kwam doordat de app de rit van vanochtend nog aan de
+  planner vroeg, en die heeft van een tijdstip dat voorbij is geen
+  dienstregeling meer. Wat je terugkreeg was geen foutmelding maar een
+  geloofwaardige omweg: Almere naar Lelystad via Zeewolde en Harderwijk, zes
+  bussen, twee uur — terwijl de trein er elf minuten over doet.
+
+  De app vraagt nu geen ritten meer op die al gereden zijn. Bij een reeks
+  ("elke werkdag naar school") schuift hij door naar de eerstvolgende keer die
+  nog moet komen, zodra die van vandaag voorbij is.
+
+- **Hoe laat je thuis bent, stond er twee keer verschillend.** De kaart rekende
+  met de rit die je echt neemt (bus van 15:02, thuis om 15:46), het
+  dagoverzicht met eindtijd plus reisduur (15:44). Nu rekenen ze allebei met de
+  echte rit.
+
+- **"Op tijd · live" stond ook bij tijden van een andere dag.** Kijk je vooruit
+  naar donderdag, dan zijn de getoonde tijden die van de eerstvolgende dag die
+  al berekend is — dat staat er ook bij. Maar het groene "live" ging over de
+  trein van die andere dag. Dat vinkje verschijnt nu alleen nog bij tijden van
+  de dag zelf.
+
+- **Op de reisplanner lag "Zoek reis" achter de knop "Activiteit toevoegen".**
+  Op een telefoon stak hij er net bovenuit; je moest scrollen om te kunnen
+  zoeken, met een knop in beeld die iets heel anders doet. De zwevende knop is
+  daar weg — die pagina heeft zijn eigen hoofdknop.
+
+- **In het weekraster stond een auto boven een treinreis.** Dat icoontje lag
+  vast op de auto, ook bij een schooldag waar je met de trein heen gaat. Nu
+  hoort het bij het vervoermiddel van de rit.
+
+## 0.34.0
+
+- **De agenda kiest nu zelf welke rit erbij hoort.** Bij "uiterlijk aankomen
+  om" vroeg de app de planner om precies één rit. Die geeft dan de laatste
+  vertrektijd die het haalt, en dat mag van hem ook een rit zijn die alle
+  speling opmaakt. Almere Buiten naar Lelystad, uiterlijk half negen: je moet
+  om 07:12 weg — dat klopte — maar de rit die je erbij zag wachtte een half uur
+  op het busstation en zette je om 08:29 voor de deur, één minuut voor tijd,
+  terwijl je met diezelfde trein en een andere bus om 08:06 binnen bent.
+
+  De app vraagt nu een paar opties op en kiest er zelf uit, met de regels die
+  daar al voor klaarlagen: zo laat mogelijk de deur uit, en bij een gelijke
+  vertrektijd de kortste rit. De vertrektijd blijft dus dezelfde, maar de reis
+  eronder is de reis die je echt maakt. Op deze route scheelt dat 23 minuten
+  aan verzonnen wachttijd (77 minuten werd 54).
+
+- **Het laatste stukje lopen rekent de app zelf na.** De planner rekende dat
+  soms veel trager dan welke loopsnelheid ook. Van de halte Palazzo naar de
+  Donaustraat in Lelystad is het 916 meter, en daar zette hij 18 minuten voor —
+  3,1 km/h. Dat is geen loopsnelheid maar een vaste straftijd in zijn
+  kaartgegevens: de eerste 211 meter, door de Torenvalktunnel, rekent hij op
+  tien minuten, en dat blijft zo wat je ook instelt (zonder instelling 20
+  minuten, op 5 km/h 18, op 7,2 km/h nog altijd 15).
+
+  Loopt de planner op het laatste stuk meer dan 40% achter op jouw tempo, dan
+  rekent de app het zelf uit afstand en loopsnelheid, met een minuut extra voor
+  oversteken. Die 18 minuten worden zo 12, en de rit van 06:42 naar Lelystad
+  staat nu op 41 minuten in plaats van 47.
+
+  Bewust alleen het láátste loopstuk. Dat kan je hooguit eerder thuisbrengen;
+  minuten afhalen van het stuk naar de eerste halte of van een overstap zou
+  betekenen dat je later de deur uit moet en je trein mist. Een loopstuk dat
+  gewoon klopt blijft staan, en wie "rustig" loopt houdt de tijden van de
+  planner.
+
+- **De keuze rustig / normaal / stevig is weg.** De app rekent voortaan altijd
+  met 5 km/h. Die knop kwam er in 0.32.0 omdat de planner uit zichzelf
+  voorzichtiger rekent, maar niemand gaat een loopsnelheid instellen om zijn
+  vertrektijd te laten kloppen — en met drie standen gaf de app drie
+  verschillende antwoorden op dezelfde vraag. Wie wat extra tijd wil, heeft
+  daar de veiligheidsmarge voor. De instelling verdwijnt uit Instellingen; een
+  eerder gemaakte keuze wordt genegeerd en verandert niets aan je gegevens.
+
+- **De afstand van een OV-reis klopt weer.** Die telde alleen de loopstukken
+  mee, want de planner zet bij een trein of bus geen afstand in zijn antwoord —
+  alleen de getekende route. Een rit van 22 kilometer stond zo als 1,8
+  kilometer in je back-up. De app meet die tekening nu zelf op.
+
+- **Lopen naar iets wat ver weg is zei "geen looproute gevonden".** Dat klopte
+  niet: de route bestond wel, maar duurde langer dan de vier uur die de app
+  aan een directe route toestond — Almere Buiten naar Lelystad is 19,5
+  kilometer, oftewel 4 uur en 18 minuten. Die grens staat voor lopen nu op acht
+  uur, en is het écht te ver, dan zegt de app dat ook zo.
+
 ## 0.33.0
 
 - **Stevig doorlopen is nu de standaard.** In 0.32.0 kon je de loopsnelheid

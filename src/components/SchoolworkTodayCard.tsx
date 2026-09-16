@@ -8,6 +8,7 @@ import {
   PRIORITY_META,
   activityMinutes,
   describeDaysUntil,
+  linkedWorkDone,
   sortExams,
   sortTasks,
 } from "@/lib/schoolwork";
@@ -27,6 +28,14 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
     (a) => a.source === "leerplan" || a.linkedTaskId || a.linkedExamId,
   );
   const studyMinutes = studyToday.reduce((sum, a) => sum + activityMinutes(a), 0);
+  /*
+   * Hoeveel van die tijd staat voor werk dat al af is? Dat is precies de vraag
+   * die je stelt als je 's ochtends kijkt: moet ik vanavond nog achter mijn
+   * bureau, of is die twee uur vrij.
+   */
+  const doneMinutes = studyToday
+    .filter((activity) => linkedWorkDone(activity, tasks, exams))
+    .reduce((sum, a) => sum + activityMinutes(a), 0);
 
   const nextTask = sortTasks(tasks).find((t) => t.status !== "done");
   const nextExam = sortExams(exams).find((e) => e.status !== "done");
@@ -63,6 +72,12 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
               })}
               {")"}
             </span>
+            {doneMinutes > 0 ? (
+              <span className="font-semibold" style={{ color: "#16a34a" }}>
+                {" \u00b7 "}
+                {t("schoolworkToday.doneShare", { duration: formatDuration(doneMinutes) })}
+              </span>
+            ) : null}
           </>
         ) : (
           <span style={{ color: "var(--muted)" }}>{t("schoolworkToday.none")}</span>

@@ -136,7 +136,7 @@ Eigen types staan in `Settings.customCategories` en werken overal in de app.
 ### Vervoermiddel en OV-reisplanner
 
 Per activiteit kies je **🚗 auto, 🚲 fiets, 🚶 lopen of 🚆 OV** (of "Standaard", dan geldt de
-instelling uit **Instellingen → Standaard vervoermiddel**).
+instelling uit **Instellingen → Thuis en vertrektijd → Standaard vervoermiddel**).
 
 Bij **OV** werkt de app als een reisplanner: hij zoekt een echte rit die je vóór de starttijd
 (min de marge) laat aankomen, en toont de hele reis: lopen naar de halte, de lijn, de richting,
@@ -152,9 +152,33 @@ plaats van uit een rekensom. Ook de terugreis wordt als echte rit gepland, vanaf
 MOTIS vraagt om een herkenbare `User-Agent`; die hergebruiken we uit `NOMINATIM_USER_AGENT`.
 Zie de [gebruiksvoorwaarden van transitous](https://transitous.org/api/).
 
+De looproutes daarin komen uit OpenStreetMap. Klopt de kaart niet, dan klopt de
+vertrektijd niet, en daar valt in de app niets aan te doen — een kortere route
+verzinnen is precies wat deze app niet hoort te doen. Plekken waar dat speelt,
+met bewijs om ze te kunnen melden, staan in [`KAARTFOUTEN.md`](KAARTFOUTEN.md).
+
+De **looptijden** komen niet van de planner maar rekent de app zelf uit: de
+afstand van de kaart gedeeld door 5,04 km/h, naar boven op hele minuten
+(`src/lib/walkTimes.ts`). De planner telt daar straftijd bij op voor oversteken,
+stoplichten en hoogteverschil — over tien ritten gemeten 4,6 km/h in plaats van
+de 5,04 die we vragen, en bij een kapot stuk kaart veel erger. 9292 doet dat
+niet, dus zolang wij die straftijd erin lieten stond er bij elke reis een paar
+minuten meer dan de gebruiker ernaast zag staan. De marge die je wilt hebben
+staat los in je instellingen (standaard tien minuten); die hoort zichtbaar en
+zelf te kiezen te zijn, en niet verstopt in elk loopstuk.
+
 Omdat een OV-rit afhangt van het tijdstip, zit de dag en starttijd in de cache-sleutel: verandert
 de tijd of de dag, dan wordt de rit opnieuw opgezocht. Voor een herhalende activiteit plant de app
 op de **eerstvolgende dag** dat hij voorkomt.
+
+Die sleutel zegt *welke* rit je zoekt, niet hoe laat die vandaag echt rijdt. Vanaf drie uur voor
+je activiteit tot het einde ervan wordt een OV-rit daarom elke twee minuten opnieuw opgehaald, en
+meteen zodra je de app weer voor je neus haalt — ook als er al een uitkomst met dezelfde sleutel
+staat. Anders blijft de vertrektijd van gisteravond staan, met "op tijd" erbij, terwijl je trein
+een kwartier later rijdt.
+
+Is je vertrektijd toch verstreken en moet je activiteit nog beginnen, dan zoekt de app de rit die
+je nu nog kunt halen en zet erbij hoe laat je dan aankomt — en hoeveel te laat dat is.
 
 
 ### Opgeslagen locaties
@@ -184,7 +208,9 @@ overschrijft de categoriekleur in alle weergaven. `Standaard` zet hem terug.
 
 De agenda heeft vier tabbladen:
 
-- **Vandaag** en **Morgen**: lijst met alle details per activiteit.
+- **Vandaag** en **Morgen**: lijst met alle details per activiteit. Staat er iets tegelijk —
+  twee activiteiten over elkaar, of een reistijd die over een andere activiteit valt — dan staat
+  dat erbij. Het houdt je nergens tegen; soms boek je met opzet dubbel.
 - **Week**: een raster van ma t/m zo op een tijdas. De reistijd staat als
   gestreept blok direct boven de activiteit, dus je ziet je vertrekmoment op de
   tijdlijn staan. Overlappende activiteiten komen naast elkaar. Met de knop
@@ -228,9 +254,25 @@ Leer- en werkblokken uit je planner komen binnen als gewone activiteiten met
 `category: "school"` en `source: "leerplan"`; ze lopen mee in alle agenda-weergaven en krijgen
 daar een subtiel **📚 leerplan**-label.
 
+Zet je een opdracht of toets op **klaar**, dan staan de blokken die eraan gekoppeld zijn
+(`linkedTaskId` / `linkedExamId`) in je agenda **doorgestreept**, met een groen ✓ af erbij — in
+de dag- en weekweergave, het maandraster, het dagoverzicht en op de kaart van je eerstvolgende
+activiteit. Het blok blijft staan, want je wilt kunnen zien waar je tijd heen ging, maar je ziet
+in één blik dat die twee uur vanavond vrij zijn. Op het dashboard staat er bovendien bij hoeveel
+van je geplande leertijd vandaag al af is.
+
+Dat werkt ook **per stap**. Een opdracht van zes uur plan je zelden in één blok; je hakt hem in
+stukken ("samenvatting", "opgaven maken") en vinkt die stuk voor stuk af. Een blok dat bij zo'n
+stap hoort is doorgestreept zodra die stap af is — de hele opdracht hoeft nog niet klaar te zijn.
+Bij voorkeur staat die koppeling er expliciet in (`linkedStepId`, de `id` van een stap uit
+`steps`); staat hij er niet, dan herkent de app de stap aan de titel van het blok, zodat blokken
+die er al stonden ook meedoen. "BE – samenvatting H3" hoort bij de stap "Samenvatting H3".
+Hele woorden tellen, dus "H3" matcht niet op "H30", en staat er meer dan één stap in de titel dan
+wint de langste.
+
 ## Back-up & synchronisatie (import/export)
 
-Onder **Instellingen → Back-up & synchronisatie** deel je exact dezelfde data met je planner via
+Onder **Instellingen → Back-up** deel je exact dezelfde data met je planner via
 één JSON-bestand:
 
 ```json
@@ -283,8 +325,12 @@ aan een toets is gekoppeld en een werkblok dat aan een opdracht is gekoppeld.
 **`exams[]` (toetsen):** zelfde `priority`/`status`/tijdstempels, met `id`, `subject`,
 `title?`, `date` (`YYYY-MM-DD`), `topics?` (string[]) en `prepMinutes?` (number).
 
-**`activities[]` (agenda):** het bestaande activiteitsmodel. Voor leer-/werkblokken uit het
-leerplan: zet `category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
+**`activities[]` (agenda):** het bestaande activiteitsmodel. `category` is een van de vijf
+ingebouwde types — `"school"`, `"werk"`, `"gym"`, `"koken"`, `"hobby"` — of de `id` van een
+eigen type uit `settings.customCategories`. Iets anders blijft staan zoals je het schrijft,
+maar komt er neutraal uit (grijs, met de tekst zelf als naam): de app doet niet alsof
+`"sport"` hetzelfde is als `"gym"`. Voor leer-/werkblokken uit het leerplan: zet
+`category: "school"` en `source: "leerplan"`. Koppel een blok aan schoolwerk met
 `linkedTaskId` of `linkedExamId` (de `id` van een taak of toets); de app toont dan bij die taak/
 toets hoeveel leertijd is ingepland en labelt het blok in de agenda.
 
@@ -296,6 +342,38 @@ instelstappen (project, database-schema, sleutels in Vercel) staan in
 [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md). Zonder de env-variabelen
 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` blijft alles lokaal en verandert er
 niets. Elke gebruiker heeft alleen toegang tot zijn eigen data (Row Level Security).
+
+## Claude-connector (MCP)
+
+Naast import/export kan Claude ook rechtstreeks bij de agenda. Dat scheelt het heen en weer
+slepen van een bestand: je vraagt in een gesprek om een planning, Claude leest wat er staat en
+zet de blokken er zelf in.
+
+**Hoe het werkt.** De app biedt één adres aan, `/api/mcp`, dat het
+[Model Context Protocol](https://modelcontextprotocol.io) spreekt over HTTP. Je maakt in
+**Instellingen → Claude-connector** een sleutel aan en plakt adres en sleutel in Claude onder
+*Connectors → Aangepaste connector toevoegen*. Vanaf dan heeft Claude drie gereedschappen:
+
+| Gereedschap | Wat het doet |
+| --- | --- |
+| `read_agenda` | De agenda over een periode, herhalingen al uitgerekend tot losse dagen, met vertrektijd en reisduur per activiteit. Plus het open huiswerk en de komende toetsen. |
+| `save_activities` | Blokken toevoegen of wijzigen. Zonder `id` komt er een blok bij; met een bestaand `id` vervangt het dat blok — zo verplaats je iets. |
+| `delete_activities` | Blokken weghalen op hun `id`, met een grafsteen zodat ze niet terugkomen bij de volgende sync. |
+
+**Waar de grenzen liggen.** Bewust klein gehouden:
+
+- De connector leest en schrijft **activiteiten**. Taken en toetsen leest hij wel, maar hij past
+  ze niet aan — huiswerk afvinken blijft iets wat je zelf doet.
+- Blokken uit je schoolrooster of een gekoppelde agenda kun je weghalen, maar die komen bij de
+  eerstvolgende verversing gewoon terug. Dat zijn kopieën, geen eigen blokken.
+- De data gaat door dezelfde rij als de synchronisatie (`user_data`). De app haalt die op bij het
+  openen, dus een planning die Claude nu schrijft zie je op je telefoon zodra je hem weer opent.
+- Claude kijkt nooit uit zichzelf mee; er gebeurt alleen iets wanneer jij erom vraagt.
+
+**Beveiliging.** Van de sleutel staat alleen een SHA-256 in de database, nooit de sleutel zelf —
+raakt die tabel op straat, dan ligt daarmee niemands agenda open. De sleutel wijst naar precies
+één gebruiker en de route kan bij niets anders. Een sleutel intrekken kan op elk moment in de
+instellingen. Zie [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md) stap 10 voor het aanzetten.
 
 ## Klaar voor later
 

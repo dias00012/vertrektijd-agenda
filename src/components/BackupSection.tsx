@@ -6,6 +6,7 @@ import { getLanguage } from "@/lib/i18n/locale";
 import { translate } from "@/lib/i18n/dictionary";
 import { useAgenda } from "@/hooks/useAgenda";
 import { parseBackup, type ImportMode, type ImportSummary } from "@/lib/backup";
+import { SettingsRow } from "./SettingsRow";
 
 /**
  * Back-up & synchronisatie: exporteer de volledige agenda als één JSON-bestand
@@ -60,13 +61,12 @@ export function BackupSection() {
   }
 
   return (
-    <section className="card mt-4 px-5 py-5">
-      <h2 className="text-base font-semibold">&#128260; {t("backup.title")}</h2>
-      <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+    <SettingsRow icon={"\u{1F504}"} title={t("backup.title")} summary={t("backup.summary")}>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         {t("backup.body")}
       </p>
 
-      <div className="mt-4">
+      <div className="mt-3">
         <p className="label">{t("backup.mode")}</p>
         <div
           className="flex rounded-xl border p-0.5"
@@ -113,11 +113,17 @@ export function BackupSection() {
         >
           &#11014;&#65039; {t("backup.import")}
         </button>
+        {/* De knop hierboven is de echte bediening; dit veld wordt daardoor
+            aangeklikt. Zonder deze twee attributen kwam een schermlezer een
+            naamloos bestandsveld tegen, en liep je met de tab-toets tegen een
+            invoerveld aan dat niet te zien is. */}
         <input
           ref={fileInput}
           type="file"
           accept="application/json,.json"
           className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
           onChange={handleFile}
         />
       </div>
@@ -141,7 +147,7 @@ export function BackupSection() {
           </ul>
         </div>
       ) : null}
-    </section>
+    </SettingsRow>
   );
 }
 

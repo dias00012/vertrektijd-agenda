@@ -8,6 +8,8 @@ import {
   spansDays,
   toOccurrence,
   sortWeekdays,
+  defaultRecurrence,
+  normalizeRecurrence,
 } from "./recurrence";
 import type { Activity, Recurrence } from "./types";
 
@@ -343,5 +345,66 @@ describe("toOccurrence en de startdatum van de reeks", () => {
     const los = toOccurrence(activity({ date: "2026-09-14" }), "2026-09-14");
 
     expect(los.seriesDate).toBe("2026-09-14");
+  });
+});
+
+describe("normalizeRecurrence", () => {
+  it("laat een herhaling zonder weekdagen de agenda niet slopen", () => {
+    // Dit is de fout die de app omver kreeg: `{ freq: "weekly" }` uit een
+    // importbestand liet `occursOn` struikelen over `weekdays.includes(...)`,
+    // en er is geen scherm dat zo'n fout opvangt.
+    const patroon = normalizeRecurrence({ freq: "weekly" }, "2026-09-11");
+    expect(patroon).toEqual({ freq: "weekly", weekdays: [5], until: null });
+
+    const activiteit = activity({ date: "2026-09-11", recurrence: patroon });
+    expect(() => occursOn(activiteit, "2026-09-18")).not.toThrow();
+    expect(occursOn(activiteit, "2026-09-18")).toBe(true);
+  });
+
+  it("neemt de weekdag van de startdatum, net als wanneer je het zelf aanzet", () => {
+    // 11 september 2026 is een vrijdag. Het patroon blijft staan zoals het er
+    // stond; alleen de weekdag wordt aangevuld.
+    const patroon = normalizeRecurrence({ freq: "biweekly" }, "2026-09-11");
+    expect(patroon?.freq).toBe("biweekly");
+    expect(patroon?.weekdays).toEqual(defaultRecurrence("2026-09-11").weekdays);
+  });
+
+  it("maakt van een onbekend patroon een wekelijkse herhaling", () => {
+    // Liever elke week op de goede dag dan de activiteit uit elke volgende
+    // week laten verdwijnen.
+    expect(normalizeRecurrence({ freq: "dagelijks" }, "2026-09-11")?.freq).toBe("weekly");
+  });
+
+  it("gooit weekdagen weg die geen weekdag zijn", () => {
+    const patroon = normalizeRecurrence(
+      { freq: "weekly", weekdays: [1, 9, -2, "dinsdag", 2.5, 3, 1] },
+      "2026-09-11",
+    );
+    expect(patroon?.weekdays).toEqual([1, 3]);
+  });
+
+  it("laat weekdagen leeg bij een maandelijkse reeks", () => {
+    expect(normalizeRecurrence({ freq: "monthly" }, "2026-09-11")).toEqual({
+      freq: "monthly",
+      weekdays: [],
+      until: null,
+    });
+  });
+
+  it("negeert een einddatum die geen datum is", () => {
+    // Anders houdt de reeks stilletjes op, of juist nooit.
+    expect(normalizeRecurrence({ freq: "weekly", until: "ooit" }, "2026-09-11")?.until).toBeNull();
+    expect(normalizeRecurrence({ freq: "weekly", until: "2026-12-31" }, "2026-09-11")?.until).toBe(
+      "2026-12-31",
+    );
+  });
+
+  it("herhaalt niets zonder bruikbare startdatum", () => {
+    expect(normalizeRecurrence({ freq: "weekly" }, "gisteren")).toBeNull();
+  });
+
+  it("laat een activiteit zonder herhaling met rust", () => {
+    expect(normalizeRecurrence(null, "2026-09-11")).toBeNull();
+    expect(normalizeRecurrence("elke week", "2026-09-11")).toBeNull();
   });
 });
