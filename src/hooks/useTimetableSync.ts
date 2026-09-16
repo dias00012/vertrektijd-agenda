@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { headers } from "@/lib/api";
 import { useAgenda } from "./useAgenda";
-import { parseIcs } from "@/lib/ical";
+import { feedActivityId, parseIcs } from "@/lib/ical";
 import { compareTimetable } from "@/lib/timetableChanges";
 import { saveChanges } from "@/lib/changeLog";
 import { track } from "@/lib/stats";
@@ -116,7 +116,11 @@ export function useTimetableSync(): void {
           // Dan liever niets doen dan alles weggooien.
           if (found.length === 0 || !active) return;
 
-          const drafts: ActivityDraft[] = found.map((event) => ({
+          // Het id komt uit de afspraak zelf, niet uit een toevalsgenerator:
+          // dezelfde les hoort op elk apparaat hetzelfde id te hebben, anders
+          // ziet het samenvoegen er twee losse blokken in.
+          const drafts: (ActivityDraft & { id: string })[] = found.map((event) => ({
+            id: feedActivityId(feed.source, event.uid),
             category: feed.category,
             title: event.location ? `${event.title} (${event.location})` : event.title,
             date: event.date,

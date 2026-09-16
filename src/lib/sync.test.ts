@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergePayload, type SyncPayload } from "./sync";
+import { feedActivityId } from "./ical";
 import type { Activity, Settings } from "./types";
 
 /**
@@ -317,5 +318,48 @@ describe("mergeSettings", () => {
     );
 
     expect(merged.settings?.home).toEqual(thuis);
+  });
+});
+
+describe("rooster op twee apparaten", () => {
+  // Hetzelfde lesrooster, op de telefoon en op de laptop opgehaald. Beide
+  // apparaten vervangen bij het verversen hun eigen reeks; het samenvoegen
+  // hoort daar één rooster van te maken, niet twee.
+  const les = (uid: string, updatedAt: string) => {
+    const item = act(feedActivityId("rooster", uid), "Bedrijfseconomie", updatedAt);
+    return { ...item, source: "rooster" } as Activity;
+  };
+
+  const leeg: SyncPayload = { settings: null, activities: [], tasks: [], exams: [], deletions: [] };
+
+  it("laat het rooster niet dubbel staan", () => {
+    const telefoon: SyncPayload = {
+      ...leeg,
+      activities: [les("les-1", "2026-09-15T06:00:00.000Z"), les("les-2", "2026-09-15T06:00:00.000Z")],
+    };
+    const laptop: SyncPayload = {
+      ...leeg,
+      activities: [les("les-1", "2026-09-15T07:00:00.000Z"), les("les-2", "2026-09-15T07:00:00.000Z")],
+    };
+
+    const samen = mergePayload(telefoon, laptop, "2026-09-15T08:00:00.000Z");
+    expect(samen.activities).toHaveLength(2);
+    // De laptop ververste het laatst, dus die versie telt.
+    expect(samen.activities.every((item) => item.updatedAt === "2026-09-15T07:00:00.000Z")).toBe(true);
+  });
+
+  it("haalt weg wat op het andere apparaat is losgekoppeld", () => {
+    // Koppel je een agenda los, dan legt dat apparaat een grafsteen neer. Zonder
+    // dat spoor zette het samenvoegen alles gewoon terug.
+    const telefoon: SyncPayload = {
+      ...leeg,
+      activities: [les("les-1", "2026-09-15T06:00:00.000Z")],
+    };
+    const laptop: SyncPayload = {
+      ...leeg,
+      deletions: [{ id: feedActivityId("rooster", "les-1"), at: "2026-09-15T07:00:00.000Z" }],
+    };
+
+    expect(mergePayload(telefoon, laptop, "2026-09-15T08:00:00.000Z").activities).toHaveLength(0);
   });
 });

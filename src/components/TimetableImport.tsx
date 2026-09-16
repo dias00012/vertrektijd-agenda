@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { headers } from "@/lib/api";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { parseIcs, type IcsEvent } from "@/lib/ical";
+import { parseIcs, type IcsEvent, feedActivityId } from "@/lib/ical";
 import { addDaysToKey, formatDateLabel, todayKey } from "@/lib/time";
 import { LocationInput } from "./LocationInput";
 import { placeChoices } from "@/lib/places";
@@ -100,7 +100,11 @@ export function TimetableImport() {
   function importAll() {
     if (!events) return;
 
-    const drafts: ActivityDraft[] = events.map((event) => ({
+    // Het id uit de afspraak zelf, zodat dezelfde les op je telefoon en op je
+    // laptop hetzelfde id krijgt. Met een willekeurig id zag het samenvoegen
+    // er twee losse blokken in en stond je rooster dubbel.
+    const drafts: (ActivityDraft & { id: string })[] = events.map((event) => ({
+      id: feedActivityId(SOURCE, event.uid),
       category,
       // Het lokaal erbij, want dat is precies wat je wilt weten als je er staat.
       title: event.location ? `${event.title} (${event.location})` : event.title,
@@ -326,16 +330,35 @@ export function TimetableImport() {
                 : t("timetable.never"),
             })}
           </p>
-          <button
-            type="button"
-            className="mt-2 underline"
-            onClick={() => {
-              updateSettings({ timetable: null });
-              setDone(t("timetable.unlinked"));
-            }}
-          >
-            {t("timetable.unlink")}
-          </button>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            {/*
+              Normaal haalt de app je rooster hoogstens eens per twaalf uur op.
+              Prima voor een rooster dat af en toe wijzigt, vervelend wanneer je
+              nu wilt zien of het klopt. Het tijdstip wissen maakt de koppeling
+              meteen weer "aan de beurt"; de achtergrondverversing doet de rest.
+            */}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => {
+                if (!settings.timetable) return;
+                updateSettings({ timetable: { ...settings.timetable, syncedAt: null } });
+                setDone(t("timetable.refreshing"));
+              }}
+            >
+              {t("timetable.refreshNow")}
+            </button>
+            <button
+              type="button"
+              className="underline"
+              onClick={() => {
+                updateSettings({ timetable: null });
+                setDone(t("timetable.unlinked"));
+              }}
+            >
+              {t("timetable.unlink")}
+            </button>
+          </div>
         </div>
       ) : null}
 

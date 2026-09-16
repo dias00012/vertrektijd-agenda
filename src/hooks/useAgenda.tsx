@@ -78,7 +78,12 @@ interface AgendaContextValue {
    */
   replaceActivities: (options: {
     remove: string[];
-    add: ActivityDraft[];
+    /**
+     * Een blok mag zijn eigen `id` meebrengen. Dat doen de gekoppelde agenda's:
+     * die leiden het af van de afspraak, zodat dezelfde les op elk apparaat
+     * hetzelfde id krijgt en niet dubbel in je agenda belandt.
+     */
+    add: (ActivityDraft & { id?: string })[];
     source?: string;
   }) => void;
   updateActivity: (id: string, draft: ActivityDraft) => void;
@@ -520,10 +525,18 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const replaceActivities = useCallback(
-    ({ remove, add, source }: { remove: string[]; add: ActivityDraft[]; source?: string }) => {
+    ({
+      remove,
+      add,
+      source,
+    }: {
+      remove: string[];
+      add: (ActivityDraft & { id?: string })[];
+      source?: string;
+    }) => {
       const now = new Date().toISOString();
-      const created: Activity[] = add.map((draft) => ({
-        id: createId(),
+      const created: Activity[] = add.map(({ id, ...draft }) => ({
+        id: id ?? createId(),
         ...draft,
         source: source ?? null,
         exceptions: [],
@@ -539,6 +552,22 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         ...current.filter((item) => !removing.has(item.id)),
         ...created,
       ]);
+
+      // Een grafsteen voor wat hier echt verdwijnt. Zonder dat spoor kent het
+      // andere apparaat het blok nog wel, en zet het samenvoegen het bij de
+      // eerstvolgende synchronisatie gewoon terug -- naast het nieuwe.
+      //
+      // Alleen voor wat niet meteen terugkomt: een les die nu hetzelfde id
+      // krijgt als daarnet is niet weggegooid maar bijgewerkt.
+      const keeping = new Set(created.map((item) => item.id));
+      const gone = remove.filter((id) => !keeping.has(id));
+      if (gone.length > 0) {
+        const goneSet = new Set(gone);
+        setDeletions((current) => [
+          ...current.filter((entry) => !goneSet.has(entry.id)),
+          ...gone.map((id) => ({ id, at: now })),
+        ]);
+      }
     },
     [],
   );

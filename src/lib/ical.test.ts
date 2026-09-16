@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseIcs } from "./ical";
+import { feedActivityId, parseIcs } from "./ical";
 
 const WINDOW = {
   from: new Date("2026-09-01T00:00:00Z"),
@@ -645,5 +645,44 @@ describe("parseIcs bij een vrije periode over de tijdswissel", () => {
       date: "2026-10-19",
       endDate: "2026-10-26",
     });
+  });
+});
+
+describe("feedActivityId", () => {
+  const rooster = [
+    "BEGIN:VCALENDAR",
+    "BEGIN:VEVENT",
+    "UID:les-be-2",
+    "SUMMARY:Bedrijfseconomie",
+    "DTSTART;TZID=Europe/Amsterdam:20260915T090000",
+    "DTEND;TZID=Europe/Amsterdam:20260915T100000",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  it("geeft dezelfde les elke keer hetzelfde id", () => {
+    // Waar het om begonnen was: bij het verversen werd de hele reeks vervangen
+    // met nieuwe, willekeurige ids. Dezelfde les kreeg op je telefoon dus een
+    // ander id dan op je laptop, het samenvoegen zag er twee losse blokken in,
+    // en zo stond je hele rooster dubbel.
+    const eerste = parseIcs(rooster, WINDOW);
+    const tweede = parseIcs(rooster, WINDOW);
+    expect(eerste).toHaveLength(1);
+    expect(feedActivityId("rooster", eerste[0].uid)).toBe(
+      feedActivityId("rooster", tweede[0].uid),
+    );
+  });
+
+  it("houdt twee agenda's uit elkaar", () => {
+    // Dezelfde afspraak uit twee gekoppelde agenda's blijft twee blokken: je
+    // hebt ze zelf allebei toegevoegd.
+    const [event] = parseIcs(rooster, WINDOW);
+    expect(feedActivityId("rooster", event.uid)).not.toBe(
+      feedActivityId("agenda:abc", event.uid),
+    );
+  });
+
+  it("houdt twee afspraken uit dezelfde agenda uit elkaar", () => {
+    expect(feedActivityId("rooster", "les-1")).not.toBe(feedActivityId("rooster", "les-2"));
   });
 });
