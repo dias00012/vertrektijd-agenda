@@ -8,6 +8,65 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.58.0
+
+- **De connector meldt nu wat er dubbel staat.** In `duplicates` komen
+  opdrachten die hetzelfde werk onder een andere naam zijn ("Excel week 2 -- H2
+  (Opdracht 2.5 en 2.6)" naast "Excel week 2 -- H2 Afronden": zelfde vak,
+  zelfde deadline) en blokken die op dezelfde dag twee keer hetzelfde lijken
+  ("Lezen" naast "Lezen (voor het slapen)").
+
+  Bewust alleen een signaal. Of die twee leesblokken een vergissing zijn of
+  precies de bedoeling weet alleen jij; opruimen is een besluit, geen
+  berekening. De connector noemt het, jij beslist.
+
+- **En wat er botst.** Per dag staat er `clashes`: activiteiten die op de klok
+  overlappen, én de stille variant waarbij alleen je reistijd over iets anders
+  heen valt. Dat is dezelfde berekening die de app op je eigen scherm gebruikt.
+
+## 0.57.0
+
+- **De connector laat nu de dag zien zoals jij hem ziet, niet als een lijst
+  rijen.** De vorige versie gaf de activiteiten door en liet het rekenwerk aan
+  de planner over: zoek zelf de gaten, tel zelf de reistijd erbij, bedenk zelf
+  of het past. Dat ging mis, en terecht -- de app wist het al, hij zei het
+  alleen niet.
+
+  Per dag staat er nu `free`: de gaten waarin werkelijk iets past, met de
+  reistijden er al in verwerkt. Op een werkdag begint die lijst om 17:54 en niet
+  om 17:00. Daarnaast `movable`: de blokken die zouden kunnen wijken als het
+  krap wordt -- alleen om voor te stellen, nooit om zelf te verzetten.
+
+- **`rules` in het antwoord.** Binnen welke uren er gepland mag worden (07:00 tot
+  22:00), wat het kortste zinvolle blok is, en wat er mag wijken. De grens hoort
+  bij de gebruiker, niet bij het model, dus staat hij er zichtbaar bij.
+
+- **Per opdracht `plannedMinutes` en `remainingMinutes`.** Wat er al voor staat
+  en wat er nog bij moet. Zonder die twee getallen plant een planner er elke
+  keer een nieuwe stapel bovenop, want hij ziet niet dat het er al is.
+
+## 0.56.0
+
+- **De connector wist niet wanneer je thuis was.** `read_agenda` gaf keurig door
+  hoe laat je van huis moest, maar zweeg over de reis terug. Een planner las
+  "werken tot 17:00" en zette er om 17:20 een leerblok achter -- terwijl de
+  terugreis uit Lelystad 54 minuten duurt en je pas om 17:54 binnenkomt. Die
+  blokken bestonden alleen op papier.
+
+  Per activiteit staat er nu `arrival` (hoe laat je er bent) en `backHome` (hoe
+  laat je weer thuis bent, inclusief de reis terug) bij. Tussen `departure` en
+  `backHome` ben je van huis, en daar past niets thuis tussen.
+
+- **`save_activities` weigert nu een blok waarvoor je onderweg bent.** Een blok
+  zonder eigen locatie doe je thuis; valt het in het venster waarin je van huis
+  bent, dan komt het er niet in en krijgt de planner de reden terug ("je bent
+  dan niet thuis: Werken loopt tot 17:54 inclusief de reis terug"). Beter een
+  planning die terugpraat dan een agenda die niet klopt.
+
+- **Twee keer dezelfde planning zet je week niet meer dubbel.** Een blok zonder
+  `id` dat op dezelfde dag, dezelfde begintijd en met dezelfde titel al bestaat,
+  wordt bijgewerkt in plaats van ernaast gezet.
+
 ## 0.55.0
 
 - **Je rooster stond dubbel op je tweede apparaat.** Twee fouten die elkaar

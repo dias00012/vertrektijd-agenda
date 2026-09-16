@@ -1,7 +1,8 @@
-import { activitiesOnDate } from "./agenda";
+import { activitiesOnDate, clashesOnDate } from "./agenda";
 import { normalizeActivity } from "./backup";
-import { addDaysToKey, daysBetween, isDateKey, todayKey } from "./time";
-import { computeDeparture } from "./travel";
+import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
+import { computeDeparture, computeReturn } from "./travel";
+import { activityMinutes } from "./schoolwork";
 import type { Activity, Exam, Settings, Task } from "./types";
 
 /**
@@ -41,6 +42,29 @@ const MAX_DAYS = 62;
 /** Hoeveel activiteiten er in één keer bewaard mogen worden. */
 const MAX_SAVE = 100;
 
+/**
+ * Het venster waarbinnen een planner iets mag voorstellen.
+ *
+ * Niet omdat de agenda daarbuiten leeg is, maar omdat een planning die om
+ * 23:00 nog een uur schoolwerk neerzet geen planning is maar een wens. De
+ * grens hoort bij de gebruiker, niet bij het model -- vandaar dat hij in het
+ * antwoord meegaat, zodat je hem kunt zien en erover kunt praten.
+ */
+const DAY_STARTS = 7 * 60;
+const PLAN_UNTIL = 22 * 60;
+
+/** Korter dan dit is geen werkblok maar een gaatje. */
+const MIN_GAP = 20;
+
+/**
+ * Categorieën die mogen wijken als het krap wordt.
+ *
+ * Alleen als vóórstel: gamen en lezen zijn te verzetten, maar of dat vanavond
+ * ook mag is niet aan een planner. En "Gitaar les" staat in diezelfde categorie
+ * terwijl die juist vastligt -- reden te meer om het altijd te vragen.
+ */
+const MOVABLE = ["hobby"];
+
 const WEEKDAYS = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
 
 /** Een activiteit zoals de planner hem te zien krijgt: plat en zonder ruis. */
@@ -56,8 +80,20 @@ interface ReadActivity {
   /** Hoe laat je van huis moet, als de app dat heeft uitgerekend. */
   departure?: string;
   travelMinutes?: number;
+  /** Hoe laat je er bent met de gevonden rit. */
+  arrival?: string;
   /** true wanneer je met de gevonden rit ná de begintijd aankomt. */
   arrivesLate?: boolean;
+  /**
+   * Hoe laat je weer thuis bent, eindtijd plus de reis terug.
+   *
+   * Dit is het getal waar een planning op stukloopt als je het weglaat. Werk je
+   * tot 17:00 in Lelystad, dan ben je pas om 17:54 thuis -- en een leerblok om
+   * 17:20 bestaat alleen op papier.
+   */
+  backHome?: string;
+  /** Duur van de reis terug in minuten. */
+  returnMinutes?: number;
   /** "leerplan" voor blokken die uit een leerplan komen, anders afwezig. */
   source?: string;
   linkedTaskId?: string;
@@ -68,10 +104,36 @@ interface ReadActivity {
   recurring?: boolean;
 }
 
+/** Een gat waarin echt iets past: thuis, wakker, en niets anders gepland. */
+interface FreeSlot {
+  from: string;
+  to: string;
+  minutes: number;
+}
+
+/** Een blok dat zou kunnen wijken, als de gebruiker dat goedvindt. */
+interface MovableBlock {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  minutes: number;
+}
+
 interface ReadDay {
   date: string;
   weekday: string;
   activities: ReadActivity[];
+  /**
+   * De gaten waarin werkelijk iets kan. Uitgerekend met de reistijden erin
+   * verwerkt, dus dit is de dag zoals je hem beleeft -- niet de lijst rijen
+   * waar je die dag zelf uit moet afleiden.
+   */
+  free: FreeSlot[];
+  /** Wat er zou kunnen wijken als `free` te weinig oplevert. Altijd vragen. */
+  movable: MovableBlock[];
+  /** Wat er die dag botst: op de klok, of alleen via de reistijd. */
+  clashes: ReadClash[];
 }
 
 export interface ReadResult {
@@ -81,13 +143,34 @@ export interface ReadResult {
   /** Thuisadres; zonder dit kan de app geen vertrektijd uitrekenen. */
   home: string | null;
   defaults: { bufferMinutes: number; travelMode: string };
+  /** De afspraken waar een planning zich aan hoort te houden. */
+  rules: {
+    /** Niet vóór dit tijdstip iets voorstellen. */
+    planFrom: string;
+    /** En niet ná dit tijdstip. De avond is van de gebruiker. */
+    planUntil: string;
+    /** Korter dan dit heeft geen zin als werkblok. */
+    minimumMinutes: number;
+    /** Wat er mag wijken -- maar nooit zonder het te vragen. */
+    movableCategories: string[];
+    note: string;
+  };
   days: ReadDay[];
+  /**
+   * Wat er dubbel lijkt te staan. Alleen een signaal: noem het, ruim het niet
+   * zelf op. Welke van de twee weg mag is aan de gebruiker.
+   */
+  duplicates: Duplicate[];
   tasks: {
     id: string;
     subject: string;
     title: string;
     deadline: string;
     estimatedMinutes: number;
+    /** Wat er al voor deze opdracht in de agenda staat. */
+    plannedMinutes: number;
+    /** Wat er nog ingepland moet worden; nul als je er al genoeg tijd voor hebt. */
+    remainingMinutes: number;
     priority: string;
     status: string;
     /** De stappen van deze opdracht, met hun `id` voor `linkedStepId`. */
@@ -103,6 +186,221 @@ export interface ReadResult {
     status: string;
     topics?: string[];
   }[];
+}
+
+/**
+ * De dag als bezette stukken: alles waarin je niet thuis aan iets anders kunt
+ * zitten. Een uitstapje telt van vertrek tot thuiskomst, niet van begin tot
+ * eind -- dat verschil was precies wat er miste.
+ */
+function busyOnDate(data: AgendaData, date: string): { from: number; to: number }[] {
+  const settings = data.settings;
+  const spans: { from: number; to: number }[] = [];
+
+  for (const occurrence of activitiesOnDate(data.activities, date)) {
+    if (occurrence.allDay) continue;
+    const start = timeToMinutes(occurrence.startTime);
+    const end = timeToMinutes(occurrence.endTime);
+    if (!occurrence.location || !settings) {
+      spans.push({ from: start, to: end < start ? end + 1440 : end });
+      continue;
+    }
+    const departure = computeDeparture(occurrence, settings);
+    const back = computeReturn(occurrence, settings);
+    spans.push({
+      from: departure ? departure.minutes : start,
+      to: back ? back.minutes : end < start ? end + 1440 : end,
+    });
+  }
+
+  // Samenvoegen wat elkaar raakt, zodat er geen schijngaatjes overblijven
+  // tussen twee blokken die op elkaar aansluiten.
+  spans.sort((a, b) => a.from - b.from);
+  const merged: { from: number; to: number }[] = [];
+  for (const span of spans) {
+    const last = merged[merged.length - 1];
+    if (last && span.from <= last.to) last.to = Math.max(last.to, span.to);
+    else merged.push({ ...span });
+  }
+  return merged;
+}
+
+/** Wat er overblijft binnen het venster waarin een planner mag voorstellen. */
+function freeOnDate(data: AgendaData, date: string): FreeSlot[] {
+  const slots: FreeSlot[] = [];
+  let cursor = DAY_STARTS;
+  for (const span of busyOnDate(data, date)) {
+    if (span.to <= cursor) continue;
+    if (span.from > cursor) {
+      const to = Math.min(span.from, PLAN_UNTIL);
+      if (to - cursor >= MIN_GAP) {
+        slots.push({ from: minutesToClock(cursor), to: minutesToClock(to), minutes: to - cursor });
+      }
+    }
+    cursor = Math.max(cursor, span.to);
+    if (cursor >= PLAN_UNTIL) return slots;
+  }
+  if (PLAN_UNTIL - cursor >= MIN_GAP) {
+    slots.push({
+      from: minutesToClock(cursor),
+      to: minutesToClock(PLAN_UNTIL),
+      minutes: PLAN_UNTIL - cursor,
+    });
+  }
+  return slots;
+}
+
+/** De blokken die zouden kunnen wijken; alleen om voor te stellen. */
+function movableOnDate(data: AgendaData, date: string): MovableBlock[] {
+  return activitiesOnDate(data.activities, date)
+    .filter((item) => !item.allDay && !item.location && MOVABLE.includes(item.category))
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      minutes: activityMinutes(item),
+    }));
+}
+
+/** Minuten sinds middernacht als kloktijd; loopt netjes over middernacht heen. */
+function minutesToClock(minutes: number): string {
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(wrapped / 60);
+  return `${String(hours).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
+}
+
+/**
+ * Twee dingen die hetzelfde lijken.
+ *
+ * Bewust alleen een signaal, nooit een handeling: "Lezen" naast "Lezen (voor
+ * het slapen)" kan een vergissing zijn of precies de bedoeling, en dat weet
+ * alleen de gebruiker. Opruimen is een besluit, geen berekening.
+ */
+interface Duplicate {
+  kind: "taak" | "activiteit";
+  titles: [string, string];
+  ids: [string, string];
+  /** Waar het op lijkt: dezelfde dag, dezelfde deadline. */
+  note: string;
+}
+
+/** Een botsing zoals de app hem op je scherm ook laat zien. */
+interface ReadClash {
+  between: [string, string];
+  /** true wanneer alleen de reistijd eroverheen valt; de klok lijkt dan te kloppen. */
+  travelOnly: boolean;
+  note: string;
+}
+
+/** Kale woorden van een titel, zonder leestekens en emoji. */
+function words(value: string): Set<string> {
+  return new Set(
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(" ")
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Lijken deze twee titels op hetzelfde?
+ *
+ * Gemeten aan de kortste van de twee: staat het grootste deel van de woorden
+ * daarvan ook in de andere, dan is het waarschijnlijk hetzelfde werk onder een
+ * andere naam. "Excel week 2 - H2 Afronden" naast "Excel week 2 - H2 (Opdracht
+ * 2.5 en 2.6)" haalt die drempel; "BE week 3 - H5" naast "Excel week 3 - H3"
+ * niet.
+ */
+function looksTheSame(a: string, b: string): boolean {
+  const left = words(a);
+  const right = words(b);
+  if (left.size === 0 || right.size === 0) return false;
+  const [shorter, longer] = left.size <= right.size ? [left, right] : [right, left];
+  let shared = 0;
+  for (const word of shorter) if (longer.has(word)) shared += 1;
+  return shared / shorter.size >= 0.6;
+}
+
+/** Wat er dubbel lijkt te staan: opdrachten en blokken op dezelfde dag. */
+function findDuplicates(data: AgendaData, from: string, to: string): Duplicate[] {
+  const found: Duplicate[] = [];
+
+  const open = data.tasks.filter((task) => task.status !== "done");
+  for (let i = 0; i < open.length; i += 1) {
+    for (let j = i + 1; j < open.length; j += 1) {
+      const a = open[i];
+      const b = open[j];
+      if (a.subject !== b.subject || a.deadline !== b.deadline) continue;
+      if (!looksTheSame(a.title, b.title)) continue;
+      found.push({
+        kind: "taak",
+        titles: [a.title, b.title],
+        ids: [a.id, b.id],
+        note: `zelfde vak en zelfde deadline (${a.deadline})`,
+      });
+    }
+  }
+
+  // Blokken vergelijken we per dag: twee keer hetzelfde op één dag valt op,
+  // twee keer op verschillende dagen is gewoon een gewoonte.
+  const perDay = new Map<string, Set<string>>();
+  for (const activity of data.activities) {
+    if (activity.date < from || activity.date > to) continue;
+    const day = perDay.get(activity.date) ?? new Set<string>();
+    day.add(activity.id);
+    perDay.set(activity.date, day);
+  }
+  const seen = new Set<string>();
+  for (const [date, ids] of perDay) {
+    const items = data.activities.filter((item) => ids.has(item.id));
+    for (let i = 0; i < items.length; i += 1) {
+      for (let j = i + 1; j < items.length; j += 1) {
+        const a = items[i];
+        const b = items[j];
+        if (!looksTheSame(a.title, b.title)) continue;
+        const key = [a.id, b.id].sort().join("|");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        found.push({
+          kind: "activiteit",
+          titles: [a.title, b.title],
+          ids: [a.id, b.id],
+          note: `staan allebei op ${date}`,
+        });
+      }
+    }
+  }
+
+  return found;
+}
+
+/** De botsingen van één dag, ontdubbeld tot één regel per paar. */
+function clashesForDay(data: AgendaData, date: string): ReadClash[] {
+  const settings = data.settings;
+  if (!settings) return [];
+  const map = clashesOnDate(data.activities, settings, date);
+  if (map.size === 0) return [];
+  const seen = new Set<string>();
+  const out: ReadClash[] = [];
+  for (const occurrence of activitiesOnDate(data.activities, date)) {
+    for (const clash of map.get(occurrence.occurrenceId) ?? []) {
+      const key = [occurrence.id, clash.other.id].sort().join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        between: [occurrence.title, clash.other.title],
+        travelOnly: clash.travelOnly,
+        note: clash.travelOnly
+          ? "de reis naar de een valt over de ander heen"
+          : "ze overlappen op de klok",
+      });
+    }
+  }
+  return out;
 }
 
 /** Een datum uit de invoer, of null wanneer hij onbruikbaar is. */
@@ -140,6 +438,9 @@ export function readAgenda(
     result.push({
       date,
       weekday: WEEKDAYS[new Date(`${date}T12:00:00`).getDay()],
+      free: freeOnDate(data, date),
+      movable: movableOnDate(data, date),
+      clashes: clashesForDay(data, date),
       activities: occurrences.map((occurrence) => {
         const entry: ReadActivity = {
           id: occurrence.id,
@@ -158,7 +459,16 @@ export function readAgenda(
         if (departure) {
           entry.departure = departure.time;
           entry.travelMinutes = departure.travelMinutes;
+          if (departure.arrival) entry.arrival = departure.arrival;
           if (departure.late) entry.arrivesLate = true;
+        }
+        // En de reis terug. Zonder dit weet een planner wel hoe laat je weg
+        // moet, maar niet wanneer je weer beschikbaar bent -- en plant hij een
+        // leerblok in het uur dat je nog in de trein zit.
+        const back = settings ? computeReturn(occurrence, settings) : null;
+        if (back) {
+          entry.backHome = back.time;
+          entry.returnMinutes = back.travelMinutes;
         }
         if (occurrence.source) entry.source = occurrence.source;
         if (occurrence.linkedTaskId) entry.linkedTaskId = occurrence.linkedTaskId;
@@ -179,17 +489,36 @@ export function readAgenda(
       bufferMinutes: settings?.bufferMinutes ?? 10,
       travelMode: settings?.travelMode ?? "car",
     },
+    rules: {
+      planFrom: minutesToClock(DAY_STARTS),
+      planUntil: minutesToClock(PLAN_UNTIL),
+      minimumMinutes: MIN_GAP,
+      movableCategories: MOVABLE,
+      note:
+        "Plan alleen in `free`. Staat er te weinig ruimte, stel dan voor om een " +
+        "blok uit `movable` te verzetten en wacht op antwoord -- verzet het nooit " +
+        "uit jezelf. Alles buiten `movable` ligt vast.",
+    },
     days: result,
+    duplicates: findDuplicates(data, from, to),
     // Afgeronde taken zijn ruis voor wie een planning maakt; de toetsen en
     // taken die nog moeten gebeuren zijn precies waar het om draait.
     tasks: data.tasks
       .filter((task) => task.status !== "done")
-      .map((task) => ({
+      .map((task) => {
+        // Wat er al staat telt mee: zonder dit plant een planner er elke keer
+        // een nieuwe stapel bovenop, want hij ziet niet dat het er al is.
+        const plannedMinutes = data.activities
+          .filter((item) => item.linkedTaskId === task.id)
+          .reduce((sum, item) => sum + activityMinutes(item), 0);
+        return {
         id: task.id,
         subject: task.subject,
         title: task.title,
         deadline: task.deadline,
         estimatedMinutes: task.estimatedMinutes,
+        plannedMinutes,
+        remainingMinutes: Math.max(0, task.estimatedMinutes - plannedMinutes),
         priority: task.priority,
         status: task.status,
         // Met de stappen erbij kan een planning per stap een blok zetten, en
@@ -200,7 +529,8 @@ export function readAgenda(
           estimatedMinutes: step.estimatedMinutes,
           done: step.done,
         })),
-      })),
+        };
+      }),
     exams: data.exams
       .filter((exam) => exam.status !== "done" && exam.date >= today)
       .map((exam) => ({
@@ -233,6 +563,60 @@ export interface SaveResult {
  * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
  * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
  */
+/**
+ * Wanneer je die dag van huis bent, per uitstapje: van het moment dat je
+ * vertrekt tot het moment dat je weer binnenstapt.
+ *
+ * Dit is het venster waarin een blok thuis niet kan bestaan. Precies daar ging
+ * het mis: een planner ziet "werken tot 17:00" en zet er om 17:20 een leerblok
+ * achter, terwijl de terugreis uit Lelystad bijna een uur duurt.
+ */
+interface AwaySpan {
+  title: string;
+  /** Minuten sinds middernacht; kan negatief zijn bij vertrek de dag ervoor. */
+  from: number;
+  /** Minuten sinds middernacht; kan boven 1440 uitkomen. */
+  to: number;
+  /** Thuiskomst als kloktijd, voor de uitleg aan de planner. */
+  home: string;
+}
+
+function awaySpans(data: AgendaData, date: string, exclude?: string): AwaySpan[] {
+  const settings = data.settings;
+  if (!settings) return [];
+  const spans: AwaySpan[] = [];
+  for (const occurrence of activitiesOnDate(data.activities, date)) {
+    if (occurrence.id === exclude) continue;
+    if (!occurrence.location || occurrence.allDay) continue;
+    const departure = computeDeparture(occurrence, settings);
+    const back = computeReturn(occurrence, settings);
+    // Zonder berekende reis blijft het uitstapje zelf over: nog altijd een
+    // periode waarin je niet thuis aan je huiswerk zit.
+    const from = departure ? departure.minutes : timeToMinutes(occurrence.startTime);
+    const to = back ? back.minutes : timeToMinutes(occurrence.endTime);
+    spans.push({ title: occurrence.title, from, to, home: back?.time ?? occurrence.endTime });
+  }
+  return spans;
+}
+
+/**
+ * Hetzelfde blok dat er al staat: zelfde dag, zelfde begintijd, zelfde titel.
+ *
+ * Een planner die twee keer draait stuurt twee keer dezelfde blokken op, en
+ * zonder id komt elk blok er gewoon bij. Zo stond na een tweede poging je hele
+ * week dubbel. Herkennen we het, dan werken we het bij in plaats van het
+ * ernaast te zetten.
+ */
+function sameBlock(activities: Activity[], date: string, startTime: string, title: string) {
+  const naam = title.trim().toLowerCase();
+  return activities.find(
+    (item) =>
+      item.date === date &&
+      item.startTime === startTime &&
+      item.title.trim().toLowerCase() === naam,
+  );
+}
+
 export function saveActivities(
   data: AgendaData,
   raw: unknown,
@@ -274,7 +658,12 @@ export function saveActivities(
 
     // Vanaf hier doet `normalizeActivity` het werk: dezelfde functie die de
     // import gebruikt, dus dezelfde standaardwaarden en dezelfde strengheid.
-    const existing = typeof input.id === "string" ? byId.get(input.id) : undefined;
+    const existing =
+      (typeof input.id === "string" ? byId.get(input.id) : undefined) ??
+      // Geen id, maar wel een blok dat er al precies zo staat: bijwerken.
+      (typeof input.startTime === "string"
+        ? sameBlock([...byId.values()], input.date, input.startTime, input.title)
+        : undefined);
     const normalized = normalizeActivity({
       ...(existing ?? {}),
       ...input,
@@ -285,6 +674,25 @@ export function saveActivities(
     if (!normalized.allDay && normalized.endTime < normalized.startTime) {
       skipped.push({ index, reason: "eindtijd ligt vóór de begintijd" });
       return;
+    }
+
+    // Een blok zonder plek doe je thuis. Dan moet je er wel zijn: niet onderweg
+    // naar je werk, en niet nog in de trein terug.
+    if (!normalized.allDay && !normalized.location) {
+      const start = timeToMinutes(normalized.startTime);
+      const end = timeToMinutes(normalized.endTime);
+      const clash = awaySpans(data, normalized.date, normalized.id).find(
+        (span) => start < span.to && end > span.from,
+      );
+      if (clash) {
+        skipped.push({
+          index,
+          reason:
+            `je bent dan niet thuis: ${clash.title} loopt tot ${clash.home} ` +
+            `inclusief de reis terug`,
+        });
+        return;
+      }
     }
 
     if (existing) {

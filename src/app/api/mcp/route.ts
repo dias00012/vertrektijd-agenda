@@ -55,10 +55,22 @@ const TOOLS: ToolDefinition[] = [
     title: "Agenda lezen",
     description:
       "De agenda over een periode, met de herhalingen al uitgerekend tot losse " +
-      "dagen, plus het open huiswerk en de komende toetsen. Per activiteit staat " +
-      "erbij hoe laat je van huis moet (departure) en hoe lang de reis duurt. " +
-      "Roep dit altijd aan vóór je iets inplant. Zonder periode: de komende " +
-      "veertien dagen.",
+      "dagen, plus het open huiswerk en de komende toetsen. Roep dit altijd aan " +
+      "vóór je iets inplant. Zonder periode: de komende veertien dagen.\n\n" +
+      "Per dag staat er `free`: de gaten waarin werkelijk iets past, met de " +
+      "reistijden er al in verwerkt. Plan daarin, en reken de dag niet zelf na " +
+      "uit de lijst activiteiten — dat is precies waar het misgaat. Levert " +
+      "`free` te weinig op, kijk dan naar `movable`: blokken die zouden kunnen " +
+      "wijken. Stel dat voor en wacht op antwoord; verzet ze nooit uit jezelf.\n\n" +
+      "`rules` zegt binnen welke uren je mag voorstellen. Per activiteit staat " +
+      "`departure` (hoe laat je van huis moet), `arrival` (hoe laat je er bent) " +
+      "en `backHome` (hoe laat je weer thuis bent). Tussen `departure` en " +
+      "`backHome` ben je van huis. Per opdracht staat `plannedMinutes` (wat er " +
+      "al voor staat) en `remainingMinutes` (wat er nog bij moet) — plan niet " +
+      "opnieuw wat er al staat.\n\n" +
+      "`duplicates` noemt wat er dubbel lijkt te staan en `clashes` wat er die " +
+      "dag botst (ook wanneer alleen de reistijd eroverheen valt). Meld die, maar " +
+      "ruim ze niet zelf op: welke van de twee weg mag is aan de gebruiker.",
     inputSchema: {
       type: "object",
       properties: {
@@ -72,9 +84,14 @@ const TOOLS: ToolDefinition[] = [
     title: "Activiteiten bewaren",
     description:
       "Zet blokken in de agenda. Een blok zonder `id` komt erbij; een blok mét " +
-      "een bestaand `id` vervangt dat blok — zo verplaats je iets. Gebruik " +
-      "`source: \"leerplan\"` voor leer- en werkblokken, en `linkedTaskId` of " +
-      "`linkedExamId` om ze aan huiswerk of een toets te koppelen: dan krijgen " +
+      "een bestaand `id` vervangt dat blok — zo verplaats je iets.\n\n" +
+      "Lees eerst `read_agenda`, en plan niets in een tijd waarop je van huis " +
+      "bent: een blok zonder `location` dat tussen `departure` en `backHome` van " +
+      "een andere activiteit valt wordt geweigerd, met de reden erbij. Wil je een " +
+      "bestaande planning vervangen, haal de oude blokken dan eerst weg met " +
+      "`delete_activities` — anders staan ze er straks naast.\n\n" +
+      "Gebruik `source: \"leerplan\"` voor leer- en werkblokken, en `linkedTaskId` " +
+      "of `linkedExamId` om ze aan huiswerk of een toets te koppelen: dan krijgen " +
       "ze een streep zodra dat werk af is. Plan je een opdracht in losse blokken " +
       "per stap, zet dan ook `linkedStepId`: dat blok is dan af zodra die ene " +
       "stap is afgevinkt, niet pas als de hele opdracht af is.",
