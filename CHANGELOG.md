@@ -8,6 +8,27 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.57.0
+
+- **De connector laat nu de dag zien zoals jij hem ziet, niet als een lijst
+  rijen.** De vorige versie gaf de activiteiten door en liet het rekenwerk aan
+  de planner over: zoek zelf de gaten, tel zelf de reistijd erbij, bedenk zelf
+  of het past. Dat ging mis, en terecht -- de app wist het al, hij zei het
+  alleen niet.
+
+  Per dag staat er nu `free`: de gaten waarin werkelijk iets past, met de
+  reistijden er al in verwerkt. Op een werkdag begint die lijst om 17:54 en niet
+  om 17:00. Daarnaast `movable`: de blokken die zouden kunnen wijken als het
+  krap wordt -- alleen om voor te stellen, nooit om zelf te verzetten.
+
+- **`rules` in het antwoord.** Binnen welke uren er gepland mag worden (07:00 tot
+  22:00), wat het kortste zinvolle blok is, en wat er mag wijken. De grens hoort
+  bij de gebruiker, niet bij het model, dus staat hij er zichtbaar bij.
+
+- **Per opdracht `plannedMinutes` en `remainingMinutes`.** Wat er al voor staat
+  en wat er nog bij moet. Zonder die twee getallen plant een planner er elke
+  keer een nieuwe stapel bovenop, want hij ziet niet dat het er al is.
+
 ## 0.56.0
 
 - **De connector wist niet wanneer je thuis was.** `read_agenda` gaf keurig door

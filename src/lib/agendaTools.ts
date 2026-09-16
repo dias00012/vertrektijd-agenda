@@ -2,6 +2,7 @@ import { activitiesOnDate } from "./agenda";
 import { normalizeActivity } from "./backup";
 import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
 import { computeDeparture, computeReturn } from "./travel";
+import { activityMinutes } from "./schoolwork";
 import type { Activity, Exam, Settings, Task } from "./types";
 
 /**
@@ -40,6 +41,29 @@ const MAX_DAYS = 62;
 
 /** Hoeveel activiteiten er in één keer bewaard mogen worden. */
 const MAX_SAVE = 100;
+
+/**
+ * Het venster waarbinnen een planner iets mag voorstellen.
+ *
+ * Niet omdat de agenda daarbuiten leeg is, maar omdat een planning die om
+ * 23:00 nog een uur schoolwerk neerzet geen planning is maar een wens. De
+ * grens hoort bij de gebruiker, niet bij het model -- vandaar dat hij in het
+ * antwoord meegaat, zodat je hem kunt zien en erover kunt praten.
+ */
+const DAY_STARTS = 7 * 60;
+const PLAN_UNTIL = 22 * 60;
+
+/** Korter dan dit is geen werkblok maar een gaatje. */
+const MIN_GAP = 20;
+
+/**
+ * Categorieën die mogen wijken als het krap wordt.
+ *
+ * Alleen als vóórstel: gamen en lezen zijn te verzetten, maar of dat vanavond
+ * ook mag is niet aan een planner. En "Gitaar les" staat in diezelfde categorie
+ * terwijl die juist vastligt -- reden te meer om het altijd te vragen.
+ */
+const MOVABLE = ["hobby"];
 
 const WEEKDAYS = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
 
@@ -80,10 +104,34 @@ interface ReadActivity {
   recurring?: boolean;
 }
 
+/** Een gat waarin echt iets past: thuis, wakker, en niets anders gepland. */
+interface FreeSlot {
+  from: string;
+  to: string;
+  minutes: number;
+}
+
+/** Een blok dat zou kunnen wijken, als de gebruiker dat goedvindt. */
+interface MovableBlock {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  minutes: number;
+}
+
 interface ReadDay {
   date: string;
   weekday: string;
   activities: ReadActivity[];
+  /**
+   * De gaten waarin werkelijk iets kan. Uitgerekend met de reistijden erin
+   * verwerkt, dus dit is de dag zoals je hem beleeft -- niet de lijst rijen
+   * waar je die dag zelf uit moet afleiden.
+   */
+  free: FreeSlot[];
+  /** Wat er zou kunnen wijken als `free` te weinig oplevert. Altijd vragen. */
+  movable: MovableBlock[];
 }
 
 export interface ReadResult {
@@ -93,6 +141,18 @@ export interface ReadResult {
   /** Thuisadres; zonder dit kan de app geen vertrektijd uitrekenen. */
   home: string | null;
   defaults: { bufferMinutes: number; travelMode: string };
+  /** De afspraken waar een planning zich aan hoort te houden. */
+  rules: {
+    /** Niet vóór dit tijdstip iets voorstellen. */
+    planFrom: string;
+    /** En niet ná dit tijdstip. De avond is van de gebruiker. */
+    planUntil: string;
+    /** Korter dan dit heeft geen zin als werkblok. */
+    minimumMinutes: number;
+    /** Wat er mag wijken -- maar nooit zonder het te vragen. */
+    movableCategories: string[];
+    note: string;
+  };
   days: ReadDay[];
   tasks: {
     id: string;
@@ -100,6 +160,10 @@ export interface ReadResult {
     title: string;
     deadline: string;
     estimatedMinutes: number;
+    /** Wat er al voor deze opdracht in de agenda staat. */
+    plannedMinutes: number;
+    /** Wat er nog ingepland moet worden; nul als je er al genoeg tijd voor hebt. */
+    remainingMinutes: number;
     priority: string;
     status: string;
     /** De stappen van deze opdracht, met hun `id` voor `linkedStepId`. */
@@ -115,6 +179,88 @@ export interface ReadResult {
     status: string;
     topics?: string[];
   }[];
+}
+
+/**
+ * De dag als bezette stukken: alles waarin je niet thuis aan iets anders kunt
+ * zitten. Een uitstapje telt van vertrek tot thuiskomst, niet van begin tot
+ * eind -- dat verschil was precies wat er miste.
+ */
+function busyOnDate(data: AgendaData, date: string): { from: number; to: number }[] {
+  const settings = data.settings;
+  const spans: { from: number; to: number }[] = [];
+
+  for (const occurrence of activitiesOnDate(data.activities, date)) {
+    if (occurrence.allDay) continue;
+    const start = timeToMinutes(occurrence.startTime);
+    const end = timeToMinutes(occurrence.endTime);
+    if (!occurrence.location || !settings) {
+      spans.push({ from: start, to: end < start ? end + 1440 : end });
+      continue;
+    }
+    const departure = computeDeparture(occurrence, settings);
+    const back = computeReturn(occurrence, settings);
+    spans.push({
+      from: departure ? departure.minutes : start,
+      to: back ? back.minutes : end < start ? end + 1440 : end,
+    });
+  }
+
+  // Samenvoegen wat elkaar raakt, zodat er geen schijngaatjes overblijven
+  // tussen twee blokken die op elkaar aansluiten.
+  spans.sort((a, b) => a.from - b.from);
+  const merged: { from: number; to: number }[] = [];
+  for (const span of spans) {
+    const last = merged[merged.length - 1];
+    if (last && span.from <= last.to) last.to = Math.max(last.to, span.to);
+    else merged.push({ ...span });
+  }
+  return merged;
+}
+
+/** Wat er overblijft binnen het venster waarin een planner mag voorstellen. */
+function freeOnDate(data: AgendaData, date: string): FreeSlot[] {
+  const slots: FreeSlot[] = [];
+  let cursor = DAY_STARTS;
+  for (const span of busyOnDate(data, date)) {
+    if (span.to <= cursor) continue;
+    if (span.from > cursor) {
+      const to = Math.min(span.from, PLAN_UNTIL);
+      if (to - cursor >= MIN_GAP) {
+        slots.push({ from: minutesToClock(cursor), to: minutesToClock(to), minutes: to - cursor });
+      }
+    }
+    cursor = Math.max(cursor, span.to);
+    if (cursor >= PLAN_UNTIL) return slots;
+  }
+  if (PLAN_UNTIL - cursor >= MIN_GAP) {
+    slots.push({
+      from: minutesToClock(cursor),
+      to: minutesToClock(PLAN_UNTIL),
+      minutes: PLAN_UNTIL - cursor,
+    });
+  }
+  return slots;
+}
+
+/** De blokken die zouden kunnen wijken; alleen om voor te stellen. */
+function movableOnDate(data: AgendaData, date: string): MovableBlock[] {
+  return activitiesOnDate(data.activities, date)
+    .filter((item) => !item.allDay && !item.location && MOVABLE.includes(item.category))
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      minutes: activityMinutes(item),
+    }));
+}
+
+/** Minuten sinds middernacht als kloktijd; loopt netjes over middernacht heen. */
+function minutesToClock(minutes: number): string {
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  const hours = Math.floor(wrapped / 60);
+  return `${String(hours).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
 }
 
 /** Een datum uit de invoer, of null wanneer hij onbruikbaar is. */
@@ -152,6 +298,8 @@ export function readAgenda(
     result.push({
       date,
       weekday: WEEKDAYS[new Date(`${date}T12:00:00`).getDay()],
+      free: freeOnDate(data, date),
+      movable: movableOnDate(data, date),
       activities: occurrences.map((occurrence) => {
         const entry: ReadActivity = {
           id: occurrence.id,
@@ -200,17 +348,35 @@ export function readAgenda(
       bufferMinutes: settings?.bufferMinutes ?? 10,
       travelMode: settings?.travelMode ?? "car",
     },
+    rules: {
+      planFrom: minutesToClock(DAY_STARTS),
+      planUntil: minutesToClock(PLAN_UNTIL),
+      minimumMinutes: MIN_GAP,
+      movableCategories: MOVABLE,
+      note:
+        "Plan alleen in `free`. Staat er te weinig ruimte, stel dan voor om een " +
+        "blok uit `movable` te verzetten en wacht op antwoord -- verzet het nooit " +
+        "uit jezelf. Alles buiten `movable` ligt vast.",
+    },
     days: result,
     // Afgeronde taken zijn ruis voor wie een planning maakt; de toetsen en
     // taken die nog moeten gebeuren zijn precies waar het om draait.
     tasks: data.tasks
       .filter((task) => task.status !== "done")
-      .map((task) => ({
+      .map((task) => {
+        // Wat er al staat telt mee: zonder dit plant een planner er elke keer
+        // een nieuwe stapel bovenop, want hij ziet niet dat het er al is.
+        const plannedMinutes = data.activities
+          .filter((item) => item.linkedTaskId === task.id)
+          .reduce((sum, item) => sum + activityMinutes(item), 0);
+        return {
         id: task.id,
         subject: task.subject,
         title: task.title,
         deadline: task.deadline,
         estimatedMinutes: task.estimatedMinutes,
+        plannedMinutes,
+        remainingMinutes: Math.max(0, task.estimatedMinutes - plannedMinutes),
         priority: task.priority,
         status: task.status,
         // Met de stappen erbij kan een planning per stap een blok zetten, en
@@ -221,7 +387,8 @@ export function readAgenda(
           estimatedMinutes: step.estimatedMinutes,
           done: step.done,
         })),
-      })),
+        };
+      }),
     exams: data.exams
       .filter((exam) => exam.status !== "done" && exam.date >= today)
       .map((exam) => ({

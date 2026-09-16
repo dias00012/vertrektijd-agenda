@@ -396,3 +396,110 @@ describe("hetzelfde blok twee keer opsturen", () => {
     expect(tweede.data.activities).toHaveLength(2);
   });
 });
+
+describe("vrije ruimte", () => {
+  // Jouw woensdag opnieuw: werken in Lelystad 09:00-17:00, reis 54 minuten heen
+  // en terug. Op de klok lijkt de dag om 17:00 vrij; in werkelijkheid begint
+  // hij om 17:54 en loopt hij tot de avondgrens.
+  const rit = {
+    durationMinutes: 54,
+    distanceKm: 30,
+    mode: "transit",
+    provider: "motis",
+    computedAt: "2026-09-15T06:00:00.000Z",
+    key: "k",
+  };
+  const werk = activity({
+    id: "werk",
+    category: "werk",
+    title: "Werken",
+    date: "2026-09-16",
+    startTime: "09:00",
+    endTime: "17:00",
+    location: { label: "Donaustraat 184, Lelystad", lat: 52.5, lon: 5.47 },
+    travel: rit,
+    returnTravel: rit,
+  } as unknown as Partial<Activity>);
+
+  const gamen = activity({
+    id: "gamen",
+    category: "hobby",
+    title: "Gamen",
+    date: "2026-09-16",
+    startTime: "19:30",
+    endTime: "21:30",
+  });
+
+  const wereld = data({
+    activities: [werk, gamen],
+    settings: settings({ bufferMinutes: 2 }),
+  });
+
+  const dag = () => readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW).days[0];
+
+  it("begint de avond pas als je thuis bent", () => {
+    // Niet om 17:00 (eindtijd) maar om 17:54 (thuiskomst).
+    expect(dag().free.some((slot) => slot.from === "17:54")).toBe(true);
+    expect(dag().free.some((slot) => slot.from === "17:00")).toBe(false);
+  });
+
+  it("houdt op bij de avondgrens", () => {
+    const laatste = dag().free[dag().free.length - 1];
+    expect(laatste.to).toBe("22:00");
+  });
+
+  it("stopt het ochtendgat op het moment dat je vertrekt", () => {
+    // Van 07:00 tot 08:04 ben je nog thuis: dat uur is echt bruikbaar. Maar
+    // niet tot 09:00, want dan zit je al in de trein.
+    const ochtend = dag().free[0];
+    expect(ochtend.from).toBe("07:00");
+    expect(ochtend.to).toBe("08:04");
+  });
+
+  it("knipt het gamen eruit maar biedt het aan als verzetbaar", () => {
+    const vrij = dag().free;
+    // Het gamen van 19:30 tot 21:30 zit er niet in.
+    expect(vrij.map((slot) => `${slot.from}-${slot.to}`)).toEqual([
+      "07:00-08:04",
+      "17:54-19:30",
+      "21:30-22:00",
+    ]);
+    expect(dag().movable.map((blok) => blok.title)).toEqual(["Gamen"]);
+  });
+
+  it("vertelt binnen welke uren er gepland mag worden", () => {
+    const uitkomst = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW);
+    expect(uitkomst.rules.planUntil).toBe("22:00");
+    expect(uitkomst.rules.movableCategories).toContain("hobby");
+    expect(uitkomst.rules.note).toContain("wacht op antwoord");
+  });
+});
+
+describe("ingeplande tijd per opdracht", () => {
+  it("telt wat er al staat en wat er nog bij moet", () => {
+    // Zonder dit plant een planner er elke keer een nieuwe stapel bovenop.
+    const wereld = data({
+      settings: settings(),
+      tasks: [task({ id: "be", estimatedMinutes: 180 })],
+      activities: [
+        activity({ id: "b1", date: "2026-09-16", startTime: "19:00", endTime: "20:00", linkedTaskId: "be" }),
+        activity({ id: "b2", date: "2026-09-17", startTime: "19:00", endTime: "19:30", linkedTaskId: "be" }),
+      ],
+    });
+    const gevonden = readAgenda(wereld, {}, NOW).tasks.find((item) => item.id === "be");
+    expect(gevonden?.plannedMinutes).toBe(90);
+    expect(gevonden?.remainingMinutes).toBe(90);
+  });
+
+  it("gaat niet onder nul als er ruim genoeg staat", () => {
+    const wereld = data({
+      settings: settings(),
+      tasks: [task({ id: "be", estimatedMinutes: 30 })],
+      activities: [
+        activity({ id: "b1", date: "2026-09-16", startTime: "19:00", endTime: "21:00", linkedTaskId: "be" }),
+      ],
+    });
+    const gevonden = readAgenda(wereld, {}, NOW).tasks.find((item) => item.id === "be");
+    expect(gevonden?.remainingMinutes).toBe(0);
+  });
+});

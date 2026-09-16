@@ -57,12 +57,17 @@ const TOOLS: ToolDefinition[] = [
       "De agenda over een periode, met de herhalingen al uitgerekend tot losse " +
       "dagen, plus het open huiswerk en de komende toetsen. Roep dit altijd aan " +
       "vóór je iets inplant. Zonder periode: de komende veertien dagen.\n\n" +
-      "Let op de reistijden. Per activiteit staat erbij hoe laat je van huis " +
-      "moet (`departure`), hoe laat je er bent (`arrival`) en — het belangrijkst " +
-      "voor een planning — hoe laat je weer thuis bent (`backHome`). Tussen " +
-      "`departure` en `backHome` ben je van huis: daar past niets thuis tussen. " +
-      "Werk je tot 17:00 met een `backHome` van 17:54, dan begint je avond om " +
-      "17:54, niet om 17:00.",
+      "Per dag staat er `free`: de gaten waarin werkelijk iets past, met de " +
+      "reistijden er al in verwerkt. Plan daarin, en reken de dag niet zelf na " +
+      "uit de lijst activiteiten — dat is precies waar het misgaat. Levert " +
+      "`free` te weinig op, kijk dan naar `movable`: blokken die zouden kunnen " +
+      "wijken. Stel dat voor en wacht op antwoord; verzet ze nooit uit jezelf.\n\n" +
+      "`rules` zegt binnen welke uren je mag voorstellen. Per activiteit staat " +
+      "`departure` (hoe laat je van huis moet), `arrival` (hoe laat je er bent) " +
+      "en `backHome` (hoe laat je weer thuis bent). Tussen `departure` en " +
+      "`backHome` ben je van huis. Per opdracht staat `plannedMinutes` (wat er " +
+      "al voor staat) en `remainingMinutes` (wat er nog bij moet) — plan niet " +
+      "opnieuw wat er al staat.",
     inputSchema: {
       type: "object",
       properties: {
