@@ -251,3 +251,148 @@ describe("deleteActivities", () => {
     expect(result.data).toBe(before);
   });
 });
+
+describe("reistijd terug", () => {
+  // Jouw woensdag: werken in Lelystad tot 17:00, reis 54 minuten. Je bent dus
+  // pas om 17:54 thuis -- en niet om 17:20, wat er stond.
+  const werk = activity({
+    id: "werk",
+    category: "werk",
+    title: "Werken",
+    date: "2026-09-16",
+    startTime: "09:00",
+    endTime: "17:00",
+    location: { label: "Donaustraat 184, Lelystad", lat: 52.5, lon: 5.47 },
+    travel: {
+      durationMinutes: 54,
+      distanceKm: 30,
+      mode: "transit",
+      provider: "motis",
+      computedAt: "2026-09-15T06:00:00.000Z",
+      key: "heen",
+    },
+    returnTravel: {
+      durationMinutes: 54,
+      distanceKm: 30,
+      mode: "transit",
+      provider: "motis",
+      computedAt: "2026-09-15T06:00:00.000Z",
+      key: "terug",
+    },
+  } as unknown as Partial<Activity>);
+
+  const wereld = data({ activities: [werk], settings: settings({ bufferMinutes: 2 }) });
+
+  it("vertelt hoe laat je weer thuis bent", () => {
+    // Zonder dit getal kan een planner niet weten wanneer je avond begint.
+    const dag = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW).days[0];
+    expect(dag.activities[0].backHome).toBe("17:54");
+    expect(dag.activities[0].returnMinutes).toBe(54);
+  });
+
+  it("weigert een leerblok waarvoor je nog onderweg bent", () => {
+    const uitkomst = saveActivities(
+      wereld,
+      [
+        {
+          title: "Nederlands - theorie",
+          date: "2026-09-16",
+          startTime: "17:20",
+          endTime: "18:00",
+          source: "leerplan",
+        },
+      ],
+      NOW,
+    );
+    expect(uitkomst.added).toBe(0);
+    expect(uitkomst.skipped[0].reason).toContain("niet thuis");
+    expect(uitkomst.skipped[0].reason).toContain("17:54");
+  });
+
+  it("laat hetzelfde blok ná je thuiskomst wel toe", () => {
+    const uitkomst = saveActivities(
+      wereld,
+      [
+        {
+          title: "Nederlands - theorie",
+          date: "2026-09-16",
+          startTime: "18:00",
+          endTime: "18:40",
+          source: "leerplan",
+        },
+      ],
+      NOW,
+    );
+    expect(uitkomst.added).toBe(1);
+    expect(uitkomst.skipped).toHaveLength(0);
+  });
+
+  it("weigert ook een blok in het uur dat je al onderweg heen bent", () => {
+    // Vertrek 08:04 (09:00 min 54 min reis min 2 min marge): een blok van 08:00
+    // tot 09:00 thuis bestaat niet.
+    const uitkomst = saveActivities(
+      wereld,
+      [{ title: "Huiswerk", date: "2026-09-16", startTime: "08:00", endTime: "09:00" }],
+      NOW,
+    );
+    expect(uitkomst.added).toBe(0);
+    expect(uitkomst.skipped[0].reason).toContain("niet thuis");
+  });
+
+  it("houdt een blok mét eigen locatie erbuiten", () => {
+    // Daar rekent de app zelf een reis voor uit; die mag best tijdens je werk
+    // staan, dan is het een botsing en geen onmogelijkheid.
+    const uitkomst = saveActivities(
+      wereld,
+      [
+        {
+          title: "Tandarts",
+          date: "2026-09-16",
+          startTime: "17:20",
+          endTime: "18:00",
+          location: { label: "Almere", lat: 52.37, lon: 5.22 },
+        },
+      ],
+      NOW,
+    );
+    expect(uitkomst.added).toBe(1);
+  });
+});
+
+describe("hetzelfde blok twee keer opsturen", () => {
+  it("werkt het bij in plaats van het ernaast te zetten", () => {
+    // Twee keer dezelfde planning draaien zette voorheen je hele week dubbel.
+    const leeg = data({ activities: [], settings: settings() });
+    const blok = {
+      title: "BE - samenvatting H3",
+      date: "2026-09-16",
+      startTime: "19:00",
+      endTime: "20:30",
+      source: "leerplan",
+    };
+
+    const eerste = saveActivities(leeg, [blok], NOW);
+    expect(eerste.added).toBe(1);
+
+    const tweede = saveActivities(eerste.data, [blok], NOW);
+    expect(tweede.added).toBe(0);
+    expect(tweede.updated).toBe(1);
+    expect(tweede.data.activities).toHaveLength(1);
+  });
+
+  it("laat een blok met een andere tijd wél een nieuw blok zijn", () => {
+    const leeg = data({ activities: [], settings: settings() });
+    const eerste = saveActivities(
+      leeg,
+      [{ title: "Leren", date: "2026-09-16", startTime: "19:00", endTime: "20:00" }],
+      NOW,
+    );
+    const tweede = saveActivities(
+      eerste.data,
+      [{ title: "Leren", date: "2026-09-16", startTime: "20:30", endTime: "21:30" }],
+      NOW,
+    );
+    expect(tweede.added).toBe(1);
+    expect(tweede.data.activities).toHaveLength(2);
+  });
+});

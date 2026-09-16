@@ -1,7 +1,7 @@
 import { activitiesOnDate } from "./agenda";
 import { normalizeActivity } from "./backup";
-import { addDaysToKey, daysBetween, isDateKey, todayKey } from "./time";
-import { computeDeparture } from "./travel";
+import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
+import { computeDeparture, computeReturn } from "./travel";
 import type { Activity, Exam, Settings, Task } from "./types";
 
 /**
@@ -56,8 +56,20 @@ interface ReadActivity {
   /** Hoe laat je van huis moet, als de app dat heeft uitgerekend. */
   departure?: string;
   travelMinutes?: number;
+  /** Hoe laat je er bent met de gevonden rit. */
+  arrival?: string;
   /** true wanneer je met de gevonden rit ná de begintijd aankomt. */
   arrivesLate?: boolean;
+  /**
+   * Hoe laat je weer thuis bent, eindtijd plus de reis terug.
+   *
+   * Dit is het getal waar een planning op stukloopt als je het weglaat. Werk je
+   * tot 17:00 in Lelystad, dan ben je pas om 17:54 thuis -- en een leerblok om
+   * 17:20 bestaat alleen op papier.
+   */
+  backHome?: string;
+  /** Duur van de reis terug in minuten. */
+  returnMinutes?: number;
   /** "leerplan" voor blokken die uit een leerplan komen, anders afwezig. */
   source?: string;
   linkedTaskId?: string;
@@ -158,7 +170,16 @@ export function readAgenda(
         if (departure) {
           entry.departure = departure.time;
           entry.travelMinutes = departure.travelMinutes;
+          if (departure.arrival) entry.arrival = departure.arrival;
           if (departure.late) entry.arrivesLate = true;
+        }
+        // En de reis terug. Zonder dit weet een planner wel hoe laat je weg
+        // moet, maar niet wanneer je weer beschikbaar bent -- en plant hij een
+        // leerblok in het uur dat je nog in de trein zit.
+        const back = settings ? computeReturn(occurrence, settings) : null;
+        if (back) {
+          entry.backHome = back.time;
+          entry.returnMinutes = back.travelMinutes;
         }
         if (occurrence.source) entry.source = occurrence.source;
         if (occurrence.linkedTaskId) entry.linkedTaskId = occurrence.linkedTaskId;
@@ -233,6 +254,60 @@ export interface SaveResult {
  * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
  * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
  */
+/**
+ * Wanneer je die dag van huis bent, per uitstapje: van het moment dat je
+ * vertrekt tot het moment dat je weer binnenstapt.
+ *
+ * Dit is het venster waarin een blok thuis niet kan bestaan. Precies daar ging
+ * het mis: een planner ziet "werken tot 17:00" en zet er om 17:20 een leerblok
+ * achter, terwijl de terugreis uit Lelystad bijna een uur duurt.
+ */
+interface AwaySpan {
+  title: string;
+  /** Minuten sinds middernacht; kan negatief zijn bij vertrek de dag ervoor. */
+  from: number;
+  /** Minuten sinds middernacht; kan boven 1440 uitkomen. */
+  to: number;
+  /** Thuiskomst als kloktijd, voor de uitleg aan de planner. */
+  home: string;
+}
+
+function awaySpans(data: AgendaData, date: string, exclude?: string): AwaySpan[] {
+  const settings = data.settings;
+  if (!settings) return [];
+  const spans: AwaySpan[] = [];
+  for (const occurrence of activitiesOnDate(data.activities, date)) {
+    if (occurrence.id === exclude) continue;
+    if (!occurrence.location || occurrence.allDay) continue;
+    const departure = computeDeparture(occurrence, settings);
+    const back = computeReturn(occurrence, settings);
+    // Zonder berekende reis blijft het uitstapje zelf over: nog altijd een
+    // periode waarin je niet thuis aan je huiswerk zit.
+    const from = departure ? departure.minutes : timeToMinutes(occurrence.startTime);
+    const to = back ? back.minutes : timeToMinutes(occurrence.endTime);
+    spans.push({ title: occurrence.title, from, to, home: back?.time ?? occurrence.endTime });
+  }
+  return spans;
+}
+
+/**
+ * Hetzelfde blok dat er al staat: zelfde dag, zelfde begintijd, zelfde titel.
+ *
+ * Een planner die twee keer draait stuurt twee keer dezelfde blokken op, en
+ * zonder id komt elk blok er gewoon bij. Zo stond na een tweede poging je hele
+ * week dubbel. Herkennen we het, dan werken we het bij in plaats van het
+ * ernaast te zetten.
+ */
+function sameBlock(activities: Activity[], date: string, startTime: string, title: string) {
+  const naam = title.trim().toLowerCase();
+  return activities.find(
+    (item) =>
+      item.date === date &&
+      item.startTime === startTime &&
+      item.title.trim().toLowerCase() === naam,
+  );
+}
+
 export function saveActivities(
   data: AgendaData,
   raw: unknown,
@@ -274,7 +349,12 @@ export function saveActivities(
 
     // Vanaf hier doet `normalizeActivity` het werk: dezelfde functie die de
     // import gebruikt, dus dezelfde standaardwaarden en dezelfde strengheid.
-    const existing = typeof input.id === "string" ? byId.get(input.id) : undefined;
+    const existing =
+      (typeof input.id === "string" ? byId.get(input.id) : undefined) ??
+      // Geen id, maar wel een blok dat er al precies zo staat: bijwerken.
+      (typeof input.startTime === "string"
+        ? sameBlock([...byId.values()], input.date, input.startTime, input.title)
+        : undefined);
     const normalized = normalizeActivity({
       ...(existing ?? {}),
       ...input,
@@ -285,6 +365,25 @@ export function saveActivities(
     if (!normalized.allDay && normalized.endTime < normalized.startTime) {
       skipped.push({ index, reason: "eindtijd ligt vóór de begintijd" });
       return;
+    }
+
+    // Een blok zonder plek doe je thuis. Dan moet je er wel zijn: niet onderweg
+    // naar je werk, en niet nog in de trein terug.
+    if (!normalized.allDay && !normalized.location) {
+      const start = timeToMinutes(normalized.startTime);
+      const end = timeToMinutes(normalized.endTime);
+      const clash = awaySpans(data, normalized.date, normalized.id).find(
+        (span) => start < span.to && end > span.from,
+      );
+      if (clash) {
+        skipped.push({
+          index,
+          reason:
+            `je bent dan niet thuis: ${clash.title} loopt tot ${clash.home} ` +
+            `inclusief de reis terug`,
+        });
+        return;
+      }
     }
 
     if (existing) {

@@ -8,6 +8,28 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.56.0
+
+- **De connector wist niet wanneer je thuis was.** `read_agenda` gaf keurig door
+  hoe laat je van huis moest, maar zweeg over de reis terug. Een planner las
+  "werken tot 17:00" en zette er om 17:20 een leerblok achter -- terwijl de
+  terugreis uit Lelystad 54 minuten duurt en je pas om 17:54 binnenkomt. Die
+  blokken bestonden alleen op papier.
+
+  Per activiteit staat er nu `arrival` (hoe laat je er bent) en `backHome` (hoe
+  laat je weer thuis bent, inclusief de reis terug) bij. Tussen `departure` en
+  `backHome` ben je van huis, en daar past niets thuis tussen.
+
+- **`save_activities` weigert nu een blok waarvoor je onderweg bent.** Een blok
+  zonder eigen locatie doe je thuis; valt het in het venster waarin je van huis
+  bent, dan komt het er niet in en krijgt de planner de reden terug ("je bent
+  dan niet thuis: Werken loopt tot 17:54 inclusief de reis terug"). Beter een
+  planning die terugpraat dan een agenda die niet klopt.
+
+- **Twee keer dezelfde planning zet je week niet meer dubbel.** Een blok zonder
+  `id` dat op dezelfde dag, dezelfde begintijd en met dezelfde titel al bestaat,
+  wordt bijgewerkt in plaats van ernaast gezet.
+
 ## 0.55.0
 
 - **Je rooster stond dubbel op je tweede apparaat.** Twee fouten die elkaar

@@ -55,10 +55,14 @@ const TOOLS: ToolDefinition[] = [
     title: "Agenda lezen",
     description:
       "De agenda over een periode, met de herhalingen al uitgerekend tot losse " +
-      "dagen, plus het open huiswerk en de komende toetsen. Per activiteit staat " +
-      "erbij hoe laat je van huis moet (departure) en hoe lang de reis duurt. " +
-      "Roep dit altijd aan vóór je iets inplant. Zonder periode: de komende " +
-      "veertien dagen.",
+      "dagen, plus het open huiswerk en de komende toetsen. Roep dit altijd aan " +
+      "vóór je iets inplant. Zonder periode: de komende veertien dagen.\n\n" +
+      "Let op de reistijden. Per activiteit staat erbij hoe laat je van huis " +
+      "moet (`departure`), hoe laat je er bent (`arrival`) en — het belangrijkst " +
+      "voor een planning — hoe laat je weer thuis bent (`backHome`). Tussen " +
+      "`departure` en `backHome` ben je van huis: daar past niets thuis tussen. " +
+      "Werk je tot 17:00 met een `backHome` van 17:54, dan begint je avond om " +
+      "17:54, niet om 17:00.",
     inputSchema: {
       type: "object",
       properties: {
@@ -72,9 +76,14 @@ const TOOLS: ToolDefinition[] = [
     title: "Activiteiten bewaren",
     description:
       "Zet blokken in de agenda. Een blok zonder `id` komt erbij; een blok mét " +
-      "een bestaand `id` vervangt dat blok — zo verplaats je iets. Gebruik " +
-      "`source: \"leerplan\"` voor leer- en werkblokken, en `linkedTaskId` of " +
-      "`linkedExamId` om ze aan huiswerk of een toets te koppelen: dan krijgen " +
+      "een bestaand `id` vervangt dat blok — zo verplaats je iets.\n\n" +
+      "Lees eerst `read_agenda`, en plan niets in een tijd waarop je van huis " +
+      "bent: een blok zonder `location` dat tussen `departure` en `backHome` van " +
+      "een andere activiteit valt wordt geweigerd, met de reden erbij. Wil je een " +
+      "bestaande planning vervangen, haal de oude blokken dan eerst weg met " +
+      "`delete_activities` — anders staan ze er straks naast.\n\n" +
+      "Gebruik `source: \"leerplan\"` voor leer- en werkblokken, en `linkedTaskId` " +
+      "of `linkedExamId` om ze aan huiswerk of een toets te koppelen: dan krijgen " +
       "ze een streep zodra dat werk af is. Plan je een opdracht in losse blokken " +
       "per stap, zet dan ook `linkedStepId`: dat blok is dan af zodra die ene " +
       "stap is afgevinkt, niet pas als de hele opdracht af is.",
