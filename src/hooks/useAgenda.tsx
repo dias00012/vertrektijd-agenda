@@ -38,6 +38,7 @@ import { needsTravelRefresh, nextOccurrenceDate, travelPlanFor } from "@/lib/tra
 import { daysBetween, todayKey } from "@/lib/time";
 import { relocatePoint } from "@/lib/places";
 import { dayRoleFor } from "@/lib/agenda";
+import { statusAfterSteps } from "@/lib/schoolwork";
 import { track } from "@/lib/stats";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
@@ -842,6 +843,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  /**
+   * Een stap aan- of uitvinken.
+   *
+   * De status loopt mee. Vink je het laatste hokje aan, dan is de opdracht af
+   * en zegt hij dat ook: anders bleef hij op "te doen" staan en bleef je agenda
+   * de leerblokken tonen alsof er nog werk lag. Haal je er daarna weer een weg,
+   * dan ben je er kennelijk toch nog mee bezig.
+   */
   const toggleTaskStep = useCallback((taskId: string, stepId: string) => {
     setTasks((current) =>
       current.map((task) => {
@@ -849,7 +858,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         const steps: TaskStep[] = task.steps.map((step) =>
           step.id === stepId ? { ...step, done: !step.done } : step,
         );
-        return { ...task, steps, updatedAt: new Date().toISOString() };
+        const status = statusAfterSteps(task.status, steps);
+        return { ...task, steps, status, updatedAt: new Date().toISOString() };
       }),
     );
   }, []);

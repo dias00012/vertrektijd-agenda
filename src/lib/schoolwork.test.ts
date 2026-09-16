@@ -7,6 +7,7 @@ import {
   plannedProgress,
   sortExams,
   sortTasks,
+  statusAfterSteps,
   taskProgress,
 } from "./schoolwork";
 import type { Activity, Exam, Task } from "./types";
@@ -221,5 +222,32 @@ describe("linkedWorkDone per stap", () => {
 
   it("valt niet om op een blok zonder titel", () => {
     expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "be", linkedExamId: null } as unknown as Activity, taken, toetsen)).toBe(false);
+  });
+});
+
+describe("statusAfterSteps", () => {
+  const step = (id: string, done: boolean) => ({ id, title: id, done });
+
+  it("zet de opdracht op af zodra het laatste hokje aanstaat", () => {
+    // Waar het om begonnen was: je werkt je stappen weg en je agenda hoort dat
+    // te weten zonder dat je er nog een status bij hoeft om te zetten.
+    expect(statusAfterSteps("todo", [step("s1", true), step("s2", true)])).toBe("done");
+    expect(statusAfterSteps("doing", [step("s1", true)])).toBe("done");
+  });
+
+  it("laat de status staan zolang er nog een stap open is", () => {
+    expect(statusAfterSteps("todo", [step("s1", true), step("s2", false)])).toBe("todo");
+    expect(statusAfterSteps("doing", [step("s1", true), step("s2", false)])).toBe("doing");
+  });
+
+  it("haalt de opdracht van af zodra je een stap weer uitvinkt", () => {
+    // Anders bleef een opdracht die je toch nog even oppakt op "af" staan.
+    expect(statusAfterSteps("done", [step("s1", true), step("s2", false)])).toBe("doing");
+  });
+
+  it("laat een opdracht zonder stappen met rust", () => {
+    // Daar zegt afvinken niets over; de status is dan het enige wat we weten.
+    expect(statusAfterSteps("todo", [])).toBe("todo");
+    expect(statusAfterSteps("done", [])).toBe("done");
   });
 });

@@ -8,6 +8,22 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.54.0
+
+- **Alle stappen afgevinkt betekent nu ook: opdracht af.** Het stuk dat in 0.53.0
+  nog ontbrak. Je werkte je zes stappen weg, het laatste hokje ging aan — en de
+  opdracht bleef op "te doen" staan, want die status zette je zelf. Je agenda
+  geloofde die status, en toonde de leerblokken dus nog steeds alsof er werk lag.
+
+  Vink je het laatste hokje aan, dan gaat de opdracht op "af" en zijn alle
+  gekoppelde blokken doorgestreept. Haal je er daarna weer een weg, dan springt
+  hij terug op "bezig": je bent er kennelijk toch nog mee bezig. Een opdracht
+  zonder stappen blijft met rust gelaten; daar is de status het enige wat we
+  weten, en die zet je zelf.
+
+  De statusknoppen blijven gewoon werken. De status is en blijft de enige
+  waarheid — het afvinken zet hem alleen voor je om.
+
 ## 0.53.0
 
 - **Een afgevinkte stap streept nu ook het blok door.** Je werkt een avond door,

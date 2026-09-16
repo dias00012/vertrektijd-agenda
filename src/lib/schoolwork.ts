@@ -69,6 +69,27 @@ export function describeDaysUntil(dateKey: string, now: Date = new Date()): stri
   return word("days.ago", { count: Math.abs(days) });
 }
 
+/**
+ * De status van een opdracht nadat je een stap hebt aan- of uitgevinkt.
+ *
+ * Vink je het laatste hokje aan, dan is de opdracht af en zegt hij dat ook.
+ * Daar was het de vorige keer op misgegaan: je werkte je stappen weg, de
+ * opdracht bleef op "te doen" staan, en je agenda toonde de leerblokken dus
+ * de hele avond alsof er nog werk lag.
+ *
+ * Andersom net zo goed: haal je er daarna weer een weg, dan ben je er
+ * kennelijk toch nog mee bezig. Een opdracht zonder stappen laten we met rust;
+ * daar zegt het afvinken niets over.
+ */
+export function statusAfterSteps(
+  status: SchoolworkStatus,
+  steps: readonly TaskStep[],
+): SchoolworkStatus {
+  if (steps.length === 0) return status;
+  if (steps.every((step) => step.done)) return "done";
+  return status === "done" ? "doing" : status;
+}
+
 /** Voortgang van een taak op basis van afgevinkte stappen (0 wanneer geen stappen). */
 export function taskProgress(task: Task): { done: number; total: number } {
   const total = task.steps?.length ?? 0;
