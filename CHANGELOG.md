@@ -8,6 +8,22 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.58.0
+
+- **De connector meldt nu wat er dubbel staat.** In `duplicates` komen
+  opdrachten die hetzelfde werk onder een andere naam zijn ("Excel week 2 -- H2
+  (Opdracht 2.5 en 2.6)" naast "Excel week 2 -- H2 Afronden": zelfde vak,
+  zelfde deadline) en blokken die op dezelfde dag twee keer hetzelfde lijken
+  ("Lezen" naast "Lezen (voor het slapen)").
+
+  Bewust alleen een signaal. Of die twee leesblokken een vergissing zijn of
+  precies de bedoeling weet alleen jij; opruimen is een besluit, geen
+  berekening. De connector noemt het, jij beslist.
+
+- **En wat er botst.** Per dag staat er `clashes`: activiteiten die op de klok
+  overlappen, én de stille variant waarbij alleen je reistijd over iets anders
+  heen valt. Dat is dezelfde berekening die de app op je eigen scherm gebruikt.
+
 ## 0.57.0
 
 - **De connector laat nu de dag zien zoals jij hem ziet, niet als een lijst

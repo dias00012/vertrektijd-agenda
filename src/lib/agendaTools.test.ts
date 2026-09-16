@@ -503,3 +503,80 @@ describe("ingeplande tijd per opdracht", () => {
     expect(gevonden?.remainingMinutes).toBe(0);
   });
 });
+
+describe("dubbel en botsend", () => {
+  it("herkent twee keer dezelfde opdracht onder een andere naam", () => {
+    // Deze twee stonden echt zo in de agenda, allebei open.
+    const wereld = data({
+      settings: settings(),
+      tasks: [
+        task({
+          id: "t-excel-wk2",
+          subject: "Bedrijfseconomie",
+          title: "Excel week 2 - H2 (Opdracht 2.5 en 2.6)",
+          deadline: "2026-09-18",
+        }),
+        task({
+          id: "ex2",
+          subject: "Bedrijfseconomie",
+          title: "Excel week 2 - H2 Afronden",
+          deadline: "2026-09-18",
+        }),
+      ],
+    });
+    const dubbel = readAgenda(wereld, {}, NOW).duplicates;
+    expect(dubbel).toHaveLength(1);
+    expect(dubbel[0].kind).toBe("taak");
+    expect(dubbel[0].ids).toEqual(["t-excel-wk2", "ex2"]);
+  });
+
+  it("laat twee verschillende opdrachten met dezelfde deadline met rust", () => {
+    const wereld = data({
+      settings: settings(),
+      tasks: [
+        task({ id: "be3", subject: "Bedrijfseconomie", title: "BE week 3 - H5", deadline: "2026-09-25" }),
+        task({
+          id: "ex3",
+          subject: "Bedrijfseconomie",
+          title: "Excel week 3 - H3 Functie ALS",
+          deadline: "2026-09-25",
+        }),
+      ],
+    });
+    expect(readAgenda(wereld, {}, NOW).duplicates).toHaveLength(0);
+  });
+
+  it("ziet twee leesblokken op dezelfde dag", () => {
+    const wereld = data({
+      settings: settings(),
+      activities: [
+        activity({ id: "l1", title: "Lezen", date: "2026-09-16", startTime: "21:15", endTime: "22:15" }),
+        activity({
+          id: "l2",
+          title: "Lezen (voor het slapen)",
+          date: "2026-09-16",
+          startTime: "23:05",
+          endTime: "23:35",
+        }),
+      ],
+    });
+    const dubbel = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW).duplicates;
+    expect(dubbel).toHaveLength(1);
+    expect(dubbel[0].kind).toBe("activiteit");
+    expect(dubbel[0].note).toContain("2026-09-16");
+  });
+
+  it("meldt een botsing op de klok", () => {
+    const wereld = data({
+      settings: settings(),
+      activities: [
+        activity({ id: "a", title: "Sporten", date: "2026-09-16", startTime: "18:00", endTime: "19:30" }),
+        activity({ id: "b", title: "Koken", date: "2026-09-16", startTime: "19:00", endTime: "19:45" }),
+      ],
+    });
+    const dag = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW).days[0];
+    expect(dag.clashes).toHaveLength(1);
+    expect(dag.clashes[0].travelOnly).toBe(false);
+    expect(dag.clashes[0].between).toContain("Sporten");
+  });
+});

@@ -67,7 +67,10 @@ const TOOLS: ToolDefinition[] = [
       "en `backHome` (hoe laat je weer thuis bent). Tussen `departure` en " +
       "`backHome` ben je van huis. Per opdracht staat `plannedMinutes` (wat er " +
       "al voor staat) en `remainingMinutes` (wat er nog bij moet) — plan niet " +
-      "opnieuw wat er al staat.",
+      "opnieuw wat er al staat.\n\n" +
+      "`duplicates` noemt wat er dubbel lijkt te staan en `clashes` wat er die " +
+      "dag botst (ook wanneer alleen de reistijd eroverheen valt). Meld die, maar " +
+      "ruim ze niet zelf op: welke van de twee weg mag is aan de gebruiker.",
     inputSchema: {
       type: "object",
       properties: {

@@ -1,4 +1,4 @@
-import { activitiesOnDate } from "./agenda";
+import { activitiesOnDate, clashesOnDate } from "./agenda";
 import { normalizeActivity } from "./backup";
 import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
 import { computeDeparture, computeReturn } from "./travel";
@@ -132,6 +132,8 @@ interface ReadDay {
   free: FreeSlot[];
   /** Wat er zou kunnen wijken als `free` te weinig oplevert. Altijd vragen. */
   movable: MovableBlock[];
+  /** Wat er die dag botst: op de klok, of alleen via de reistijd. */
+  clashes: ReadClash[];
 }
 
 export interface ReadResult {
@@ -154,6 +156,11 @@ export interface ReadResult {
     note: string;
   };
   days: ReadDay[];
+  /**
+   * Wat er dubbel lijkt te staan. Alleen een signaal: noem het, ruim het niet
+   * zelf op. Welke van de twee weg mag is aan de gebruiker.
+   */
+  duplicates: Duplicate[];
   tasks: {
     id: string;
     subject: string;
@@ -263,6 +270,139 @@ function minutesToClock(minutes: number): string {
   return `${String(hours).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Twee dingen die hetzelfde lijken.
+ *
+ * Bewust alleen een signaal, nooit een handeling: "Lezen" naast "Lezen (voor
+ * het slapen)" kan een vergissing zijn of precies de bedoeling, en dat weet
+ * alleen de gebruiker. Opruimen is een besluit, geen berekening.
+ */
+interface Duplicate {
+  kind: "taak" | "activiteit";
+  titles: [string, string];
+  ids: [string, string];
+  /** Waar het op lijkt: dezelfde dag, dezelfde deadline. */
+  note: string;
+}
+
+/** Een botsing zoals de app hem op je scherm ook laat zien. */
+interface ReadClash {
+  between: [string, string];
+  /** true wanneer alleen de reistijd eroverheen valt; de klok lijkt dan te kloppen. */
+  travelOnly: boolean;
+  note: string;
+}
+
+/** Kale woorden van een titel, zonder leestekens en emoji. */
+function words(value: string): Set<string> {
+  return new Set(
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(" ")
+      .filter(Boolean),
+  );
+}
+
+/**
+ * Lijken deze twee titels op hetzelfde?
+ *
+ * Gemeten aan de kortste van de twee: staat het grootste deel van de woorden
+ * daarvan ook in de andere, dan is het waarschijnlijk hetzelfde werk onder een
+ * andere naam. "Excel week 2 - H2 Afronden" naast "Excel week 2 - H2 (Opdracht
+ * 2.5 en 2.6)" haalt die drempel; "BE week 3 - H5" naast "Excel week 3 - H3"
+ * niet.
+ */
+function looksTheSame(a: string, b: string): boolean {
+  const left = words(a);
+  const right = words(b);
+  if (left.size === 0 || right.size === 0) return false;
+  const [shorter, longer] = left.size <= right.size ? [left, right] : [right, left];
+  let shared = 0;
+  for (const word of shorter) if (longer.has(word)) shared += 1;
+  return shared / shorter.size >= 0.6;
+}
+
+/** Wat er dubbel lijkt te staan: opdrachten en blokken op dezelfde dag. */
+function findDuplicates(data: AgendaData, from: string, to: string): Duplicate[] {
+  const found: Duplicate[] = [];
+
+  const open = data.tasks.filter((task) => task.status !== "done");
+  for (let i = 0; i < open.length; i += 1) {
+    for (let j = i + 1; j < open.length; j += 1) {
+      const a = open[i];
+      const b = open[j];
+      if (a.subject !== b.subject || a.deadline !== b.deadline) continue;
+      if (!looksTheSame(a.title, b.title)) continue;
+      found.push({
+        kind: "taak",
+        titles: [a.title, b.title],
+        ids: [a.id, b.id],
+        note: `zelfde vak en zelfde deadline (${a.deadline})`,
+      });
+    }
+  }
+
+  // Blokken vergelijken we per dag: twee keer hetzelfde op één dag valt op,
+  // twee keer op verschillende dagen is gewoon een gewoonte.
+  const perDay = new Map<string, Set<string>>();
+  for (const activity of data.activities) {
+    if (activity.date < from || activity.date > to) continue;
+    const day = perDay.get(activity.date) ?? new Set<string>();
+    day.add(activity.id);
+    perDay.set(activity.date, day);
+  }
+  const seen = new Set<string>();
+  for (const [date, ids] of perDay) {
+    const items = data.activities.filter((item) => ids.has(item.id));
+    for (let i = 0; i < items.length; i += 1) {
+      for (let j = i + 1; j < items.length; j += 1) {
+        const a = items[i];
+        const b = items[j];
+        if (!looksTheSame(a.title, b.title)) continue;
+        const key = [a.id, b.id].sort().join("|");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        found.push({
+          kind: "activiteit",
+          titles: [a.title, b.title],
+          ids: [a.id, b.id],
+          note: `staan allebei op ${date}`,
+        });
+      }
+    }
+  }
+
+  return found;
+}
+
+/** De botsingen van één dag, ontdubbeld tot één regel per paar. */
+function clashesForDay(data: AgendaData, date: string): ReadClash[] {
+  const settings = data.settings;
+  if (!settings) return [];
+  const map = clashesOnDate(data.activities, settings, date);
+  if (map.size === 0) return [];
+  const seen = new Set<string>();
+  const out: ReadClash[] = [];
+  for (const occurrence of activitiesOnDate(data.activities, date)) {
+    for (const clash of map.get(occurrence.occurrenceId) ?? []) {
+      const key = [occurrence.id, clash.other.id].sort().join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        between: [occurrence.title, clash.other.title],
+        travelOnly: clash.travelOnly,
+        note: clash.travelOnly
+          ? "de reis naar de een valt over de ander heen"
+          : "ze overlappen op de klok",
+      });
+    }
+  }
+  return out;
+}
+
 /** Een datum uit de invoer, of null wanneer hij onbruikbaar is. */
 function dateOrNull(value: unknown): string | null {
   return isDateKey(value) ? value : null;
@@ -300,6 +440,7 @@ export function readAgenda(
       weekday: WEEKDAYS[new Date(`${date}T12:00:00`).getDay()],
       free: freeOnDate(data, date),
       movable: movableOnDate(data, date),
+      clashes: clashesForDay(data, date),
       activities: occurrences.map((occurrence) => {
         const entry: ReadActivity = {
           id: occurrence.id,
@@ -359,6 +500,7 @@ export function readAgenda(
         "uit jezelf. Alles buiten `movable` ligt vast.",
     },
     days: result,
+    duplicates: findDuplicates(data, from, to),
     // Afgeronde taken zijn ruis voor wie een planning maakt; de toetsen en
     // taken die nog moeten gebeuren zijn precies waar het om draait.
     tasks: data.tasks
