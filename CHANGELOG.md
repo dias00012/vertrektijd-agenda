@@ -8,6 +8,22 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.59.0
+
+- **"Hoe laat ben ik thuis" klopte niet meer bij een herhalende activiteit.**
+  Bij een reeks staat er één berekende rit voor alle dagen. Die verschuift: in
+  de echte agenda stond bij werken tot 17:00 een opgeslagen thuiskomst van
+  15:46 -- eerder dan je klaar bent.
+
+  De app las dat als "dan ben je pas na middernacht thuis" en maakte er een
+  thuisreis van 22 uur van. Op het scherm stond nog "15:46", maar onderwater
+  telde die dag als volledig bezet, en de connector gaf daardoor geen enkel
+  vrij gat meer terug voor die avond.
+
+  Zo'n rit is niet laat maar oud. Valt een geplande thuiskomst meer dan drie uur
+  buiten de reisduur zelf, dan gelooft de app hem niet meer en rekent hij
+  gewoon: eindtijd plus reistijd. Voor die woensdag: thuis om 17:42.
+
 ## 0.58.0
 
 - **De connector meldt nu wat er dubbel staat.** In `duplicates` komen
