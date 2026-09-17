@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
+import { workload } from "@/lib/planning";
 import {
   PRIORITY_META,
   activityMinutes,
@@ -16,11 +17,13 @@ import { formatDuration, todayKey } from "@/lib/time";
 
 /**
  * Compacte schoolwerk-samenvatting op het dashboard: hoeveel leertijd vandaag
- * gepland staat, en wat de eerstvolgende deadline en toets zijn. Toont niets
- * wanneer er geen schoolwerk is, zodat het dashboard rustig blijft.
+ * gepland staat, hoeveel werk er nog ingepland moet worden voor de
+ * eerstvolgende deadline en hoeveel vrije tijd daar tegenover staat, en wat de
+ * eerstvolgende deadline en toets zijn. Toont niets wanneer er geen schoolwerk
+ * is, zodat het dashboard rustig blijft.
  */
 export function SchoolworkTodayCard({ now }: { now: Date }) {
-  const { activities, tasks, exams } = useAgenda();
+  const { activities, tasks, exams, settings } = useAgenda();
   const t = useT();
 
   const today = todayKey(now);
@@ -36,6 +39,15 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
   const doneMinutes = studyToday
     .filter((activity) => linkedWorkDone(activity, tasks, exams))
     .reduce((sum, a) => sum + activityMinutes(a), 0);
+
+  /*
+   * Past het nog? Dit is de vraag waar de kaart eerst geen antwoord op gaf: je
+   * zag hoeveel er gepland stond, maar niet hoeveel er nog moest en of daar
+   * nog avonden voor waren. "Geen leerblokken gepland" was dan ook geen
+   * geruststelling maar precies het probleem.
+   */
+  const stand = workload(tasks, exams, activities, settings, now);
+  const tekort = stand.todoMinutes - stand.freeMinutes;
 
   const nextTask = sortTasks(tasks).find((t) => t.status !== "done");
   const nextExam = sortExams(exams).find((e) => e.status !== "done");
@@ -83,6 +95,28 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
           <span style={{ color: "var(--muted)" }}>{t("schoolworkToday.none")}</span>
         )}
       </p>
+
+      {stand.until ? (
+        <p className="mt-1 text-sm">
+          {stand.todoMinutes > 0 ? (
+            <>
+              &#9203;{" "}
+              {t("schoolworkToday.todo", {
+                duration: formatDuration(stand.todoMinutes),
+                day: describeDaysUntil(stand.until, now),
+              })}
+              <span style={{ color: tekort > 0 ? "#dc2626" : "var(--muted)" }}>
+                {" \u00b7 "}
+                {tekort > 0
+                  ? t("schoolworkToday.tight", { duration: formatDuration(tekort) })
+                  : t("schoolworkToday.room", { duration: formatDuration(stand.freeMinutes) })}
+              </span>
+            </>
+          ) : (
+            <span style={{ color: "var(--muted)" }}>{t("schoolworkToday.allPlanned")}</span>
+          )}
+        </p>
+      ) : null}
 
       <div className="mt-1.5 space-y-0.5 text-xs" style={{ color: "var(--muted)" }}>
         {nextTask ? (

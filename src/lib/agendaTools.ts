@@ -1,8 +1,26 @@
 import { activitiesOnDate, clashesOnDate } from "./agenda";
+import { occursOn } from "./recurrence";
 import { normalizeActivity } from "./backup";
-import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
-import { bufferFor, computeDeparture, computeReturn } from "./travel";
-import { activityMinutes } from "./schoolwork";
+import {
+  DAY_STARTS,
+  MIN_GAP,
+  MOVABLE,
+  PLAN_UNTIL,
+  awaySpans,
+  freeOnDate,
+  movableOnDate,
+} from "./planning";
+import type { FreeSlot, MovableBlock } from "./planning";
+import {
+  addDaysToKey,
+  daysBetween,
+  isDateKey,
+  minutesToTime,
+  timeToMinutes,
+  todayKey,
+} from "./time";
+import { computeDeparture, computeReturn } from "./travel";
+import { activityMinutes, statusAfterSteps } from "./schoolwork";
 import type { Activity, Exam, Settings, Task } from "./types";
 
 /**
@@ -41,29 +59,6 @@ const MAX_DAYS = 62;
 
 /** Hoeveel activiteiten er in één keer bewaard mogen worden. */
 const MAX_SAVE = 100;
-
-/**
- * Het venster waarbinnen een planner iets mag voorstellen.
- *
- * Niet omdat de agenda daarbuiten leeg is, maar omdat een planning die om
- * 23:00 nog een uur schoolwerk neerzet geen planning is maar een wens. De
- * grens hoort bij de gebruiker, niet bij het model -- vandaar dat hij in het
- * antwoord meegaat, zodat je hem kunt zien en erover kunt praten.
- */
-const DAY_STARTS = 7 * 60;
-const PLAN_UNTIL = 22 * 60;
-
-/** Korter dan dit is geen werkblok maar een gaatje. */
-const MIN_GAP = 20;
-
-/**
- * Categorieën die mogen wijken als het krap wordt.
- *
- * Alleen als vóórstel: gamen en lezen zijn te verzetten, maar of dat vanavond
- * ook mag is niet aan een planner. En "Gitaar les" staat in diezelfde categorie
- * terwijl die juist vastligt -- reden te meer om het altijd te vragen.
- */
-const MOVABLE = ["hobby"];
 
 const WEEKDAYS = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
 
@@ -108,22 +103,6 @@ interface ReadActivity {
   linkedExamId?: string;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring?: boolean;
-}
-
-/** Een gat waarin echt iets past: thuis, wakker, en niets anders gepland. */
-interface FreeSlot {
-  from: string;
-  to: string;
-  minutes: number;
-}
-
-/** Een blok dat zou kunnen wijken, als de gebruiker dat goedvindt. */
-interface MovableBlock {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  minutes: number;
 }
 
 interface ReadDay {
@@ -192,85 +171,6 @@ export interface ReadResult {
     status: string;
     topics?: string[];
   }[];
-}
-
-/**
- * De dag als bezette stukken: alles waarin je niet thuis aan iets anders kunt
- * zitten. Een uitstapje telt van vertrek tot thuiskomst, niet van begin tot
- * eind -- dat verschil was precies wat er miste.
- */
-function busyOnDate(data: AgendaData, date: string): { from: number; to: number }[] {
-  // De uitstapjes komen uit `awaySpans`, precies dezelfde berekening die
-  // `save_activities` gebruikt om een onmogelijk blok te weigeren. Twee
-  // rekensommen naast elkaar lopen na één aanpassing uit de pas -- dat gebeurde
-  // hier ook echt, en een test ving het.
-  const spans: { from: number; to: number }[] = awaySpans(data, date).map((span) => ({
-    from: span.from,
-    to: span.to,
-  }));
-
-  for (const occurrence of activitiesOnDate(data.activities, date)) {
-    if (occurrence.allDay || occurrence.location) continue;
-    const start = timeToMinutes(occurrence.startTime);
-    const end = timeToMinutes(occurrence.endTime);
-    spans.push({ from: start, to: end < start ? end + 1440 : end });
-  }
-
-  // Samenvoegen wat elkaar raakt, zodat er geen schijngaatjes overblijven
-  // tussen twee blokken die op elkaar aansluiten.
-  spans.sort((a, b) => a.from - b.from);
-  const merged: { from: number; to: number }[] = [];
-  for (const span of spans) {
-    const last = merged[merged.length - 1];
-    if (last && span.from <= last.to) last.to = Math.max(last.to, span.to);
-    else merged.push({ ...span });
-  }
-  return merged;
-}
-
-/** Wat er overblijft binnen het venster waarin een planner mag voorstellen. */
-function freeOnDate(data: AgendaData, date: string): FreeSlot[] {
-  const slots: FreeSlot[] = [];
-  let cursor = DAY_STARTS;
-  for (const span of busyOnDate(data, date)) {
-    if (span.to <= cursor) continue;
-    if (span.from > cursor) {
-      const to = Math.min(span.from, PLAN_UNTIL);
-      if (to - cursor >= MIN_GAP) {
-        slots.push({ from: minutesToClock(cursor), to: minutesToClock(to), minutes: to - cursor });
-      }
-    }
-    cursor = Math.max(cursor, span.to);
-    if (cursor >= PLAN_UNTIL) return slots;
-  }
-  if (PLAN_UNTIL - cursor >= MIN_GAP) {
-    slots.push({
-      from: minutesToClock(cursor),
-      to: minutesToClock(PLAN_UNTIL),
-      minutes: PLAN_UNTIL - cursor,
-    });
-  }
-  return slots;
-}
-
-/** De blokken die zouden kunnen wijken; alleen om voor te stellen. */
-function movableOnDate(data: AgendaData, date: string): MovableBlock[] {
-  return activitiesOnDate(data.activities, date)
-    .filter((item) => !item.allDay && !item.location && MOVABLE.includes(item.category))
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      minutes: activityMinutes(item),
-    }));
-}
-
-/** Minuten sinds middernacht als kloktijd; loopt netjes over middernacht heen. */
-function minutesToClock(minutes: number): string {
-  const wrapped = ((minutes % 1440) + 1440) % 1440;
-  const hours = Math.floor(wrapped / 60);
-  return `${String(hours).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
 }
 
 /**
@@ -445,8 +345,8 @@ export function readAgenda(
     result.push({
       date,
       weekday: WEEKDAYS[new Date(`${date}T12:00:00`).getDay()],
-      free: freeOnDate(data, date),
-      movable: movableOnDate(data, date),
+      free: freeOnDate(data.activities, settings, date),
+      movable: movableOnDate(data.activities, date),
       clashes: clashesForDay(data, date),
       activities: occurrences.map((occurrence) => {
         const entry: ReadActivity = {
@@ -481,7 +381,7 @@ export function readAgenda(
           // als thuiskomst geldt, en dat is de fout waar het om begonnen was.
           // Dan liever de heenreis als schatting, met een vlag erbij.
           const minutes = timeToMinutes(occurrence.endTime) + occurrence.travel.durationMinutes;
-          entry.backHome = minutesToClock(minutes);
+          entry.backHome = minutesToTime(minutes);
           entry.returnMinutes = occurrence.travel.durationMinutes;
           entry.backHomeEstimated = true;
         }
@@ -505,14 +405,18 @@ export function readAgenda(
       travelMode: settings?.travelMode ?? "car",
     },
     rules: {
-      planFrom: minutesToClock(DAY_STARTS),
-      planUntil: minutesToClock(PLAN_UNTIL),
+      planFrom: minutesToTime(DAY_STARTS),
+      planUntil: minutesToTime(PLAN_UNTIL),
       minimumMinutes: MIN_GAP,
       movableCategories: MOVABLE,
       note:
         "Plan alleen in `free`. Staat er te weinig ruimte, stel dan voor om een " +
         "blok uit `movable` te verzetten en wacht op antwoord -- verzet het nooit " +
-        "uit jezelf. Alles buiten `movable` ligt vast.",
+        "uit jezelf. Alles buiten `movable` ligt vast. Staat er `recurring: true` " +
+        "bij, dan kan alleen díe ene dag eruit met `skip_occurrence` of naar een " +
+        "ander tijdstip met `move_occurrence`; de rest van de reeks blijft dan " +
+        "staan. Staat er `away: true` bij, dan hangt er een plek aan en verandert " +
+        "ook de reis. Vraag het altijd eerst.",
     },
     days: result,
     duplicates: findDuplicates(data, from, to),
@@ -570,62 +474,6 @@ export interface SaveResult {
 }
 
 /**
- * Activiteiten bewaren: bestaat de id al, dan wordt die bijgewerkt, anders komt
- * er een nieuwe bij. Dat is hetzelfde als wat "importeren → samenvoegen" doet,
- * zodat verplaatsen precies zo werkt als de planner verwacht: stuur hetzelfde
- * blok met dezelfde id en een andere tijd terug.
- *
- * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
- * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
- */
-/**
- * Wanneer je die dag van huis bent, per uitstapje: van het moment dat je
- * vertrekt tot het moment dat je weer binnenstapt.
- *
- * Dit is het venster waarin een blok thuis niet kan bestaan. Precies daar ging
- * het mis: een planner ziet "werken tot 17:00" en zet er om 17:20 een leerblok
- * achter, terwijl de terugreis uit Lelystad bijna een uur duurt.
- */
-interface AwaySpan {
-  title: string;
-  /** Minuten sinds middernacht; kan negatief zijn bij vertrek de dag ervoor. */
-  from: number;
-  /** Minuten sinds middernacht; kan boven 1440 uitkomen. */
-  to: number;
-  /** Thuiskomst als kloktijd, voor de uitleg aan de planner. */
-  home: string;
-}
-
-function awaySpans(data: AgendaData, date: string, exclude?: string): AwaySpan[] {
-  const settings = data.settings;
-  if (!settings) return [];
-  const spans: AwaySpan[] = [];
-  for (const occurrence of activitiesOnDate(data.activities, date)) {
-    if (occurrence.id === exclude) continue;
-    if (!occurrence.location || occurrence.allDay) continue;
-    const departure = computeDeparture(occurrence, settings);
-    const back = computeReturn(occurrence, settings);
-    const start = timeToMinutes(occurrence.startTime);
-    const plain = timeToMinutes(occurrence.endTime);
-    // Is een van beide reizen nog niet berekend, dan houden we de andere aan
-    // als schatting. Zonder die schatting geldt de begintijd als vertrek en de
-    // eindtijd als thuiskomst -- alsof je je er heen denkt. Dan mag er weer een
-    // leerblok van 21 minuten staan in het kwartier dat je naar de sportschool
-    // fietst, of eentje om 17:20 terwijl je uit Lelystad nog onderweg bent.
-    const heen = occurrence.travel?.durationMinutes ?? occurrence.returnTravel?.durationMinutes ?? 0;
-    const terug = occurrence.returnTravel?.durationMinutes ?? occurrence.travel?.durationMinutes ?? 0;
-    const to = back ? back.minutes : plain + terug;
-    spans.push({
-      title: occurrence.title,
-      from: departure ? departure.minutes : start - heen - bufferFor(occurrence, settings),
-      to,
-      home: back?.time ?? minutesToClock(to),
-    });
-  }
-  return spans;
-}
-
-/**
  * Hetzelfde blok dat er al staat: zelfde dag, zelfde begintijd, zelfde titel.
  *
  * Een planner die twee keer draait stuurt twee keer dezelfde blokken op, en
@@ -643,6 +491,15 @@ function sameBlock(activities: Activity[], date: string, startTime: string, titl
   );
 }
 
+/**
+ * Activiteiten bewaren: bestaat de id al, dan wordt die bijgewerkt, anders komt
+ * er een nieuwe bij. Dat is hetzelfde als wat "importeren → samenvoegen" doet,
+ * zodat verplaatsen precies zo werkt als de planner verwacht: stuur hetzelfde
+ * blok met dezelfde id en een andere tijd terug.
+ *
+ * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
+ * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
+ */
 export function saveActivities(
   data: AgendaData,
   raw: unknown,
@@ -707,15 +564,23 @@ export function saveActivities(
     if (!normalized.allDay && !normalized.location) {
       const start = timeToMinutes(normalized.startTime);
       const end = timeToMinutes(normalized.endTime);
-      const clash = awaySpans(data, normalized.date, normalized.id).find(
+      const clash = awaySpans(data.activities, data.settings, normalized.date, normalized.id).find(
         (span) => start < span.to && end > span.from,
       );
       if (clash) {
+        // Alleen "dat kan niet" is een doodlopende weg: de planner weet dan wel
+        // dat het niet mag maar niet wat er dan wel kan. Daarom het id erbij,
+        // en bij een reeks de zin dat juist die ene dag eruit kan.
         skipped.push({
           index,
           reason:
-            `je bent dan niet thuis: ${clash.title} loopt tot ${clash.home} ` +
-            `inclusief de reis terug`,
+            `je bent dan niet thuis: ${clash.title} (id ${clash.id}) loopt tot ` +
+            `${clash.home} inclusief de reis terug` +
+            (clash.recurring
+              ? ". Dit is een herhalende reeks: met `skip_occurrence` kun je " +
+                "alleen díe ene dag overslaan, of hem met `move_occurrence` " +
+                "verzetten. Vraag dat eerst."
+              : ""),
         });
         return;
       }
@@ -786,5 +651,304 @@ export function deleteActivities(
     data: { ...data, activities: remaining, deletions: tombstones },
     removed,
     unknown,
+  };
+}
+
+/**
+ * Eén dag uit een herhalende reeks.
+ *
+ * Dit was het gat waar een gesprek op stukliep: je sportavond staat elke week,
+ * er komt één keer fysio tussen, en het enige wat er kon was de hele reeks
+ * weggooien. Een agenda waarin je alleen alles of niets kunt weghalen is geen
+ * agenda. De app kon dit al vanaf het scherm -- de connector niet.
+ */
+export interface OccurrenceResult {
+  data: AgendaData;
+  ok: boolean;
+  /** Waarom het niet kon. Alleen gevuld wanneer `ok` false is. */
+  reason?: string;
+  /** Wat er is gebeurd, in gewone taal, om aan de gebruiker terug te geven. */
+  note?: string;
+  /** Het id van het losse blok dat na verzetten op de nieuwe tijd staat. */
+  newId?: string;
+}
+
+/**
+ * De reeks opzoeken en nakijken of die dag er werkelijk in zit.
+ *
+ * Een dag die er niet in zit overslaan lijkt te lukken -- er komt een datum in
+ * `exceptions` die nergens op slaat -- en dan staat de activiteit er de
+ * volgende dag gewoon nog. Beter meteen zeggen dat de datum niet klopt.
+ */
+function findSeries(
+  data: AgendaData,
+  raw: Record<string, unknown>,
+): { series: Activity; date: string } | { reason: string } {
+  const id = typeof raw.id === "string" ? raw.id : "";
+  const series = data.activities.find((activity) => activity.id === id);
+  if (!series) return { reason: `geen activiteit met id ${id || "(leeg)"}` };
+  if (!isDateKey(raw.date)) return { reason: "datum ontbreekt of is niet JJJJ-MM-DD" };
+  if (!series.recurrence) {
+    return {
+      reason:
+        `"${series.title}" is geen herhalende reeks maar één losse afspraak; ` +
+        "gebruik `delete_activities` of `save_activities` met hetzelfde id",
+    };
+  }
+  return { series, date: raw.date };
+}
+
+/**
+ * Eén dag overslaan, of een eerder overgeslagen dag terugzetten.
+ *
+ * Terugzetten hoort erbij: via het scherm kun je een overgeslagen dag alleen
+ * terughalen zolang de "ongedaan maken"-balk nog staat. Zonder deze weg zou een
+ * verkeerd overgeslagen dinsdag voorgoed weg zijn.
+ */
+export function skipOccurrence(
+  data: AgendaData,
+  raw: unknown,
+  now: Date = new Date(),
+): OccurrenceResult {
+  if (!raw || typeof raw !== "object") return { data, ok: false, reason: "geen object" };
+  const input = raw as Record<string, unknown>;
+  const found = findSeries(data, input);
+  if ("reason" in found) return { data, ok: false, reason: found.reason };
+  const { series, date } = found;
+  const restore = input.restore === true;
+
+  if (restore) {
+    if (!series.exceptions.includes(date)) {
+      return { data, ok: false, reason: `${date} was niet overgeslagen` };
+    }
+  } else {
+    if (series.exceptions.includes(date)) {
+      return { data, ok: true, note: `${series.title} stond op ${date} al uit` };
+    }
+    if (!occursOn(series, date)) {
+      return { data, ok: false, reason: `"${series.title}" valt helemaal niet op ${date}` };
+    }
+  }
+
+  const exceptions = restore
+    ? series.exceptions.filter((day) => day !== date)
+    : [...series.exceptions, date];
+
+  return {
+    data: {
+      ...data,
+      activities: data.activities.map((activity) =>
+        activity.id === series.id
+          ? { ...activity, exceptions, updatedAt: now.toISOString() }
+          : activity,
+      ),
+    },
+    ok: true,
+    note: restore
+      ? `${series.title} staat op ${date} weer in je agenda`
+      : `${series.title} staat op ${date} uit; de rest van de reeks blijft staan`,
+  };
+}
+
+/**
+ * Eén dag uit een reeks naar een ander tijdstip of een andere dag.
+ *
+ * Die dag valt uit de reeks en komt er los naast te staan, net als wanneer je
+ * hem op het scherm versleept. De reis gaat niet mee: op een andere tijd rijdt
+ * er een andere trein, dus die rekent de app opnieuw uit.
+ */
+export function moveOccurrence(
+  data: AgendaData,
+  raw: unknown,
+  now: Date = new Date(),
+): OccurrenceResult {
+  if (!raw || typeof raw !== "object") return { data, ok: false, reason: "geen object" };
+  const input = raw as Record<string, unknown>;
+  const found = findSeries(data, input);
+  if ("reason" in found) return { data, ok: false, reason: found.reason };
+  const { series, date } = found;
+
+  if (series.exceptions.includes(date)) {
+    return { data, ok: false, reason: `${series.title} staat op ${date} al uit` };
+  }
+  if (!occursOn(series, date)) {
+    return { data, ok: false, reason: `"${series.title}" valt helemaal niet op ${date}` };
+  }
+
+  const toDate = isDateKey(input.toDate) ? input.toDate : date;
+  const startTime = typeof input.startTime === "string" ? input.startTime : series.startTime;
+  const endTime = typeof input.endTime === "string" ? input.endTime : series.endTime;
+  if (toDate === date && startTime === series.startTime && endTime === series.endTime) {
+    return { data, ok: false, reason: "dat is precies waar hij al staat" };
+  }
+
+  const copy = normalizeActivity({
+    ...series,
+    // Leeg laten betekent: een nieuw id. Dit is een los blok, geen reeks meer.
+    id: "",
+    date: toDate,
+    startTime,
+    endTime,
+    recurrence: null,
+    exceptions: [],
+    // De ritten horen bij het oude tijdstip; ze meenemen zou een vertrektijd
+    // opleveren die er zelfverzekerd uitziet en niet klopt.
+    travel: null,
+    returnTravel: null,
+    onwardTravel: null,
+    travelError: null,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
+  });
+
+  // Dezelfde grens als bij `save_activities`: iets zonder plek doe je thuis, en
+  // dan moet je er wel zijn. De reeks zelf telt niet mee -- die dag valt eruit.
+  if (!copy.allDay && !copy.location) {
+    const start = timeToMinutes(copy.startTime);
+    const end = timeToMinutes(copy.endTime);
+    const clash = awaySpans(data.activities, data.settings, copy.date, series.id).find(
+      (span) => start < span.to && end > span.from,
+    );
+    if (clash) {
+      return {
+        data,
+        ok: false,
+        reason: `daar ben je niet thuis: ${clash.title} (id ${clash.id}) loopt tot ${clash.home}`,
+      };
+    }
+  }
+
+  return {
+    data: {
+      ...data,
+      activities: [
+        ...data.activities.map((activity) =>
+          activity.id === series.id
+            ? {
+                ...activity,
+                exceptions: [...activity.exceptions, date],
+                updatedAt: now.toISOString(),
+              }
+            : activity,
+        ),
+        copy,
+      ],
+    },
+    ok: true,
+    newId: copy.id,
+    note:
+      `${series.title} staat op ${date} uit en los op ${toDate} ${startTime}-${endTime}; ` +
+      "de rest van de reeks blijft staan",
+  };
+}
+
+/** Wat er aan een opdracht of toets is veranderd. */
+export interface SchoolworkResult {
+  data: AgendaData;
+  ok: boolean;
+  reason?: string;
+  note?: string;
+}
+
+const STATUSES = ["todo", "doing", "done"];
+
+/**
+ * Huiswerk bijwerken vanuit het gesprek: een stap afvinken of de stand
+ * veranderen.
+ *
+ * Dit is het andere gat. "Ik heb mijn samenvatting van H3 af" is precies wat je
+ * tegen een assistent zegt, en tot nu toe kon hij het alleen aanhoren: lezen
+ * mocht, wijzigen niet. Dan moest je het er zelf alsnog bij pakken, en tot dat
+ * moment stond je agenda te liegen -- inclusief de leerblokken die er nog
+ * ongestreept bij stonden.
+ *
+ * Alleen afvinken en de stand; een opdracht aanmaken of weggooien blijft
+ * handwerk. Dat is waar de dubbelingen vandaan komen, en een opdracht die je
+ * niet kent kun je niet controleren.
+ */
+export function updateSchoolwork(
+  data: AgendaData,
+  raw: unknown,
+  now: Date = new Date(),
+): SchoolworkResult {
+  if (!raw || typeof raw !== "object") return { data, ok: false, reason: "geen object" };
+  const input = raw as Record<string, unknown>;
+  const at = now.toISOString();
+  const status = typeof input.status === "string" ? input.status : null;
+  if (status !== null && !STATUSES.includes(status)) {
+    return { data, ok: false, reason: `stand moet ${STATUSES.join(", ")} zijn` };
+  }
+
+  if (typeof input.examId === "string") {
+    const exam = data.exams.find((item) => item.id === input.examId);
+    if (!exam) return { data, ok: false, reason: `geen toets met id ${input.examId}` };
+    if (!status) return { data, ok: false, reason: "een toets heeft alleen een stand" };
+    return {
+      data: {
+        ...data,
+        exams: data.exams.map((item) =>
+          item.id === exam.id
+            ? { ...item, status: status as Exam["status"], updatedAt: at }
+            : item,
+        ),
+      },
+      ok: true,
+      note: `${exam.subject} staat nu op "${status}"`,
+    };
+  }
+
+  if (typeof input.taskId !== "string") {
+    return { data, ok: false, reason: "geef `taskId` of `examId` mee" };
+  }
+  const task = data.tasks.find((item) => item.id === input.taskId);
+  if (!task) return { data, ok: false, reason: `geen opdracht met id ${input.taskId}` };
+
+  const wanted = Array.isArray(input.steps) ? input.steps : [];
+  const unknown: string[] = [];
+  let steps = task.steps ?? [];
+  for (const entry of wanted) {
+    if (!entry || typeof entry !== "object") continue;
+    const step = entry as Record<string, unknown>;
+    if (typeof step.id !== "string") continue;
+    if (!steps.some((existing) => existing.id === step.id)) {
+      unknown.push(step.id);
+      continue;
+    }
+    steps = steps.map((existing) =>
+      existing.id === step.id ? { ...existing, done: step.done !== false } : existing,
+    );
+  }
+  if (unknown.length > 0) {
+    return { data, ok: false, reason: `deze stappen bestaan niet: ${unknown.join(", ")}` };
+  }
+  if (wanted.length === 0 && !status) {
+    return { data, ok: false, reason: "niets om te wijzigen: geef `steps` of `status`" };
+  }
+
+  // Vink je het laatste hokje af, dan is de opdracht af en zegt hij dat ook --
+  // dezelfde regel als op het scherm, zodat je agenda niet een andere stand
+  // laat zien dan het gesprek.
+  const gevraagd = (status as Task["status"] | null) ?? task.status;
+  const nieuw = wanted.length > 0 ? statusAfterSteps(gevraagd, steps) : gevraagd;
+
+  const klaar = steps.filter((step) => step.done).length;
+  return {
+    data: {
+      ...data,
+      tasks: data.tasks.map((item) =>
+        item.id === task.id
+          ? {
+              ...item,
+              steps: task.steps ? steps : item.steps,
+              status: nieuw,
+              updatedAt: at,
+            }
+          : item,
+      ),
+    },
+    ok: true,
+    note:
+      `${task.title}: ${klaar} van ${steps.length} stappen af, stand "${nieuw}"` +
+      (nieuw !== gevraagd ? " (alle stappen af, dus vanzelf op af gezet)" : ""),
   };
 }

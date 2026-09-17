@@ -318,6 +318,12 @@ export const nl = {
   "activity.clashTravel": "Je reistijd valt over {title} ({from} \u2013 {to})",
   "activity.freeAgain": "Die tijd is vrij: het werk is af.",
   "schoolworkToday.doneShare": "waarvan {duration} al af",
+  // "Nog 2 u 30 in te plannen voor woensdag" -- alleen werk dat nog geen blok
+  // in de agenda heeft, want dat is wat je vanavond nog moet neerzetten.
+  "schoolworkToday.todo": "Nog {duration} in te plannen voor {day}",
+  "schoolworkToday.room": "{duration} vrij tot dan",
+  "schoolworkToday.tight": "dat is {duration} te weinig",
+  "schoolworkToday.allPlanned": "Alles wat af moet staat al ingepland.",
   "activity.now": "● bezig",
   "activity.studyFor": "Leerblok voor: {subject}, {title}",
   "activity.studyForExam": "Leren voor toets: {subject}",
@@ -414,6 +420,18 @@ export const nl = {
   "schoolwork.priorityLabel": "Prioriteit: {label}",
   "schoolwork.studyForExam": "Leren voor {subject}",
   "schoolwork.workOn": "Werken aan {title}",
+
+  /*
+   * Het voorstel voor leertijd. Bewust in de taal van een voorstel: "we zetten"
+   * en niet "er is ingepland", want tot je op de knop drukt staat er niets.
+   */
+  "studyPlan.title": "Leertijd inplannen",
+  "studyPlan.summary": "Voorstel: {duration} verdeeld over {count} blokken, in de tijd dat je thuis bent.",
+  "studyPlan.summaryOne": "Voorstel: {duration} in één blok, in de tijd dat je thuis bent.",
+  "studyPlan.confirm": "Zet in agenda",
+  "studyPlan.leftover": "{duration} past niet meer voor de deadline.",
+  "studyPlan.noRoom": "Tot {until} is er geen ruimte die hier groot genoeg voor is.",
+  "studyPlan.nothingLeft": "Hier staat al genoeg tijd voor in je agenda.",
 
   /* --- Schoolwerkformulier ----------------------------------------------- */
   "swForm.editTitle": "Schoolwerk bewerken",
@@ -910,8 +928,10 @@ export const nl = {
   "connector.summaryOff": "Log eerst in",
   "connector.intro":
     "Geef Claude toegang tot deze agenda, zodat je in een gesprek kunt vragen om " +
-    "een planning. Claude leest wat er staat en zet de blokken er zelf in. Er wordt " +
-    "nooit uit zichzelf meegekeken: alleen wanneer jij erom vraagt.",
+    "een planning. Claude leest wat er staat, zet de blokken er zelf in, kan één " +
+    "dag van een herhalende afspraak overslaan of verzetten, en kan huiswerk " +
+    "afvinken. Nieuw huiswerk aanmaken en afspraken weggooien blijft aan jou. Er " +
+    "wordt nooit uit zichzelf meegekeken: alleen wanneer jij erom vraagt.",
   "connector.create": "Sleutel aanmaken",
   "connector.creating": "Bezig…",
   "connector.labelPlaceholder": "Waarvoor is deze sleutel? (bv. telefoon)",
@@ -1227,6 +1247,10 @@ export const en: Record<TranslationKey, string> = {
   "activity.clashTravel": "Your travel time overlaps {title} ({from} \u2013 {to})",
   "activity.freeAgain": "That time is free: the work is finished.",
   "schoolworkToday.doneShare": "{duration} of it already done",
+  "schoolworkToday.todo": "{duration} still to schedule before {day}",
+  "schoolworkToday.room": "{duration} free until then",
+  "schoolworkToday.tight": "that is {duration} short",
+  "schoolworkToday.allPlanned": "Everything due is already scheduled.",
   "activity.now": "● now",
   "activity.studyFor": "Study block for: {subject}, {title}",
   "activity.studyForExam": "Studying for test: {subject}",
@@ -1320,6 +1344,14 @@ export const en: Record<TranslationKey, string> = {
   "schoolwork.priorityLabel": "Priority: {label}",
   "schoolwork.studyForExam": "Study for {subject}",
   "schoolwork.workOn": "Work on {title}",
+
+  "studyPlan.title": "Schedule study time",
+  "studyPlan.summary": "Proposal: {duration} across {count} blocks, while you are home.",
+  "studyPlan.summaryOne": "Proposal: {duration} in a single block, while you are home.",
+  "studyPlan.confirm": "Add to calendar",
+  "studyPlan.leftover": "{duration} does not fit before the deadline.",
+  "studyPlan.noRoom": "There is no slot big enough for this before {until}.",
+  "studyPlan.nothingLeft": "There is already enough time scheduled for this.",
 
   "swForm.editTitle": "Edit schoolwork",
   "swForm.addTitle": "Add schoolwork",
@@ -1803,8 +1835,10 @@ export const en: Record<TranslationKey, string> = {
   "connector.summaryOff": "Sign in first",
   "connector.intro":
     "Give Claude access to this agenda, so you can ask for a plan in a chat. " +
-    "Claude reads what is there and adds the blocks itself. It never looks in on " +
-    "its own: only when you ask.",
+    "Claude reads what is there, adds the blocks itself, can skip or move a " +
+    "single day of a repeating appointment, and can tick off homework. Adding " +
+    "new homework and deleting appointments stays with you. It never looks in " +
+    "on its own: only when you ask.",
   "connector.create": "Create key",
   "connector.creating": "Working…",
   "connector.labelPlaceholder": "What is this key for? (e.g. phone)",

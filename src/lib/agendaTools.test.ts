@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { deleteActivities, readAgenda, saveActivities, type AgendaData } from "./agendaTools";
+import {
+  deleteActivities,
+  moveOccurrence,
+  readAgenda,
+  saveActivities,
+  skipOccurrence,
+  updateSchoolwork,
+  type AgendaData,
+} from "./agendaTools";
 import type { Activity, Exam, Settings, Task } from "./types";
 
 const NOW = new Date("2026-09-14T08:00:00+02:00");
@@ -715,5 +723,299 @@ describe("heenreis nog niet berekend", () => {
     );
     expect(uitkomst.added).toBe(0);
     expect(uitkomst.skipped[0].reason).toContain("niet thuis");
+  });
+});
+
+/** Sporten, elke maandag, met een adres eraan. Zijn echte geval. */
+const sporten = (patch: Partial<Activity> = {}): Activity =>
+  activity({
+    id: "gym",
+    category: "gym",
+    title: "Sporten",
+    date: "2026-09-07",
+    startTime: "18:15",
+    endTime: "19:30",
+    location: { label: "Middachtenlaan 19, Almere", lat: 52.37, lon: 5.24 },
+    recurrence: { freq: "weekly", weekdays: [1], until: null },
+    ...patch,
+  });
+
+describe("skipOccurrence", () => {
+  it("zet één maandag uit en laat de rest van de reeks staan", () => {
+    const before = data({ activities: [sporten()] });
+    const result = skipOccurrence(before, { id: "gym", date: "2026-09-14" }, NOW);
+    expect(result.ok).toBe(true);
+    expect(result.data.activities[0].exceptions).toEqual(["2026-09-14"]);
+    // De week erna staat hij er gewoon weer.
+    const na = readAgenda(result.data, { from: "2026-09-14", to: "2026-09-21" }, NOW);
+    expect(na.days[0].activities.map((a) => a.title)).not.toContain("Sporten");
+    expect(na.days[7].activities.map((a) => a.title)).toContain("Sporten");
+  });
+
+  it("zet een overgeslagen dag weer terug", () => {
+    const before = data({ activities: [sporten({ exceptions: ["2026-09-14"] })] });
+    const result = skipOccurrence(before, { id: "gym", date: "2026-09-14", restore: true }, NOW);
+    expect(result.ok).toBe(true);
+    expect(result.data.activities[0].exceptions).toEqual([]);
+  });
+
+  it("weigert een dag waarop de reeks helemaal niet valt", () => {
+    // Sporten is op maandag; 15 september is een dinsdag.
+    const result = skipOccurrence(
+      data({ activities: [sporten()] }),
+      { id: "gym", date: "2026-09-15" },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("valt helemaal niet op");
+  });
+
+  it("stuurt je bij een losse afspraak naar het juiste gereedschap", () => {
+    const los = activity({ id: "los", recurrence: null });
+    const result = skipOccurrence(data({ activities: [los] }), { id: "los", date: "2026-09-14" }, NOW);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("delete_activities");
+  });
+
+  it("doet niets moeilijks over een dag die al uit stond", () => {
+    const before = data({ activities: [sporten({ exceptions: ["2026-09-14"] })] });
+    const result = skipOccurrence(before, { id: "gym", date: "2026-09-14" }, NOW);
+    expect(result.ok).toBe(true);
+    expect(result.data.activities[0].exceptions).toEqual(["2026-09-14"]);
+  });
+});
+
+describe("moveOccurrence", () => {
+  it("haalt die dag uit de reeks en zet hem los op de nieuwe tijd", () => {
+    const before = data({ activities: [sporten()] });
+    const result = moveOccurrence(
+      before,
+      { id: "gym", date: "2026-09-14", startTime: "20:00", endTime: "21:15" },
+      NOW,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.data.activities).toHaveLength(2);
+    const reeks = result.data.activities.find((a) => a.id === "gym");
+    const los = result.data.activities.find((a) => a.id === result.newId);
+    expect(reeks?.exceptions).toEqual(["2026-09-14"]);
+    expect(los).toMatchObject({
+      title: "Sporten",
+      date: "2026-09-14",
+      startTime: "20:00",
+      endTime: "21:15",
+      recurrence: null,
+    });
+  });
+
+  it("neemt de oude rit niet mee naar de nieuwe tijd", () => {
+    // Om 18:15 rijdt er een andere bus dan om 20:00. Een vertrektijd die
+    // overgeschreven wordt ziet er zelfverzekerd uit en klopt niet.
+    const met = sporten({
+      travel: { durationMinutes: 20 } as Activity["travel"],
+      returnTravel: { durationMinutes: 20 } as Activity["returnTravel"],
+    });
+    const result = moveOccurrence(
+      data({ activities: [met] }),
+      { id: "gym", date: "2026-09-14", startTime: "20:00", endTime: "21:15" },
+      NOW,
+    );
+    const los = result.data.activities.find((a) => a.id === result.newId);
+    expect(los?.travel).toBeNull();
+    expect(los?.returnTravel).toBeNull();
+  });
+
+  it("verzet naar een andere dag als je `toDate` meegeeft", () => {
+    const result = moveOccurrence(
+      data({ activities: [sporten()] }),
+      { id: "gym", date: "2026-09-14", toDate: "2026-09-16" },
+      NOW,
+    );
+    const los = result.data.activities.find((a) => a.id === result.newId);
+    expect(los).toMatchObject({ date: "2026-09-16", startTime: "18:15", endTime: "19:30" });
+  });
+
+  it("weigert een blok zonder plek in de tijd dat je van huis bent", () => {
+    const werk = activity({
+      id: "werk",
+      title: "Werk",
+      startTime: "09:00",
+      endTime: "17:00",
+      location: { label: "Lelystad", lat: 52.51, lon: 5.48 },
+      travel: { durationMinutes: 54 } as Activity["travel"],
+      returnTravel: { durationMinutes: 54 } as Activity["returnTravel"],
+    });
+    const gamen = activity({
+      id: "spel",
+      category: "hobby",
+      title: "Gamen",
+      date: "2026-09-07",
+      startTime: "20:00",
+      endTime: "21:00",
+      location: null,
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    const result = moveOccurrence(
+      data({ activities: [werk, gamen] }),
+      { id: "spel", date: "2026-09-14", startTime: "17:15", endTime: "18:15" },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("niet thuis");
+    expect(result.reason).toContain("id werk");
+  });
+
+  it("zegt het wanneer er niets te verzetten valt", () => {
+    const result = moveOccurrence(
+      data({ activities: [sporten()] }),
+      { id: "gym", date: "2026-09-14" },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("al staat");
+  });
+});
+
+describe("updateSchoolwork", () => {
+  const metStappen = task({
+    steps: [
+      { id: "s1", title: "Lezen", estimatedMinutes: 30, done: false },
+      { id: "s2", title: "Opgaven", estimatedMinutes: 60, done: false },
+    ],
+  });
+
+  it("vinkt een stap af", () => {
+    const result = updateSchoolwork(
+      data({ tasks: [metStappen] }),
+      { taskId: "t1", steps: [{ id: "s1", done: true }] },
+      NOW,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.data.tasks[0].steps?.map((s) => s.done)).toEqual([true, false]);
+  });
+
+  it("zet de opdracht vanzelf op af zodra de laatste stap af is", () => {
+    const result = updateSchoolwork(
+      data({ tasks: [metStappen] }),
+      { taskId: "t1", steps: [{ id: "s1", done: true }, { id: "s2", done: true }] },
+      NOW,
+    );
+    expect(result.data.tasks[0].status).toBe("done");
+  });
+
+  it("vinkt een stap ook weer uit", () => {
+    const af = task({
+      status: "done",
+      steps: [{ id: "s1", title: "Lezen", estimatedMinutes: 30, done: true }],
+    });
+    const result = updateSchoolwork(
+      data({ tasks: [af] }),
+      { taskId: "t1", steps: [{ id: "s1", done: false }] },
+      NOW,
+    );
+    expect(result.data.tasks[0].steps?.[0].done).toBe(false);
+    expect(result.data.tasks[0].status).toBe("doing");
+  });
+
+  it("zet de stand van een opdracht zonder stappen", () => {
+    const result = updateSchoolwork(data({ tasks: [task()] }), { taskId: "t1", status: "doing" }, NOW);
+    expect(result.data.tasks[0].status).toBe("doing");
+  });
+
+  it("weigert een stap die niet bestaat in plaats van hem stil over te slaan", () => {
+    const result = updateSchoolwork(
+      data({ tasks: [metStappen] }),
+      { taskId: "t1", steps: [{ id: "bestaat-niet", done: true }] },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("bestaat-niet");
+  });
+
+  it("weigert een stand die niet bestaat", () => {
+    const result = updateSchoolwork(data({ tasks: [task()] }), { taskId: "t1", status: "bijna" }, NOW);
+    expect(result.ok).toBe(false);
+  });
+
+  it("zet de stand van een toets", () => {
+    const result = updateSchoolwork(data({ exams: [exam()] }), { examId: "e1", status: "done" }, NOW);
+    expect(result.ok).toBe(true);
+    expect(result.data.exams[0].status).toBe("done");
+  });
+
+  it("zegt het wanneer er niets te wijzigen valt", () => {
+    const result = updateSchoolwork(data({ tasks: [task()] }), { taskId: "t1" }, NOW);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("niets om te wijzigen");
+  });
+});
+
+/*
+ * Het geval waar dit allemaal om begon: elke maandag sporten, en er komt één
+ * keer fysio tussen. Daar liep een gesprek op stuk -- het enige wat kon was de
+ * hele reeks weggooien. Deze drie tests lopen de weg na die er nu wél is.
+ */
+describe("de fysio-afspraak op de sportavond", () => {
+  const met = data({
+    activities: [
+      sporten({
+        travel: { durationMinutes: 20 } as Activity["travel"],
+        returnTravel: { durationMinutes: 20 } as Activity["returnTravel"],
+      }),
+    ],
+  });
+
+  it("laat zien dat sporten die maandag kan wijken", () => {
+    const gelezen = readAgenda(met, { from: "2026-09-14", to: "2026-09-14" }, NOW);
+    expect(gelezen.days[0].movable).toEqual([
+      {
+        id: "gym",
+        title: "Sporten",
+        startTime: "18:15",
+        endTime: "19:30",
+        minutes: 75,
+        recurring: true,
+        away: true,
+      },
+    ]);
+    expect(gelezen.rules.note).toContain("skip_occurrence");
+  });
+
+  it("slaat die ene maandag over en zet de fysio ervoor in de plaats", () => {
+    const zonder = skipOccurrence(met, { id: "gym", date: "2026-09-14" }, NOW);
+    expect(zonder.ok).toBe(true);
+
+    const erbij = saveActivities(
+      zonder.data,
+      [
+        {
+          title: "Fysio",
+          date: "2026-09-14",
+          startTime: "18:30",
+          endTime: "19:15",
+          category: "gym",
+          location: { label: "Almere Buiten", lat: 52.4, lon: 5.29 },
+        },
+      ],
+      NOW,
+    );
+    expect(erbij.added).toBe(1);
+
+    const gelezen = readAgenda(erbij.data, { from: "2026-09-14", to: "2026-09-21" }, NOW);
+    expect(gelezen.days[0].activities.map((a) => a.title)).toEqual(["Fysio"]);
+    // En de maandag erna staat sporten er gewoon weer.
+    expect(gelezen.days[7].activities.map((a) => a.title)).toEqual(["Sporten"]);
+  });
+
+  it("of verzet sporten naar later op diezelfde avond", () => {
+    const verzet = moveOccurrence(
+      met,
+      { id: "gym", date: "2026-09-14", startTime: "20:00", endTime: "21:15" },
+      NOW,
+    );
+    expect(verzet.ok).toBe(true);
+    const gelezen = readAgenda(verzet.data, { from: "2026-09-14", to: "2026-09-14" }, NOW);
+    expect(gelezen.days[0].activities.map((a) => `${a.title} ${a.startTime}`)).toEqual([
+      "Sporten 20:00",
+    ]);
   });
 });
