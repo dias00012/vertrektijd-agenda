@@ -355,6 +355,25 @@ export function computeDeparture(
     // berekende rit voor alle dagen, dus dan zou elke volgende dag "de dag
     // ervoor" heten.
     const arrival = activity.travel.plannedArrival;
+    const arrivalClock = arrival ? localMinutes(arrival) : null;
+
+    // Een rit die je ruim vóór je moet-er-zijn-tijd afzet is geen vroege rit
+    // maar een oude. Bij een reeks wordt er één rit voor alle dagen bewaard, en
+    // verschuift je begintijd daarna, dan blijft die staan: dan zegt de app
+    // "vertrek 05:42" voor een dag die om 09:00 begint met een reis van 54
+    // minuten. Dan liever gewoon rekenen -- dat komt per definitie op tijd uit.
+    if (arrivalClock !== null && startMinutes - arrivalClock > STALE_EARLY) {
+      const fallback = startMinutes - travelMinutes - buffer;
+      return {
+        time: minutesToTime(fallback),
+        minutes: fallback,
+        travelMinutes,
+        bufferMinutes: buffer,
+        previousDay: fallback < 0,
+        late: false,
+      };
+    }
+
     const previousDay = arrival ? toDateKey(departure) < toDateKey(new Date(arrival)) : false;
     // Bij een vertrek de dag ervoor telt `minutes` negatief door, net als bij
     // de rekensom hieronder; daar rekent `departureDateTime` mee.
@@ -468,6 +487,13 @@ export interface ReturnInfo {
  * hem nog geloven. Ruim genoeg voor wachten op de volgende verbinding, krap
  * genoeg om een rit van gisteren te herkennen.
  */
+/**
+ * Hoeveel eerder dan nodig een geplande rit je mag afzetten voor we hem nog
+ * geloven. Een uur te vroeg kan echt gebeuren op een lijn die één keer per uur
+ * rijdt; twee en een half uur is een rit van een andere begintijd.
+ */
+const STALE_EARLY = 90;
+
 const STALE_MARGIN = 180;
 
 export function computeReturn(
