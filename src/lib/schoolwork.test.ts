@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   activityMinutes,
   daysUntil,
+  isOverdue,
   linkedWorkDone,
   plannedMinutesForTask,
   plannedProgress,
@@ -249,5 +250,34 @@ describe("statusAfterSteps", () => {
     // Daar zegt afvinken niets over; de status is dan het enige wat we weten.
     expect(statusAfterSteps("todo", [])).toBe("todo");
     expect(statusAfterSteps("done", [])).toBe("done");
+  });
+});
+
+describe("isOverdue", () => {
+  // Woensdag 17 september, kwart over acht 's avonds.
+  const NU = new Date("2026-09-17T20:15:00+02:00");
+
+  it("noemt gisteren te laat", () => {
+    expect(isOverdue("todo", "2026-09-16", NU)).toBe(true);
+  });
+
+  it("noemt vandaag niet te laat", () => {
+    // Een deadline is een dag, geen moment: wat vandaag af moet mag vanavond
+    // nog. Met `new Date("2026-09-17") < new Date()` was dit 's ochtends al
+    // te laat -- precies de fout die deze functie vervangt.
+    expect(isOverdue("todo", "2026-09-17", NU)).toBe(false);
+  });
+
+  it("noemt morgen niet te laat", () => {
+    expect(isOverdue("todo", "2026-09-18", NU)).toBe(false);
+  });
+
+  it("noemt werk dat af is nooit te laat", () => {
+    // Een verwijt over iets wat je al gedaan hebt.
+    expect(isOverdue("done", "2026-01-01", NU)).toBe(false);
+  });
+
+  it("telt werk waar je mee bezig bent wel mee", () => {
+    expect(isOverdue("doing", "2026-09-16", NU)).toBe(true);
   });
 });
