@@ -101,8 +101,9 @@ export async function pushData(
   userId: string,
   payload: SyncPayload,
   version: string | null,
+  at: string = new Date().toISOString(),
 ): Promise<boolean> {
-  const row = { data: payload, updated_at: new Date().toISOString() };
+  const row = { data: payload, updated_at: at };
 
   // Nog geen rij: invoegen. Bestaat hij ondertussen toch -- een tweede apparaat
   // was net iets eerder -- dan botst de sleutel, en dat is het sein om het over
@@ -141,13 +142,23 @@ export async function syncOnce(
   local: SyncPayload,
   combine: (local: SyncPayload, remote: SyncPayload | null) => SyncPayload,
   tries?: number,
-): Promise<{ merged: SyncPayload; remote: SyncPayload | null }> {
+): Promise<{ merged: SyncPayload; remote: SyncPayload | null; written: string | null }> {
+  // Welke versie deze ronde heeft weggeschreven. Daar herkent het apparaat
+  // straks zijn eigen wijziging aan: anders schrikt hij van zijn eigen echo en
+  // haalt hij alles nog een keer op.
+  let written: string | null = null;
+
   const store: Store<SyncPayload | null> = {
     load: () => pullData(supabase, userId),
-    save: (data, version) => pushData(supabase, userId, data as SyncPayload, version),
+    async save(data, version) {
+      const at = new Date().toISOString();
+      const ok = await pushData(supabase, userId, data as SyncPayload, version, at);
+      if (ok) written = at;
+      return ok;
+    },
   };
 
-  return withRow(
+  const outcome = await withRow(
     store,
     (remote) => {
       const merged = combine(local, remote);
@@ -155,6 +166,46 @@ export async function syncOnce(
     },
     tries,
   );
+  return { ...outcome, written };
+}
+
+/**
+ * Meeluisteren of iemand anders je agenda wijzigt.
+ *
+ * Tot nu toe keek een apparaat alleen bij het openen en bij terugkomen in de
+ * app. Plande je op je laptop iets in, dan stond het pas op je telefoon als je
+ * die oppakte -- en sinds Claude meeschrijft gebeurt er ook van alles terwijl
+ * je nergens kijkt. Nu duwt de database het erheen.
+ *
+ * `onChange` krijgt de nieuwe versie van de rij mee, zodat de aanroeper zijn
+ * eigen zojuist geschreven wijziging kan herkennen en overslaan.
+ *
+ * Werkt alleen wanneer realtime voor deze tabel aanstaat in Supabase (zie
+ * SUPABASE-SETUP.md). Staat het uit, dan gebeurt er niets bijzonders: er komt
+ * geen enkele melding binnen en het ophalen bij terugkomen doet zijn werk zoals
+ * altijd. Dat is met opzet -- een app die stukgaat omdat een extraatje niet
+ * is ingesteld is erger dan een app die iets minder snel is.
+ */
+export function watchData(
+  supabase: SupabaseClient,
+  userId: string,
+  onChange: (version: string | null) => void,
+): () => void {
+  const channel = supabase
+    .channel(`user_data:${userId}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: TABLE, filter: `user_id=eq.${userId}` },
+      (payload) => {
+        const row = payload.new as { updated_at?: string } | null;
+        onChange(row?.updated_at ?? null);
+      },
+    )
+    .subscribe();
+
+  return () => {
+    void supabase.removeChannel(channel);
+  };
 }
 
 /* --- Samenvoegen van lokaal en cloud (voorkomt dataverlies) ------------- */

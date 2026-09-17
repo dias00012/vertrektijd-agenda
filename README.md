@@ -453,6 +453,21 @@ Zonder `SUPABASE_SERVICE_ROLE_KEY` blijft de app werken; de verwijderknop meldt 
 dat het handmatig moet. Zet die sleutel **nooit** in een `NEXT_PUBLIC_`-variabele:
 hij omzeilt Row Level Security en geeft toegang tot de gegevens van álle gebruikers.
 
+## Apparaten die elkaar bijwerken
+
+Elk apparaat haalt op bij het openen en bij terugkomen in de app (hoogstens twee keer per
+minuut). Staat realtime aan voor `user_data` — één regel SQL, zie SUPABASE-SETUP.md — dan duwt
+de database een wijziging er bovendien meteen heen: wat je op je laptop plant staat binnen een
+seconde op je telefoon.
+
+Een apparaat negeert daarbij zijn eigen echo: `syncOnce` geeft terug welke versie het zojuist
+schreef, en een melding met precies die versie wordt overgeslagen. Anders haalt een apparaat na
+elke eigen wijziging alles nog een keer op.
+
+Schrijven gaat altijd via `syncOnce`: ophalen, samenvoegen, en alleen wegschrijven als de rij nog
+is zoals hij hem las. Was er iemand voor je (je andere apparaat, of Claude via de connector), dan
+wordt het samenvoegen overgedaan op de verse rij. Zie `src/lib/optimistic.ts`.
+
 ## Beheerdersoverzicht (`/beheer`)
 
 Voor wie de app draait, niet voor wie hem gebruikt: hoeveel accounts er zijn, hoeveel mensen de

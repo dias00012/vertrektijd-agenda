@@ -190,6 +190,27 @@ Open de app → **Instellingen → Herinneringen** → kies een aantal minuten e
 Op een iPhone werkt dit alleen wanneer de app op je beginscherm staat: Safari →
 delen → "Zet op beginscherm". Dat is een regel van Apple, niet van deze app.
 
+## 8b. Je apparaten elkaar laten bijwerken (optioneel, één regel)
+
+Zonder dit kijkt elk apparaat alleen bij het openen en bij terugkomen in de app.
+Plan je op je laptop iets in — zelf of via Claude — dan staat het pas op je
+telefoon zodra je die oppakt. Met dit aan duwt de database het erheen, binnen een
+seconde.
+
+**SQL Editor** → nieuwe query → plakken → **Run**:
+
+```sql
+alter publication supabase_realtime add table public.user_data;
+```
+
+Meer is er niet. Row Level Security geldt ook hier, dus je hoort uitsluitend over
+je eigen rij — een ander krijgt niets van jouw agenda te zien.
+
+Laat je dit weg, dan werkt de app gewoon: er komt simpelweg nooit een melding
+binnen en het ophalen bij terugkomen doet zijn werk zoals altijd. Dat is met
+opzet; een app die stukgaat omdat een extraatje niet is ingesteld is erger dan
+een app die iets minder snel is.
+
 ## 9. Weten of iemand de app gebruikt (optioneel)
 
 Zonder cijfers weet je niet of iemand hem opent, of je iets verbeterd of stuk

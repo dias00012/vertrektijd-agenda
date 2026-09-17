@@ -44,7 +44,7 @@ import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categor
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabase } from "@/lib/supabase";
-import { mergePayload, signature, syncOnce, type Deletion } from "@/lib/sync";
+import { mergePayload, signature, syncOnce, watchData, type Deletion } from "@/lib/sync";
 import type {
   Activity,
   ActivityDraft,
@@ -295,6 +295,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   /** Gaat omhoog wanneer we opnieuw willen ophalen, bv. bij terugkomen in de app. */
   const [pullNonce, setPullNonce] = useState(0);
   const lastPull = useRef(0);
+  /**
+   * De versie die dit apparaat als laatste heeft weggeschreven.
+   *
+   * Zonder dit schrikt hij van zijn eigen echo: je schrijft iets weg, de
+   * database meldt keurig dat de rij veranderd is, en dit apparaat haalt zijn
+   * eigen wijziging meteen weer op.
+   */
+  const lastWritten = useRef<string | null>(null);
 
   /** Met de hand synchroniseren; slaat de wachttijd van de automaat over. */
   const syncNow = useCallback(() => {
@@ -1096,7 +1104,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // overdoet wanneer er ondertussen iemand anders schreef. De gegevens
         // zoals ze nú zijn, niet zoals ze waren toen deze ronde begon: tijdens
         // het netwerkverkeer kan er van alles bij gekomen zijn.
-        const { merged } = await syncOnce(supabase, user.id, latestData.current, (local, remote) =>
+        const { merged, written } = await syncOnce(supabase, user.id, latestData.current, (local, remote) =>
           // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
           // en niets wordt overschreven. Tenzij het lokale spul van een ander
           // account is: dan is de cloud de waarheid en blijft de agenda van die
@@ -1108,6 +1116,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
               : local,
         );
         if (cancelled) return;
+        lastWritten.current = written;
 
         setActivities(merged.activities);
         setTasks(merged.tasks);
@@ -1182,6 +1191,30 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, user, hydrated]);
 
+  /**
+   * Meeluisteren of er elders iets verandert.
+   *
+   * Hierboven kijkt de app bij terugkomen; dit is de andere kant op. Plan je op
+   * je laptop iets in -- zelf of via Claude -- dan staat het binnen een seconde
+   * op je telefoon, zonder dat je hem hoeft op te pakken.
+   *
+   * Werkt realtime niet (niet aangezet in Supabase, of geen verbinding), dan
+   * komt er simpelweg nooit een melding binnen en doet het ophalen bij
+   * terugkomen zijn werk zoals altijd.
+   */
+  useEffect(() => {
+    if (!supabase || !user || !hydrated) return;
+
+    return watchData(supabase, user.id, (version) => {
+      // Onze eigen wijziging: die staat hier al.
+      if (version && version === lastWritten.current) return;
+      // De wachttijd van het ophalen-bij-terugkomen geldt hier niet: dit is
+      // geen gok maar een bericht dat er werkelijk iets veranderd is.
+      lastPull.current = Date.now();
+      setPullNonce((value) => value + 1);
+    });
+  }, [supabase, user, hydrated]);
+
   // Terwijl je bent ingelogd: schrijf wijzigingen (debounced) naar de cloud.
   useEffect(() => {
     if (!supabase || !user || !hydrated || applyingRemote.current) return;
@@ -1203,9 +1236,10 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // schrijven zat nog steeds een gaatje, en daar paste precies één
         // wijziging van je andere apparaat in. `syncOnce` schrijft alleen als
         // de rij nog is zoals hij hem las, en doet het anders over.
-        const { merged, remote } = await syncOnce(supabase, user.id, local, (mine, theirs) =>
+        const { merged, remote, written } = await syncOnce(supabase, user.id, local, (mine, theirs) =>
           theirs ? mergePayload(mine, theirs) : mine,
         );
+        lastWritten.current = written;
 
         // Wat er van het andere apparaat bij kwam hoort ook hier te staan.
         // Alleen wanneer er echt iets veranderde: anders lokt deze opdracht
