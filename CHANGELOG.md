@@ -10,8 +10,12 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 
 ## 0.67.0
 
-- **Een filter op Schoolwerk: Alles, Te doen, Bezig, Klaar.** Met het aantal
+- **Twee filters op Schoolwerk: op status en op prioriteit.** Met het aantal
   erbij, en de kop telt mee ("Opdrachten (2 van 23)").
+
+  De tellingen rekenen elkaar mee: sta je op "hoog", dan zegt de statusrij
+  hoeveel hoge opdrachten er te doen, bezig en klaar zijn -- niet hoeveel er in
+  totaal zijn. Een knop hoort te beloven wat hij oplevert.
 
   Met drieentwintig opdrachten stond alles door elkaar. Sorteren zette klaar
   werk wel onderaan, maar je scrolde er nog steeds langs, en "waar was ik ook
