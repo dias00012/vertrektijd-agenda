@@ -168,6 +168,14 @@ interface AgendaContextValue {
     status: "off" | "idle" | "syncing" | "error";
     error: string | null;
     lastSyncedAt: string | null;
+    /**
+     * Nu ophalen en samenvoegen, zonder te wachten.
+     *
+     * De app doet dit uit zichzelf bij openen en bij terugkomen, maar dat is
+     * niet hetzelfde als kunnen zien dát het gebeurt. Wie twee apparaten heeft
+     * wil een knop die zegt: haal nu op, en laat me zien dat het gelukt is.
+     */
+    now: () => void;
   };
   /**
    * true zodra opslaan op dit apparaat mislukt is — opslag vol, of de browser
@@ -277,6 +285,12 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   /** Gaat omhoog wanneer we opnieuw willen ophalen, bv. bij terugkomen in de app. */
   const [pullNonce, setPullNonce] = useState(0);
   const lastPull = useRef(0);
+
+  /** Met de hand synchroniseren; slaat de wachttijd van de automaat over. */
+  const syncNow = useCallback(() => {
+    lastPull.current = Date.now();
+    setPullNonce((value) => value + 1);
+  }, []);
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   const { user } = useAuth();
@@ -1223,7 +1237,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
-      sync: { status: syncStatus, error: syncError, lastSyncedAt },
+      sync: { status: syncStatus, error: syncError, lastSyncedAt, now: syncNow },
       storageFull,
     }),
     [
@@ -1267,6 +1281,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       syncError,
       storageFull,
       lastSyncedAt,
+      syncNow,
     ],
   );
 
