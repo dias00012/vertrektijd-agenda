@@ -8,6 +8,28 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.61.0
+
+- **Zonder berekende thuisreis gold je eindtijd als thuiskomst.** Gevonden door
+  0.60.0 live na te lopen: bij "Werken" in Lelystad stond wel de heenreis van
+  54 minuten maar nog geen thuisreis, en dus begon de vrije tijd om 17:00 -- de
+  fout waar het allemaal om begonnen was, via een andere deur binnen.
+
+  Is de thuisreis nog niet berekend, dan houdt de app nu de heenreis aan als
+  schatting: thuis om 17:54, met `backHomeEstimated` erbij zodat zichtbaar is
+  dat het een schatting is. Goed genoeg om op te plannen, niet goed genoeg om
+  op te zweren.
+
+- **Eén berekening in plaats van twee.** Het "van huis"-venster werd op twee
+  plekken apart uitgerekend: bij het zoeken naar vrije tijd en bij het weigeren
+  van een onmogelijk blok. Na de aanpassing hierboven liepen die uit de pas --
+  een test ving het. Ze delen nu dezelfde functie.
+
+- **Minder valse dubbelmeldingen.** "BE week 4 -- H4 + H5 opgaven + Casus deel
+  1" en "Excel week 4 -- H5 Grafieken" werden als hetzelfde gemeld omdat ze
+  "week", "4" en "h5" delen. De drempel ging van zestig naar zeventig procent:
+  de echte dubbele opdracht wordt nog gezien, deze twee niet meer.
+
 ## 0.60.0
 
 - **Twee apparaten, twee verschillende agenda's op hetzelfde account.** De
