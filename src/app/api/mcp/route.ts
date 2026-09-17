@@ -72,6 +72,16 @@ const TOOLS: ToolDefinition[] = [
       "`backHome` ben je van huis. Per opdracht staat `plannedMinutes` (wat er " +
       "al voor staat) en `remainingMinutes` (wat er nog bij moet) — plan niet " +
       "opnieuw wat er al staat.\n\n" +
+      "Reken zelf nooit een reistijd uit en schat er nooit een. Wat hier staat " +
+      "is de enige waarheid; een getal dat je zelf bedenkt klopt niet met wat " +
+      "de gebruiker op zijn scherm ziet, ook al klinkt het redelijk. Staat er " +
+      "`departureEstimated` of `backHomeEstimated` bij, dan is dat tijdstip " +
+      "afgeleid van de reis in de andere richting: bruikbaar om op te plannen, " +
+      "maar noem het een schatting als je erover praat. Staat er " +
+      "`travelUnknown`, dan kent de app geen enkele reistijd voor dat blok — " +
+      "zeg dan dat je het niet weet (en `travelNote` als die er staat), en " +
+      "vraag of de gebruiker het in de app wil laten uitrekenen. Plan in dat " +
+      "geval alleen in `free`, want daar is de onzekerheid al in verwerkt.\n\n" +
       "`duplicates` noemt wat er dubbel lijkt te staan en `clashes` wat er die " +
       "dag botst (ook wanneer alleen de reistijd eroverheen valt). Meld die, maar " +
       "ruim ze niet zelf op: welke van de twee weg mag is aan de gebruiker.\n\n" +

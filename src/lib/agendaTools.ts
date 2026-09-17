@@ -19,7 +19,7 @@ import {
   timeToMinutes,
   todayKey,
 } from "./time";
-import { computeDeparture, computeReturn } from "./travel";
+import { bufferFor, computeDeparture, computeReturn, travelMinutesEither } from "./travel";
 import { activityMinutes, statusAfterSteps } from "./schoolwork";
 import type { Activity, Exam, Settings, Task } from "./types";
 
@@ -75,6 +75,20 @@ interface ReadActivity {
   /** Hoe laat je van huis moet, als de app dat heeft uitgerekend. */
   departure?: string;
   travelMinutes?: number;
+  /**
+   * true wanneer `departure` een schatting is: de heenreis was nog niet
+   * berekend, dus is de thuisreis aangehouden.
+   *
+   * Dit ontbrak, en dat was geen detail. Zonder heenreis stond er gewoon géén
+   * vertrektijd in dit antwoord -- geen "onbekend", maar stilte. En stilte
+   * vult een planner in met iets plausibels. Vandaar deze twee velden: liever
+   * een schatting die zichzelf zo noemt, of een eerlijk "ik weet het niet".
+   */
+  departureEstimated?: boolean;
+  /** true wanneer de app geen enkele reistijd voor dit blok kent. */
+  travelUnknown?: boolean;
+  /** Waarom de reis niet uitgerekend kon worden; alleen als de app dat weet. */
+  travelNote?: string;
   /** Hoe laat je er bent met de gevonden rit. */
   arrival?: string;
   /** true wanneer je met de gevonden rit ná de begintijd aankomt. */
@@ -372,18 +386,55 @@ export function readAgenda(
         // En de reis terug. Zonder dit weet een planner wel hoe laat je weg
         // moet, maar niet wanneer je weer beschikbaar bent -- en plant hij een
         // leerblok in het uur dat je nog in de trein zit.
+        // Hoort er hier überhaupt een heenreis bij? Zit je er al, of kom je van
+        // een andere plek, dan is er niets te vertrekken -- dat is geen
+        // ontbrekende reistijd maar een reis die ergens anders staat.
+        const heenreisHoortErbij =
+          Boolean(occurrence.location) &&
+          !occurrence.allDay &&
+          occurrence.travelRole.outbound &&
+          !occurrence.travelRole.arrivesFrom;
+
+        if (!departure && heenreisHoortErbij && settings) {
+          // Geen berekende heenreis. Dan de thuisreis aanhouden, met een vlag
+          // erbij -- precies zoals het andersom al ging.
+          const geschat = occurrence.returnTravel?.durationMinutes;
+          if (geschat) {
+            const minutes =
+              timeToMinutes(occurrence.startTime) - geschat - bufferFor(occurrence, settings);
+            entry.departure = minutesToTime(minutes);
+            entry.travelMinutes = geschat;
+            entry.departureEstimated = true;
+          }
+        }
+
         const back = settings ? computeReturn(occurrence, settings) : null;
         if (back) {
           entry.backHome = back.time;
           entry.returnMinutes = back.travelMinutes;
-        } else if (occurrence.location && occurrence.travel) {
+        } else if (occurrence.location && !occurrence.allDay) {
           // Nog geen berekende thuisreis. Zwijgen zou betekenen dat de eindtijd
           // als thuiskomst geldt, en dat is de fout waar het om begonnen was.
-          // Dan liever de heenreis als schatting, met een vlag erbij.
-          const minutes = timeToMinutes(occurrence.endTime) + occurrence.travel.durationMinutes;
-          entry.backHome = minutesToTime(minutes);
-          entry.returnMinutes = occurrence.travel.durationMinutes;
-          entry.backHomeEstimated = true;
+          // Dan liever de andere kant als schatting, met een vlag erbij.
+          const geschat = travelMinutesEither(occurrence, "back");
+          if (geschat > 0) {
+            const minutes = timeToMinutes(occurrence.endTime) + geschat;
+            entry.backHome = minutesToTime(minutes);
+            entry.returnMinutes = geschat;
+            entry.backHomeEstimated = true;
+          }
+        }
+
+        // Niets bekend, en er hoort wel een reis bij: dat moet er met zoveel
+        // woorden staan. Anders ziet dit blok eruit als iets om de hoek.
+        if (
+          occurrence.location &&
+          !occurrence.allDay &&
+          entry.travelMinutes === undefined &&
+          entry.returnMinutes === undefined
+        ) {
+          entry.travelUnknown = true;
+          if (occurrence.travelError) entry.travelNote = occurrence.travelError;
         }
         if (occurrence.source) entry.source = occurrence.source;
         if (occurrence.linkedTaskId) entry.linkedTaskId = occurrence.linkedTaskId;
