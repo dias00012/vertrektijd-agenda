@@ -130,8 +130,16 @@ Wat er bewust **niet** in zit: ticketprijzen en storingsteksten. Die zitten niet
 ### Eigen activiteitstypes
 
 Naast de vijf standaardtypes maak je in het activiteitenformulier je eigen type: klik op
-**➕ Eigen**, kies een emoji met de emoji-toets van je toetsenbord, geef het een naam en een kleur.
-Eigen types staan in `Settings.customCategories` en werken overal in de app.
+**➕ Eigen**, geef het een naam en een kleur, en desgewenst een emoji. Een emoji is **niet**
+verplicht: laat je het leeg, dan is het icoon de eerste letter van de naam in de kleur van het
+type. Dat is een bewuste keuze — op een laptop is een emoji typen een sneltoets die je moet
+kennen, en wie die niet kende typte maar iets.
+
+Een eigen type kies je en bewerk je daarna via **✎ \<naam\> bewerken** onder de tegels: naam,
+icoon, kleur en weggooien. Gooi je een type weg terwijl er nog activiteiten op staan, dan blijven
+die gewoon bestaan; de app toont zo'n onbekend type neutraal in plaats van het als iets anders
+voor te stellen (zie `unknownCategory` in `src/lib/categories.ts`). Eigen types staan in
+`Settings.customCategories` en werken overal in de app.
 
 ### Vervoermiddel en OV-reisplanner
 
@@ -435,10 +443,30 @@ typefouten kun je wel gerust `npm run typecheck` naast de dev-server gebruiken.
 | `SUPABASE_SERVICE_ROLE_KEY` | "Account verwijderen" | **geheim**, uitsluitend server-side |
 | `NEXT_PUBLIC_SENTRY_DSN` | foutmonitoring (optioneel) | zonder deze waarde gaat er niets naar buiten |
 | `NOMINATIM_USER_AGENT` | nette identificatie bij de gratis kaartdiensten | bv. `Vertrektijd/1.0 (https://jouw-app.vercel.app)` |
+| `ADMIN_EMAILS` | het beheerdersoverzicht op `/beheer` (optioneel) | komma-lijst; leeg = niemand kan erbij |
 
 Zonder `SUPABASE_SERVICE_ROLE_KEY` blijft de app werken; de verwijderknop meldt dan
 dat het handmatig moet. Zet die sleutel **nooit** in een `NEXT_PUBLIC_`-variabele:
 hij omzeilt Row Level Security en geeft toegang tot de gegevens van álle gebruikers.
+
+## Beheerdersoverzicht (`/beheer`)
+
+Voor wie de app draait, niet voor wie hem gebruikt: hoeveel accounts er zijn, hoeveel mensen de
+app per dag openden over de laatste dertig dagen, wat ze deden, en of de diensten waar de app
+van afhangt het op dit moment doen (database, OV-planner, adressen zoeken).
+
+Bewust **niet** in het menu — je komt er via de URL. De afscherming zit in
+`/api/admin/overview` en niet in het scherm: een pagina die zichzelf verbergt houdt niemand
+tegen die de route zelf aanroept. Die route controleert je Supabase-token en vergelijkt je
+e-mailadres met `ADMIN_EMAILS`; mag je niet, dan krijg je een 404 en niet "verboden" — dat
+laatste vertelt een vreemde dat de pagina bestaat.
+
+Staat `ADMIN_EMAILS` leeg, dan kan niemand erbij, ook de eigenaar niet. Dat is expres.
+
+De cijfers komen uit `app_events` (een dag, een naam, een aantal — zie SUPABASE-SETUP.md) en uit
+een telling van de rijen in `user_data`. Er staat geen bezoeker in: "hoeveel mensen openden de
+app" klopt doordat de app die gebeurtenis hooguit één keer per dag stuurt, bijgehouden in de
+browser zelf.
 
 ## Tests
 

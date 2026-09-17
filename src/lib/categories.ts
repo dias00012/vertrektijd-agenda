@@ -62,12 +62,32 @@ export function getCategory(id: CategoryId): CategoryMeta {
   return builtinCategories().find((item) => item.id === id) ?? unknownCategory(id);
 }
 
+/**
+ * Het tekentje voor een type zonder gekozen icoon: de eerste letter van de
+ * naam.
+ *
+ * Een emoji was verplicht, en dat is een rare eis aan iemand die achter een
+ * laptop zit: op een telefoon staat de emoji-toets naast de spatiebalk, op een
+ * laptop moet je een sneltoets kennen. Wie die niet kende typte maar iets --
+ * er stond hier een type "Huiswerk" met een 7 ervoor.
+ *
+ * De eerste letter in de kleur van het type is geen noodoplossing maar gewoon
+ * een net icoon. `[...label]` en niet `label[0]`, anders valt een emoji of een
+ * letter met een accent in tweeën uiteen.
+ */
+export function initialOf(label: string): string {
+  const [first] = [...label.trim()];
+  return first ? first.toUpperCase() : "\u2022";
+}
+
 /** Zelfgemaakt type omzetten naar dezelfde vorm als een ingebouwd type. */
 function toMeta(custom: CustomCategory): CategoryMeta {
   return {
     id: custom.id,
     label: custom.label,
-    emoji: custom.emoji,
+    // Geen icoon gekozen: dan de eerste letter van de naam. Bewust hier en niet
+    // bij het opslaan, zodat het meeverandert als je je type hernoemt.
+    emoji: (custom.emoji ?? "").trim() || initialOf(custom.label),
     color: custom.color,
     placeholder: custom.label,
     locationExpected: false,

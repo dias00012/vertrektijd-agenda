@@ -138,6 +138,11 @@ interface AgendaContextValue {
   categoryFor: (id: CategoryId) => CategoryMeta;
   /** Voegt een zelfgemaakt type toe en geeft het terug. */
   addCustomCategory: (input: { label: string; emoji: string; color: string }) => CustomCategory;
+  /** Naam, icoon of kleur van een eigen type wijzigen. */
+  updateCustomCategory: (
+    id: string,
+    patch: { label?: string; emoji?: string; color?: string },
+  ) => void;
   /** Verwijdert een zelfgemaakt type (bestaande activiteiten blijven staan). */
   removeCustomCategory: (id: string) => void;
   /** Forceert een herberekening, ook als een eerdere poging faalde. */
@@ -863,6 +868,25 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  /**
+   * Een eigen type bijwerken: naam, icoon of kleur.
+   *
+   * Je kon er wel een maken maar hem daarna nergens meer aanraken. Eén typfout
+   * in de naam en je zat eraan vast, of je moest een tweede type maken en al je
+   * activiteiten overzetten.
+   */
+  const updateCustomCategory = useCallback(
+    (id: string, patch: { label?: string; emoji?: string; color?: string }) => {
+      setSettings((current) => ({
+        ...current,
+        customCategories: current.customCategories.map((c) =>
+          c.id === id ? { ...c, ...patch } : c,
+        ),
+      }));
+    },
+    [],
+  );
+
   const removeCustomCategory = useCallback((id: string) => {
     setSettings((current) => ({
       ...current,
@@ -1203,6 +1227,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       categories,
       categoryFor,
       addCustomCategory,
+      updateCustomCategory,
       removeCustomCategory,
       retryTravel,
       tasks,
@@ -1243,6 +1268,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       categories,
       categoryFor,
       addCustomCategory,
+      updateCustomCategory,
       removeCustomCategory,
       retryTravel,
       tasks,
