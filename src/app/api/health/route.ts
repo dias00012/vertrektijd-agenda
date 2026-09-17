@@ -39,6 +39,8 @@ export async function GET(request: Request) {
       pushClock: has("PUSH_CRON_SECRET"),
       /** Tellers in je eigen database; zegt niets over of de tabel bestaat. */
       usageStats: has("SUPABASE_SERVICE_ROLE_KEY"),
+      /** Het beheerdersoverzicht op /beheer; zonder adressen kan niemand erbij. */
+      adminOverview: has("ADMIN_EMAILS") && has("SUPABASE_SERVICE_ROLE_KEY"),
       /** Foutmeldingen doorsturen naar Sentry. */
       errorReporting: has("NEXT_PUBLIC_SENTRY_DSN"),
       /** Herkenbare identificatie bij de gratis kaart- en OV-diensten. */
