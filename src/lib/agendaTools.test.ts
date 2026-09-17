@@ -580,3 +580,97 @@ describe("dubbel en botsend", () => {
     expect(dag.clashes[0].between).toContain("Sporten");
   });
 });
+
+describe("thuisreis nog niet berekend", () => {
+  // Precies wat er live stond: Werken in Lelystad met een heenreis van 54
+  // minuten, maar zonder berekende thuisreis. Zwijgen daarover betekent dat
+  // 17:00 als thuiskomst geldt -- en dat is de fout waar het om begonnen was.
+  const werk = activity({
+    id: "werk",
+    category: "werk",
+    title: "Werken",
+    date: "2026-09-17",
+    startTime: "09:00",
+    endTime: "17:00",
+    location: { label: "Donaustraat 184, Lelystad", lat: 52.5, lon: 5.47 },
+    travel: {
+      durationMinutes: 54,
+      distanceKm: 30,
+      mode: "transit",
+      provider: "motis",
+      computedAt: "2026-09-16T06:00:00.000Z",
+      key: "heen",
+    },
+    returnTravel: null,
+  } as unknown as Partial<Activity>);
+
+  const wereld = data({ activities: [werk], settings: settings({ bufferMinutes: 5 }) });
+
+  it("schat de thuiskomst op de heenreis en zegt dat het een schatting is", () => {
+    const dag = readAgenda(wereld, { from: "2026-09-17", to: "2026-09-17" }, NOW).days[0];
+    expect(dag.activities[0].backHome).toBe("17:54");
+    expect(dag.activities[0].backHomeEstimated).toBe(true);
+  });
+
+  it("laat de vrije tijd pas na die schatting beginnen", () => {
+    const dag = readAgenda(wereld, { from: "2026-09-17", to: "2026-09-17" }, NOW).days[0];
+    expect(dag.free.some((slot) => slot.from === "17:00")).toBe(false);
+    expect(dag.free.some((slot) => slot.from === "17:54")).toBe(true);
+  });
+
+  it("weigert een leerblok dat in die geschatte reis valt", () => {
+    const uitkomst = saveActivities(
+      wereld,
+      [{ title: "Leren", date: "2026-09-17", startTime: "17:20", endTime: "18:00" }],
+      NOW,
+    );
+    expect(uitkomst.added).toBe(0);
+    expect(uitkomst.skipped[0].reason).toContain("niet thuis");
+  });
+});
+
+describe("geen valse dubbelmelding", () => {
+  it("houdt twee verschillende weekopdrachten uit elkaar", () => {
+    // Deze twee werden ten onrechte als dubbel gemeld: ze delen alleen "week",
+    // "4" en "h5".
+    const wereld = data({
+      settings: settings(),
+      tasks: [
+        task({
+          id: "be4",
+          subject: "Bedrijfseconomie",
+          title: "BE week 4 - H4 + H5 opgaven + Casus deel 1",
+          deadline: "2026-10-02",
+        }),
+        task({
+          id: "ex4",
+          subject: "Bedrijfseconomie",
+          title: "Excel week 4 - H5 Grafieken",
+          deadline: "2026-10-02",
+        }),
+      ],
+    });
+    expect(readAgenda(wereld, {}, NOW).duplicates).toHaveLength(0);
+  });
+
+  it("blijft de echte dubbele opdracht wél zien", () => {
+    const wereld = data({
+      settings: settings(),
+      tasks: [
+        task({
+          id: "t-excel-wk2",
+          subject: "Bedrijfseconomie",
+          title: "Excel week 2 - H2 (Opdracht 2.5 en 2.6)",
+          deadline: "2026-09-18",
+        }),
+        task({
+          id: "ex2",
+          subject: "Bedrijfseconomie",
+          title: "Excel week 2 - H2 Afronden",
+          deadline: "2026-09-18",
+        }),
+      ],
+    });
+    expect(readAgenda(wereld, {}, NOW).duplicates).toHaveLength(1);
+  });
+});

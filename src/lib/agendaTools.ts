@@ -94,6 +94,12 @@ interface ReadActivity {
   backHome?: string;
   /** Duur van de reis terug in minuten. */
   returnMinutes?: number;
+  /**
+   * true wanneer `backHome` een schatting is: de app had de thuisreis nog niet
+   * berekend, dus is de heenreis aangehouden. Goed genoeg om op te plannen,
+   * niet goed genoeg om op te zweren.
+   */
+  backHomeEstimated?: boolean;
   /** "leerplan" voor blokken die uit een leerplan komen, anders afwezig. */
   source?: string;
   linkedTaskId?: string;
@@ -194,23 +200,20 @@ export interface ReadResult {
  * eind -- dat verschil was precies wat er miste.
  */
 function busyOnDate(data: AgendaData, date: string): { from: number; to: number }[] {
-  const settings = data.settings;
-  const spans: { from: number; to: number }[] = [];
+  // De uitstapjes komen uit `awaySpans`, precies dezelfde berekening die
+  // `save_activities` gebruikt om een onmogelijk blok te weigeren. Twee
+  // rekensommen naast elkaar lopen na één aanpassing uit de pas -- dat gebeurde
+  // hier ook echt, en een test ving het.
+  const spans: { from: number; to: number }[] = awaySpans(data, date).map((span) => ({
+    from: span.from,
+    to: span.to,
+  }));
 
   for (const occurrence of activitiesOnDate(data.activities, date)) {
-    if (occurrence.allDay) continue;
+    if (occurrence.allDay || occurrence.location) continue;
     const start = timeToMinutes(occurrence.startTime);
     const end = timeToMinutes(occurrence.endTime);
-    if (!occurrence.location || !settings) {
-      spans.push({ from: start, to: end < start ? end + 1440 : end });
-      continue;
-    }
-    const departure = computeDeparture(occurrence, settings);
-    const back = computeReturn(occurrence, settings);
-    spans.push({
-      from: departure ? departure.minutes : start,
-      to: back ? back.minutes : end < start ? end + 1440 : end,
-    });
+    spans.push({ from: start, to: end < start ? end + 1440 : end });
   }
 
   // Samenvoegen wat elkaar raakt, zodat er geen schijngaatjes overblijven
@@ -322,7 +325,11 @@ function looksTheSame(a: string, b: string): boolean {
   const [shorter, longer] = left.size <= right.size ? [left, right] : [right, left];
   let shared = 0;
   for (const word of shorter) if (longer.has(word)) shared += 1;
-  return shared / shorter.size >= 0.6;
+  // Zeventig procent en niet zestig: bij zestig gingen "BE week 4 - H4 + H5
+  // opgaven + Casus deel 1" en "Excel week 4 - H5 Grafieken" voor hetzelfde
+  // door, alleen omdat ze "week", "4" en "h5" delen. Een valse melding is hier
+  // duurder dan een gemiste: hij zet je aan het twijfelen over werk dat klopt.
+  return shared / shorter.size >= 0.7;
 }
 
 /** Wat er dubbel lijkt te staan: opdrachten en blokken op dezelfde dag. */
@@ -469,6 +476,14 @@ export function readAgenda(
         if (back) {
           entry.backHome = back.time;
           entry.returnMinutes = back.travelMinutes;
+        } else if (occurrence.location && occurrence.travel) {
+          // Nog geen berekende thuisreis. Zwijgen zou betekenen dat de eindtijd
+          // als thuiskomst geldt, en dat is de fout waar het om begonnen was.
+          // Dan liever de heenreis als schatting, met een vlag erbij.
+          const minutes = timeToMinutes(occurrence.endTime) + occurrence.travel.durationMinutes;
+          entry.backHome = minutesToClock(minutes);
+          entry.returnMinutes = occurrence.travel.durationMinutes;
+          entry.backHomeEstimated = true;
         }
         if (occurrence.source) entry.source = occurrence.source;
         if (occurrence.linkedTaskId) entry.linkedTaskId = occurrence.linkedTaskId;
@@ -590,11 +605,18 @@ function awaySpans(data: AgendaData, date: string, exclude?: string): AwaySpan[]
     if (!occurrence.location || occurrence.allDay) continue;
     const departure = computeDeparture(occurrence, settings);
     const back = computeReturn(occurrence, settings);
-    // Zonder berekende reis blijft het uitstapje zelf over: nog altijd een
-    // periode waarin je niet thuis aan je huiswerk zit.
-    const from = departure ? departure.minutes : timeToMinutes(occurrence.startTime);
-    const to = back ? back.minutes : timeToMinutes(occurrence.endTime);
-    spans.push({ title: occurrence.title, from, to, home: back?.time ?? occurrence.endTime });
+    const start = timeToMinutes(occurrence.startTime);
+    const plain = timeToMinutes(occurrence.endTime);
+    // Is de thuisreis nog niet berekend, dan schatten we hem op de heenreis.
+    // Zonder die schatting geldt de eindtijd als thuiskomst, en dan mag er weer
+    // een leerblok om 17:20 staan terwijl je uit Lelystad nog onderweg bent.
+    const to = back ? back.minutes : plain + (occurrence.travel?.durationMinutes ?? 0);
+    spans.push({
+      title: occurrence.title,
+      from: departure ? departure.minutes : start,
+      to,
+      home: back?.time ?? minutesToClock(to),
+    });
   }
   return spans;
 }
