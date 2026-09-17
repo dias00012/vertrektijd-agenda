@@ -3,6 +3,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Activity, Exam, Settings, Task } from "./types";
 import { normalizeActivity, normalizeExam, normalizeTask } from "./backup";
+import { withRow, type Loaded, type Store } from "./optimistic";
 
 /**
  * Synchronisatie van de volledige agenda met Supabase. Alles staat in één rij
@@ -38,60 +39,122 @@ export interface SyncPayload {
  */
 const TOMBSTONE_DAYS = 180;
 
-/** Haalt de opgeslagen data van een gebruiker op; null wanneer er nog niets staat. */
+/**
+ * Haalt de opgeslagen data op, met de versie van de rij erbij.
+ *
+ * Die versie is `updated_at`, en die wordt gebruikt zoals hij bedoeld is:
+ * straks schrijven we alleen terug als de rij nog precies zo in de database
+ * staat. Zie `src/lib/optimistic.ts` voor waarom dat nodig bleek.
+ */
 export async function pullData(
   supabase: SupabaseClient,
   userId: string,
-): Promise<SyncPayload | null> {
+): Promise<Loaded<SyncPayload | null>> {
   const { data, error } = await supabase
     .from(TABLE)
-    .select("data")
+    .select("data, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!data?.data) return null;
+  const version = (data?.updated_at as string | undefined) ?? null;
+  if (!data?.data) return { data: null, version };
 
   const raw = data.data as Record<string, unknown>;
   // Defensief normaliseren, net als bij import: de app mag niet crashen op
   // onverwachte of oudere data.
   return {
-    settings: (raw.settings as Settings) ?? null,
-    activities: Array.isArray(raw.activities)
-      ? (raw.activities as Record<string, unknown>[]).map(normalizeActivity)
-      : [],
-    tasks: Array.isArray(raw.tasks)
-      ? (raw.tasks as Record<string, unknown>[]).map(normalizeTask)
-      : [],
-    exams: Array.isArray(raw.exams)
-      ? (raw.exams as Record<string, unknown>[]).map(normalizeExam)
-      : [],
-    // Grafstenen van weggegooide items. Ontbreken ze (een rij van voor deze
-    // versie), dan is dat gewoon een lege lijst.
-    deletions: Array.isArray(raw.deletions)
-      ? (raw.deletions as Deletion[]).filter(
-          (entry) => !!entry && typeof entry.id === "string" && typeof entry.at === "string",
-        )
-      : [],
+    version,
+    data: {
+      settings: (raw.settings as Settings) ?? null,
+      activities: Array.isArray(raw.activities)
+        ? (raw.activities as Record<string, unknown>[]).map(normalizeActivity)
+        : [],
+      tasks: Array.isArray(raw.tasks)
+        ? (raw.tasks as Record<string, unknown>[]).map(normalizeTask)
+        : [],
+      exams: Array.isArray(raw.exams)
+        ? (raw.exams as Record<string, unknown>[]).map(normalizeExam)
+        : [],
+      // Grafstenen van weggegooide items. Ontbreken ze (een rij van voor deze
+      // versie), dan is dat gewoon een lege lijst.
+      deletions: Array.isArray(raw.deletions)
+        ? (raw.deletions as Deletion[]).filter(
+            (entry) => !!entry && typeof entry.id === "string" && typeof entry.at === "string",
+          )
+        : [],
+    },
   };
 }
 
-/** Schrijft de volledige data van een gebruiker weg (maakt de rij aan of werkt bij). */
+/**
+ * Schrijft de volledige data weg, maar alleen als de rij nog is zoals je hem
+ * las. `false` betekent: iemand was je voor, er is niets geschreven.
+ *
+ * Hiervoor was dit een botte upsert. De app haalde je agenda op, voegde samen
+ * en schreef terug -- en tussen dat ophalen en dat terugschrijven zat een
+ * gaatje. Schreef je telefoon daar net in, of Claude via de connector, dan was
+ * die wijziging weg. Het samenvoegen maakte dat zeldzaam, niet onmogelijk.
+ */
 export async function pushData(
   supabase: SupabaseClient,
   userId: string,
   payload: SyncPayload,
-): Promise<void> {
-  const { error } = await supabase.from(TABLE).upsert(
-    {
-      user_id: userId,
-      data: payload,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
+  version: string | null,
+): Promise<boolean> {
+  const row = { data: payload, updated_at: new Date().toISOString() };
+
+  // Nog geen rij: invoegen. Bestaat hij ondertussen toch -- een tweede apparaat
+  // was net iets eerder -- dan botst de sleutel, en dat is het sein om het over
+  // te doen, geen fout om de gebruiker mee lastig te vallen.
+  if (version === null) {
+    const { error } = await supabase.from(TABLE).insert({ user_id: userId, ...row });
+    if (!error) return true;
+    if (error.code === "23505") return false;
+    throw new Error(error.message);
+  }
+
+  // `select()` geeft de gewijzigde rijen terug: nul betekent dat `updated_at`
+  // niet meer klopte, en dus dat er iemand tussendoor schreef.
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update(row)
+    .eq("user_id", userId)
+    .eq("updated_at", version)
+    .select("user_id");
 
   if (error) throw new Error(error.message);
+  return (data?.length ?? 0) > 0;
+}
+
+/**
+ * Eén synchronisatieronde: ophalen, samenvoegen, wegschrijven -- en opnieuw
+ * wanneer iemand ertussen kwam.
+ *
+ * `combine` bepaalt wat er met de verse cloudgegevens gebeurt. Dat verschilt
+ * per plek: bij het inloggen kan de lokale agenda van een andere gebruiker
+ * zijn, en dan is de cloud de waarheid.
+ */
+export async function syncOnce(
+  supabase: SupabaseClient,
+  userId: string,
+  local: SyncPayload,
+  combine: (local: SyncPayload, remote: SyncPayload | null) => SyncPayload,
+  tries?: number,
+): Promise<{ merged: SyncPayload; remote: SyncPayload | null }> {
+  const store: Store<SyncPayload | null> = {
+    load: () => pullData(supabase, userId),
+    save: (data, version) => pushData(supabase, userId, data as SyncPayload, version),
+  };
+
+  return withRow(
+    store,
+    (remote) => {
+      const merged = combine(local, remote);
+      return { next: merged, outcome: { merged, remote } };
+    },
+    tries,
+  );
 }
 
 /* --- Samenvoegen van lokaal en cloud (voorkomt dataverlies) ------------- */
