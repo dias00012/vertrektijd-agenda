@@ -133,6 +133,32 @@ export function AccountSection() {
                 ? `⚠️ ${t("account.syncFailed", { error: sync.error ?? "" })}`
                 : `✓ ${t("account.syncOk")}`}
           </p>
+          {/*
+            Ophalen gebeurt bij het openen en bij terugkomen in de app, maar dat
+            is niet hetzelfde als kunnen zien dát het gebeurt. Wie twee
+            apparaten heeft wil kunnen drukken en zien dat het gelukt is --
+            anders blijft "sluit de app en open hem opnieuw" het advies.
+          */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={sync.status === "syncing"}
+              onClick={() => sync.now()}
+            >
+              {sync.status === "syncing" ? t("account.syncing") : `↻ ${t("account.syncNow")}`}
+            </button>
+            <span className="text-xs" style={{ color: "var(--muted)" }}>
+              {sync.lastSyncedAt
+                ? t("account.syncedAt", {
+                    when: new Date(sync.lastSyncedAt).toLocaleTimeString(undefined, {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                  })
+                : t("account.syncNever")}
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn btn-ghost" onClick={() => void signOut()}>
               {t("account.logout")}

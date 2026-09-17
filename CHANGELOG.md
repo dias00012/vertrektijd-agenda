@@ -8,6 +8,21 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.65.0
+
+- **Een knop "Nu synchroniseren".** Bij **Instellingen -> Account &
+  synchronisatie**, met daarnaast het tijdstip waarop er voor het laatst is
+  opgehaald.
+
+  De app haalt uit zichzelf op bij openen en bij terugkomen, maar dat is niet
+  hetzelfde als kunnen zien dát het gebeurt. Wie twee apparaten heeft wil
+  kunnen drukken en zien dat het gelukt is -- anders blijft "sluit de app en
+  open hem opnieuw" het advies, en dat is geen advies maar een omweg.
+
+  De knop doet dezelfde ronde als bij het inloggen: ophalen, samenvoegen met
+  wat hier staat, en het geheel terugschrijven. Hij slaat de wachttijd van de
+  automatische verversing over.
+
 ## 0.64.0
 
 - **Een mislukte reisberekening werd voor altijd geblokkeerd.** Dit is het
