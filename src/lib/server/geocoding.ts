@@ -202,7 +202,7 @@ async function geocodeNominatim(
     const rawName = item.name?.trim() ?? "";
     const numberOnly = /^\d+[a-zA-Z]?$/.test(rawName);
     // Ontbreekt de straat in de adresgegevens, dan staat hij meestal nog wel
-    // in de volledige omschrijving ("184, Donaustraat, Lelystad, ..."). Zonder
+    // in de volledige omschrijving ("184, Voorbeeldweg, Lelystad, ..."). Zonder
     // deze regel heet zo'n bestemming gewoon "184, Lelystad", en dan zie je
     // niet dat je een zwakke match hebt gekozen die honderden meters naast je
     // voordeur kan liggen — je merkt het pas aan een looptijd die niet klopt.

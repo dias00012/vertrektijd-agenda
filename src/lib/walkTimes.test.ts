@@ -8,7 +8,7 @@ const klok = (tijd: string) => Date.parse(`2026-09-11T${tijd}:00.000Z`);
 const iso = (ms: number) => new Date(ms).toISOString();
 
 /**
- * De rit uit Almere naar de Donaustraat in Lelystad, zoals de planner hem
+ * De rit uit Almere naar de Voorbeeldweg in Lelystad, zoals de planner hem
  * geeft: lopen naar het station, de trein, overstappen op de bus, en het
  * loopstuk vanaf halte Palazzo waar de kaart de mist in gaat.
  *

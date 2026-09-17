@@ -5,8 +5,8 @@
  * antwoorden zien, zodat te zien is of een bus wel of niet in de gegevens zit.
  * Draaien met netwerk: node scripts/reis-check.mjs "van" "naar" [tijd]
  *
- *   node scripts/reis-check.mjs "Gran Canariastraat 60, Almere" \
- *     "Donaustraat 184, Lelystad" 2026-09-07T06:00
+ *   node scripts/reis-check.mjs "Stationsplein 1, Almere" \
+ *     "Stationsplein 1, Lelystad" 2026-09-07T06:00
  *
  * Zonder argumenten pakt hij het voorbeeld hierboven.
  */
@@ -18,8 +18,8 @@ const AGENT =
   process.env.NOMINATIM_USER_AGENT?.trim() || "VertrektijdAgenda/dev (reis-check)";
 
 const [, , fromArg, toArg, timeArg] = process.argv;
-const FROM = fromArg ?? "Gran Canariastraat 60, Almere";
-const TO = toArg ?? "Donaustraat 184, Lelystad";
+const FROM = fromArg ?? "Stationsplein 1, Almere";
+const TO = toArg ?? "Stationsplein 1, Lelystad";
 const TIME = timeArg ? new Date(timeArg) : new Date();
 
 async function get(url) {

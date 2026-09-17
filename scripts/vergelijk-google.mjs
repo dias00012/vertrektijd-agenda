@@ -32,14 +32,14 @@ const MAX_WALK_SECONDS = 20 * 60;
 const MAX_DIRECT_SECONDS = 45 * 60;
 
 const RITTEN = [
-  ["Gran Canariastraat 60, Almere", "Donaustraat 184, Lelystad"],
-  ["Gran Canariastraat 60, Almere", "Hospitaaldreef 5, Almere"],
-  ["Gran Canariastraat 60, Almere", "Stationsplein 49, Utrecht"],
-  ["Gran Canariastraat 60, Almere", "Evert van de Beekstraat 202, Schiphol"],
-  ["Donaustraat 184, Lelystad", "Grote Markt 1, Zwolle"],
-  ["Gran Canariastraat 60, Almere", "Kerkstraat 1, Marken"],
+  ["Stationsplein 1, Almere", "Stationsplein 1, Lelystad"],
+  ["Stationsplein 1, Almere", "Hospitaaldreef 5, Almere"],
+  ["Stationsplein 1, Almere", "Stationsplein 49, Utrecht"],
+  ["Stationsplein 1, Almere", "Evert van de Beekstraat 202, Schiphol"],
+  ["Stationsplein 1, Lelystad", "Grote Markt 1, Zwolle"],
+  ["Stationsplein 1, Almere", "Kerkstraat 1, Marken"],
   ["Stationsplein 1, Amersfoort", "Neude 11, Utrecht"],
-  ["Donaustraat 184, Lelystad", "Gran Canariastraat 60, Almere"],
+  ["Stationsplein 1, Lelystad", "Stationsplein 1, Almere"],
 ];
 
 async function get(url, opties = {}) {

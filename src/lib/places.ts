@@ -20,7 +20,7 @@ export function missesStreet(location: Pick<GeoLocation, "label"> | null): boole
   if (!location) return false;
   const first = location.label.split(",")[0]?.trim() ?? "";
   if (!first) return false;
-  // Een naam als "Basic-Fit" of "Gran Canariastraat 60" bevat een straat; een
+  // Een naam als "Basic-Fit" of "Voorbeeldstraat 1" bevat een straat; een
   // kaal huisnummer als "60", "184A" of "184-A" niet. Let op de straatnamen die
   // met een cijfer beginnen ("1e Kruisstraat"): daar staat meer achter, dus die
   // vallen buiten dit patroon.

@@ -495,3 +495,12 @@ npm test
 
 Vitest draait de tests over tijdrekenen, herhalingen, vertrek-/thuiskomsttijd en
 de sync-samenvoeging. Draai ze voordat je iets pusht.
+
+**Geen echte adressen in tests, commentaar of documentatie.** Het is verleidelijk
+om je eigen huis en werk als voorbeeld te nemen — ze zijn bij de hand en ze
+kloppen. Maar een testbestand blijft staan, en een repo wordt ooit gedeeld of
+verkocht; dan staat er in de geschiedenis waar iemand woont, werkt en sport.
+Gebruik `Voorbeeldstraat`, `Voorbeeldweg`, `Voorbeeldlaan` met de plaatsnaam en
+de coördinaten die je nodig hebt: de reistijden rekenen op de coördinaten, dus de
+test betekent precies hetzelfde. De scripts in `scripts/` geocoderen wel echt en
+staan daarom standaard op een stationsplein — een openbare plek is van niemand.

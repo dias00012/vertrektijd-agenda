@@ -35,8 +35,8 @@ describe("parsePoint", () => {
 describe("toGeocodeResults", () => {
   const adres = {
     type: "adres",
-    weergavenaam: "Donaustraat 184, 8226LL Lelystad",
-    straatnaam: "Donaustraat",
+    weergavenaam: "Voorbeeldweg 184, 8226LL Lelystad",
+    straatnaam: "Voorbeeldweg",
     huis_nlt: "184",
     postcode: "8226LL",
     woonplaatsnaam: "Lelystad",
@@ -48,8 +48,8 @@ describe("toGeocodeResults", () => {
     const [result] = toGeocodeResults({ response: { docs: [adres] } }, 5);
 
     expect(result).toMatchObject({
-      name: "Donaustraat 184",
-      label: "Donaustraat 184, Lelystad",
+      name: "Voorbeeldweg 184",
+      label: "Voorbeeldweg 184, Lelystad",
       lat: 52.51683,
       lon: 5.47139,
     });
@@ -72,8 +72,8 @@ describe("toGeocodeResults", () => {
       5,
     );
 
-    expect(result.name).toBe("Donaustraat");
-    expect(result.label).toBe("Donaustraat, Lelystad");
+    expect(result.name).toBe("Voorbeeldweg");
+    expect(result.label).toBe("Voorbeeldweg, Lelystad");
   });
 
   it("slaat resultaten zonder bruikbaar punt over", () => {
