@@ -851,10 +851,11 @@ export interface SchoolworkResult {
 }
 
 const STATUSES = ["todo", "doing", "done"];
+const PRIORITIES = ["high", "medium", "low", "later"];
 
 /**
- * Huiswerk bijwerken vanuit het gesprek: een stap afvinken of de stand
- * veranderen.
+ * Huiswerk bijwerken vanuit het gesprek: een stap afvinken, de stand
+ * veranderen of de prioriteit bijstellen.
  *
  * Dit is het andere gat. "Ik heb mijn samenvatting van H3 af" is precies wat je
  * tegen een assistent zegt, en tot nu toe kon hij het alleen aanhoren: lezen
@@ -862,9 +863,14 @@ const STATUSES = ["todo", "doing", "done"];
  * moment stond je agenda te liegen -- inclusief de leerblokken die er nog
  * ongestreept bij stonden.
  *
- * Alleen afvinken en de stand; een opdracht aanmaken of weggooien blijft
- * handwerk. Dat is waar de dubbelingen vandaan komen, en een opdracht die je
- * niet kent kun je niet controleren.
+ * De prioriteit hoort er ook bij. Een rooster dat in één keer wordt ingevoerd
+ * zet alles op "hoog", en dan is rood geen signaal meer maar behang: werk van
+ * over drie weken staat er even schreeuwerig bij als wat morgen af moet. Dat
+ * bijstellen is precies het soort werk dat je liever vertelt dan aanklikt.
+ *
+ * Alleen afvinken, de stand en de prioriteit; een opdracht aanmaken of
+ * weggooien blijft handwerk. Dat is waar de dubbelingen vandaan komen, en een
+ * opdracht die je niet kent kun je niet controleren.
  */
 export function updateSchoolwork(
   data: AgendaData,
@@ -878,22 +884,37 @@ export function updateSchoolwork(
   if (status !== null && !STATUSES.includes(status)) {
     return { data, ok: false, reason: `stand moet ${STATUSES.join(", ")} zijn` };
   }
+  const priority = typeof input.priority === "string" ? input.priority : null;
+  if (priority !== null && !PRIORITIES.includes(priority)) {
+    return { data, ok: false, reason: `prioriteit moet ${PRIORITIES.join(", ")} zijn` };
+  }
 
   if (typeof input.examId === "string") {
     const exam = data.exams.find((item) => item.id === input.examId);
     if (!exam) return { data, ok: false, reason: `geen toets met id ${input.examId}` };
-    if (!status) return { data, ok: false, reason: "een toets heeft alleen een stand" };
+    if (!status && !priority) {
+      return { data, ok: false, reason: "een toets heeft alleen een stand en een prioriteit" };
+    }
     return {
       data: {
         ...data,
         exams: data.exams.map((item) =>
           item.id === exam.id
-            ? { ...item, status: status as Exam["status"], updatedAt: at }
+            ? {
+                ...item,
+                status: (status as Exam["status"]) ?? item.status,
+                priority: (priority as Exam["priority"]) ?? item.priority,
+                updatedAt: at,
+              }
             : item,
         ),
       },
       ok: true,
-      note: `${exam.subject} staat nu op "${status}"`,
+      note:
+        `${exam.subject}: ` +
+        [status ? `stand "${status}"` : null, priority ? `prioriteit "${priority}"` : null]
+          .filter(Boolean)
+          .join(", "),
     };
   }
 
@@ -921,8 +942,12 @@ export function updateSchoolwork(
   if (unknown.length > 0) {
     return { data, ok: false, reason: `deze stappen bestaan niet: ${unknown.join(", ")}` };
   }
-  if (wanted.length === 0 && !status) {
-    return { data, ok: false, reason: "niets om te wijzigen: geef `steps` of `status`" };
+  if (wanted.length === 0 && !status && !priority) {
+    return {
+      data,
+      ok: false,
+      reason: "niets om te wijzigen: geef `steps`, `status` of `priority`",
+    };
   }
 
   // Vink je het laatste hokje af, dan is de opdracht af en zegt hij dat ook --
@@ -941,6 +966,7 @@ export function updateSchoolwork(
               ...item,
               steps: task.steps ? steps : item.steps,
               status: nieuw,
+              priority: (priority as Task["priority"]) ?? item.priority,
               updatedAt: at,
             }
           : item,
@@ -949,6 +975,7 @@ export function updateSchoolwork(
     ok: true,
     note:
       `${task.title}: ${klaar} van ${steps.length} stappen af, stand "${nieuw}"` +
-      (nieuw !== gevraagd ? " (alle stappen af, dus vanzelf op af gezet)" : ""),
+      (nieuw !== gevraagd ? " (alle stappen af, dus vanzelf op af gezet)" : "") +
+      (priority ? `, prioriteit "${priority}"` : ""),
   };
 }
