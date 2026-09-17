@@ -404,6 +404,11 @@ export const nl = {
   "schoolwork.exams": "Toetsen",
   "schoolwork.filterLabel": "Waar wil je naar kijken?",
   "schoolwork.filterAll": "Alles",
+  "schoolwork.filterLate": "Over tijd",
+  // Bewust zonder uitroepteken: het is een feit, geen standje. Wie achterloopt
+  // weet dat meestal zelf al.
+  "schoolwork.lateOne": "Je hebt 1 ding over tijd",
+  "schoolwork.lateMany": "Je hebt {count} dingen over tijd",
   "schoolwork.filterPriority": "Op prioriteit",
   "schoolwork.ofTotal": "{shown} van {total}",
   "schoolwork.noTasks": "Geen opdrachten.",
@@ -1340,6 +1345,9 @@ export const en: Record<TranslationKey, string> = {
   "schoolwork.exams": "Tests",
   "schoolwork.filterLabel": "What do you want to see?",
   "schoolwork.filterAll": "All",
+  "schoolwork.filterLate": "Overdue",
+  "schoolwork.lateOne": "You have 1 item overdue",
+  "schoolwork.lateMany": "You have {count} items overdue",
   "schoolwork.filterPriority": "By priority",
   "schoolwork.ofTotal": "{shown} of {total}",
   "schoolwork.noTasks": "No assignments.",

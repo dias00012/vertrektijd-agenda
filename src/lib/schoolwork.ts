@@ -90,6 +90,25 @@ export function statusAfterSteps(
   return status === "done" ? "doing" : status;
 }
 
+/**
+ * Is dit over tijd?
+ *
+ * Vergelijken op de datumsleutel zelf en niet via `new Date(...)`: die tweede
+ * weg maakt van "2026-09-18" een tijdstip om middernacht in een of andere
+ * tijdzone, en dan is werk dat vandaag af moet 's ochtends al te laat. Een
+ * deadline is een dag, geen moment.
+ *
+ * Een afgeronde opdracht is nooit te laat: dat is een verwijt over iets wat je
+ * al gedaan hebt.
+ */
+export function isOverdue(
+  status: SchoolworkStatus,
+  dateKey: string,
+  now: Date = new Date(),
+): boolean {
+  return status !== "done" && dateKey < todayKey(now);
+}
+
 /** Voortgang van een taak op basis van afgevinkte stappen (0 wanneer geen stappen). */
 export function taskProgress(task: Task): { done: number; total: number } {
   const total = task.steps?.length ?? 0;

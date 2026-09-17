@@ -11,6 +11,7 @@ import {
   STATUS_META,
   STATUS_ORDER,
   describeDaysUntil,
+  isOverdue,
   plannedMinutesForExam,
   plannedMinutesForTask,
   plannedProgress,
@@ -26,6 +27,15 @@ import type { Exam, SchoolworkPriority, SchoolworkStatus, Task } from "@/lib/typ
 /** Waar de filterkeuze op dit apparaat bewaard blijft. */
 const FILTER_KEY = "agenda.schoolwerkFilter.v1";
 const PRIO_KEY = "agenda.schoolwerkPrio.v1";
+
+/**
+ * De knoppen van het statusfilter. "late" is geen status maar een eigenschap
+ * van de deadline -- hij staat hier toch tussen omdat je er zo naar kijkt:
+ * "wat moet ik nog doen" en "wat had ik al af moeten hebben" zijn dezelfde
+ * vraag op verschillende momenten.
+ */
+const KEUZES = ["all", "late", "todo", "doing", "done"] as const;
+type Keuze = (typeof KEUZES)[number];
 
 export default function SchoolworkPage() {
   const { tasks, exams, hydrated } = useAgenda();
@@ -53,13 +63,13 @@ export default function SchoolworkPage() {
    * je scrolt er nog steeds langs. De keuze blijft bewaard op dit apparaat --
    * wie op "bezig" staat wil dat morgen meestal nog steeds.
    */
-  const [filter, setFilter] = useState<SchoolworkStatus | "all">("all");
+  const [filter, setFilter] = useState<Keuze>("all");
   const [prio, setPrio] = useState<SchoolworkPriority | "all">("all");
   useEffect(() => {
     try {
       const bewaard = window.localStorage.getItem(FILTER_KEY);
-      if (bewaard === "all" || bewaard === "todo" || bewaard === "doing" || bewaard === "done") {
-        setFilter(bewaard);
+      if (bewaard && (KEUZES as readonly string[]).includes(bewaard)) {
+        setFilter(bewaard as Keuze);
       }
       const bewaardePrio = window.localStorage.getItem(PRIO_KEY);
       if (bewaardePrio && (bewaardePrio === "all" || bewaardePrio in PRIORITY_META)) {
@@ -76,7 +86,7 @@ export default function SchoolworkPage() {
       // Niet kunnen onthouden is geen reden om de keuze niet te maken.
     }
   };
-  const kies = (keuze: SchoolworkStatus | "all") => {
+  const kies = (keuze: Keuze) => {
     setFilter(keuze);
     onthoud(FILTER_KEY, keuze);
   };
@@ -88,8 +98,20 @@ export default function SchoolworkPage() {
   const sortedTasks = sortTasks(tasks);
   const sortedExams = sortExams(exams);
   /** Voldoet dit aan allebei de filters? */
-  const past = (item: { status: SchoolworkStatus; priority: SchoolworkPriority }) =>
-    (filter === "all" || item.status === filter) && (prio === "all" || item.priority === prio);
+  const past = (item: {
+    status: SchoolworkStatus;
+    priority: SchoolworkPriority;
+    deadline?: string;
+    date?: string;
+  }) => {
+    const opStatus =
+      filter === "all"
+        ? true
+        : filter === "late"
+          ? isOverdue(item.status, item.deadline ?? item.date ?? "", now)
+          : item.status === filter;
+    return opStatus && (prio === "all" || item.priority === prio);
+  };
   /** Staat er een filter aan? Dan hoort de kop te zeggen hoeveel je niet ziet. */
   const gefilterd = filter !== "all" || prio !== "all";
   const zichtbareTasks = sortedTasks.filter(past);
@@ -101,11 +123,32 @@ export default function SchoolworkPage() {
    * komt: "Klaar (1)" terwijl je op "hoog" staat en er geen afgeronde hoge
    * opdracht is.
    */
-  const alles = [...tasks, ...exams];
-  const aantal = (status: SchoolworkStatus) =>
-    alles.filter((x) => x.status === status && (prio === "all" || x.priority === prio)).length;
+  const alles = [
+    ...tasks.map((x) => ({ status: x.status, priority: x.priority, dag: x.deadline })),
+    ...exams.map((x) => ({ status: x.status, priority: x.priority, dag: x.date })),
+  ];
+  const aantal = (keuze: Exclude<Keuze, "all">) =>
+    alles.filter(
+      (x) =>
+        (keuze === "late" ? isOverdue(x.status, x.dag, now) : x.status === keuze) &&
+        (prio === "all" || x.priority === prio),
+    ).length;
   const aantalPrio = (p: SchoolworkPriority) =>
-    alles.filter((x) => x.priority === p && (filter === "all" || x.status === filter)).length;
+    alles.filter(
+      (x) =>
+        x.priority === p &&
+        (filter === "all" ||
+          (filter === "late" ? isOverdue(x.status, x.dag, now) : x.status === filter)),
+    ).length;
+
+  /**
+   * Hoeveel er over tijd is, ongeacht welk filter er aanstaat.
+   *
+   * Dit is de vraag die je niet stelt maar wel moet weten. Een deadline die
+   * voorbij is kleurde de datum rood, maar de opdracht stond gewoon tussen de
+   * rest en met dertien opdrachten scrol je eroverheen.
+   */
+  const teLaat = alles.filter((x) => isOverdue(x.status, x.dag, now)).length;
 
   return (
     <div>
@@ -142,14 +185,36 @@ export default function SchoolworkPage() {
         />
       ) : (
         <div className="space-y-8">
+          {teLaat > 0 && filter !== "late" ? (
+            <button
+              type="button"
+              onClick={() => kies("late")}
+              className="-mb-3 flex w-full items-center gap-2 rounded-xl border px-4 py-3 text-left text-sm"
+              style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
+            >
+              <span aria-hidden>&#9888;&#65039;</span>
+              <span className="font-semibold">
+                {teLaat === 1
+                  ? t("schoolwork.lateOne")
+                  : t("schoolwork.lateMany", { count: teLaat })}
+              </span>
+              <span className="ml-auto" aria-hidden>
+                &rarr;
+              </span>
+            </button>
+          ) : null}
+
           <div
             className="flex flex-wrap gap-1.5"
             role="group"
             aria-label={t("schoolwork.filterLabel")}
           >
-            {(["all", "todo", "doing", "done"] as const).map((keuze) => {
+            {KEUZES.map((keuze) => {
               const actief = filter === keuze;
               const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
+              // "Over tijd" alleen tonen als er iets over tijd is; een lege
+              // knop die altijd (0) zegt is ruis.
+              if (keuze === "late" && telling === 0 && !actief) return null;
               return (
                 <button
                   key={keuze}
@@ -163,7 +228,12 @@ export default function SchoolworkPage() {
                     color: actief ? "#fff" : "var(--muted)",
                   }}
                 >
-                  {keuze === "all" ? t("schoolwork.filterAll") : STATUS_META[keuze].label} ({telling})
+                  {keuze === "all"
+                    ? t("schoolwork.filterAll")
+                    : keuze === "late"
+                      ? t("schoolwork.filterLate")
+                      : STATUS_META[keuze].label}{" "}
+                  ({telling})
                 </button>
               );
             })}
@@ -359,7 +429,7 @@ function TaskCard({
   const plannedMinutes = plannedMinutesForTask(activities, task.id);
   const priority = PRIORITY_META[task.priority];
   const progress = taskProgress(task);
-  const overdue = task.status !== "done" && new Date(task.deadline) < new Date(now.toDateString());
+  const overdue = isOverdue(task.status, task.deadline, now);
   const done = task.status === "done";
 
   return (
