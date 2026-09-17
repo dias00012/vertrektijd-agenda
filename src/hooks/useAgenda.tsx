@@ -44,7 +44,7 @@ import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categor
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabase } from "@/lib/supabase";
-import { mergePayload, pullData, pushData, signature, type Deletion } from "@/lib/sync";
+import { mergePayload, signature, syncOnce, type Deletion } from "@/lib/sync";
 import type {
   Activity,
   ActivityDraft,
@@ -1086,27 +1086,28 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const remote = await pullData(supabase, user.id);
-        if (cancelled) return;
-
         // Van wie is wat hier lokaal staat? Uitloggen wist de agenda niet, dus
         // zonder deze controle werd de agenda van de vorige gebruiker — met
         // thuisadres en al — samengevoegd en naar dit account gepusht.
         const owner = loadOwner();
         const someoneElses = owner !== null && owner !== user.id;
 
-        // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
-        // en niets wordt overschreven. Tenzij het lokale spul van een ander
-        // account is: dan is de cloud de waarheid en blijft de agenda van die
-        // ander waar hij hoort, in zijn eigen account.
-        // De gegevens zoals ze nú zijn, niet zoals ze waren toen deze ronde
-        // begon: tijdens het netwerkverkeer kan er van alles bij gekomen zijn.
-        const local = latestData.current;
-        const merged = someoneElses
-          ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
-          : remote
-            ? mergePayload(local, remote)
-            : local;
+        // Ophalen, samenvoegen en terugschrijven in één ronde die zichzelf
+        // overdoet wanneer er ondertussen iemand anders schreef. De gegevens
+        // zoals ze nú zijn, niet zoals ze waren toen deze ronde begon: tijdens
+        // het netwerkverkeer kan er van alles bij gekomen zijn.
+        const { merged } = await syncOnce(supabase, user.id, latestData.current, (local, remote) =>
+          // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
+          // en niets wordt overschreven. Tenzij het lokale spul van een ander
+          // account is: dan is de cloud de waarheid en blijft de agenda van die
+          // ander waar hij hoort, in zijn eigen account.
+          someoneElses
+            ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
+            : remote
+              ? mergePayload(local, remote)
+              : local,
+        );
+        if (cancelled) return;
 
         setActivities(merged.activities);
         setTasks(merged.tasks);
@@ -1120,9 +1121,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           setSettings((current) => ({ ...current, ...merged.settings }));
         }
 
-        // Schrijf het samengevoegde resultaat terug, zodat beide kanten gelijk zijn.
-        await pushData(supabase, user.id, merged);
-        if (cancelled) return;
         saveOwner(user.id);
         setLastSyncedAt(new Date().toISOString());
         setSyncStatus("idle");
@@ -1200,9 +1198,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // wijziging op die telefoon alles wat de laptop had toegevoegd -- en
         // omdat een apparaat alleen bij het openen ophaalt, bleef elk apparaat
         // zijn eigen versie tonen. Twee agenda's op één account.
-        const remote = await pullData(supabase, user.id);
-        const merged = remote ? mergePayload(local, remote) : local;
-        await pushData(supabase, user.id, merged);
+        //
+        // Samenvoegen alleen was niet genoeg: tussen het ophalen en het
+        // schrijven zat nog steeds een gaatje, en daar paste precies één
+        // wijziging van je andere apparaat in. `syncOnce` schrijft alleen als
+        // de rij nog is zoals hij hem las, en doet het anders over.
+        const { merged, remote } = await syncOnce(supabase, user.id, local, (mine, theirs) =>
+          theirs ? mergePayload(mine, theirs) : mine,
+        );
 
         // Wat er van het andere apparaat bij kwam hoort ook hier te staan.
         // Alleen wanneer er echt iets veranderde: anders lokt deze opdracht

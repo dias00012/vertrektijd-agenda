@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BusyError, withAgenda, type AgendaStore, type Loaded } from "./agendaStore";
-import type { AgendaData } from "../agendaTools";
+import { BusyError, withRow, type Loaded, type Store } from "./optimistic";
+import type { AgendaData } from "./agendaTools";
 
 const leeg = (): AgendaData => ({
   settings: null,
@@ -22,8 +22,8 @@ function nepRij(start: AgendaData, voorDeSchrijfPoging?: () => void) {
   let gelukt = 0;
   let geweigerd = 0;
 
-  const store: AgendaStore = {
-    async load(): Promise<Loaded> {
+  const store: Store<AgendaData> = {
+    async load(): Promise<Loaded<AgendaData>> {
       laden += 1;
       return { data: huidig, version: String(versie) };
     },
@@ -61,10 +61,10 @@ const metTitel = (titel: string): AgendaData => ({
   activities: [{ id: titel }] as unknown as AgendaData["activities"],
 });
 
-describe("withAgenda", () => {
+describe("withRow", () => {
   it("schrijft niets wanneer er niets veranderd is", async () => {
     const rij = nepRij(leeg());
-    const antwoord = await withAgenda(rij.store, () => ({ outcome: "alleen gelezen" }));
+    const antwoord = await withRow(rij.store, () => ({ outcome: "alleen gelezen" }));
     expect(antwoord).toBe("alleen gelezen");
     expect(rij.tellers.gelukt).toBe(0);
   });
@@ -73,13 +73,13 @@ describe("withAgenda", () => {
     // Zoals bij een dag die al overgeslagen was: het antwoord is "gelukt",
     // maar er valt niets te schrijven.
     const rij = nepRij(leeg());
-    await withAgenda(rij.store, (data) => ({ next: data, outcome: null }));
+    await withRow(rij.store, (data) => ({ next: data, outcome: null }));
     expect(rij.tellers.gelukt).toBe(0);
   });
 
   it("schrijft een wijziging weg", async () => {
     const rij = nepRij(leeg());
-    await withAgenda(rij.store, () => ({ next: metTitel("nieuw"), outcome: null }));
+    await withRow(rij.store, () => ({ next: metTitel("nieuw"), outcome: null }));
     expect(rij.rij.activities[0].id).toBe("nieuw");
     expect(rij.tellers.gelukt).toBe(1);
   });
@@ -96,7 +96,7 @@ describe("withAgenda", () => {
     });
 
     const gezien: string[] = [];
-    await withAgenda(rij.store, (data) => {
+    await withRow(rij.store, (data) => {
       gezien.push(data.activities[0]?.id ?? "(leeg)");
       return {
         next: { ...data, activities: [...data.activities, { id: "van ons" }] as AgendaData["activities"] },
@@ -115,7 +115,7 @@ describe("withAgenda", () => {
     // er niet staat.
     const rij = nepRij(leeg(), () => rij.ander(metTitel("weer die ander")));
     await expect(
-      withAgenda(rij.store, () => ({ next: metTitel("van ons"), outcome: null })),
+      withRow(rij.store, () => ({ next: metTitel("van ons"), outcome: null })),
     ).rejects.toBeInstanceOf(BusyError);
     expect(rij.tellers).toMatchObject({ laden: 3, gelukt: 0, geweigerd: 3 });
   });

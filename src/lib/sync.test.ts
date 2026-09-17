@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergePayload, signature, type SyncPayload } from "./sync";
+import { BusyError, withRow, type Store } from "./optimistic";
 import { feedActivityId } from "./ical";
 import type { Activity, Settings } from "./types";
 
@@ -402,5 +403,97 @@ describe("twee apparaten op één account", () => {
     const eerder: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
     const later: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-16T08:00:00.000Z")] };
     expect(signature(eerder)).not.toBe(signature(later));
+  });
+});
+
+/**
+ * Twee apparaten die elkaar precies op het verkeerde moment kruisen.
+ *
+ * Samenvoegen alleen was niet genoeg: de app haalde op, voegde samen en schreef
+ * terug, en tussen dat ophalen en dat terugschrijven zat een gaatje. Daar paste
+ * precies één wijziging van je andere apparaat in -- of van Claude via de
+ * connector, en die schrijft sinds vandaag een stuk vaker.
+ */
+describe("schrijven terwijl er iemand anders schrijft", () => {
+  /** De cloudrij, met een teller als versie. */
+  function cloud(start: SyncPayload | null, ertussen?: () => void) {
+    let huidig = start;
+    let versie = 1;
+    let pogingen = 0;
+    let geweigerd = 0;
+
+    const store: Store<SyncPayload | null> = {
+      async load() {
+        return { data: huidig, version: String(versie) };
+      },
+      async save(data, version) {
+        pogingen += 1;
+        ertussen?.();
+        if (version !== String(versie)) {
+          geweigerd += 1;
+          return false;
+        }
+        huidig = data;
+        versie += 1;
+        return true;
+      },
+    };
+
+    return {
+      store,
+      /** Het andere apparaat schrijft ertussendoor. */
+      ander(data: SyncPayload) {
+        huidig = data;
+        versie += 1;
+      },
+      get rij() {
+        return huidig;
+      },
+      get tellers() {
+        return { pogingen, geweigerd };
+      },
+    };
+  }
+
+  /** Eén synchronisatieronde zoals de app hem doet. */
+  const ronde = (store: Store<SyncPayload | null>, local: SyncPayload) =>
+    withRow(store, (remote) => {
+      const merged = remote ? mergePayload(local, remote) : local;
+      return { next: merged, outcome: merged };
+    });
+
+  it("verliest niet wat het andere apparaat er net in zette", () => {
+    const laptop = payload({ activities: [act("a", "Wiskunde", "2026-09-10T10:00:00.000Z")] });
+    const telefoon = payload({ activities: [act("b", "Sporten", "2026-09-10T11:00:00.000Z")] });
+
+    let eenmalig = true;
+    const rij = cloud(payload(), () => {
+      // De telefoon schrijft precies tussen ons ophalen en ons wegschrijven.
+      if (!eenmalig) return;
+      eenmalig = false;
+      rij.ander(telefoon);
+    });
+
+    return ronde(rij.store, laptop).then((merged) => {
+      // Beide staan er. Zonder de versiecontrole was "Sporten" spoorloos.
+      expect(merged.activities.map((a) => a.id).sort()).toEqual(["a", "b"]);
+      expect(rij.rij?.activities.map((a) => a.id).sort()).toEqual(["a", "b"]);
+      expect(rij.tellers).toMatchObject({ pogingen: 2, geweigerd: 1 });
+    });
+  });
+
+  it("schrijft gewoon in één keer wanneer er niemand tussen komt", async () => {
+    const rij = cloud(payload());
+    await ronde(rij.store, payload({ activities: [act("a", "Wiskunde", "2026-09-10T10:00:00.000Z")] }));
+    expect(rij.tellers).toMatchObject({ pogingen: 1, geweigerd: 0 });
+  });
+
+  it("geeft het eerlijk op wanneer het bij elke poging botst", async () => {
+    // Liever een foutmelding dan stilletjes andermans werk overschrijven.
+    const rij = cloud(payload(), () => rij.ander(payload()));
+    await expect(
+      ronde(rij.store, payload({ activities: [act("a", "Wiskunde", "2026-09-10T10:00:00.000Z")] })),
+    ).rejects.toBeInstanceOf(BusyError);
+    expect(rij.tellers.geweigerd).toBe(3);
   });
 });
