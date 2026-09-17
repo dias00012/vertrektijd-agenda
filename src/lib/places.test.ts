@@ -21,8 +21,8 @@ describe("missesStreet", () => {
 
   it("laat een volledig adres met rust", () => {
     for (const label of [
-      "Gran Canariastraat 60, Almere",
-      "Donaustraat 184, Lelystad",
+      "Voorbeeldstraat 1, Almere",
+      "Voorbeeldweg 184, Lelystad",
       "Basic-Fit Almere Buiten",
       "Treinstation Lelystad Centrum",
       "'s-Gravenhage",
@@ -41,7 +41,7 @@ describe("missesStreet", () => {
 /* --- Een adres verbeteren ------------------------------------------------ */
 
 const OUD: GeoLocation = { label: "184, Lelystad", lat: 52.5168, lon: 5.4712 };
-const NIEUW: GeoLocation = { label: "Donaustraat 184, Lelystad", lat: 52.5104, lon: 5.4801 };
+const NIEUW: GeoLocation = { label: "Voorbeeldweg 184, Lelystad", lat: 52.5104, lon: 5.4801 };
 const ELDERS: GeoLocation = { label: "Basic-Fit, Almere", lat: 52.3702, lon: 5.2166 };
 
 function settings(patch: Partial<Settings> = {}): Settings {

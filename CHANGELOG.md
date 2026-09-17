@@ -535,7 +535,7 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 
   Nul keer. Haarlem → Utrecht scheelde 21 minuten, Almere → Utrecht 12,
   Amsterdam → Rotterdam 6. En de rit waar dat oude comment over ging — Almere
-  naar de Donaustraat, met de overstap van het perron in Lelystad Centrum naar
+  naar de Voorbeeldweg, met de overstap van het perron in Lelystad Centrum naar
   de bushalte ernaast — geeft op zes tijdstippen exact dezelfde rit in beide
   standen. Die vlieger ging dus niet meer op.
 
@@ -567,7 +567,7 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
   minuten). Die hoort daar — zichtbaar en zelf te kiezen — en niet verstopt als
   een vaste minuut in elk loopstuk, want zo telde hij dubbel.
 
-  Wat dat scheelt op de rit uit Almere naar de Donaustraat in Lelystad: 53 → 42
+  Wat dat scheelt op de rit uit Almere naar de Voorbeeldweg in Lelystad: 53 → 42
   minuten. 9292 zegt 40. Die laatste twee minuten zijn de 223 meter omweg die in
   [`KAARTFOUTEN.md`](KAARTFOUTEN.md) staat — het verschil met 9292 zit daarmee
   helemaal in de kaart en niet meer in ons model.
@@ -614,7 +614,7 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 ## 0.41.0
 
 - **Waarom onze tijden een minuut langer zijn dan die van 9292 staat nu
-  opgeschreven.** Op de rit naar de Donaustraat in Lelystad loopt de app 916
+  opgeschreven.** Op de rit naar de Voorbeeldweg in Lelystad loopt de app 916
   meter vanaf halte Palazzo, 9292 loopt er 693. Dat is geen rekenfout meer maar
   een verschil in de looproute die uit OpenStreetMap komt, en dat kan de app niet
   zelf rechtzetten: een kortere route verzinnen is precies wat deze app niet
@@ -779,7 +779,7 @@ verschillende antwoorden op dezelfde vraag.
 
 - **Het laatste stukje lopen rekent de app zelf na.** De planner rekende dat
   soms veel trager dan welke loopsnelheid ook. Van de halte Palazzo naar de
-  Donaustraat in Lelystad is het 916 meter, en daar zette hij 18 minuten voor —
+  Voorbeeldweg in Lelystad is het 916 meter, en daar zette hij 18 minuten voor —
   3,1 km/h. Dat is geen loopsnelheid maar een vaste straftijd in zijn
   kaartgegevens: de eerste 211 meter, door de Torenvalktunnel, rekent hij op
   tien minuten, en dat blijft zo wat je ook instelt (zonder instelling 20

@@ -270,7 +270,7 @@ describe("reistijd terug", () => {
     date: "2026-09-16",
     startTime: "09:00",
     endTime: "17:00",
-    location: { label: "Donaustraat 184, Lelystad", lat: 52.5, lon: 5.47 },
+    location: { label: "Voorbeeldweg 184, Lelystad", lat: 52.5, lon: 5.47 },
     travel: {
       durationMinutes: 54,
       distanceKm: 30,
@@ -424,7 +424,7 @@ describe("vrije ruimte", () => {
     date: "2026-09-16",
     startTime: "09:00",
     endTime: "17:00",
-    location: { label: "Donaustraat 184, Lelystad", lat: 52.5, lon: 5.47 },
+    location: { label: "Voorbeeldweg 184, Lelystad", lat: 52.5, lon: 5.47 },
     travel: rit,
     returnTravel: rit,
   } as unknown as Partial<Activity>);
@@ -600,7 +600,7 @@ describe("thuisreis nog niet berekend", () => {
     date: "2026-09-17",
     startTime: "09:00",
     endTime: "17:00",
-    location: { label: "Donaustraat 184, Lelystad", lat: 52.5, lon: 5.47 },
+    location: { label: "Voorbeeldweg 184, Lelystad", lat: 52.5, lon: 5.47 },
     travel: {
       durationMinutes: 54,
       distanceKm: 30,
@@ -694,7 +694,7 @@ describe("heenreis nog niet berekend", () => {
     date: "2026-09-17",
     startTime: "18:15",
     endTime: "19:30",
-    location: { label: "Middachtenlaan 19, Almere", lat: 52.37, lon: 5.24 },
+    location: { label: "Voorbeeldlaan 19, Almere", lat: 52.37, lon: 5.24 },
     travel: null,
     returnTravel: {
       durationMinutes: 20,
@@ -735,7 +735,7 @@ const sporten = (patch: Partial<Activity> = {}): Activity =>
     date: "2026-09-07",
     startTime: "18:15",
     endTime: "19:30",
-    location: { label: "Middachtenlaan 19, Almere", lat: 52.37, lon: 5.24 },
+    location: { label: "Voorbeeldlaan 19, Almere", lat: 52.37, lon: 5.24 },
     recurrence: { freq: "weekly", weekdays: [1], until: null },
     ...patch,
   });
@@ -1073,7 +1073,7 @@ describe("wat read_agenda over de reistijd zegt", () => {
       title: "Sporten",
       startTime: "18:15",
       endTime: "19:30",
-      location: { label: "Middachtenlaan 19, Almere", lat: 52.37, lon: 5.24 },
+      location: { label: "Voorbeeldlaan 19, Almere", lat: 52.37, lon: 5.24 },
       ...patch,
     });
 

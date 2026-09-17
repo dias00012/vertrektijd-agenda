@@ -123,7 +123,7 @@ export function transitParams(query: TransitQuery): URLSearchParams {
      *     over de straat berekend sneller   0
      *
      * Nul keer. En de rit waar dat comment over ging — Almere naar de
-     * Donaustraat, met de overstap van het perron in Lelystad Centrum naar de
+     * Voorbeeldweg, met de overstap van het perron in Lelystad Centrum naar de
      * bushalte ernaast — geeft op zes tijdstippen exact dezelfde rit in beide
      * standen. Wat er wél gebeurde: overstappen over de straat lopen over
      * dezelfde kaart die te traag rekent (zie `walkTimes.ts`), dus een

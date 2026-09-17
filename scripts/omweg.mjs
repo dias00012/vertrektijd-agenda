@@ -24,12 +24,12 @@ const SPEED = 1.4;
 const VERDACHT = 1.5;
 
 const RITTEN = [
-  ["Gran Canariastraat 60, Almere", "Donaustraat 184, Lelystad"],
-  ["Gran Canariastraat 60, Almere", "Hospitaaldreef 5, Almere"],
-  ["Gran Canariastraat 60, Almere", "Stationsplein 49, Utrecht"],
-  ["Donaustraat 184, Lelystad", "Grote Markt 1, Zwolle"],
+  ["Stationsplein 1, Almere", "Stationsplein 1, Lelystad"],
+  ["Stationsplein 1, Almere", "Hospitaaldreef 5, Almere"],
+  ["Stationsplein 1, Almere", "Stationsplein 49, Utrecht"],
+  ["Stationsplein 1, Lelystad", "Grote Markt 1, Zwolle"],
   ["Stationsplein 1, Amersfoort", "Neude 11, Utrecht"],
-  ["Donaustraat 184, Lelystad", "Gran Canariastraat 60, Almere"],
+  ["Stationsplein 1, Lelystad", "Stationsplein 1, Almere"],
   ["Kalverstraat 1, Amsterdam", "Coolsingel 40, Rotterdam"],
   ["Grote Markt 1, Haarlem", "Vredenburg 40, Utrecht"],
   ["Markt 1, Den Bosch", "Grote Markt 1, Groningen"],

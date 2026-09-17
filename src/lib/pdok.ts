@@ -79,7 +79,7 @@ export function toGeocodeResults(data: PdokResponse, limit: number): GeocodeResu
 
     const place = doc.woonplaatsnaam;
     results.push({
-      // Wat je terugziet in je agenda: "Donaustraat 184, Lelystad".
+      // Wat je terugziet in je agenda: "Voorbeeldweg 184, Lelystad".
       label: place && !name.includes(place) ? `${name}, ${place}` : name,
       name,
       context: contextOf(doc, name),

@@ -28,11 +28,11 @@ const AGENT = "VertrektijdAgenda/dev (overstap)";
 const SPEED = 1.4;
 
 const RITTEN = [
-  ["Gran Canariastraat 60, Almere", "Donaustraat 184, Lelystad"],
-  ["Gran Canariastraat 60, Almere", "Stationsplein 49, Utrecht"],
-  ["Gran Canariastraat 60, Almere", "Evert van de Beekstraat 202, Schiphol"],
-  ["Donaustraat 184, Lelystad", "Grote Markt 1, Zwolle"],
-  ["Gran Canariastraat 60, Almere", "Kerkstraat 1, Marken"],
+  ["Stationsplein 1, Almere", "Stationsplein 1, Lelystad"],
+  ["Stationsplein 1, Almere", "Stationsplein 49, Utrecht"],
+  ["Stationsplein 1, Almere", "Evert van de Beekstraat 202, Schiphol"],
+  ["Stationsplein 1, Lelystad", "Grote Markt 1, Zwolle"],
+  ["Stationsplein 1, Almere", "Kerkstraat 1, Marken"],
   ["Kalverstraat 1, Amsterdam", "Coolsingel 40, Rotterdam"],
   ["Grote Markt 1, Haarlem", "Vredenburg 40, Utrecht"],
   ["Markt 1, Den Bosch", "Grote Markt 1, Groningen"],

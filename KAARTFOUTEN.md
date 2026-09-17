@@ -19,9 +19,9 @@ fouten; of er echt iets mis is, blijkt pas uit een blik op de kaart.
 
 ---
 
-## Lelystad, halte Palazzo → Donaustraat
+## Lelystad, halte Palazzo → Voorbeeldweg
 
-**Wat je merkt.** Reis je met bus 207 richting Harderwijk naar de Donaustraat in
+**Wat je merkt.** Reis je met bus 207 richting Harderwijk naar de Voorbeeldweg in
 Lelystad, dan zegt de app dat je 916 meter moet lopen. 9292 zegt 693 meter over
 hetzelfde stuk. Dat scheelt twee minuten op de hele reis — de app zit er dus
 twee minuten naast, aan de veilige kant.
@@ -61,7 +61,7 @@ straftijd zit in de kaartgegevens zelf.
 
 ### 2. De route is 223 meter langer dan die van 9292
 
-Hemelsbreed is het van dat perron naar Donaustraat 184 **606 meter**. Onze route
+Hemelsbreed is het van dat perron naar Voorbeeldweg 184 **606 meter**. Onze route
 is 916 meter (1,5× de rechte lijn), die van 9292 693 meter (1,14× — bijna recht).
 
 Vanaf de tunneluitgang (`52.491769, 5.487261`) is het in rechte lijn nog 542
@@ -99,8 +99,8 @@ curl -s "https://router.project-osrm.org/route/v1/driving/\
 5.485912,52.491467;5.49395117,52.48909172?overview=false" | jq '.routes[0].distance'
 
 # De hele rit, zoals de app hem opvraagt:
-node scripts/reis-check.mjs "Gran Canariastraat 60, Almere" \
-  "Donaustraat 184, Lelystad" 2026-09-11T06:40
+node scripts/reis-check.mjs "Voorbeeldstraat 1, Almere" \
+  "Voorbeeldweg 184, Lelystad" 2026-09-11T06:40
 
 # Alleen het loopstuk vanaf het perron van bus 207:
 curl -s "https://api.transitous.org/api/v6/plan?fromPlace=52.491467,5.485912\
@@ -113,8 +113,8 @@ curl -s "https://api.transitous.org/api/v6/plan?fromPlace=52.491467,5.485912\
 
 De app rekent sinds 0.44.0 elk loopstuk zelf na op de eigen loopsnelheid
 (`src/lib/walkTimes.ts`), waardoor die 18 minuten op 11 uitkomen. De afstand
-blijft die van de kaart: 916 meter. De hele rit van de Gran Canariastraat naar
-de Donaustraat komt daarmee op **42 minuten**, tegen 40 bij 9292. Die twee
+blijft die van de kaart: 916 meter. De hele rit van de Voorbeeldstraat naar
+de Voorbeeldweg komt daarmee op **42 minuten**, tegen 40 bij 9292. Die twee
 minuten zijn precies de 223 meter hierboven (223 m op 5,04 km/h is 2,7 minuten):
 wat er van het verschil met 9292 overblijft, staat dus helemaal in deze
 kaartfout — en de app zit aan de voorzichtige kant.
