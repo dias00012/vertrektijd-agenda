@@ -8,6 +8,28 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.64.0
+
+- **Een mislukte reisberekening werd voor altijd geblokkeerd.** Dit is het
+  antwoord op de vraag waarom een verouderde rit kon blijven staan. Lukte het
+  ophalen van een rit één keer niet, dan ging die op een zwarte lijst -- en die
+  lijst werd alleen geleegd als je opnieuw online kwam of opnieuw inlogde. Ging
+  er dus iets mis terwijl je gewoon verbinding had (de routedienst die even niet
+  wilde), dan bleef de oude vertrektijd staan, wat er ook veranderde.
+
+  Nu krijgt zo'n rit na een kwartier vanzelf een nieuwe kans, en kijkt de app
+  elke vijf minuten of er iets op die lijst staat te wachten. Zonder dat laatste
+  gebeurde er niets zolang je agenda niet veranderde -- precies de situatie
+  waarin je naar een verkeerde vertrektijd zit te kijken.
+
+- **De botsingsmelding gebruikt nu ook de geschatte reistijd.** Was een van
+  beide ritten nog niet berekend, dan gold de begintijd als vertrek, en zag de
+  waarschuwing niet dat je al weg moet terwijl je nog ergens zit.
+
+  Wat hij bewust níét meldt: dat je thuisreis over je heenreis naar de volgende
+  plek valt. Daar is het antwoord "ga rechtstreeks door", en dat is iets wat de
+  app apart bijhoudt -- geen botsing maar een doorreis.
+
 ## 0.63.0
 
 - **Je vertrektijd naar werk stond op 05:42 voor een dag die om 09:00 begint.**
