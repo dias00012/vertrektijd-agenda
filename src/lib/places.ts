@@ -59,7 +59,7 @@ export function placeDisplayName(place: SavedPlace, settings: Settings): string 
   if (place.customName?.trim()) return place.customName.trim();
 
   const labels = categoriesUsingPlace(settings, place.id).map(
-    (id) => resolveCategory(id, settings.customCategories).label,
+    (id) => resolveCategory(id, settings.customCategories, settings.categoryOverrides).label,
   );
   if (labels.length > 0) return labels.join(" · ");
 
@@ -70,7 +70,7 @@ export function placeDisplayName(place: SavedPlace, settings: Settings): string 
 export function placeEmoji(place: SavedPlace, settings: Settings): string {
   const [first] = categoriesUsingPlace(settings, place.id);
   if (!first) return "\u{1F4CD}";
-  return resolveCategory(first, settings.customCategories).emoji;
+  return resolveCategory(first, settings.customCategories, settings.categoryOverrides).emoji;
 }
 
 /** Een snelkeuze in het locatieveld: één tik en je locatie staat er. */

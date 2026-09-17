@@ -34,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   savedPlaces: [],
   categoryPlaces: {},
   customCategories: [],
+  categoryOverrides: {},
   bufferMinutes: 10,
   travelMode: "car",
   transitBike: "none",
@@ -151,6 +152,7 @@ export function loadSettings(): Settings {
     savedPlaces: Array.isArray(stored.savedPlaces) ? stored.savedPlaces : [],
     categoryPlaces: stored.categoryPlaces ?? {},
     customCategories: Array.isArray(stored.customCategories) ? stored.customCategories : [],
+    categoryOverrides: stored.categoryOverrides ?? {},
     calendars: Array.isArray(stored.calendars)
       ? stored.calendars.filter(
           (item): item is CalendarSubscription =>
