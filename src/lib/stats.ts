@@ -54,18 +54,31 @@ function remember(names: Set<string>): void {
   }
 }
 
+/** Wat er nu onderweg is, zodat één keer openen niet twee verzoeken oplevert. */
+const onderweg = new Set<string>();
+
 /**
  * Telt een gebeurtenis. `oncePerDay` is bedoeld voor dingen waar je mensen mee
  * wilt tellen in plaats van handelingen.
+ *
+ * "Vandaag geteld" wordt pas onthouden wanneer de server bevestigt dat er
+ * werkelijk iets is opgehoogd. Eerst gebeurde dat vooraf, en dan is één
+ * mislukte poging genoeg om die dag voorgoed kwijt te zijn: de browser denkt
+ * dat het gebeurd is en probeert het niet meer. Zo ging het ook echt -- de
+ * tabel `app_events` bestond nog niet, de server antwoordde toch "gelukt", en
+ * het dashboard stond op nul terwijl de app de hele dag gebruikt werd.
+ *
+ * Het omgekeerde risico is dat iemand dubbel geteld wordt wanneer de server
+ * het wél deed maar het antwoord onderweg sneuvelt. Dat is een stuk
+ * zeldzamer -- en een telling die er één te veel heeft is minder misleidend
+ * dan een telling die stil op nul blijft staan.
  */
 export function track(name: StatEvent, options: { oncePerDay?: boolean } = {}): void {
   if (typeof window === "undefined") return;
 
   if (options.oncePerDay) {
-    const seen = seenToday();
-    if (seen.has(name)) return;
-    seen.add(name);
-    remember(seen);
+    if (seenToday().has(name) || onderweg.has(name)) return;
+    onderweg.add(name);
   }
 
   // Nooit ergens op wachten en nooit iets kapotmaken: een telling is een
@@ -75,5 +88,17 @@ export function track(name: StatEvent, options: { oncePerDay?: boolean } = {}): 
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
     keepalive: true,
-  }).catch(() => undefined);
+  })
+    .then(async (response) => {
+      if (!options.oncePerDay) return;
+      const payload = (await response.json().catch(() => null)) as { counted?: boolean } | null;
+      if (payload?.counted !== true) return;
+      const seen = seenToday();
+      seen.add(name);
+      remember(seen);
+    })
+    .catch(() => undefined)
+    .finally(() => {
+      onderweg.delete(name);
+    });
 }
