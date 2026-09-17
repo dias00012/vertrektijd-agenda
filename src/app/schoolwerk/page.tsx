@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
-import { getLanguage } from "@/lib/i18n/locale";
-import { translate } from "@/lib/i18n/dictionary";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
 import { SchoolworkForm } from "@/components/SchoolworkForm";
+import { StudyPlanDialog } from "@/components/StudyPlanDialog";
 import {
   PRIORITY_META,
   STATUS_META,
@@ -19,10 +18,9 @@ import {
   sortTasks,
   taskProgress,
 } from "@/lib/schoolwork";
-import { ActivityForm } from "@/components/ActivityForm";
-import { addDaysToKey, formatDateLabel, formatDuration, minutesToTime, todayKey } from "@/lib/time";
+import { formatDateLabel, formatDuration } from "@/lib/time";
 import { EmptyState, Spinner } from "@/components/ui";
-import type { ActivityDraft, Exam, SchoolworkPriority, SchoolworkStatus, Task } from "@/lib/types";
+import type { Exam, SchoolworkPriority, SchoolworkStatus, Task } from "@/lib/types";
 
 /** Schoolwerk: opdrachten op deadline en toetsen op datum, met status en stappen. */
 /** Waar de filterkeuze op dit apparaat bewaard blijft. */
@@ -269,49 +267,10 @@ export default function SchoolworkPage() {
       ) : null}
 
       {planning ? (
-        <ActivityForm
-          preset={studyPreset(planning)}
-          onClose={() => setPlanning(null)}
-        />
+        <StudyPlanDialog item={planning} onClose={() => setPlanning(null)} />
       ) : null}
     </div>
   );
-}
-
-/** Is dit een toets? Alleen toetsen hebben een `date`. */
-function isExam(item: Task | Exam): item is Exam {
-  return "date" in item;
-}
-
-/**
- * Het leerblok dat we voorstellen bij een opdracht of toets: op de dag ervoor,
- * 's middags, met de geschatte tijd als lengte. Alles blijft aanpasbaar; dit is
- * een startpunt, geen beslissing.
- */
-function studyPreset(item: Task | Exam): Partial<ActivityDraft> {
-  const exam = isExam(item);
-  const deadline = exam ? item.date : item.deadline;
-  const minutes = (exam ? item.prepMinutes : item.estimatedMinutes) ?? 60;
-
-  // Kort voor de deadline, maar niet in het verleden.
-  const dayBefore = addDaysToKey(deadline, -1);
-  const date = dayBefore < todayKey() ? todayKey() : dayBefore;
-
-  const start = 15 * 60;
-  return {
-    category: "school",
-    title: exam
-      ? translate(getLanguage(), "schoolwork.studyForExam", { subject: item.subject })
-      : translate(getLanguage(), "schoolwork.workOn", { title: item.title }),
-    date,
-    startTime: minutesToTime(start),
-    endTime: minutesToTime(start + Math.min(minutes, 8 * 60)),
-    // Leren doe je thuis; geen locatie betekent ook geen reistijd.
-    location: null,
-    source: "leerplan",
-    linkedTaskId: exam ? null : item.id,
-    linkedExamId: exam ? item.id : null,
-  };
 }
 
 function StatusControl({

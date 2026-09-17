@@ -1,7 +1,24 @@
 import { activitiesOnDate, clashesOnDate } from "./agenda";
 import { normalizeActivity } from "./backup";
-import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
-import { bufferFor, computeDeparture, computeReturn } from "./travel";
+import {
+  DAY_STARTS,
+  MIN_GAP,
+  MOVABLE,
+  PLAN_UNTIL,
+  awaySpans,
+  freeOnDate,
+  movableOnDate,
+} from "./planning";
+import type { FreeSlot, MovableBlock } from "./planning";
+import {
+  addDaysToKey,
+  daysBetween,
+  isDateKey,
+  minutesToTime,
+  timeToMinutes,
+  todayKey,
+} from "./time";
+import { computeDeparture, computeReturn } from "./travel";
 import { activityMinutes } from "./schoolwork";
 import type { Activity, Exam, Settings, Task } from "./types";
 
@@ -41,29 +58,6 @@ const MAX_DAYS = 62;
 
 /** Hoeveel activiteiten er in één keer bewaard mogen worden. */
 const MAX_SAVE = 100;
-
-/**
- * Het venster waarbinnen een planner iets mag voorstellen.
- *
- * Niet omdat de agenda daarbuiten leeg is, maar omdat een planning die om
- * 23:00 nog een uur schoolwerk neerzet geen planning is maar een wens. De
- * grens hoort bij de gebruiker, niet bij het model -- vandaar dat hij in het
- * antwoord meegaat, zodat je hem kunt zien en erover kunt praten.
- */
-const DAY_STARTS = 7 * 60;
-const PLAN_UNTIL = 22 * 60;
-
-/** Korter dan dit is geen werkblok maar een gaatje. */
-const MIN_GAP = 20;
-
-/**
- * Categorieën die mogen wijken als het krap wordt.
- *
- * Alleen als vóórstel: gamen en lezen zijn te verzetten, maar of dat vanavond
- * ook mag is niet aan een planner. En "Gitaar les" staat in diezelfde categorie
- * terwijl die juist vastligt -- reden te meer om het altijd te vragen.
- */
-const MOVABLE = ["hobby"];
 
 const WEEKDAYS = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
 
@@ -108,22 +102,6 @@ interface ReadActivity {
   linkedExamId?: string;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring?: boolean;
-}
-
-/** Een gat waarin echt iets past: thuis, wakker, en niets anders gepland. */
-interface FreeSlot {
-  from: string;
-  to: string;
-  minutes: number;
-}
-
-/** Een blok dat zou kunnen wijken, als de gebruiker dat goedvindt. */
-interface MovableBlock {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  minutes: number;
 }
 
 interface ReadDay {
@@ -192,85 +170,6 @@ export interface ReadResult {
     status: string;
     topics?: string[];
   }[];
-}
-
-/**
- * De dag als bezette stukken: alles waarin je niet thuis aan iets anders kunt
- * zitten. Een uitstapje telt van vertrek tot thuiskomst, niet van begin tot
- * eind -- dat verschil was precies wat er miste.
- */
-function busyOnDate(data: AgendaData, date: string): { from: number; to: number }[] {
-  // De uitstapjes komen uit `awaySpans`, precies dezelfde berekening die
-  // `save_activities` gebruikt om een onmogelijk blok te weigeren. Twee
-  // rekensommen naast elkaar lopen na één aanpassing uit de pas -- dat gebeurde
-  // hier ook echt, en een test ving het.
-  const spans: { from: number; to: number }[] = awaySpans(data, date).map((span) => ({
-    from: span.from,
-    to: span.to,
-  }));
-
-  for (const occurrence of activitiesOnDate(data.activities, date)) {
-    if (occurrence.allDay || occurrence.location) continue;
-    const start = timeToMinutes(occurrence.startTime);
-    const end = timeToMinutes(occurrence.endTime);
-    spans.push({ from: start, to: end < start ? end + 1440 : end });
-  }
-
-  // Samenvoegen wat elkaar raakt, zodat er geen schijngaatjes overblijven
-  // tussen twee blokken die op elkaar aansluiten.
-  spans.sort((a, b) => a.from - b.from);
-  const merged: { from: number; to: number }[] = [];
-  for (const span of spans) {
-    const last = merged[merged.length - 1];
-    if (last && span.from <= last.to) last.to = Math.max(last.to, span.to);
-    else merged.push({ ...span });
-  }
-  return merged;
-}
-
-/** Wat er overblijft binnen het venster waarin een planner mag voorstellen. */
-function freeOnDate(data: AgendaData, date: string): FreeSlot[] {
-  const slots: FreeSlot[] = [];
-  let cursor = DAY_STARTS;
-  for (const span of busyOnDate(data, date)) {
-    if (span.to <= cursor) continue;
-    if (span.from > cursor) {
-      const to = Math.min(span.from, PLAN_UNTIL);
-      if (to - cursor >= MIN_GAP) {
-        slots.push({ from: minutesToClock(cursor), to: minutesToClock(to), minutes: to - cursor });
-      }
-    }
-    cursor = Math.max(cursor, span.to);
-    if (cursor >= PLAN_UNTIL) return slots;
-  }
-  if (PLAN_UNTIL - cursor >= MIN_GAP) {
-    slots.push({
-      from: minutesToClock(cursor),
-      to: minutesToClock(PLAN_UNTIL),
-      minutes: PLAN_UNTIL - cursor,
-    });
-  }
-  return slots;
-}
-
-/** De blokken die zouden kunnen wijken; alleen om voor te stellen. */
-function movableOnDate(data: AgendaData, date: string): MovableBlock[] {
-  return activitiesOnDate(data.activities, date)
-    .filter((item) => !item.allDay && !item.location && MOVABLE.includes(item.category))
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      minutes: activityMinutes(item),
-    }));
-}
-
-/** Minuten sinds middernacht als kloktijd; loopt netjes over middernacht heen. */
-function minutesToClock(minutes: number): string {
-  const wrapped = ((minutes % 1440) + 1440) % 1440;
-  const hours = Math.floor(wrapped / 60);
-  return `${String(hours).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
 }
 
 /**
@@ -445,8 +344,8 @@ export function readAgenda(
     result.push({
       date,
       weekday: WEEKDAYS[new Date(`${date}T12:00:00`).getDay()],
-      free: freeOnDate(data, date),
-      movable: movableOnDate(data, date),
+      free: freeOnDate(data.activities, settings, date),
+      movable: movableOnDate(data.activities, date),
       clashes: clashesForDay(data, date),
       activities: occurrences.map((occurrence) => {
         const entry: ReadActivity = {
@@ -481,7 +380,7 @@ export function readAgenda(
           // als thuiskomst geldt, en dat is de fout waar het om begonnen was.
           // Dan liever de heenreis als schatting, met een vlag erbij.
           const minutes = timeToMinutes(occurrence.endTime) + occurrence.travel.durationMinutes;
-          entry.backHome = minutesToClock(minutes);
+          entry.backHome = minutesToTime(minutes);
           entry.returnMinutes = occurrence.travel.durationMinutes;
           entry.backHomeEstimated = true;
         }
@@ -505,8 +404,8 @@ export function readAgenda(
       travelMode: settings?.travelMode ?? "car",
     },
     rules: {
-      planFrom: minutesToClock(DAY_STARTS),
-      planUntil: minutesToClock(PLAN_UNTIL),
+      planFrom: minutesToTime(DAY_STARTS),
+      planUntil: minutesToTime(PLAN_UNTIL),
       minimumMinutes: MIN_GAP,
       movableCategories: MOVABLE,
       note:
@@ -570,62 +469,6 @@ export interface SaveResult {
 }
 
 /**
- * Activiteiten bewaren: bestaat de id al, dan wordt die bijgewerkt, anders komt
- * er een nieuwe bij. Dat is hetzelfde als wat "importeren → samenvoegen" doet,
- * zodat verplaatsen precies zo werkt als de planner verwacht: stuur hetzelfde
- * blok met dezelfde id en een andere tijd terug.
- *
- * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
- * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
- */
-/**
- * Wanneer je die dag van huis bent, per uitstapje: van het moment dat je
- * vertrekt tot het moment dat je weer binnenstapt.
- *
- * Dit is het venster waarin een blok thuis niet kan bestaan. Precies daar ging
- * het mis: een planner ziet "werken tot 17:00" en zet er om 17:20 een leerblok
- * achter, terwijl de terugreis uit Lelystad bijna een uur duurt.
- */
-interface AwaySpan {
-  title: string;
-  /** Minuten sinds middernacht; kan negatief zijn bij vertrek de dag ervoor. */
-  from: number;
-  /** Minuten sinds middernacht; kan boven 1440 uitkomen. */
-  to: number;
-  /** Thuiskomst als kloktijd, voor de uitleg aan de planner. */
-  home: string;
-}
-
-function awaySpans(data: AgendaData, date: string, exclude?: string): AwaySpan[] {
-  const settings = data.settings;
-  if (!settings) return [];
-  const spans: AwaySpan[] = [];
-  for (const occurrence of activitiesOnDate(data.activities, date)) {
-    if (occurrence.id === exclude) continue;
-    if (!occurrence.location || occurrence.allDay) continue;
-    const departure = computeDeparture(occurrence, settings);
-    const back = computeReturn(occurrence, settings);
-    const start = timeToMinutes(occurrence.startTime);
-    const plain = timeToMinutes(occurrence.endTime);
-    // Is een van beide reizen nog niet berekend, dan houden we de andere aan
-    // als schatting. Zonder die schatting geldt de begintijd als vertrek en de
-    // eindtijd als thuiskomst -- alsof je je er heen denkt. Dan mag er weer een
-    // leerblok van 21 minuten staan in het kwartier dat je naar de sportschool
-    // fietst, of eentje om 17:20 terwijl je uit Lelystad nog onderweg bent.
-    const heen = occurrence.travel?.durationMinutes ?? occurrence.returnTravel?.durationMinutes ?? 0;
-    const terug = occurrence.returnTravel?.durationMinutes ?? occurrence.travel?.durationMinutes ?? 0;
-    const to = back ? back.minutes : plain + terug;
-    spans.push({
-      title: occurrence.title,
-      from: departure ? departure.minutes : start - heen - bufferFor(occurrence, settings),
-      to,
-      home: back?.time ?? minutesToClock(to),
-    });
-  }
-  return spans;
-}
-
-/**
  * Hetzelfde blok dat er al staat: zelfde dag, zelfde begintijd, zelfde titel.
  *
  * Een planner die twee keer draait stuurt twee keer dezelfde blokken op, en
@@ -643,6 +486,15 @@ function sameBlock(activities: Activity[], date: string, startTime: string, titl
   );
 }
 
+/**
+ * Activiteiten bewaren: bestaat de id al, dan wordt die bijgewerkt, anders komt
+ * er een nieuwe bij. Dat is hetzelfde als wat "importeren → samenvoegen" doet,
+ * zodat verplaatsen precies zo werkt als de planner verwacht: stuur hetzelfde
+ * blok met dezelfde id en een andere tijd terug.
+ *
+ * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
+ * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
+ */
 export function saveActivities(
   data: AgendaData,
   raw: unknown,
@@ -707,7 +559,7 @@ export function saveActivities(
     if (!normalized.allDay && !normalized.location) {
       const start = timeToMinutes(normalized.startTime);
       const end = timeToMinutes(normalized.endTime);
-      const clash = awaySpans(data, normalized.date, normalized.id).find(
+      const clash = awaySpans(data.activities, data.settings, normalized.date, normalized.id).find(
         (span) => start < span.to && end > span.from,
       );
       if (clash) {
