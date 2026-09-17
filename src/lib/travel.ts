@@ -463,6 +463,13 @@ export interface ReturnInfo {
  * om een schatting van je thuiskomst op te rekken. Bij OV komt de aankomst uit
  * de geplande rit.
  */
+/**
+ * Hoeveel langer dan de rit zelf een geplande thuiskomst mag uitvallen voor we
+ * hem nog geloven. Ruim genoeg voor wachten op de volgende verbinding, krap
+ * genoeg om een rit van gisteren te herkennen.
+ */
+const STALE_MARGIN = 180;
+
 export function computeReturn(
   activity: ActivityOccurrence,
   settings: Settings,
@@ -484,7 +491,20 @@ export function computeReturn(
   if (activity.returnTravel.plannedArrival) {
     const arrival = localMinutes(activity.returnTravel.plannedArrival);
     // Wikkelt de aankomst over middernacht, dan tellen we een dag op.
-    const minutes = arrival < endMinutes ? arrival + MINUTES_PER_DAY : arrival;
+    //
+    // Maar alleen als die reis ook een beetje op een reis lijkt. Bij een reeks
+    // staat er één berekende rit voor alle dagen, en die verschuift: dan zegt
+    // de opgeslagen rit "thuis om 15:46" terwijl je tot 17:00 werkt. Geloven we
+    // dat, dan wordt "even over middernacht" opeens een thuisreis van 22 uur,
+    // en verdwijnt de hele avond uit je agenda. Zo'n rit is niet laat maar oud.
+    const wrapped = arrival + MINUTES_PER_DAY - endMinutes;
+    const believable = wrapped <= travelMinutes + STALE_MARGIN;
+    const minutes =
+      arrival >= endMinutes
+        ? arrival
+        : believable
+          ? arrival + MINUTES_PER_DAY
+          : endMinutes + travelMinutes;
     return {
       time: minutesToTime(minutes),
       minutes,

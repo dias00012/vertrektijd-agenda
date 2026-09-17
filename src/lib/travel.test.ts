@@ -273,6 +273,44 @@ describe("computeReturn", () => {
     expect(result?.nextDay).toBe(true);
   });
 
+  it("gelooft een geplande aankomst die net na middernacht valt", () => {
+    // Werken tot 23:30, thuiskomst 00:20: dat is een reis van vijftig minuten
+    // en dus geloofwaardig.
+    const result = computeReturn(
+      activity({
+        endTime: "23:30",
+        returnTravel: travel({
+          durationMinutes: 50,
+          plannedArrival: "2026-09-17T00:20:00+02:00",
+        }),
+      }),
+      settings(),
+    );
+    expect(result?.time).toBe("00:20");
+    expect(result?.nextDay).toBe(true);
+  });
+
+  it("gelooft een opgeslagen rit niet die een thuisreis van uren zou betekenen", () => {
+    // Uit de echte agenda: werken tot 17:00 met een opgeslagen aankomst van
+    // 15:46. Dat is geen late rit maar een oude -- bij een reeks staat er één
+    // berekende rit voor alle dagen. Geloofden we hem, dan werd "even over
+    // middernacht" een thuisreis van 22 uur, en verdween de hele avond uit de
+    // agenda: precies wat er gebeurde.
+    const result = computeReturn(
+      activity({
+        endTime: "17:00",
+        returnTravel: travel({
+          durationMinutes: 42,
+          plannedArrival: "2026-09-16T15:46:00+02:00",
+        }),
+      }),
+      settings(),
+    );
+    expect(result?.time).toBe("17:42");
+    expect(result?.nextDay).toBe(false);
+    expect(result?.minutes).toBe(17 * 60 + 42);
+  });
+
   it("valt terug op de thuisreis als de doorreis nog niet berekend is", () => {
     // De doorreis wordt alleen opgehaald voor de eerstvolgende dag dat een
     // activiteit valt. Kijk je vooruit naar een dag waarop je wél doorreist,

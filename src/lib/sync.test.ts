@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergePayload, type SyncPayload } from "./sync";
+import { mergePayload, signature, type SyncPayload } from "./sync";
 import { feedActivityId } from "./ical";
 import type { Activity, Settings } from "./types";
 
@@ -361,5 +361,46 @@ describe("rooster op twee apparaten", () => {
     };
 
     expect(mergePayload(telefoon, laptop, "2026-09-15T08:00:00.000Z").activities).toHaveLength(0);
+  });
+});
+
+describe("twee apparaten op één account", () => {
+  const leeg: SyncPayload = { settings: null, activities: [], tasks: [], exams: [], deletions: [] };
+
+  it("laat een apparaat dat achterloopt niets wissen", () => {
+    // De situatie die twee verschillende agenda's opleverde: je telefoon stond
+    // een dag open met oude data, je laptop had er ondertussen iets bij gezet.
+    // Schreef die telefoon botweg zijn eigen agenda weg, dan was het werk van
+    // de laptop foetsie. Samenvoegen vóór het wegschrijven houdt allebei.
+    const telefoon: SyncPayload = { ...leeg, activities: [act("oud", "Werken", "2026-09-15T08:00:00.000Z")] };
+    const cloud: SyncPayload = {
+      ...leeg,
+      activities: [
+        act("oud", "Werken", "2026-09-15T08:00:00.000Z"),
+        act("nieuw", "Leerblok van de laptop", "2026-09-16T20:00:00.000Z"),
+      ],
+    };
+
+    const samen = mergePayload(telefoon, cloud, "2026-09-16T21:00:00.000Z");
+    expect(samen.activities.map((item) => item.id).sort()).toEqual(["nieuw", "oud"]);
+  });
+
+  it("ziet aan de vingerafdruk of er iets bij kwam", () => {
+    const local: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
+    const zelfde: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
+    const anders: SyncPayload = {
+      ...leeg,
+      activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z"), act("b", "Leren", "2026-09-16T08:00:00.000Z")],
+    };
+
+    expect(signature(local)).toBe(signature(zelfde));
+    expect(signature(local)).not.toBe(signature(anders));
+  });
+
+  it("merkt ook een wijziging aan hetzelfde blok", () => {
+    // Zelfde id, later gewijzigd: dat is nieuws, ook al verandert het aantal niet.
+    const eerder: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
+    const later: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-16T08:00:00.000Z")] };
+    expect(signature(eerder)).not.toBe(signature(later));
   });
 });
