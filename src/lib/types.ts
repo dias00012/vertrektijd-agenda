@@ -22,6 +22,20 @@ export interface CustomCategory {
   color: string;
 }
 
+/**
+ * Een standaardtype dat je zelf hebt aangepast.
+ *
+ * Alleen wat je veranderd hebt staat erin; de rest komt uit de app. Zo blijft
+ * "Gym" gewoon vertaald meelopen als je alleen de kleur hebt veranderd, en
+ * houdt het type zijn `id` -- daar hangen al je activiteiten aan, en die mogen
+ * niet losraken omdat je iets hernoemt.
+ */
+export interface CategoryOverride {
+  label?: string;
+  emoji?: string;
+  color?: string;
+}
+
 /** Vervoersmiddel. Alleen "car" is in de MVP geimplementeerd. */
 export type TravelMode = "car" | "bike" | "walk" | "transit";
 
@@ -369,6 +383,8 @@ export interface Settings {
   categoryPlaces: Partial<Record<CategoryId, string>>;
   /** Zelfgemaakte activiteitstypes, naast de vijf standaardtypes. */
   customCategories: CustomCategory[];
+  /** Aanpassingen aan de standaardtypes: naam, icoon of kleur. */
+  categoryOverrides?: Partial<Record<CategoryId, CategoryOverride>>;
   /** Veiligheidsmarge in minuten, standaard 10. */
   bufferMinutes: number;
   travelMode: TravelMode;

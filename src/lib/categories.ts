@@ -1,4 +1,4 @@
-import type { Activity, CategoryId, CustomCategory } from "./types";
+import type { Activity, CategoryId, CategoryOverride, CustomCategory } from "./types";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -18,19 +18,39 @@ export interface CategoryMeta {
   locationExpected: boolean;
 }
 
-/** De vijf ingebouwde types. Een functie, want de namen volgen de taal. */
-export function builtinCategories(): CategoryMeta[] {
+/** Alle aanpassingen aan de standaardtypes, per id. */
+export type Overrides = Partial<Record<CategoryId, CategoryOverride>>;
+
+/**
+ * De vijf ingebouwde types. Een functie, want de namen volgen de taal.
+ *
+ * Heb je er zelf iets aan veranderd, dan gaat dat erover heen. Alleen wat je
+ * veranderd hebt: wie de kleur van "Gym" aanpast houdt gewoon de vertaalde
+ * naam, en wie hem "Sporten" noemt houdt die naam ook in de Engelse app --
+ * een naam die je zelf hebt gekozen is geen vertaling maar een besluit.
+ */
+export function builtinCategories(overrides: Overrides = {}): CategoryMeta[] {
   return [
     { id: "school", emoji: "\u{1F3EB}", color: "#3b82f6", locationExpected: true },
     { id: "werk", emoji: "\u{1F4BC}", color: "#64748b", locationExpected: true },
     { id: "gym", emoji: "\u{1F3CB}\u{FE0F}", color: "#22c55e", locationExpected: true },
     { id: "koken", emoji: "\u{1F373}", color: "#f97316", locationExpected: false },
     { id: "hobby", emoji: "\u{1F3AE}", color: "#a855f7", locationExpected: false },
-  ].map((item) => ({
-    ...item,
-    label: word(`category.${item.id}` as TranslationKey),
-    placeholder: word(`category.${item.id}.placeholder` as TranslationKey),
-  }));
+  ].map((item) => {
+    const mine = overrides[item.id] ?? {};
+    return {
+      ...item,
+      label: mine.label?.trim() || word(`category.${item.id}` as TranslationKey),
+      emoji: mine.emoji?.trim() || item.emoji,
+      color: mine.color?.trim() || item.color,
+      placeholder: word(`category.${item.id}.placeholder` as TranslationKey),
+    };
+  });
+}
+
+/** Is dit een van de vijf standaardtypes? */
+export function isBuiltin(id: CategoryId): boolean {
+  return ["school", "werk", "gym", "koken", "hobby"].includes(id);
 }
 
 /**
@@ -58,8 +78,8 @@ function unknownCategory(id: CategoryId): CategoryMeta {
 }
 
 /** Alleen de vijf ingebouwde types. Voor eigen types: `resolveCategory`. */
-export function getCategory(id: CategoryId): CategoryMeta {
-  return builtinCategories().find((item) => item.id === id) ?? unknownCategory(id);
+export function getCategory(id: CategoryId, overrides: Overrides = {}): CategoryMeta {
+  return builtinCategories(overrides).find((item) => item.id === id) ?? unknownCategory(id);
 }
 
 /**
@@ -95,8 +115,11 @@ function toMeta(custom: CustomCategory): CategoryMeta {
 }
 
 /** Alle types die de gebruiker kan kiezen: eerst de standaard, dan de eigen. */
-export function allCategories(custom: CustomCategory[] = []): CategoryMeta[] {
-  return [...builtinCategories(), ...custom.map(toMeta)];
+export function allCategories(
+  custom: CustomCategory[] = [],
+  overrides: Overrides = {},
+): CategoryMeta[] {
+  return [...builtinCategories(overrides), ...custom.map(toMeta)];
 }
 
 /**
@@ -104,8 +127,12 @@ export function allCategories(custom: CustomCategory[] = []): CategoryMeta[] {
  * (meer), dan komt het er neutraal uit — zie `unknownCategory`. De activiteit
  * blijft dus altijd zichtbaar, maar doet zich niet voor als iets anders.
  */
-export function resolveCategory(id: CategoryId, custom: CustomCategory[] = []): CategoryMeta {
-  const builtin = builtinCategories().find((item) => item.id === id);
+export function resolveCategory(
+  id: CategoryId,
+  custom: CustomCategory[] = [],
+  overrides: Overrides = {},
+): CategoryMeta {
+  const builtin = builtinCategories(overrides).find((item) => item.id === id);
   if (builtin) return builtin;
   const own = custom.find((c) => c.id === id);
   return own ? toMeta(own) : unknownCategory(id);

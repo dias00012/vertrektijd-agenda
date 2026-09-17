@@ -135,8 +135,12 @@ verplicht: laat je het leeg, dan is het icoon de eerste letter van de naam in de
 type. Dat is een bewuste keuze — op een laptop is een emoji typen een sneltoets die je moet
 kennen, en wie die niet kende typte maar iets.
 
-Een eigen type kies je en bewerk je daarna via **✎ \<naam\> bewerken** onder de tegels: naam,
-icoon, kleur en weggooien. Gooi je een type weg terwijl er nog activiteiten op staan, dan blijven
+Elk type bewerk je via **✎ \<naam\> bewerken** onder de tegels: naam, icoon en kleur. Dat geldt
+ook voor de vijf standaardtypes — heet "Gym" bij jou "Sporten", dan noem je hem zo. Zo'n
+aanpassing komt als `Settings.categoryOverrides` óver het standaardtype heen en bewaart alleen
+wat je werkelijk veranderd hebt: laat je de naam staan, dan blijft die gewoon meelopen met de
+taal. Het `id` verandert nooit, want daar hangen al je activiteiten aan. **Standaard herstellen**
+zet er weer op wat de app levert. Een standaardtype kun je niet weggooien; een eigen type wel. Gooi je een eigen type weg terwijl er nog activiteiten op staan, dan blijven
 die gewoon bestaan; de app toont zo'n onbekend type neutraal in plaats van het als iets anders
 voor te stellen (zie `unknownCategory` in `src/lib/categories.ts`). Eigen types staan in
 `Settings.customCategories` en werken overal in de app.

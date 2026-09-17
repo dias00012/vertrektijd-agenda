@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { activityColor, activityColors, initialOf, resolveCategory } from "@/lib/categories";
+import {
+  activityColor,
+  activityColors,
+  initialOf,
+  isBuiltin,
+  resolveCategory,
+} from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { addDaysToKey, minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
@@ -77,7 +83,8 @@ function initialDraft(
       location: activity.location,
       // Geen "standaard"-optie meer: toon meteen de kleur en het vervoermiddel
       // die nu gelden, zodat wat je ziet ook is wat er gebeurt.
-      color: activity.color ?? resolveCategory(activity.category, settings.customCategories).color,
+      color: activity.color ?? resolveCategory(activity.category, settings.customCategories, settings.categoryOverrides)
+        .color,
       travelMode: activity.travelMode ?? settings.travelMode,
       recurrence: activity.recurrence,
     };
@@ -93,7 +100,7 @@ function initialDraft(
     startTime: minutesToTime(start),
     endTime: minutesToTime(start + DEFAULT_DURATION_MINUTES),
     location: placeForCategory(settings, category)?.location ?? null,
-    color: resolveCategory(category, settings.customCategories).color,
+    color: resolveCategory(category, settings.customCategories, settings.categoryOverrides).color,
     travelMode: settings.travelMode,
     recurrence: null,
     ...preset,
@@ -113,6 +120,8 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     categoryFor,
     addCustomCategory,
     updateCustomCategory,
+    setCategoryOverride,
+    resetCategoryOverride,
     removeCustomCategory,
     activities,
   } = useAgenda();
@@ -143,9 +152,10 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
    * Hoeveel activiteiten er nog op het te verwijderen type staan. Weggooien mag
    * wel, maar niet zonder te zeggen wat er dan met die activiteiten gebeurt.
    */
-  const onType = editingType
-    ? activities.filter((item) => item.category === editingType).length
-    : 0;
+  const onType =
+    editingType && !isBuiltin(editingType)
+      ? activities.filter((item) => item.category === editingType).length
+      : 0;
   const deleteTypeQuestion =
     onType === 0
       ? t("form.deleteTypeNone")
@@ -153,8 +163,10 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
         ? t("form.deleteTypeOne")
         : t("form.deleteTypeMany", { count: onType });
 
-  /** Het gekozen type, maar alleen wanneer het er een van jezelf is. */
-  const ownSelected = settings.customCategories.find((c) => c.id === draft.category) ?? null;
+  /** Elk type is te bewerken; alleen de weg ernaartoe verschilt. */
+  const selected = categories.find((item) => item.id === draft.category) ?? null;
+  /** Heb je dit standaardtype al eens aangepast? Dan valt er iets te herstellen. */
+  const hasOverride = Boolean(settings.categoryOverrides?.[draft.category]);
   const [newTypeLabel, setNewTypeLabel] = useState("");
   const [newTypeEmoji, setNewTypeEmoji] = useState("");
   const [newTypeColor, setNewTypeColor] = useState("#3b82f6");
@@ -268,7 +280,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     // Koos je de kleur niet zelf, dan volgt hij het type — dat voelt logisch.
     const color = colorTouched.current
       ? draft.color
-      : resolveCategory(categoryId, settings.customCategories).color;
+      : resolveCategory(categoryId, settings.customCategories, settings.categoryOverrides).color;
 
     // Een locatie die je zelf koos blijft staan; een automatisch ingevulde
     // wisselt mee naar de vaste locatie van de nieuwe categorie.
@@ -290,17 +302,32 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     setTypeError(null);
   }
 
-  /** Opent het paneel op een bestaand eigen type. */
+  /**
+   * Opent het paneel op het gekozen type.
+   *
+   * Voor een eigen type staan de eigen waarden er; voor een standaardtype dat
+   * wat je er eerder van gemaakt hebt, en anders hoe de app hem levert. Zo zie
+   * je altijd waar je vandaan komt in plaats van drie lege velden.
+   */
   function startEditingType(id: string) {
+    const meta = categories.find((item) => item.id === id);
+    if (!meta) return;
     const own = settings.customCategories.find((c) => c.id === id);
-    if (!own) return;
     setEditingType(id);
     setCreatingType(true);
     setConfirmDeleteType(false);
-    setNewTypeLabel(own.label);
-    setNewTypeEmoji(own.emoji);
-    setNewTypeColor(own.color);
+    setNewTypeLabel(meta.label);
+    setNewTypeEmoji(own ? own.emoji : (settings.categoryOverrides?.[id]?.emoji ?? meta.emoji));
+    setNewTypeColor(meta.color);
     setTypeError(null);
+  }
+
+  /** Dit standaardtype terug naar hoe de app hem levert. */
+  function restoreType() {
+    if (!editingType) return;
+    resetCategoryOverride(editingType);
+    colorTouched.current = false;
+    closeTypePanel();
   }
 
   /**
@@ -319,7 +346,17 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
       return;
     }
 
-    if (editingType) {
+    if (editingType && isBuiltin(editingType)) {
+      // Alleen bewaren wat je werkelijk anders hebt gemaakt: laat je de naam
+      // staan zoals hij is, dan blijft hij gewoon meelopen met de taal.
+      const standaard = resolveCategory(editingType);
+      setCategoryOverride(editingType, {
+        ...(label === standaard.label ? {} : { label }),
+        ...(emoji === standaard.emoji ? {} : { emoji }),
+        ...(newTypeColor === standaard.color ? {} : { color: newTypeColor }),
+      });
+      if (!colorTouched.current) patch({ color: newTypeColor });
+    } else if (editingType) {
       updateCustomCategory(editingType, { label, emoji, color: newTypeColor });
       // Volgde de kleur van de activiteit het type, dan volgt hij mee.
       if (!colorTouched.current) patch({ color: newTypeColor });
@@ -478,15 +515,15 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               </button>
             </div>
 
-            {ownSelected && !creatingType ? (
+            {selected && !creatingType ? (
               <button
                 type="button"
-                onClick={() => startEditingType(ownSelected.id)}
+                onClick={() => startEditingType(selected.id)}
                 className="mt-2 flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-medium"
                 style={{ borderColor: "var(--line)", color: "var(--muted)" }}
               >
                 <span aria-hidden>&#9998;</span>
-                {t("form.editType", { name: ownSelected.label })}
+                {t("form.editType", { name: selected.label })}
               </button>
             ) : null}
 
@@ -581,7 +618,18 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     {t("common.cancel")}
                   </button>
 
-                  {editingType ? (
+                  {editingType && isBuiltin(editingType) ? (
+                    // Een standaardtype kun je niet weggooien -- dan zou er een
+                    // gat vallen waar al je activiteiten aan hangen. Wel terug.
+                    <button
+                      type="button"
+                      className="btn btn-ghost ml-auto min-h-[2.5rem] px-3 text-xs"
+                      onClick={restoreType}
+                      disabled={!hasOverride}
+                    >
+                      {t("form.restoreType")}
+                    </button>
+                  ) : editingType ? (
                     <button
                       type="button"
                       className="btn btn-ghost ml-auto min-h-[2.5rem] px-3 text-xs"

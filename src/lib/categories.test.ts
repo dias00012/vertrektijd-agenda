@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { allCategories, builtinCategories, getCategory, initialOf, resolveCategory } from "./categories";
+import {
+  allCategories,
+  builtinCategories,
+  getCategory,
+  initialOf,
+  isBuiltin,
+  resolveCategory,
+} from "./categories";
 import type { CustomCategory } from "./types";
 
 const EIGEN: CustomCategory[] = [
@@ -87,5 +94,60 @@ describe("een eigen type zonder icoon", () => {
   it("laat een gekozen icoon met rust", () => {
     const eigen = [{ id: "hw", label: "Huiswerk", emoji: "\u{1F4DA}", color: "#3b82f6" }];
     expect(resolveCategory("hw", eigen).emoji).toBe("\u{1F4DA}");
+  });
+});
+
+describe("een standaardtype dat je zelf hebt aangepast", () => {
+  /*
+   * De vijf standaardtypes lagen vast in de code. "Gym" heet bij de een
+   * Sporten en bij de ander Fitness, en de kleur is smaak. Het `id` blijft
+   * staan -- daar hangen alle activiteiten aan.
+   */
+  it("neemt je eigen naam over", () => {
+    const gym = getCategory("gym", { gym: { label: "Sporten" } });
+    expect(gym.label).toBe("Sporten");
+    expect(gym.id).toBe("gym");
+  });
+
+  it("laat de rest ongemoeid wanneer je alleen de kleur verandert", () => {
+    const standaard = getCategory("gym");
+    const mijn = getCategory("gym", { gym: { color: "#ec4899" } });
+    expect(mijn.color).toBe("#ec4899");
+    expect(mijn.label).toBe(standaard.label);
+    expect(mijn.emoji).toBe(standaard.emoji);
+  });
+
+  it("valt terug op de standaard bij een lege waarde", () => {
+    // Een leeggemaakt veld is geen naam, dus dan weer die van de app.
+    const standaard = getCategory("koken");
+    expect(getCategory("koken", { koken: { label: "   " } }).label).toBe(standaard.label);
+    expect(getCategory("koken", { koken: { emoji: "" } }).emoji).toBe(standaard.emoji);
+  });
+
+  it("raakt de andere types niet", () => {
+    const alle = builtinCategories({ gym: { label: "Sporten" } });
+    expect(alle.map((item) => item.label)).toEqual([
+      getCategory("school").label,
+      getCategory("werk").label,
+      "Sporten",
+      getCategory("koken").label,
+      getCategory("hobby").label,
+    ]);
+  });
+
+  it("werkt ook via resolveCategory en allCategories", () => {
+    const eigen = [{ id: "hw", label: "Huiswerk", emoji: "", color: "#3b82f6" }];
+    expect(resolveCategory("werk", eigen, { werk: { label: "Bijbaan" } }).label).toBe("Bijbaan");
+    expect(allCategories(eigen, { werk: { label: "Bijbaan" } })[1].label).toBe("Bijbaan");
+  });
+});
+
+describe("isBuiltin", () => {
+  it("kent de vijf van de app", () => {
+    expect(["school", "werk", "gym", "koken", "hobby"].every(isBuiltin)).toBe(true);
+  });
+
+  it("herkent een eigen type niet als standaard", () => {
+    expect(isBuiltin("hw")).toBe(false);
   });
 });

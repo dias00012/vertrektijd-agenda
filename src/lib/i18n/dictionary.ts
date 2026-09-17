@@ -486,6 +486,9 @@ export const nl = {
   "form.editType": "{name} bewerken",
   "form.saveType": "Opslaan",
   "form.deleteType": "Verwijderen",
+  // Een standaardtype gooi je niet weg -- dan valt er een gat waar je
+  // activiteiten aan hangen -- maar je zet hem wel terug zoals hij was.
+  "form.restoreType": "Standaard herstellen",
   // Weggooien mag, maar niet zonder te zeggen wat er dan met die activiteiten
   // gebeurt: ze blijven staan, alleen zonder type.
   "form.deleteTypeOne": "Dit type staat nog op 1 activiteit. Die blijft staan, zonder type. Weggooien?",
@@ -1411,6 +1414,7 @@ export const en: Record<TranslationKey, string> = {
   "form.editType": "Edit {name}",
   "form.saveType": "Save",
   "form.deleteType": "Delete",
+  "form.restoreType": "Restore default",
   "form.deleteTypeOne": "This type is still on 1 activity. It stays, without a type. Delete?",
   "form.deleteTypeMany": "This type is still on {count} activities. They stay, without a type. Delete?",
   "form.deleteTypeNone": "Delete this type?",

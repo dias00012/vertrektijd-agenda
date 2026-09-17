@@ -49,6 +49,7 @@ import type {
   Activity,
   ActivityDraft,
   CategoryId,
+  CategoryOverride,
   CustomCategory,
   Exam,
   GeoLocation,
@@ -143,6 +144,10 @@ interface AgendaContextValue {
     id: string,
     patch: { label?: string; emoji?: string; color?: string },
   ) => void;
+  /** Naam, icoon of kleur van een van de vijf standaardtypes wijzigen. */
+  setCategoryOverride: (id: CategoryId, patch: CategoryOverride) => void;
+  /** Dat standaardtype weer terug naar hoe de app het levert. */
+  resetCategoryOverride: (id: CategoryId) => void;
   /** Verwijdert een zelfgemaakt type (bestaande activiteiten blijven staan). */
   removeCustomCategory: (id: string) => void;
   /** Forceert een herberekening, ook als een eerdere poging faalde. */
@@ -844,16 +849,16 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   // opnieuw berekend te worden zodra je van taal wisselt. Zonder `language`
   // hier bleef er "Werk" en "Koken" staan in de Engelse app.
   const categories = useMemo(
-    () => allCategories(settings.customCategories),
+    () => allCategories(settings.customCategories, settings.categoryOverrides),
     // De taal staat niet in de body maar bepaalt wel de uitkomst: `allCategories`
     // leest hem uit de module-brede taalstand.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [settings.customCategories, language],
+    [settings.customCategories, settings.categoryOverrides, language],
   );
 
   const categoryFor = useCallback(
-    (id: CategoryId) => resolveCategory(id, settings.customCategories),
-    [settings.customCategories],
+    (id: CategoryId) => resolveCategory(id, settings.customCategories, settings.categoryOverrides),
+    [settings.customCategories, settings.categoryOverrides],
   );
 
   const addCustomCategory = useCallback(
@@ -886,6 +891,30 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     },
     [],
   );
+
+  /**
+   * Een standaardtype aanpassen: naam, icoon of kleur.
+   *
+   * Het type houdt zijn `id`. Daar hangen al je activiteiten aan, en die mogen
+   * niet losraken omdat je "Gym" liever "Sporten" noemt. We bewaren alleen wat
+   * je veranderd hebt, zodat de rest gewoon meeloopt met de app -- en met de
+   * taal, als je de naam met rust laat.
+   */
+  const setCategoryOverride = useCallback((id: CategoryId, patch: CategoryOverride) => {
+    setSettings((current) => ({
+      ...current,
+      categoryOverrides: { ...current.categoryOverrides, [id]: patch },
+    }));
+  }, []);
+
+  /** Terug naar hoe het type standaard heet en eruitziet. */
+  const resetCategoryOverride = useCallback((id: CategoryId) => {
+    setSettings((current) => {
+      const rest = { ...current.categoryOverrides };
+      delete rest[id];
+      return { ...current, categoryOverrides: rest };
+    });
+  }, []);
 
   const removeCustomCategory = useCallback((id: string) => {
     setSettings((current) => ({
@@ -1228,6 +1257,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       categoryFor,
       addCustomCategory,
       updateCustomCategory,
+      setCategoryOverride,
+      resetCategoryOverride,
       removeCustomCategory,
       retryTravel,
       tasks,
@@ -1269,6 +1300,8 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       categoryFor,
       addCustomCategory,
       updateCustomCategory,
+      setCategoryOverride,
+      resetCategoryOverride,
       removeCustomCategory,
       retryTravel,
       tasks,

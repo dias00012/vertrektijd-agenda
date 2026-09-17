@@ -43,6 +43,20 @@ export default function SettingsPage() {
         </p>
       </header>
 
+      {/*
+        Je account en de rondleiding staan bovenaan, en niet onderaan bij de
+        afdeling "overig" waar ze eerst zaten. Dit zijn de dingen waarvoor je
+        hier komt: je aanmelden op een tweede apparaat, de connector koppelen,
+        een back-up maken, of nog eens nalezen hoe het werkt. De rest is
+        fijnregelen dat je één keer doet.
+      */}
+      <SettingsGroup title={t("settings.group.account")}>
+        <AccountSection />
+        <ConnectorSection />
+        <BackupSection />
+        <IntroSection />
+      </SettingsGroup>
+
       <SettingsGroup title={t("settings.group.travel")}>
         <TravelSection />
         <SavedPlaces />
@@ -57,13 +71,6 @@ export default function SettingsPage() {
       <SettingsGroup title={t("settings.group.look")}>
         <LanguageSection />
         <ThemeSection />
-      </SettingsGroup>
-
-      <SettingsGroup title={t("settings.group.account")}>
-        <AccountSection />
-        <ConnectorSection />
-        <BackupSection />
-        <IntroSection />
       </SettingsGroup>
 
       <p className="mt-6 px-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
