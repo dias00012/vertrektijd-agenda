@@ -8,6 +8,14 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.66.0
+
+- **De app laat nu zien welke versie hij draait**, onderaan Instellingen. Klein,
+  maar het beantwoordt een vraag die je anders niet kúnt beantwoorden: draaien
+  mijn telefoon en mijn laptop wel dezelfde app? Zonder dat is "het werkt bij
+  mij niet" niet te onderscheiden van "dit apparaat heeft de nieuwe versie nog
+  niet opgehaald".
+
 ## 0.65.0
 
 - **Een knop "Nu synchroniseren".** Bij **Instellingen -> Account &
