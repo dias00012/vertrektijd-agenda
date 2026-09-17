@@ -936,6 +936,46 @@ describe("updateSchoolwork", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("zet de prioriteit van een opdracht", () => {
+    const result = updateSchoolwork(
+      data({ tasks: [task({ priority: "high" })] }),
+      { taskId: "t1", priority: "low" },
+      NOW,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.data.tasks[0].priority).toBe("low");
+  });
+
+  it("laat de stand met rust wanneer alleen de prioriteit verandert", () => {
+    const result = updateSchoolwork(
+      data({ tasks: [task({ status: "doing" })] }),
+      { taskId: "t1", priority: "later" },
+      NOW,
+    );
+    expect(result.data.tasks[0].status).toBe("doing");
+  });
+
+  it("weigert een prioriteit die niet bestaat", () => {
+    const result = updateSchoolwork(
+      data({ tasks: [task()] }),
+      { taskId: "t1", priority: "heel erg hoog" },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("prioriteit moet");
+  });
+
+  it("zet de prioriteit van een toets", () => {
+    const result = updateSchoolwork(
+      data({ exams: [exam({ priority: "high" })] }),
+      { examId: "e1", priority: "medium" },
+      NOW,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.data.exams[0].priority).toBe("medium");
+    expect(result.data.exams[0].status).toBe("todo");
+  });
+
   it("zet de stand van een toets", () => {
     const result = updateSchoolwork(data({ exams: [exam()] }), { examId: "e1", status: "done" }, NOW);
     expect(result.ok).toBe(true);
@@ -946,6 +986,7 @@ describe("updateSchoolwork", () => {
     const result = updateSchoolwork(data({ tasks: [task()] }), { taskId: "t1" }, NOW);
     expect(result.ok).toBe(false);
     expect(result.reason).toContain("niets om te wijzigen");
+    expect(result.reason).toContain("priority");
   });
 });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/server/rateLimit";
+import { BusyError, withAgenda, type AgendaStore } from "@/lib/server/agendaStore";
 import { hashConnectorToken, readConnectorToken } from "@/lib/connectorToken";
 import {
   handleMessage,
@@ -203,10 +204,14 @@ const TOOLS: ToolDefinition[] = [
     name: "update_schoolwork",
     title: "Huiswerk bijwerken",
     description:
-      "Vink stappen van een opdracht af of zet de stand van een opdracht of " +
-      "toets. Gebruik dit zodra iemand zegt dat iets af is: dan klopt de agenda " +
-      "weer, want gekoppelde leerblokken krijgen meteen een streep en de " +
-      "resterende tijd wordt opnieuw geteld.\n\n" +
+      "Vink stappen van een opdracht af, of zet de stand of de prioriteit van " +
+      "een opdracht of toets. Gebruik dit zodra iemand zegt dat iets af is: dan " +
+      "klopt de agenda weer, want gekoppelde leerblokken krijgen meteen een " +
+      "streep en de resterende tijd wordt opnieuw geteld.\n\n" +
+      "De prioriteit is er om verschil te maken. Staat alles op `high` — wat " +
+      "gebeurt als een heel rooster in één keer is ingevoerd — dan zegt rood " +
+      "niets meer. Wat deze week af moet is niet even dringend als iets van over " +
+      "drie weken. Stel het voor en werk het bij wanneer iemand dat wil.\n\n" +
       "Vink je de laatste stap af, dan gaat de opdracht vanzelf op \"done\"; " +
       "haal je er daarna weer een weg, dan komt hij op \"doing\". Dat hoef je " +
       "dus niet apart mee te sturen.\n\n" +
@@ -218,6 +223,10 @@ const TOOLS: ToolDefinition[] = [
         taskId: { type: "string", description: "De `id` van een opdracht uit `read_agenda`." },
         examId: { type: "string", description: "De `id` van een toets. Alleen met `status`." },
         status: { type: "string", description: "todo, doing of done." },
+        priority: {
+          type: "string",
+          description: "high (rood), medium (oranje), low (geel) of later (groen).",
+        },
         steps: {
           type: "array",
           description: "De stappen die je aan- of uitvinkt.",
@@ -235,37 +244,66 @@ const TOOLS: ToolDefinition[] = [
   },
 ];
 
-/** De rij van deze gebruiker, in de vorm die de gereedschappen verwachten. */
-async function loadAgenda(admin: SupabaseClient, userId: string): Promise<AgendaData> {
-  const { data, error } = await admin
-    .from("user_data")
-    .select("data")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-
-  const raw = (data?.data ?? {}) as Record<string, unknown>;
+/**
+ * De rij van deze gebruiker, met `updated_at` erbij als versie.
+ *
+ * Die versie is wat een gelijktijdige wijziging zichtbaar maakt: schrijven
+ * gebeurt alleen wanneer de rij nog precies zo in de database staat. Zie
+ * `src/lib/server/agendaStore.ts` voor waarom dat nodig bleek.
+ */
+function agendaStore(admin: SupabaseClient, userId: string): AgendaStore {
   return {
-    settings: (raw.settings as AgendaData["settings"]) ?? null,
-    activities: Array.isArray(raw.activities) ? (raw.activities as AgendaData["activities"]) : [],
-    tasks: Array.isArray(raw.tasks) ? (raw.tasks as AgendaData["tasks"]) : [],
-    exams: Array.isArray(raw.exams) ? (raw.exams as AgendaData["exams"]) : [],
-    deletions: Array.isArray(raw.deletions) ? (raw.deletions as AgendaData["deletions"]) : [],
-  };
-}
+    async load() {
+      const { data, error } = await admin
+        .from("user_data")
+        .select("data, updated_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
 
-async function storeAgenda(
-  admin: SupabaseClient,
-  userId: string,
-  data: AgendaData,
-): Promise<void> {
-  const { error } = await admin
-    .from("user_data")
-    .upsert(
-      { user_id: userId, data: data as unknown as Record<string, unknown>, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" },
-    );
-  if (error) throw new Error(error.message);
+      const raw = (data?.data ?? {}) as Record<string, unknown>;
+      return {
+        version: (data?.updated_at as string | undefined) ?? null,
+        data: {
+          settings: (raw.settings as AgendaData["settings"]) ?? null,
+          activities: Array.isArray(raw.activities)
+            ? (raw.activities as AgendaData["activities"])
+            : [],
+          tasks: Array.isArray(raw.tasks) ? (raw.tasks as AgendaData["tasks"]) : [],
+          exams: Array.isArray(raw.exams) ? (raw.exams as AgendaData["exams"]) : [],
+          deletions: Array.isArray(raw.deletions) ? (raw.deletions as AgendaData["deletions"]) : [],
+        },
+      };
+    },
+
+    async save(data, version) {
+      const row = {
+        data: data as unknown as Record<string, unknown>,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Nog geen rij: dan invoegen. Bestaat hij ondertussen toch (een tweede
+      // verzoek was ons net voor), dan botst de sleutel en is dat het sein om
+      // het over te doen -- niet een fout om de gebruiker mee lastig te vallen.
+      if (version === null) {
+        const { error } = await admin.from("user_data").insert({ user_id: userId, ...row });
+        if (!error) return true;
+        if (error.code === "23505") return false;
+        throw new Error(error.message);
+      }
+
+      // `select()` geeft de gewijzigde rijen terug: nul betekent dat
+      // `updated_at` niet meer klopte, en dus dat er iemand tussendoor schreef.
+      const { data: changed, error } = await admin
+        .from("user_data")
+        .update(row)
+        .eq("user_id", userId)
+        .eq("updated_at", version)
+        .select("user_id");
+      if (error) throw new Error(error.message);
+      return (changed?.length ?? 0) > 0;
+    },
+  };
 }
 
 /** Antwoord van een gereedschap: JSON, want daar rekent een model het best mee. */
@@ -345,50 +383,94 @@ export async function POST(request: Request) {
     return NextResponse.json(parseErrorResponse(), { status: 400 });
   }
 
+  const store = agendaStore(admin, userId);
+
   async function call(name: string, args: Record<string, unknown>): Promise<ToolOutcome> {
-    const data = await loadAgenda(admin, userId);
+    try {
+      // Elk gereedschap krijgt verse gegevens en geeft terug wat er veranderd
+      // is. `withAgenda` schrijft dat alleen weg als niemand ons voor was, en
+      // doet het anders over op de nieuwe rij.
+      return await withAgenda<ToolOutcome>(store, (data) => {
+        if (name === "read_agenda") {
+          return { outcome: asText(readAgenda(data, { from: args.from, to: args.to })) };
+        }
 
-    if (name === "read_agenda") {
-      return asText(readAgenda(data, { from: args.from, to: args.to }));
-    }
+        if (name === "save_activities") {
+          const result = saveActivities(data, args.activities);
+          if (result.added === 0 && result.updated === 0) {
+            return {
+              outcome: {
+                text: JSON.stringify({ added: 0, updated: 0, skipped: result.skipped }, null, 2),
+                isError: true,
+              },
+            };
+          }
+          return {
+            next: result.data,
+            outcome: asText({
+              added: result.added,
+              updated: result.updated,
+              skipped: result.skipped,
+            }),
+          };
+        }
 
-    if (name === "save_activities") {
-      const result = saveActivities(data, args.activities);
-      if (result.added === 0 && result.updated === 0) {
+        if (name === "delete_activities") {
+          const result = deleteActivities(data, args.ids);
+          return {
+            next: result.removed > 0 ? result.data : undefined,
+            outcome: asText({ removed: result.removed, unknown: result.unknown }),
+          };
+        }
+
+        if (name === "skip_occurrence" || name === "move_occurrence") {
+          const result =
+            name === "skip_occurrence" ? skipOccurrence(data, args) : moveOccurrence(data, args);
+          if (!result.ok) {
+            return {
+              outcome: { text: JSON.stringify({ reason: result.reason }, null, 2), isError: true },
+            };
+          }
+          // Een dag die al uit stond levert dezelfde gegevens op; dan valt er
+          // ook niets te schrijven.
+          return {
+            next: result.data,
+            outcome: asText({ ok: true, note: result.note, newId: result.newId }),
+          };
+        }
+
+        if (name === "update_schoolwork") {
+          const result = updateSchoolwork(data, args);
+          if (!result.ok) {
+            return {
+              outcome: { text: JSON.stringify({ reason: result.reason }, null, 2), isError: true },
+            };
+          }
+          return { next: result.data, outcome: asText({ ok: true, note: result.note }) };
+        }
+
+        // `handleMessage` controleert de naam al; dit is de vangnetregel.
+        return { outcome: { text: `Onbekend gereedschap: ${name}`, isError: true } };
+      });
+    } catch (error) {
+      // Liever eerlijk zeggen dat het niet gelukt is dan "gelukt" antwoorden
+      // over een wijziging die door een ander verzoek is overschreven.
+      if (error instanceof BusyError) {
         return {
-          text: JSON.stringify({ added: 0, updated: 0, skipped: result.skipped }, null, 2),
+          text: JSON.stringify(
+            {
+              reason:
+                "de agenda werd ondertussen door iets anders gewijzigd; lees hem " +
+                "opnieuw en probeer het nog een keer",
+            },
+            null,
+            2,
+          ),
           isError: true,
         };
       }
-      await storeAgenda(admin, userId, result.data);
-      return asText({ added: result.added, updated: result.updated, skipped: result.skipped });
+      throw error;
     }
-
-    if (name === "delete_activities") {
-      const result = deleteActivities(data, args.ids);
-      if (result.removed > 0) await storeAgenda(admin, userId, result.data);
-      return asText({ removed: result.removed, unknown: result.unknown });
-    }
-
-    if (name === "skip_occurrence" || name === "move_occurrence") {
-      const result =
-        name === "skip_occurrence" ? skipOccurrence(data, args) : moveOccurrence(data, args);
-      if (!result.ok) return { text: JSON.stringify({ reason: result.reason }, null, 2), isError: true };
-      // Alleen schrijven als er werkelijk iets veranderd is; een dag die al uit
-      // stond hoeft de rij niet opnieuw aan te raken.
-      if (result.data !== data) await storeAgenda(admin, userId, result.data);
-      return asText({ ok: true, note: result.note, newId: result.newId });
-    }
-
-    if (name === "update_schoolwork") {
-      const result = updateSchoolwork(data, args);
-      if (!result.ok) return { text: JSON.stringify({ reason: result.reason }, null, 2), isError: true };
-      await storeAgenda(admin, userId, result.data);
-      return asText({ ok: true, note: result.note });
-    }
-
-    // `handleMessage` controleert de naam al; dit is de vangnetregel.
-    return { text: `Onbekend gereedschap: ${name}`, isError: true };
   }
 
   const response = await handleMessage(body, { list: TOOLS, call }, pkg.version);

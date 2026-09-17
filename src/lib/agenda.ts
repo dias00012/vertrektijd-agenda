@@ -572,3 +572,63 @@ export function timeRangeFor(days: PositionedActivity[][]): { start: number; end
     end: Math.min(24 * 60, Math.ceil(latest / 60) * 60 + 60),
   };
 }
+
+/**
+ * Een gekoppelde agenda of een ingevoerd rooster opnieuw toepassen.
+ *
+ * Deze blokken houden hun eigen `id` over verversingen heen: dezelfde les uit
+ * dezelfde feed komt terug als hetzelfde blok, zodat bijwerken niet verdubbelt.
+ *
+ * En juist daarom horen de overgeslagen dagen mee te komen. Ze deden dat niet:
+ * elke verversing zette `exceptions` terug op leeg, en dan stond de les die je
+ * voor die ene dag had weggehaald er stilletjes weer. Precies het soort fout
+ * dat je pas merkt op de dag zelf -- of wanneer een planning die ene avond
+ * weer als bezet ziet terwijl jij er allang iets anders had staan.
+ *
+ * Een blok dat niet terugkomt krijgt een grafsteen mee; zonder dat spoor kent
+ * het andere apparaat het nog wel en zet het samenvoegen het er zo weer bij.
+ */
+export function applyFeed(
+  current: Activity[],
+  remove: readonly string[],
+  incoming: readonly (Partial<Activity> & { id: string })[],
+  source: string | null,
+  now: string,
+): Activity[] {
+  const before = new Map(current.map((item) => [item.id, item]));
+
+  const created = incoming.map((draft) => {
+    const previous = before.get(draft.id);
+    return {
+      ...draft,
+      source,
+      // Wat jij eruit hebt gehaald blijft eruit, zolang dit blok bestaat.
+      exceptions: previous?.exceptions ?? [],
+      travel: null,
+      returnTravel: null,
+      travelError: null,
+      bufferMinutes: null,
+      // Een blok dat er al was is niet opnieuw ontstaan.
+      createdAt: previous?.createdAt ?? now,
+      updatedAt: now,
+    } as Activity;
+  });
+
+  const removing = new Set(remove);
+  return [...current.filter((item) => !removing.has(item.id)), ...created];
+}
+
+/**
+ * Welke blokken werkelijk verdwijnen bij zo'n verversing.
+ *
+ * Alleen wat niet meteen terugkomt: een les die nu hetzelfde id krijgt als
+ * daarnet is bijgewerkt, niet weggegooid, en hoort dus geen grafsteen te
+ * krijgen -- anders gooit de eerstvolgende synchronisatie hem alsnog weg.
+ */
+export function goneFromFeed(
+  remove: readonly string[],
+  incoming: readonly { id: string }[],
+): string[] {
+  const keeping = new Set(incoming.map((item) => item.id));
+  return remove.filter((id) => !keeping.has(id));
+}
