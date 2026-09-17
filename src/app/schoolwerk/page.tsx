@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { getLanguage } from "@/lib/i18n/locale";
 import { translate } from "@/lib/i18n/dictionary";
@@ -22,9 +22,13 @@ import {
 import { ActivityForm } from "@/components/ActivityForm";
 import { addDaysToKey, formatDateLabel, formatDuration, minutesToTime, todayKey } from "@/lib/time";
 import { EmptyState, Spinner } from "@/components/ui";
-import type { ActivityDraft, Exam, SchoolworkStatus, Task } from "@/lib/types";
+import type { ActivityDraft, Exam, SchoolworkPriority, SchoolworkStatus, Task } from "@/lib/types";
 
 /** Schoolwerk: opdrachten op deadline en toetsen op datum, met status en stappen. */
+/** Waar de filterkeuze op dit apparaat bewaard blijft. */
+const FILTER_KEY = "agenda.schoolwerkFilter.v1";
+const PRIO_KEY = "agenda.schoolwerkPrio.v1";
+
 export default function SchoolworkPage() {
   const { tasks, exams, hydrated } = useAgenda();
   const t = useT();
@@ -43,8 +47,67 @@ export default function SchoolworkPage() {
     setEditExam(null);
   }
 
+  /**
+   * Waar je nu naar wilt kijken.
+   *
+   * Met drieentwintig opdrachten staat alles door elkaar: wat af is, waar je
+   * mee bezig bent en wat nog moet. Sorteren zet klaar werk wel onderaan, maar
+   * je scrolt er nog steeds langs. De keuze blijft bewaard op dit apparaat --
+   * wie op "bezig" staat wil dat morgen meestal nog steeds.
+   */
+  const [filter, setFilter] = useState<SchoolworkStatus | "all">("all");
+  const [prio, setPrio] = useState<SchoolworkPriority | "all">("all");
+  useEffect(() => {
+    try {
+      const bewaard = window.localStorage.getItem(FILTER_KEY);
+      if (bewaard === "all" || bewaard === "todo" || bewaard === "doing" || bewaard === "done") {
+        setFilter(bewaard);
+      }
+      const bewaardePrio = window.localStorage.getItem(PRIO_KEY);
+      if (bewaardePrio && (bewaardePrio === "all" || bewaardePrio in PRIORITY_META)) {
+        setPrio(bewaardePrio as SchoolworkPriority | "all");
+      }
+    } catch {
+      // Privémodus of opslag uit: dan begin je elke keer bij "alles".
+    }
+  }, []);
+  const onthoud = (sleutel: string, waarde: string) => {
+    try {
+      window.localStorage.setItem(sleutel, waarde);
+    } catch {
+      // Niet kunnen onthouden is geen reden om de keuze niet te maken.
+    }
+  };
+  const kies = (keuze: SchoolworkStatus | "all") => {
+    setFilter(keuze);
+    onthoud(FILTER_KEY, keuze);
+  };
+  const kiesPrio = (keuze: SchoolworkPriority | "all") => {
+    setPrio(keuze);
+    onthoud(PRIO_KEY, keuze);
+  };
+
   const sortedTasks = sortTasks(tasks);
   const sortedExams = sortExams(exams);
+  /** Voldoet dit aan allebei de filters? */
+  const past = (item: { status: SchoolworkStatus; priority: SchoolworkPriority }) =>
+    (filter === "all" || item.status === filter) && (prio === "all" || item.priority === prio);
+  /** Staat er een filter aan? Dan hoort de kop te zeggen hoeveel je niet ziet. */
+  const gefilterd = filter !== "all" || prio !== "all";
+  const zichtbareTasks = sortedTasks.filter(past);
+  const zichtbareExams = sortedExams.filter(past);
+
+  /**
+   * Wat een knop zou opleveren als je hem indrukt, het andere filter
+   * meegerekend. Een telling die het andere filter negeert belooft meer dan er
+   * komt: "Klaar (1)" terwijl je op "hoog" staat en er geen afgeronde hoge
+   * opdracht is.
+   */
+  const alles = [...tasks, ...exams];
+  const aantal = (status: SchoolworkStatus) =>
+    alles.filter((x) => x.status === status && (prio === "all" || x.priority === prio)).length;
+  const aantalPrio = (p: SchoolworkPriority) =>
+    alles.filter((x) => x.priority === p && (filter === "all" || x.status === filter)).length;
 
   return (
     <div>
@@ -81,17 +144,81 @@ export default function SchoolworkPage() {
         />
       ) : (
         <div className="space-y-8">
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={t("schoolwork.filterLabel")}
+          >
+            {(["all", "todo", "doing", "done"] as const).map((keuze) => {
+              const actief = filter === keuze;
+              const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
+              return (
+                <button
+                  key={keuze}
+                  type="button"
+                  aria-pressed={actief}
+                  onClick={() => kies(keuze)}
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{
+                    borderColor: actief ? "var(--accent)" : "var(--line)",
+                    background: actief ? "var(--accent)" : "transparent",
+                    color: actief ? "#fff" : "var(--muted)",
+                  }}
+                >
+                  {keuze === "all" ? t("schoolwork.filterAll") : STATUS_META[keuze].label} ({telling})
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            className="-mt-5 flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={t("schoolwork.filterPriority")}
+          >
+            {(["all", "high", "medium", "low", "later"] as const).map((keuze) => {
+              const actief = prio === keuze;
+              const telling =
+                keuze === "all"
+                  ? alles.filter((x) => filter === "all" || x.status === filter).length
+                  : aantalPrio(keuze);
+              return (
+                <button
+                  key={keuze}
+                  type="button"
+                  aria-pressed={actief}
+                  onClick={() => kiesPrio(keuze)}
+                  className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+                  style={{
+                    borderColor: actief ? "var(--ink)" : "var(--line)",
+                    color: actief ? "var(--ink)" : "var(--muted)",
+                    fontWeight: actief ? 600 : 400,
+                  }}
+                >
+                  {keuze === "all"
+                    ? t("schoolwork.filterAll")
+                    : `${PRIORITY_META[keuze].emoji} ${PRIORITY_META[keuze].label}`}{" "}
+                  ({telling})
+                </button>
+              );
+            })}
+          </div>
+
           <section aria-label={t("schoolwork.tasks")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {t("schoolwork.tasks")} ({sortedTasks.length})
+              {t("schoolwork.tasks")} (
+            {gefilterd
+              ? t("schoolwork.ofTotal", { shown: zichtbareTasks.length, total: sortedTasks.length })
+              : sortedTasks.length}
+            )
             </h2>
-            {sortedTasks.length === 0 ? (
+            {zichtbareTasks.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("schoolwork.noTasks")}
               </p>
             ) : (
               <div className="space-y-2.5">
-                {sortedTasks.map((task) => (
+                {zichtbareTasks.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -106,15 +233,19 @@ export default function SchoolworkPage() {
 
           <section aria-label={t("schoolwork.exams")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {t("schoolwork.exams")} ({sortedExams.length})
+              {t("schoolwork.exams")} (
+            {gefilterd
+              ? t("schoolwork.ofTotal", { shown: zichtbareExams.length, total: sortedExams.length })
+              : sortedExams.length}
+            )
             </h2>
-            {sortedExams.length === 0 ? (
+            {zichtbareExams.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("schoolwork.noExams")}
               </p>
             ) : (
               <div className="space-y-2.5">
-                {sortedExams.map((exam) => (
+                {zichtbareExams.map((exam) => (
                   <ExamCard
                     key={exam.id}
                     exam={exam}
