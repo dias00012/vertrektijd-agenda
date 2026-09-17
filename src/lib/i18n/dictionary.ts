@@ -928,8 +928,10 @@ export const nl = {
   "connector.summaryOff": "Log eerst in",
   "connector.intro":
     "Geef Claude toegang tot deze agenda, zodat je in een gesprek kunt vragen om " +
-    "een planning. Claude leest wat er staat en zet de blokken er zelf in. Er wordt " +
-    "nooit uit zichzelf meegekeken: alleen wanneer jij erom vraagt.",
+    "een planning. Claude leest wat er staat, zet de blokken er zelf in, kan één " +
+    "dag van een herhalende afspraak overslaan of verzetten, en kan huiswerk " +
+    "afvinken. Nieuw huiswerk aanmaken en afspraken weggooien blijft aan jou. Er " +
+    "wordt nooit uit zichzelf meegekeken: alleen wanneer jij erom vraagt.",
   "connector.create": "Sleutel aanmaken",
   "connector.creating": "Bezig…",
   "connector.labelPlaceholder": "Waarvoor is deze sleutel? (bv. telefoon)",
@@ -1833,8 +1835,10 @@ export const en: Record<TranslationKey, string> = {
   "connector.summaryOff": "Sign in first",
   "connector.intro":
     "Give Claude access to this agenda, so you can ask for a plan in a chat. " +
-    "Claude reads what is there and adds the blocks itself. It never looks in on " +
-    "its own: only when you ask.",
+    "Claude reads what is there, adds the blocks itself, can skip or move a " +
+    "single day of a repeating appointment, and can tick off homework. Adding " +
+    "new homework and deleting appointments stays with you. It never looks in " +
+    "on its own: only when you ask.",
   "connector.create": "Create key",
   "connector.creating": "Working…",
   "connector.labelPlaceholder": "What is this key for? (e.g. phone)",

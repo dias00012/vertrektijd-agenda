@@ -40,11 +40,17 @@ export const BREAK = 15;
 /**
  * Categorieën die mogen wijken als het krap wordt.
  *
- * Alleen als vóórstel: gamen en lezen zijn te verzetten, maar of dat vanavond
- * ook mag is niet aan een planner. En "Gitaar les" staat in diezelfde categorie
- * terwijl die juist vastligt -- reden te meer om het altijd te vragen.
+ * Alleen als vóórstel: gamen, lezen en sporten zijn te verzetten, maar of dat
+ * vanavond ook mag is niet aan een planner. En "Gitaar les" staat in diezelfde
+ * categorie terwijl die juist vastligt -- reden te meer om het altijd te
+ * vragen.
+ *
+ * Sporten staat erbij omdat het in de praktijk het eerste is wat wijkt: komt
+ * er een fysio-afspraak op je sportavond, dan sla je die ene keer over. Dat
+ * blokken met een plek er eerst uit vielen was een fout: juist sporten en
+ * fysio hebben allebei een adres.
  */
-export const MOVABLE = ["hobby"];
+export const MOVABLE = ["hobby", "gym"];
 
 /** Een gat waarin echt iets past: thuis, wakker, en niets anders gepland. */
 export interface FreeSlot {
@@ -60,6 +66,14 @@ export interface MovableBlock {
   startTime: string;
   endTime: string;
   minutes: number;
+  /**
+   * true wanneer deze dag uit een herhalende reeks komt. Dan kan juist díe ene
+   * dag eruit zonder dat de rest van de reeks iets merkt -- precies wat je
+   * nodig hebt als er één keer iets anders tussenkomt.
+   */
+  recurring: boolean;
+  /** true wanneer er een plek aan hangt: wijken verandert dan ook je reis. */
+  away: boolean;
 }
 
 /**
@@ -71,7 +85,11 @@ export interface MovableBlock {
  * achter, terwijl de terugreis uit Lelystad bijna een uur duurt.
  */
 export interface AwaySpan {
+  /** De id van de activiteit, zodat je hem kunt aanwijzen in plaats van noemen. */
+  id: string;
   title: string;
+  /** true wanneer dit een dag uit een herhalende reeks is. */
+  recurring: boolean;
   /** Minuten sinds middernacht; kan negatief zijn bij vertrek de dag ervoor. */
   from: number;
   /** Minuten sinds middernacht; kan boven 1440 uitkomen. */
@@ -100,7 +118,9 @@ export function awaySpans(
     // eindtijd als thuiskomst -- alsof je je er heen denkt.
     const to = back ? back.minutes : plain + travelMinutesEither(occurrence, "back");
     spans.push({
+      id: occurrence.id,
       title: occurrence.title,
+      recurring: occurrence.recurring,
       from: departure
         ? departure.minutes
         : start - travelMinutesEither(occurrence, "out") - bufferFor(occurrence, settings),
@@ -182,13 +202,15 @@ export function freeOnDate(
 /** De blokken die zouden kunnen wijken; alleen om voor te stellen. */
 export function movableOnDate(activities: Activity[], date: string): MovableBlock[] {
   return activitiesOnDate(activities, date)
-    .filter((item) => !item.allDay && !item.location && MOVABLE.includes(item.category))
+    .filter((item) => !item.allDay && MOVABLE.includes(item.category))
     .map((item) => ({
       id: item.id,
       title: item.title,
       startTime: item.startTime,
       endTime: item.endTime,
       minutes: activityMinutes(item),
+      recurring: item.recurring,
+      away: Boolean(item.location),
     }));
 }
 

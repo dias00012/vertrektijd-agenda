@@ -108,11 +108,37 @@ describe("freeOnDate", () => {
 });
 
 describe("movableOnDate", () => {
-  it("noemt alleen wat thuis is en mag wijken", () => {
+  it("noemt wat van categorie mag wijken, en laat school en werk staan", () => {
     const gamen = activity({ id: "a1", category: "hobby", title: "Gamen" });
-    const les = activity({ id: "a2", category: "hobby", title: "Gitaar", location: { label: "Almere", lat: 52.37, lon: 5.22 } });
+    const sporten = activity({ id: "a2", category: "gym", title: "Sporten" });
     const school = activity({ id: "a3", category: "school" });
-    expect(movableOnDate([gamen, les, school], "2026-09-14").map((item) => item.id)).toEqual(["a1"]);
+    const werk = activity({ id: "a4", category: "werk" });
+    const namen = movableOnDate([gamen, sporten, school, werk], "2026-09-14").map((i) => i.id);
+    expect(namen).toEqual(["a1", "a2"]);
+  });
+
+  it("merkt aan dat er een plek aan hangt, want dan verandert ook je reis", () => {
+    // De gitaarles staat in dezelfde categorie als gamen maar ligt juist vast.
+    // Daarom wordt er nooit iets verzet zonder het te vragen; `away` maakt in
+    // elk geval zichtbaar dat er meer aan vastzit dan een tijdstip.
+    const les = activity({
+      id: "a1",
+      category: "hobby",
+      title: "Gitaarles",
+      location: { label: "Almere", lat: 52.37, lon: 5.22 },
+    });
+    expect(movableOnDate([les], "2026-09-14")[0]).toMatchObject({ away: true, recurring: false });
+  });
+
+  it("merkt een dag uit een reeks aan als herhalend", () => {
+    const sporten = activity({
+      id: "a1",
+      category: "gym",
+      title: "Sporten",
+      date: "2026-09-07",
+      recurrence: { freq: "weekly", weekdays: [1], until: null },
+    });
+    expect(movableOnDate([sporten], "2026-09-14")[0]).toMatchObject({ recurring: true });
   });
 });
 

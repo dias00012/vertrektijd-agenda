@@ -12,8 +12,11 @@ import {
 } from "@/lib/mcp";
 import {
   deleteActivities,
+  moveOccurrence,
   readAgenda,
   saveActivities,
+  skipOccurrence,
+  updateSchoolwork,
   type AgendaData,
 } from "@/lib/agendaTools";
 import pkg from "../../../../package.json";
@@ -70,7 +73,11 @@ const TOOLS: ToolDefinition[] = [
       "opnieuw wat er al staat.\n\n" +
       "`duplicates` noemt wat er dubbel lijkt te staan en `clashes` wat er die " +
       "dag botst (ook wanneer alleen de reistijd eroverheen valt). Meld die, maar " +
-      "ruim ze niet zelf op: welke van de twee weg mag is aan de gebruiker.",
+      "ruim ze niet zelf op: welke van de twee weg mag is aan de gebruiker.\n\n" +
+      "Staat er iets in de weg, zeg dan wat er wél kan in plaats van alleen dat " +
+      "het niet gaat. Bij `recurring: true` hoeft de hele reeks niet weg: " +
+      "`skip_occurrence` zet één dag uit en `move_occurrence` verzet er één. " +
+      "Stel het voor en wacht op antwoord.",
     inputSchema: {
       type: "object",
       properties: {
@@ -142,6 +149,88 @@ const TOOLS: ToolDefinition[] = [
         ids: { type: "array", items: { type: "string" } },
       },
       required: ["ids"],
+    },
+  },
+  {
+    name: "skip_occurrence",
+    title: "Eén dag van een reeks overslaan",
+    description:
+      "Zet één dag van een herhalende activiteit uit, zonder de reeks zelf aan " +
+      "te raken. Hiervoor is dit er: staat er elke maandag sporten en komt er " +
+      "één keer iets anders tussen, dan hoef je niet te kiezen tussen die ene " +
+      "maandag en alle maandagen.\n\n" +
+      "Vraag dit altijd eerst. Een afspraak uit iemands agenda halen is een " +
+      "besluit van de gebruiker, ook als het maar om één dag gaat — helemaal " +
+      "wanneer er anderen bij betrokken zijn.\n\n" +
+      "`restore: true` zet een eerder overgeslagen dag weer terug. Gebruik dat " +
+      "als je je vergist hebt: via het scherm is een overgeslagen dag daarna " +
+      "niet meer terug te halen.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "De `id` van de reeks, uit `read_agenda`." },
+        date: { type: "string", description: "De dag die eruit moet, JJJJ-MM-DD." },
+        restore: { type: "boolean", description: "Zet een overgeslagen dag terug." },
+      },
+      required: ["id", "date"],
+    },
+  },
+  {
+    name: "move_occurrence",
+    title: "Eén dag van een reeks verzetten",
+    description:
+      "Verzet één dag van een herhalende activiteit naar een ander tijdstip of " +
+      "een andere dag. Die dag valt uit de reeks en komt er los naast te staan; " +
+      "de rest van de reeks blijft ongemoeid.\n\n" +
+      "Ook dit altijd eerst vragen. En denk aan de reis: op een ander tijdstip " +
+      "rijdt er een andere trein, dus de vertrektijd wordt opnieuw uitgerekend " +
+      "en kan er anders uitzien dan je gewend bent.\n\n" +
+      "Laat je `toDate` weg, dan blijft het dezelfde dag. Laat je `startTime` " +
+      "en `endTime` weg, dan blijft het dezelfde tijd.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "De `id` van de reeks, uit `read_agenda`." },
+        date: { type: "string", description: "De dag die verzet wordt, JJJJ-MM-DD." },
+        toDate: { type: "string", description: "Naar welke dag, JJJJ-MM-DD. Standaard dezelfde." },
+        startTime: { type: "string", description: "UU:MM. Standaard de tijd van de reeks." },
+        endTime: { type: "string", description: "UU:MM. Standaard de tijd van de reeks." },
+      },
+      required: ["id", "date"],
+    },
+  },
+  {
+    name: "update_schoolwork",
+    title: "Huiswerk bijwerken",
+    description:
+      "Vink stappen van een opdracht af of zet de stand van een opdracht of " +
+      "toets. Gebruik dit zodra iemand zegt dat iets af is: dan klopt de agenda " +
+      "weer, want gekoppelde leerblokken krijgen meteen een streep en de " +
+      "resterende tijd wordt opnieuw geteld.\n\n" +
+      "Vink je de laatste stap af, dan gaat de opdracht vanzelf op \"done\"; " +
+      "haal je er daarna weer een weg, dan komt hij op \"doing\". Dat hoef je " +
+      "dus niet apart mee te sturen.\n\n" +
+      "Nieuw huiswerk aanmaken of weggooien kan hier bewust niet: dat doet de " +
+      "gebruiker zelf in de app. Zeg het als er iets bij zou moeten.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        taskId: { type: "string", description: "De `id` van een opdracht uit `read_agenda`." },
+        examId: { type: "string", description: "De `id` van een toets. Alleen met `status`." },
+        status: { type: "string", description: "todo, doing of done." },
+        steps: {
+          type: "array",
+          description: "De stappen die je aan- of uitvinkt.",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", description: "De `id` van de stap, uit `steps` van die taak." },
+              done: { type: "boolean" },
+            },
+            required: ["id"],
+          },
+        },
+      },
     },
   },
 ];
@@ -279,6 +368,23 @@ export async function POST(request: Request) {
       const result = deleteActivities(data, args.ids);
       if (result.removed > 0) await storeAgenda(admin, userId, result.data);
       return asText({ removed: result.removed, unknown: result.unknown });
+    }
+
+    if (name === "skip_occurrence" || name === "move_occurrence") {
+      const result =
+        name === "skip_occurrence" ? skipOccurrence(data, args) : moveOccurrence(data, args);
+      if (!result.ok) return { text: JSON.stringify({ reason: result.reason }, null, 2), isError: true };
+      // Alleen schrijven als er werkelijk iets veranderd is; een dag die al uit
+      // stond hoeft de rij niet opnieuw aan te raken.
+      if (result.data !== data) await storeAgenda(admin, userId, result.data);
+      return asText({ ok: true, note: result.note, newId: result.newId });
+    }
+
+    if (name === "update_schoolwork") {
+      const result = updateSchoolwork(data, args);
+      if (!result.ok) return { text: JSON.stringify({ reason: result.reason }, null, 2), isError: true };
+      await storeAgenda(admin, userId, result.data);
+      return asText({ ok: true, note: result.note });
     }
 
     // `handleMessage` controleert de naam al; dit is de vangnetregel.
