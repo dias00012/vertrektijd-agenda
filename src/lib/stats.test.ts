@@ -34,9 +34,10 @@ afterEach(() => {
 
 /** Doet alsof de server antwoordt, en geeft terug hoe vaak er gebeld is. */
 function server(antwoord: unknown, ok = true) {
-  const fetchSpy = vi.fn(
-    async (_url: string, _init?: RequestInit) =>
-      ({ ok, json: async () => antwoord }) as unknown as Response,
+  // De aanroepvorm staat in het type, niet in de implementatie: zo is
+  // `mock.calls` getypt zonder ongebruikte parameters.
+  const fetchSpy = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(
+    async () => ({ ok, json: async () => antwoord }) as unknown as Response,
   );
   (globalThis as { fetch?: unknown }).fetch = fetchSpy;
   return fetchSpy;
