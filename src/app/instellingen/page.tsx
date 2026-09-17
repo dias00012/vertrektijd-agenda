@@ -18,6 +18,7 @@ import { useIntro } from "@/hooks/useIntro";
 import { Spinner } from "@/components/ui";
 import { travelModes } from "@/lib/travelModes";
 import type { GeoLocation, TransitBike, TravelMode } from "@/lib/types";
+import pkg from "../../../package.json";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 const MAX_BUFFER_MINUTES = 120;
@@ -68,6 +69,16 @@ export default function SettingsPage() {
       <p className="mt-6 px-1 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
         <span className="font-semibold">{t("settings.aboutTitle")}</span> &middot;{" "}
         {t("settings.aboutBody")}
+      </p>
+
+      {/*
+        Welke versie dit apparaat draait. Klein, maar het beantwoordt de vraag
+        die je anders niet kúnt beantwoorden: draaien mijn telefoon en mijn
+        laptop wel dezelfde app? Zonder dit is "het werkt bij mij niet" niet te
+        onderscheiden van "dit apparaat heeft de nieuwe versie nog niet".
+      */}
+      <p className="mt-2 px-1 text-xs tabular-nums" style={{ color: "var(--muted)" }}>
+        {t("settings.version", { version: pkg.version })}
       </p>
     </div>
   );
