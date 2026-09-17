@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { getLanguage } from "@/lib/i18n/locale";
 import { translate } from "@/lib/i18n/dictionary";
@@ -25,6 +25,9 @@ import { EmptyState, Spinner } from "@/components/ui";
 import type { ActivityDraft, Exam, SchoolworkStatus, Task } from "@/lib/types";
 
 /** Schoolwerk: opdrachten op deadline en toetsen op datum, met status en stappen. */
+/** Waar de filterkeuze op dit apparaat bewaard blijft. */
+const FILTER_KEY = "agenda.schoolwerkFilter.v1";
+
 export default function SchoolworkPage() {
   const { tasks, exams, hydrated } = useAgenda();
   const t = useT();
@@ -43,8 +46,41 @@ export default function SchoolworkPage() {
     setEditExam(null);
   }
 
+  /**
+   * Waar je nu naar wilt kijken.
+   *
+   * Met drieentwintig opdrachten staat alles door elkaar: wat af is, waar je
+   * mee bezig bent en wat nog moet. Sorteren zet klaar werk wel onderaan, maar
+   * je scrolt er nog steeds langs. De keuze blijft bewaard op dit apparaat --
+   * wie op "bezig" staat wil dat morgen meestal nog steeds.
+   */
+  const [filter, setFilter] = useState<SchoolworkStatus | "all">("all");
+  useEffect(() => {
+    try {
+      const bewaard = window.localStorage.getItem(FILTER_KEY);
+      if (bewaard === "all" || bewaard === "todo" || bewaard === "doing" || bewaard === "done") {
+        setFilter(bewaard);
+      }
+    } catch {
+      // Privémodus of opslag uit: dan begin je elke keer bij "alles".
+    }
+  }, []);
+  const kies = (keuze: SchoolworkStatus | "all") => {
+    setFilter(keuze);
+    try {
+      window.localStorage.setItem(FILTER_KEY, keuze);
+    } catch {
+      // Niet kunnen onthouden is geen reden om de keuze niet te maken.
+    }
+  };
+
   const sortedTasks = sortTasks(tasks);
   const sortedExams = sortExams(exams);
+  const zichtbareTasks = filter === "all" ? sortedTasks : sortedTasks.filter((x) => x.status === filter);
+  const zichtbareExams = filter === "all" ? sortedExams : sortedExams.filter((x) => x.status === filter);
+  /** Hoeveel er in elke bak zitten; opdrachten en toetsen samen. */
+  const aantal = (status: SchoolworkStatus) =>
+    tasks.filter((x) => x.status === status).length + exams.filter((x) => x.status === status).length;
 
   return (
     <div>
@@ -81,17 +117,48 @@ export default function SchoolworkPage() {
         />
       ) : (
         <div className="space-y-8">
+          <div
+            className="flex flex-wrap gap-1.5"
+            role="group"
+            aria-label={t("schoolwork.filterLabel")}
+          >
+            {(["all", "todo", "doing", "done"] as const).map((keuze) => {
+              const actief = filter === keuze;
+              const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
+              return (
+                <button
+                  key={keuze}
+                  type="button"
+                  aria-pressed={actief}
+                  onClick={() => kies(keuze)}
+                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                  style={{
+                    borderColor: actief ? "var(--accent)" : "var(--line)",
+                    background: actief ? "var(--accent)" : "transparent",
+                    color: actief ? "#fff" : "var(--muted)",
+                  }}
+                >
+                  {keuze === "all" ? t("schoolwork.filterAll") : STATUS_META[keuze].label} ({telling})
+                </button>
+              );
+            })}
+          </div>
+
           <section aria-label={t("schoolwork.tasks")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {t("schoolwork.tasks")} ({sortedTasks.length})
+              {t("schoolwork.tasks")} (
+            {filter === "all"
+              ? sortedTasks.length
+              : t("schoolwork.ofTotal", { shown: zichtbareTasks.length, total: sortedTasks.length })}
+            )
             </h2>
-            {sortedTasks.length === 0 ? (
+            {zichtbareTasks.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("schoolwork.noTasks")}
               </p>
             ) : (
               <div className="space-y-2.5">
-                {sortedTasks.map((task) => (
+                {zichtbareTasks.map((task) => (
                   <TaskCard
                     key={task.id}
                     task={task}
@@ -106,15 +173,19 @@ export default function SchoolworkPage() {
 
           <section aria-label={t("schoolwork.exams")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {t("schoolwork.exams")} ({sortedExams.length})
+              {t("schoolwork.exams")} (
+            {filter === "all"
+              ? sortedExams.length
+              : t("schoolwork.ofTotal", { shown: zichtbareExams.length, total: sortedExams.length })}
+            )
             </h2>
-            {sortedExams.length === 0 ? (
+            {zichtbareExams.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("schoolwork.noExams")}
               </p>
             ) : (
               <div className="space-y-2.5">
-                {sortedExams.map((exam) => (
+                {zichtbareExams.map((exam) => (
                   <ExamCard
                     key={exam.id}
                     exam={exam}

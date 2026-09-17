@@ -8,6 +8,16 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.67.0
+
+- **Een filter op Schoolwerk: Alles, Te doen, Bezig, Klaar.** Met het aantal
+  erbij, en de kop telt mee ("Opdrachten (2 van 23)").
+
+  Met drieentwintig opdrachten stond alles door elkaar. Sorteren zette klaar
+  werk wel onderaan, maar je scrolde er nog steeds langs, en "waar was ik ook
+  alweer mee bezig" was een zoekplaatje. De keuze blijft bewaard op dit
+  apparaat: wie op "bezig" staat wil dat morgen meestal nog steeds.
+
 ## 0.66.0
 
 - **De app laat nu zien welke versie hij draait**, onderaan Instellingen. Klein,
