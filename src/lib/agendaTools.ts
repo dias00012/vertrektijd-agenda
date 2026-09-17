@@ -1,7 +1,7 @@
 import { activitiesOnDate, clashesOnDate } from "./agenda";
 import { normalizeActivity } from "./backup";
 import { addDaysToKey, daysBetween, isDateKey, timeToMinutes, todayKey } from "./time";
-import { computeDeparture, computeReturn } from "./travel";
+import { bufferFor, computeDeparture, computeReturn } from "./travel";
 import { activityMinutes } from "./schoolwork";
 import type { Activity, Exam, Settings, Task } from "./types";
 
@@ -607,13 +607,17 @@ function awaySpans(data: AgendaData, date: string, exclude?: string): AwaySpan[]
     const back = computeReturn(occurrence, settings);
     const start = timeToMinutes(occurrence.startTime);
     const plain = timeToMinutes(occurrence.endTime);
-    // Is de thuisreis nog niet berekend, dan schatten we hem op de heenreis.
-    // Zonder die schatting geldt de eindtijd als thuiskomst, en dan mag er weer
-    // een leerblok om 17:20 staan terwijl je uit Lelystad nog onderweg bent.
-    const to = back ? back.minutes : plain + (occurrence.travel?.durationMinutes ?? 0);
+    // Is een van beide reizen nog niet berekend, dan houden we de andere aan
+    // als schatting. Zonder die schatting geldt de begintijd als vertrek en de
+    // eindtijd als thuiskomst -- alsof je je er heen denkt. Dan mag er weer een
+    // leerblok van 21 minuten staan in het kwartier dat je naar de sportschool
+    // fietst, of eentje om 17:20 terwijl je uit Lelystad nog onderweg bent.
+    const heen = occurrence.travel?.durationMinutes ?? occurrence.returnTravel?.durationMinutes ?? 0;
+    const terug = occurrence.returnTravel?.durationMinutes ?? occurrence.travel?.durationMinutes ?? 0;
+    const to = back ? back.minutes : plain + terug;
     spans.push({
       title: occurrence.title,
-      from: departure ? departure.minutes : start,
+      from: departure ? departure.minutes : start - heen - bufferFor(occurrence, settings),
       to,
       home: back?.time ?? minutesToClock(to),
     });

@@ -8,6 +8,16 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.62.0
+
+- **En hetzelfde voor de heenreis.** In dezelfde controle waarin 0.61.0 groen
+  bleek, stond bij "Sporten" wél een thuisreis van 20 minuten maar geen
+  berekende heenreis. Dan gold de begintijd als vertrektijd, en bood de app een
+  gaatje van 21 minuten aan in precies het kwartier dat je erheen fietst.
+
+  Is een van beide reizen nog niet berekend, dan houdt de app nu de andere aan
+  als schatting -- in allebei de richtingen.
+
 ## 0.61.0
 
 - **Zonder berekende thuisreis gold je eindtijd als thuiskomst.** Gevonden door
