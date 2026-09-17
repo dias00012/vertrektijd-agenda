@@ -8,6 +8,27 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.60.0
+
+- **Twee apparaten, twee verschillende agenda's op hetzelfde account.** De
+  ernstigste fout tot nu toe, want hij wiste werk.
+
+  Het wegschrijven naar de cloud schreef de lokale agenda er botweg overheen.
+  Stond je telefoon een dag open terwijl je op je laptop verder werkte, dan
+  wiste één wijziging op die telefoon alles wat de laptop had toegevoegd. En
+  omdat een apparaat alleen bij het openen ophaalde, bleef elk apparaat zijn
+  eigen versie tonen -- ze liepen niet vast, ze liepen uit elkaar.
+
+  Nu kijkt de app eerst wat er in de cloud staat, voegt dat samen met wat er
+  lokaal is, en schrijft het resultaat weg. Wat er van het andere apparaat bij
+  komt verschijnt meteen op dit scherm. Weggegooide dingen blijven weg: daar
+  zijn de grafstenen voor.
+
+- **En bij terugkomen in de app wordt er opnieuw opgehaald.** Hoogstens twee
+  keer per minuut, bij terugkeren naar het tabblad of zodra je weer online
+  bent. Een geïnstalleerde app blijft dagen open staan; die hoort niet nog naar
+  vorige week te kijken.
+
 ## 0.59.0
 
 - **"Hoe laat ben ik thuis" klopte niet meer bij een herhalende activiteit.**

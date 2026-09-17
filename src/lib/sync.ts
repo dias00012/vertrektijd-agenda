@@ -168,6 +168,22 @@ function mergeSettings(local: Settings | null, remote: Settings | null): Setting
 }
 
 /**
+ * Een vingerafdruk van wat er in een payload zit: welke items, en hoe recent.
+ *
+ * Nodig om na het samenvoegen te kunnen zien óf er iets veranderd is. Zonder
+ * die vraag zou elk wegschrijven de state opnieuw zetten, wat het volgende
+ * wegschrijven uitlokt, en zo door.
+ */
+export function signature(data: SyncPayload): string {
+  const stamp = (list: readonly { id: string; updatedAt?: string }[]) =>
+    list
+      .map((item) => `${item.id}@${item.updatedAt ?? ""}`)
+      .sort()
+      .join(",");
+  return [stamp(data.activities), stamp(data.tasks), stamp(data.exams)].join("|");
+}
+
+/**
  * Voegt lokale en cloud-data samen, zodat inloggen op een tweede apparaat de
  * gegevens van beide kanten combineert in plaats van er een te overschrijven.
  */

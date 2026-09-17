@@ -44,7 +44,7 @@ import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categor
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { getSupabase } from "@/lib/supabase";
-import { mergePayload, pullData, pushData, type Deletion } from "@/lib/sync";
+import { mergePayload, pullData, pushData, signature, type Deletion } from "@/lib/sync";
 import type {
   Activity,
   ActivityDraft,
@@ -268,6 +268,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   });
   /** Loopt op zodra een sync klaar is, zodat het push-effect alsnog draait. */
   const [pushNonce, setPushNonce] = useState(0);
+  /** Gaat omhoog wanneer we opnieuw willen ophalen, bv. bij terugkomen in de app. */
+  const [pullNonce, setPullNonce] = useState(0);
+  const lastPull = useRef(0);
   const [calculatingIds, setCalculatingIds] = useState<Set<string>>(new Set());
 
   const { user } = useAuth();
@@ -1055,13 +1058,44 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-    // Alleen opnieuw draaien wanneer de gebruiker wisselt of na hydratatie.
+    // Opnieuw draaien wanneer de gebruiker wisselt, na hydratatie, of wanneer
+    // we terugkomen in de app (`pullNonce`).
     // Op user.id en niet op het hele object: Supabase vernieuwt zijn token
     // periodiek en geeft dan een nieuw object voor dezelfde gebruiker terug.
     // Dat startte elke keer een volledige ronde ophalen, samenvoegen en
     // wegschrijven.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, user?.id, hydrated]);
+  }, [supabase, user?.id, hydrated, pullNonce]);
+
+  /**
+   * Opnieuw ophalen zodra je terugkomt in de app.
+   *
+   * Een geïnstalleerde app blijft dagen open staan. Haalde die alleen bij het
+   * openen op, dan keek je op je telefoon nog naar de agenda van vorige week
+   * terwijl je op je laptop allang verder was. Nu wordt er bij terugkomen even
+   * gekeken -- hoogstens twee keer per minuut, want het hoeft geen gesprek te
+   * worden met de server.
+   */
+  useEffect(() => {
+    if (!supabase || !user || !hydrated) return;
+
+    const refresh = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastPull.current < 30_000) return;
+      lastPull.current = now;
+      setPullNonce((value) => value + 1);
+    };
+
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [supabase, user, hydrated]);
 
   // Terwijl je bent ingelogd: schrijf wijzigingen (debounced) naar de cloud.
   useEffect(() => {
@@ -1071,7 +1105,33 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     pushTimer.current = setTimeout(async () => {
       setSyncStatus("syncing");
       try {
-        await pushData(supabase, user.id, { settings, activities, tasks, exams, deletions });
+        const local = { settings, activities, tasks, exams, deletions };
+        // Eerst kijken wat er nú in de cloud staat, dan pas schrijven.
+        //
+        // Hiervoor schreef dit de lokale agenda er botweg overheen. Stond je
+        // telefoon een dag open terwijl je op je laptop werkte, dan wiste één
+        // wijziging op die telefoon alles wat de laptop had toegevoegd -- en
+        // omdat een apparaat alleen bij het openen ophaalt, bleef elk apparaat
+        // zijn eigen versie tonen. Twee agenda's op één account.
+        const remote = await pullData(supabase, user.id);
+        const merged = remote ? mergePayload(local, remote) : local;
+        await pushData(supabase, user.id, merged);
+
+        // Wat er van het andere apparaat bij kwam hoort ook hier te staan.
+        // Alleen wanneer er echt iets veranderde: anders lokt deze opdracht
+        // het volgende wegschrijven uit, en dat het volgende.
+        if (remote && signature(merged) !== signature(local)) {
+          applyingRemote.current = true;
+          setActivities(merged.activities);
+          setTasks(merged.tasks);
+          setExams(merged.exams);
+          setDeletions(merged.deletions ?? []);
+          if (merged.settings) setSettings((current) => ({ ...current, ...merged.settings }));
+          setTimeout(() => {
+            applyingRemote.current = false;
+          }, 150);
+        }
+
         setLastSyncedAt(new Date().toISOString());
         setSyncStatus("idle");
         setSyncError(null);
