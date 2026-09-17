@@ -16,6 +16,14 @@ export const dynamic = "force-dynamic";
  * Dat "hoeveel mensen" klopt doordat de app een gebeurtenis als `dag_geopend`
  * maar één keer per dag stuurt, bijgehouden in de browser zelf. De server hoeft
  * daardoor geen enkele bezoeker te herkennen.
+ *
+ * Het antwoord zegt met `counted` of er werkelijk iets is opgehoogd. Dat is
+ * geen formaliteit: de app onthoudt aan de hand daarvan dat hij vandaag geteld
+ * heeft, en toen deze route altijd "gelukt" antwoordde -- ook terwijl de tabel
+ * `app_events` nog niet bestond -- streepte de app die dag af zonder dat er
+ * iets geteld was. Op het dashboard stond daarna nul terwijl de app de hele
+ * dag gebruikt werd. Het verzoek blijft altijd een 200 geven: statistieken
+ * zijn nooit een reden om de app te storen.
  */
 
 /** Alleen deze namen; zo kan niemand de tabel volschrijven met van alles. */
@@ -37,20 +45,20 @@ export async function POST(request: Request) {
     windowMs: 60 * 60_000,
   });
   // Stilletjes negeren: statistieken zijn nooit een reden om de app te storen.
-  if (!limit.ok) return NextResponse.json({ ok: true });
+  if (!limit.ok) return NextResponse.json({ ok: true, counted: false });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!url || !serviceKey) return NextResponse.json({ ok: true });
+  if (!url || !serviceKey) return NextResponse.json({ ok: true, counted: false });
 
   let name: unknown;
   try {
     ({ name } = (await request.json()) as { name?: unknown });
   } catch {
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, counted: false });
   }
   if (typeof name !== "string" || !ALLOWED.has(name)) {
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, counted: false });
   }
 
   const admin = createClient(url, serviceKey, {
@@ -58,10 +66,13 @@ export async function POST(request: Request) {
   });
 
   // Eén rij per dag per gebeurtenis, opgehoogd. Geen rij per bezoeker.
-  await admin.rpc("bump_app_event", { event_name: name }).then(
-    () => undefined,
-    () => undefined,
-  );
+  const { error } = await admin
+    .rpc("bump_app_event", { event_name: name })
+    .then((result) => result as { error: unknown }, (reason: unknown) => ({ error: reason }));
 
-  return NextResponse.json({ ok: true });
+  // Wel loggen: dit is precies het geval waarin de tabel of de functie ontbreekt,
+  // en dan wil je in de serverlogboeken zien waarom er niets geteld wordt.
+  if (error) console.error("[api/stats]", error);
+
+  return NextResponse.json({ ok: true, counted: !error });
 }

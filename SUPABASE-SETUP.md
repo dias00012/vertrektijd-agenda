@@ -253,6 +253,12 @@ $$;
 Er is geen extra instelling nodig: zodra `SUPABASE_SERVICE_ROLE_KEY` er staat
 (stap 5) telt hij mee. Staat die er niet, dan doet `/api/stats` niets.
 
+Vergeet je deze tabel, dan merk je dat: `/api/stats` antwoordt met
+`counted: false`, en de app streept die dag dan níét af en probeert het bij de
+volgende keer openen gewoon opnieuw. Dat was eerder anders — toen antwoordde de
+route altijd "gelukt", streepte de app de dag af, en stond het dashboard op nul
+terwijl de app de hele dag gebruikt werd.
+
 ### Aflezen
 
 **Table Editor → app_events**, of in de SQL Editor:
