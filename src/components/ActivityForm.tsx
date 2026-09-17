@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { activityColor, activityColors, resolveCategory } from "@/lib/categories";
+import { activityColor, activityColors, initialOf, resolveCategory } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { addDaysToKey, minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
@@ -112,6 +112,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     categories,
     categoryFor,
     addCustomCategory,
+    updateCustomCategory,
+    removeCustomCategory,
+    activities,
   } = useAgenda();
   const t = useT();
   const [draft, setDraft] = useState<ActivityDraft>(() =>
@@ -125,8 +128,33 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
    */
   const [duplicating, setDuplicating] = useState(false);
 
-  // Eigen activiteitstype maken (naam + emoji van je eigen toetsenbord).
+  /*
+   * Eigen activiteitstype maken of bijwerken.
+   *
+   * Eén paneel voor allebei: het bevat precies dezelfde velden, en twee bijna
+   * gelijke panelen naast elkaar is hoe ze uit elkaar gaan lopen. `editingType`
+   * houdt bij welk type er bewerkt wordt; is hij leeg, dan maak je er een
+   * nieuwe.
+   */
   const [creatingType, setCreatingType] = useState(false);
+  const [editingType, setEditingType] = useState<string | null>(null);
+  const [confirmDeleteType, setConfirmDeleteType] = useState(false);
+  /**
+   * Hoeveel activiteiten er nog op het te verwijderen type staan. Weggooien mag
+   * wel, maar niet zonder te zeggen wat er dan met die activiteiten gebeurt.
+   */
+  const onType = editingType
+    ? activities.filter((item) => item.category === editingType).length
+    : 0;
+  const deleteTypeQuestion =
+    onType === 0
+      ? t("form.deleteTypeNone")
+      : onType === 1
+        ? t("form.deleteTypeOne")
+        : t("form.deleteTypeMany", { count: onType });
+
+  /** Het gekozen type, maar alleen wanneer het er een van jezelf is. */
+  const ownSelected = settings.customCategories.find((c) => c.id === draft.category) ?? null;
   const [newTypeLabel, setNewTypeLabel] = useState("");
   const [newTypeEmoji, setNewTypeEmoji] = useState("");
   const [newTypeColor, setNewTypeColor] = useState("#3b82f6");
@@ -252,27 +280,68 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     patch({ category: categoryId, color, location: place?.location ?? null });
   }
 
-  /** Maakt een eigen type aan en selecteert het meteen. */
-  function createType() {
+  /** Zet het paneel dicht en maakt de velden leeg. */
+  function closeTypePanel() {
+    setCreatingType(false);
+    setEditingType(null);
+    setConfirmDeleteType(false);
+    setNewTypeLabel("");
+    setNewTypeEmoji("");
+    setTypeError(null);
+  }
+
+  /** Opent het paneel op een bestaand eigen type. */
+  function startEditingType(id: string) {
+    const own = settings.customCategories.find((c) => c.id === id);
+    if (!own) return;
+    setEditingType(id);
+    setCreatingType(true);
+    setConfirmDeleteType(false);
+    setNewTypeLabel(own.label);
+    setNewTypeEmoji(own.emoji);
+    setNewTypeColor(own.color);
+    setTypeError(null);
+  }
+
+  /**
+   * Bewaart het type: een nieuwe erbij, of de bewerkte bijgewerkt.
+   *
+   * Een icoon is niet verplicht. Op een telefoon staat de emoji-toets naast de
+   * spatiebalk, op een laptop moet je een sneltoets kennen -- en wie die niet
+   * kende typte maar iets. Laat je het leeg, dan is het de eerste letter van de
+   * naam in de kleur van het type.
+   */
+  function saveType() {
     const label = newTypeLabel.trim();
     const emoji = newTypeEmoji.trim();
     if (!label) {
       setTypeError(t("form.needTypeName"));
       return;
     }
-    if (!emoji) {
-      setTypeError(t("form.needEmoji"));
-      return;
+
+    if (editingType) {
+      updateCustomCategory(editingType, { label, emoji, color: newTypeColor });
+      // Volgde de kleur van de activiteit het type, dan volgt hij mee.
+      if (!colorTouched.current) patch({ color: newTypeColor });
+    } else {
+      const created = addCustomCategory({ label, emoji, color: newTypeColor });
+      colorTouched.current = false;
+      patch({ category: created.id, color: created.color });
     }
+    closeTypePanel();
+  }
 
-    const created = addCustomCategory({ label, emoji, color: newTypeColor });
-    colorTouched.current = false;
-    patch({ category: created.id, color: created.color });
-
-    setCreatingType(false);
-    setNewTypeLabel("");
-    setNewTypeEmoji("");
-    setTypeError(null);
+  /**
+   * Gooit het type weg. De activiteiten die erop stonden blijven gewoon staan;
+   * de app laat zo'n onbekend type neutraal zien in plaats van het stilletjes
+   * als iets anders te tonen. Daarom is dit niet gevaarlijk, maar wel iets om
+   * even te bevestigen.
+   */
+  function deleteType() {
+    if (!editingType) return;
+    removeCustomCategory(editingType);
+    if (draft.category === editingType) patch({ category: "school" });
+    closeTypePanel();
   }
 
   function patchRecurrence(update: Partial<Recurrence>) {
@@ -378,7 +447,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     type="button"
                     onClick={() => selectCategory(item.id)}
                     aria-pressed={active}
-                    className="flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition-colors"
+                    className="flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-3 text-xs font-medium transition-colors"
                     style={{
                       borderColor: active ? item.color : "var(--line)",
                       background: active
@@ -397,9 +466,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
 
               <button
                 type="button"
-                onClick={() => setCreatingType((open) => !open)}
+                onClick={() => (creatingType ? closeTypePanel() : setCreatingType(true))}
                 aria-expanded={creatingType}
-                className="flex flex-col items-center gap-1 rounded-xl border border-dashed px-2 py-2.5 text-xs font-medium transition-colors"
+                className="flex min-h-[3.75rem] flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-2 py-3 text-xs font-medium transition-colors"
                 style={{ borderColor: "var(--line)", color: "var(--muted)" }}
               >
                 <span aria-hidden className="text-base leading-none">
@@ -409,27 +478,42 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               </button>
             </div>
 
+            {ownSelected && !creatingType ? (
+              <button
+                type="button"
+                onClick={() => startEditingType(ownSelected.id)}
+                className="mt-2 flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-medium"
+                style={{ borderColor: "var(--line)", color: "var(--muted)" }}
+              >
+                <span aria-hidden>&#9998;</span>
+                {t("form.editType", { name: ownSelected.label })}
+              </button>
+            ) : null}
+
             {creatingType ? (
               <div
                 className="mt-2 space-y-3 rounded-xl border px-3 py-3"
                 style={{ borderColor: "var(--line)", background: "var(--surface-soft)" }}
               >
                 <p className="text-xs" style={{ color: "var(--muted)" }}>
-                  {t("form.ownHelp")}{" "}
-                  {t("form.ownHelpKeys", { win: "Win + .", mac: "Ctrl + Cmd + space" })}
+                  {t("form.ownHelp")}
                 </p>
 
                 <div className="flex gap-2">
                   <div className="w-16 shrink-0">
                     <label className="label" htmlFor="new-type-emoji">
-                      {t("form.icon")}
+                      {t("form.icon")}{" "}
+                      <span style={{ textTransform: "none", opacity: 0.7 }}>
+                        ({t("form.iconOptional")})
+                      </span>
                     </label>
                     <input
                       id="new-type-emoji"
                       className="field text-center text-lg"
                       value={newTypeEmoji}
                       onChange={(e) => setNewTypeEmoji(e.target.value.slice(0, 8))}
-                      placeholder="🎸"
+                      // Wat je krijgt als je het leeg laat, zodat het geen gok is.
+                      placeholder={initialOf(newTypeLabel)}
                       aria-label={t("form.iconLabel")}
                     />
                   </div>
@@ -457,15 +541,20 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                         onClick={() => setNewTypeColor(option.value)}
                         aria-label={option.label}
                         title={option.label}
-                        className="h-6 w-6 rounded-full"
-                        style={{
-                          background: option.value,
-                          boxShadow:
-                            newTypeColor === option.value
-                              ? `0 0 0 2px var(--surface-soft), 0 0 0 4px ${option.value}`
-                              : "none",
-                        }}
-                      />
+                        className="flex h-11 w-11 items-center justify-center rounded-full"
+                      >
+                        <span
+                          aria-hidden
+                          className="block h-6 w-6 rounded-full"
+                          style={{
+                            background: option.value,
+                            boxShadow:
+                              newTypeColor === option.value
+                                ? `0 0 0 2px var(--surface-soft), 0 0 0 4px ${option.value}`
+                                : "none",
+                          }}
+                        />
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -476,18 +565,58 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                   </p>
                 ) : null}
 
-                <div className="flex gap-2">
-                  <button type="button" className="btn btn-primary px-3 py-1.5 text-xs" onClick={createType}>
-                    {t("form.addType")}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-primary min-h-[2.5rem] px-3 text-xs"
+                    onClick={saveType}
+                  >
+                    {editingType ? t("form.saveType") : t("form.addType")}
                   </button>
                   <button
                     type="button"
-                    className="btn btn-ghost px-3 py-1.5 text-xs"
-                    onClick={() => setCreatingType(false)}
+                    className="btn btn-ghost min-h-[2.5rem] px-3 text-xs"
+                    onClick={closeTypePanel}
                   >
                     {t("common.cancel")}
                   </button>
+
+                  {editingType ? (
+                    <button
+                      type="button"
+                      className="btn btn-ghost ml-auto min-h-[2.5rem] px-3 text-xs"
+                      style={{ color: "var(--danger)" }}
+                      onClick={() => setConfirmDeleteType(true)}
+                    >
+                      {t("form.deleteType")}
+                    </button>
+                  ) : null}
                 </div>
+
+                {confirmDeleteType && editingType ? (
+                  <div
+                    className="space-y-2 rounded-lg border px-3 py-2.5"
+                    style={{ borderColor: "var(--danger)" }}
+                  >
+                    <p className="text-xs">{deleteTypeQuestion}</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="btn btn-danger min-h-[2.5rem] px-3 text-xs"
+                        onClick={deleteType}
+                      >
+                        {t("form.deleteType")}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost min-h-[2.5rem] px-3 text-xs"
+                        onClick={() => setConfirmDeleteType(false)}
+                      >
+                        {t("common.cancel")}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </fieldset>
@@ -527,16 +656,21 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     aria-pressed={active}
                     aria-label={option.label}
                     title={option.label}
-                    className="h-7 w-7 rounded-full transition-transform"
-                    style={{
-                      background: option.value,
-                      // Ring om de gekozen kleur, in plaats van een randje dat
-                      // in het donkere thema wegvalt.
-                      boxShadow: active
-                        ? `0 0 0 2px var(--surface), 0 0 0 4px ${option.value}`
-                        : "none",
-                    }}
-                  />
+                    className="flex h-11 w-11 items-center justify-center rounded-full"
+                  >
+                    <span
+                      aria-hidden
+                      className="block h-7 w-7 rounded-full"
+                      style={{
+                        background: option.value,
+                        // Ring om de gekozen kleur, in plaats van een randje dat
+                        // in het donkere thema wegvalt.
+                        boxShadow: active
+                          ? `0 0 0 2px var(--surface), 0 0 0 4px ${option.value}`
+                          : "none",
+                      }}
+                    />
+                  </button>
                 );
               })}
             </div>
