@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   activitiesOnDate,
+  applyFeed,
   buildTimeline,
   clashesFor,
   findNextActivity,
+  goneFromFeed,
   layoutDay,
   searchActivities,
   timeRangeFor,
@@ -363,5 +365,95 @@ describe("clashesOnDate", () => {
     const nacht = activity({ id: "nacht", title: "Nachtdienst", startTime: "23:00", endTime: "00:30" });
     const laat = activity({ id: "laat", title: "Feest", startTime: "22:00", endTime: "23:30" });
     expect(botsingen([nacht, laat], "nacht")).toHaveLength(1);
+  });
+});
+
+describe("applyFeed", () => {
+  const NU = "2026-09-17T12:00:00.000Z";
+
+  /** Een les uit een gekoppelde agenda, met een overgeslagen dag erin. */
+  const les = (patch: Partial<Activity> = {}): Activity => ({
+    id: "feed:wiskunde",
+    category: "school",
+    title: "Wiskunde",
+    date: "2026-09-07",
+    endDate: null,
+    allDay: false,
+    startTime: "09:00",
+    endTime: "10:30",
+    location: null,
+    color: null,
+    source: "rooster",
+    travelMode: null,
+    recurrence: { freq: "weekly", weekdays: [1], until: null },
+    exceptions: ["2026-09-14"],
+    travel: null,
+    returnTravel: null,
+    onwardTravel: null,
+    travelError: null,
+    bufferMinutes: null,
+    linkedTaskId: null,
+    linkedStepId: null,
+    linkedExamId: null,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    ...patch,
+  });
+
+  it("houdt de dagen die je eruit hebt gehaald bij een verversing", () => {
+    // Dit ging fout: elke verversing zette `exceptions` op leeg, en dan stond
+    // de les die je voor die ene dag had weggehaald er stilletjes weer.
+    const opnieuw = applyFeed(
+      [les()],
+      ["feed:wiskunde"],
+      [{ ...les(), exceptions: [] }],
+      "rooster",
+      NU,
+    );
+    expect(opnieuw).toHaveLength(1);
+    expect(opnieuw[0].exceptions).toEqual(["2026-09-14"]);
+  });
+
+  it("neemt de rest van de verse gegevens wél over", () => {
+    const opnieuw = applyFeed(
+      [les()],
+      ["feed:wiskunde"],
+      [{ ...les(), startTime: "10:00", endTime: "11:30", title: "Wiskunde (lokaal 2.14)" }],
+      "rooster",
+      NU,
+    );
+    expect(opnieuw[0]).toMatchObject({
+      title: "Wiskunde (lokaal 2.14)",
+      startTime: "10:00",
+      updatedAt: NU,
+    });
+  });
+
+  it("laat een nieuw blok gewoon zonder overgeslagen dagen beginnen", () => {
+    const opnieuw = applyFeed([], [], [{ ...les(), id: "feed:nieuw" }], "rooster", NU);
+    expect(opnieuw[0].exceptions).toEqual([]);
+    expect(opnieuw[0].createdAt).toBe(NU);
+  });
+
+  it("laat de blokken van iemand anders met rust", () => {
+    const eigen = les({ id: "zelf", source: null, title: "Gamen" });
+    const opnieuw = applyFeed([eigen, les()], ["feed:wiskunde"], [les()], "rooster", NU);
+    expect(opnieuw.map((item) => item.id)).toEqual(["zelf", "feed:wiskunde"]);
+  });
+
+  it("gooit de reistijd weg, want die hoort bij de oude tijd", () => {
+    const met = les({ travel: { durationMinutes: 20 } as Activity["travel"] });
+    const opnieuw = applyFeed([met], ["feed:wiskunde"], [met], "rooster", NU);
+    expect(opnieuw[0].travel).toBeNull();
+  });
+});
+
+describe("goneFromFeed", () => {
+  it("noemt alleen wat niet meteen terugkomt", () => {
+    expect(goneFromFeed(["a", "b", "c"], [{ id: "b" }])).toEqual(["a", "c"]);
+  });
+
+  it("noemt niets wanneer alles terugkomt", () => {
+    expect(goneFromFeed(["a"], [{ id: "a" }])).toEqual([]);
   });
 });

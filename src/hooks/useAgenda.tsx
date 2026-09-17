@@ -37,7 +37,7 @@ import {
 import { needsTravelRefresh, nextOccurrenceDate, travelPlanFor } from "@/lib/travel";
 import { daysBetween, todayKey } from "@/lib/time";
 import { relocatePoint } from "@/lib/places";
-import { dayRoleFor } from "@/lib/agenda";
+import { applyFeed, dayRoleFor, goneFromFeed } from "@/lib/agenda";
 import { statusAfterSteps } from "@/lib/schoolwork";
 import { track } from "@/lib/stats";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
@@ -591,32 +591,13 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       source?: string;
     }) => {
       const now = new Date().toISOString();
-      const created: Activity[] = add.map(({ id, ...draft }) => ({
-        id: id ?? createId(),
-        ...draft,
-        source: source ?? null,
-        exceptions: [],
-        travel: null,
-        returnTravel: null,
-        travelError: null,
-        bufferMinutes: null,
-        createdAt: now,
-        updatedAt: now,
-      }));
-      const removing = new Set(remove);
-      setActivities((current) => [
-        ...current.filter((item) => !removing.has(item.id)),
-        ...created,
-      ]);
+      // Ids vooraf vastzetten: `applyFeed` moet een blok dat terugkomt kunnen
+      // herkennen aan zijn id, en dat lukt niet als het er pas binnen ontstaat.
+      const incoming = add.map((draft) => ({ ...draft, id: draft.id ?? createId() }));
 
-      // Een grafsteen voor wat hier echt verdwijnt. Zonder dat spoor kent het
-      // andere apparaat het blok nog wel, en zet het samenvoegen het bij de
-      // eerstvolgende synchronisatie gewoon terug -- naast het nieuwe.
-      //
-      // Alleen voor wat niet meteen terugkomt: een les die nu hetzelfde id
-      // krijgt als daarnet is niet weggegooid maar bijgewerkt.
-      const keeping = new Set(created.map((item) => item.id));
-      const gone = remove.filter((id) => !keeping.has(id));
+      setActivities((current) => applyFeed(current, remove, incoming, source ?? null, now));
+
+      const gone = goneFromFeed(remove, incoming);
       if (gone.length > 0) {
         const goneSet = new Set(gone);
         setDeletions((current) => [
