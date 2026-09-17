@@ -674,3 +674,46 @@ describe("geen valse dubbelmelding", () => {
     expect(readAgenda(wereld, {}, NOW).duplicates).toHaveLength(1);
   });
 });
+
+describe("heenreis nog niet berekend", () => {
+  // Zoals Sporten in de echte agenda stond: wel een thuisreis van 20 minuten,
+  // maar geen berekende heenreis. Dan gold 18:15 als vertrektijd, en bood de
+  // app een gaatje van 21 minuten aan in het kwartier dat je erheen fietst.
+  const sporten = activity({
+    id: "gym",
+    category: "gym",
+    title: "Sporten",
+    date: "2026-09-17",
+    startTime: "18:15",
+    endTime: "19:30",
+    location: { label: "Middachtenlaan 19, Almere", lat: 52.37, lon: 5.24 },
+    travel: null,
+    returnTravel: {
+      durationMinutes: 20,
+      distanceKm: 4,
+      mode: "transit",
+      provider: "motis",
+      computedAt: "2026-09-16T06:00:00.000Z",
+      key: "terug",
+    },
+  } as unknown as Partial<Activity>);
+
+  const wereld = data({ activities: [sporten], settings: settings({ bufferMinutes: 5 }) });
+
+  it("schat het vertrek op de thuisreis", () => {
+    // 18:15 min 20 minuten reis min 5 minuten marge = 17:50.
+    const dag = readAgenda(wereld, { from: "2026-09-17", to: "2026-09-17" }, NOW).days[0];
+    expect(dag.free.some((slot) => slot.to === "18:15")).toBe(false);
+    expect(dag.free.some((slot) => slot.to === "17:50")).toBe(true);
+  });
+
+  it("weigert een blok in de tijd dat je erheen gaat", () => {
+    const uitkomst = saveActivities(
+      wereld,
+      [{ title: "Even leren", date: "2026-09-17", startTime: "17:55", endTime: "18:15" }],
+      NOW,
+    );
+    expect(uitkomst.added).toBe(0);
+    expect(uitkomst.skipped[0].reason).toContain("niet thuis");
+  });
+});

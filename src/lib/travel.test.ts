@@ -254,6 +254,45 @@ describe("computeDeparture", () => {
   });
 });
 
+describe("computeDeparture met een oude rit", () => {
+  it("gelooft een rit niet die je twee uur te vroeg afzet", () => {
+    // Uit de echte agenda: werken van 09:00 tot 17:00, reis 54 minuten, en een
+    // opgeslagen rit die om 05:42 vertrekt en om 06:36 aankomt. Dat is geen
+    // vroege rit maar een rit van een begintijd die allang veranderd is.
+    // Rekenen geeft: 09:00 min 54 min reis min 5 min marge = 08:01.
+    const result = computeDeparture(
+      activity({
+        startTime: "09:00",
+        endTime: "17:00",
+        travel: travel({
+          durationMinutes: 54,
+          plannedDeparture: "2026-09-17T05:42:00+02:00",
+          plannedArrival: "2026-09-17T06:36:00+02:00",
+        }),
+      }),
+      settings({ bufferMinutes: 5 }),
+    );
+    expect(result?.time).toBe("08:01");
+    expect(result?.late).toBe(false);
+  });
+
+  it("gelooft een rit die je een halfuur te vroeg afzet wel", () => {
+    // Op een lijn die een paar keer per uur rijdt is te vroeg aankomen normaal.
+    const result = computeDeparture(
+      activity({
+        startTime: "09:00",
+        travel: travel({
+          durationMinutes: 40,
+          plannedDeparture: "2026-09-17T07:50:00+02:00",
+          plannedArrival: "2026-09-17T08:30:00+02:00",
+        }),
+      }),
+      settings({ bufferMinutes: 5 }),
+    );
+    expect(result?.time).toBe("07:50");
+  });
+});
+
 describe("computeReturn", () => {
   it("telt de terugreis bij de eindtijd op, zonder marge", () => {
     const result = computeReturn(

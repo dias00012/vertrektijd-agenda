@@ -8,6 +8,31 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.63.0
+
+- **Je vertrektijd naar werk stond op 05:42 voor een dag die om 09:00 begint.**
+  Twee uur en twintig minuten te vroeg, met een reis van 54 minuten. Dezelfde
+  oorzaak als bij de thuiskomst: bij een reeks wordt één berekende rit voor alle
+  dagen bewaard, en verschuift je begintijd daarna, dan blijft die rit staan.
+  Die was hier van een begintijd rond 07:00 -- hij zette je om 06:36 af.
+
+  Zet een opgeslagen rit je meer dan anderhalf uur te vroeg af, dan gelooft de
+  app hem niet meer en rekent gewoon: begintijd min reistijd min marge. Voor die
+  werkdag: vertrek om 08:01.
+
+  Een uur te vroeg aankomen blijft geloofd -- op een lijn die één keer per uur
+  rijdt is dat gewoon de beste rit. Daar staat een test op.
+
+## 0.62.0
+
+- **En hetzelfde voor de heenreis.** In dezelfde controle waarin 0.61.0 groen
+  bleek, stond bij "Sporten" wél een thuisreis van 20 minuten maar geen
+  berekende heenreis. Dan gold de begintijd als vertrektijd, en bood de app een
+  gaatje van 21 minuten aan in precies het kwartier dat je erheen fietst.
+
+  Is een van beide reizen nog niet berekend, dan houdt de app nu de andere aan
+  als schatting -- in allebei de richtingen.
+
 ## 0.61.0
 
 - **Zonder berekende thuisreis gold je eindtijd als thuiskomst.** Gevonden door
