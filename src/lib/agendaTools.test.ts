@@ -1060,3 +1060,73 @@ describe("de fysio-afspraak op de sportavond", () => {
     ]);
   });
 });
+
+describe("wat read_agenda over de reistijd zegt", () => {
+  /*
+   * Hier ging het mis in de praktijk. Was de heenreis nog niet berekend, dan
+   * stond er gewoon géén vertrektijd in het antwoord -- geen "onbekend", maar
+   * stilte. En stilte vult een planner in met iets plausibels.
+   */
+  const buiten = (patch: Partial<Activity> = {}): Activity =>
+    activity({
+      id: "gym",
+      title: "Sporten",
+      startTime: "18:15",
+      endTime: "19:30",
+      location: { label: "Middachtenlaan 19, Almere", lat: 52.37, lon: 5.24 },
+      ...patch,
+    });
+
+  const lees = (item: Activity) =>
+    readAgenda(data({ activities: [item] }), { from: "2026-09-14", to: "2026-09-14" }, NOW)
+      .days[0].activities[0];
+
+  it("schat de vertrektijd uit de thuisreis wanneer de heenreis ontbreekt", () => {
+    const item = buiten({
+      travel: null,
+      returnTravel: { durationMinutes: 20 } as Activity["returnTravel"],
+    });
+    // 18:15 min twintig minuten reis min tien minuten marge.
+    expect(lees(item)).toMatchObject({
+      departure: "17:45",
+      travelMinutes: 20,
+      departureEstimated: true,
+    });
+  });
+
+  it("schat andersom net zo goed", () => {
+    const item = buiten({
+      travel: { durationMinutes: 25 } as Activity["travel"],
+      returnTravel: null,
+    });
+    expect(lees(item)).toMatchObject({ backHome: "19:55", backHomeEstimated: true });
+  });
+
+  it("zegt het met zoveel woorden wanneer er niets bekend is", () => {
+    const item = buiten({ travel: null, returnTravel: null });
+    expect(lees(item)).toMatchObject({ travelUnknown: true });
+    expect(lees(item).departure).toBeUndefined();
+  });
+
+  it("geeft de reden mee wanneer de app die kent", () => {
+    const item = buiten({ travel: null, returnTravel: null, travelError: "geen route gevonden" });
+    expect(lees(item).travelNote).toBe("geen route gevonden");
+  });
+
+  it("noemt een berekende reis geen schatting", () => {
+    const item = buiten({
+      travel: { durationMinutes: 25 } as Activity["travel"],
+      returnTravel: { durationMinutes: 20 } as Activity["returnTravel"],
+    });
+    const gelezen = lees(item);
+    expect(gelezen.departureEstimated).toBeUndefined();
+    expect(gelezen.backHomeEstimated).toBeUndefined();
+    expect(gelezen.travelUnknown).toBeUndefined();
+  });
+
+  it("roept geen onbekende reistijd bij iets zonder plek", () => {
+    // Thuis studeren heeft geen reis; dat is geen ontbrekend gegeven.
+    const thuis = activity({ location: null, travel: null, returnTravel: null });
+    expect(lees(thuis).travelUnknown).toBeUndefined();
+  });
+});
