@@ -119,6 +119,20 @@ export function travelIsStale(
   return now.getTime() - at >= maxAgeMs;
 }
 
+/**
+ * De reisduur die we voor deze kant aanhouden.
+ *
+ * De berekende, of anders die van de andere kant. De app rekent heen en terug
+ * los van elkaar uit, dus er is een venster waarin er maar één bekend is. Dan
+ * is "de andere kant duurt ongeveer even lang" een veel betere aanname dan de
+ * stilzwijgende nul -- want die nul betekent dat je je erheen denkt.
+ */
+export function travelMinutesEither(activity: Activity, side: "out" | "back"): number {
+  const out = activity.travel?.durationMinutes;
+  const back = activity.returnTravel?.durationMinutes;
+  return (side === "out" ? (out ?? back) : (back ?? out)) ?? 0;
+}
+
 export function bufferFor(activity: Activity, settings: Settings): number {
   return activity.bufferMinutes ?? settings.bufferMinutes;
 }

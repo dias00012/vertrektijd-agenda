@@ -1,11 +1,13 @@
 import type { Activity, ActivityOccurrence, Settings, TravelRole } from "./types";
 import {
+  bufferFor,
   computeDeparture,
   computeOnward,
   computeReturn,
   departureDateTime,
   nextOccurrenceDate,
   type OnwardInfo,
+  travelMinutesEither,
 } from "./travel";
 import { addDaysToKey, MINUTES_PER_DAY, timeToMinutes, toDateKey, toDateTime } from "./time";
 import { lastOccurrenceDate, occurrencesOnDate, toOccurrence } from "./recurrence";
@@ -402,10 +404,20 @@ export function clashesOnDate(
       const onward = computeOnward(occurrence, null);
       // Vertrekken kan op de vorige dag vallen en thuiskomen op de volgende;
       // dan houdt de dag zelf de grens vast in plaats van een tijd van gisteren.
-      const from = departure && !departure.previousDay ? Math.min(departure.minutes, own.from) : own.from;
+      // Is een van beide ritten nog niet berekend, dan schatten we hem op de
+      // andere kant. Zonder dat gold de begintijd als vertrek en de eindtijd
+      // als thuiskomst, en dan zag deze controle niet dat je om 17:54 thuiskomt
+      // terwijl je om 17:50 alweer weg moet naar de sportschool.
+      const heen = own.from - travelMinutesEither(occurrence, "out") - bufferFor(occurrence, settings);
+      const terug = own.to + travelMinutesEither(occurrence, "back");
+      const from = departure
+        ? departure.previousDay
+          ? own.from
+          : Math.min(departure.minutes, own.from)
+        : Math.min(heen, own.from);
       const until = back?.nextDay
         ? own.to + MINUTES_PER_DAY
-        : Math.max(own.to, back?.minutes ?? own.to, onward ? timeToMinutes(onward.arrival) : own.to);
+        : Math.max(own.to, back?.minutes ?? terug, onward ? timeToMinutes(onward.arrival) : own.to);
       return { occurrence, own, busy: { from, to: until } };
     });
 

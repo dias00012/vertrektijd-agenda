@@ -194,6 +194,12 @@ const AgendaContext = createContext<AgendaContextValue | null>(null);
  */
 const TRAVEL_HORIZON_DAYS = 7;
 
+/** Na deze tijd mag een mislukte reisberekening het opnieuw proberen. */
+const FAILED_RETRY_MS = 15 * 60_000;
+
+/** Hoe vaak we kijken of zo'n wachttijd om is. */
+const RETRY_TICK_MS = 5 * 60_000;
+
 /** Twee locaties op dezelfde plek gelden als dezelfde bewaarde locatie. */
 function placeKey(location: GeoLocation): string {
   return `${location.lat.toFixed(5)},${location.lon.toFixed(5)}`;
@@ -284,7 +290,18 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** Sleutels waarvoor de berekening faalde; niet automatisch opnieuw proberen. */
-  const failedKeys = useRef<Set<string>>(new Set());
+  /**
+   * Ritten die niet opgehaald konden worden, met het moment waarop dat misging.
+   *
+   * Eerder was dit een kale verzameling zonder tijdstip: mislukte een rit één
+   * keer, dan werd hij overgeslagen tot je opnieuw online kwam of opnieuw
+   * inlogde. Ging er dus iets mis terwijl je gewoon verbinding had -- de
+   * routedienst die even niet wilde, een verkeersdrempel aan hun kant -- dan
+   * bleef de oude vertrektijd staan. Voor altijd, wat er ook veranderde.
+   *
+   * Nu krijgt zo'n rit na een kwartier vanzelf een nieuwe kans.
+   */
+  const failedKeys = useRef<Map<string, number>>(new Map());
   const inFlight = useRef<Set<string>>(new Set());
   /** Telt op zodra de verbinding terugkomt, om de reisberekening te herstarten. */
   const [reconnected, setReconnected] = useState(0);
@@ -306,6 +323,21 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("online", backOnline);
     return () => window.removeEventListener("online", backOnline);
+  }, []);
+
+  /**
+   * En een zetje voor ritten waarvan de wachttijd om is.
+   *
+   * De herberekening draait op wijzigingen in je agenda. Verandert er niets --
+   * en dat is precies de situatie waarin je met een verouderde vertrektijd zit
+   * te kijken -- dan gebeurt er zonder deze tik nooit meer iets.
+   */
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (failedKeys.current.size === 0) return;
+      setReconnected((count) => count + 1);
+    }, RETRY_TICK_MS);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -441,7 +473,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
           ),
         );
       } catch (error) {
-        failedKeys.current.add(plan.outboundKey);
+        failedKeys.current.set(plan.outboundKey, Date.now());
         const message =
           error instanceof Error ? error.message : say("error.travel");
         setActivities((current) =>
@@ -494,7 +526,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       const onward = role?.onward ?? null;
       if (!needsTravelRefresh(activity, settings, now, onward)) continue;
       const plan = travelPlanFor(activity, settings, now, onward);
-      if (plan && failedKeys.current.has(plan.outboundKey)) continue;
+      if (plan) {
+        const mislukt = failedKeys.current.get(plan.outboundKey);
+        if (mislukt !== undefined) {
+          if (now.getTime() - mislukt < FAILED_RETRY_MS) continue;
+          // De wachttijd is om: van de lijst af, zodat hij het opnieuw probeert.
+          failedKeys.current.delete(plan.outboundKey);
+        }
+      }
       wachtrij.push({ activity, onward, dag });
     }
 

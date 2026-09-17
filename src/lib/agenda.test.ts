@@ -291,6 +291,28 @@ describe("clashesOnDate", () => {
     return clashesFor(mij, activiteiten, settings());
   }
 
+  it("ziet een botsing ook als alleen de thuisreis berekend is", () => {
+    // De sportschool heeft wel een berekende thuisreis van 20 minuten maar nog
+    // geen heenreis. Zonder schatting gold 17:15 als vertrektijd en zag deze
+    // controle niets; met de schatting moet je om 16:45 weg -- en dan zit je
+    // nog op je werk.
+    const werk = activity({
+      id: "werk", title: "Werken", startTime: "09:00", endTime: "17:00",
+      location: { label: "Lelystad", lat: 52.5, lon: 5.47 },
+      travel: rit(54), returnTravel: rit(54),
+    });
+    const sporten = activity({
+      id: "gym", title: "Sporten", startTime: "17:15", endTime: "18:30",
+      location: { label: "Sportschool", lat: 52.37, lon: 5.24 },
+      travel: null, returnTravel: rit(20),
+    });
+
+    const gevonden = botsingen([werk, sporten], "gym");
+    expect(gevonden).toHaveLength(1);
+    expect(gevonden[0].travelOnly).toBe(true);
+    expect(gevonden[0].other.title).toBe("Werken");
+  });
+
   it("ziet twee dingen op hetzelfde moment", () => {
     const bijbaan = activity({ id: "bijbaan", title: "Bijbaan", startTime: "14:00", endTime: "18:00" });
     const botsing = botsingen([school, bijbaan], "school");
