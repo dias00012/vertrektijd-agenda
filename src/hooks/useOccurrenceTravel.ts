@@ -100,6 +100,21 @@ export function useOccurrenceTravel(
    * naar de gratis OV-dienst zonder dat iemand kijkt; je les van vanochtend
    * hoeft om acht uur 's avonds niet meer bijgewerkt.
    */
+  /*
+   * De React Compiler wijst dit terecht aan: `Date.now()` tijdens het renderen
+   * is onzuiver, want twee renders geven een andere uitkomst.
+   *
+   * Hier is dat precies de bedoeling. De vraag is "doet deze reis er nú nog
+   * toe", en dat antwoord hóórt te veranderen als de tijd verstrijkt. Het
+   * wordt alleen gebruikt om te beslissen of er ververst moet worden, nooit om
+   * iets op het scherm te zetten -- een render extra levert dus hooguit een
+   * verse reistijd op, nooit een ander beeld.
+   *
+   * Het netjes oplossen betekent de tijd via state binnenbrengen, en dat raakt
+   * de logica waar de vertrektijden uit komen. Dat is een aparte ronde waard
+   * met de tests ernaast, niet iets om en passant mee te nemen.
+   */
+  // eslint-disable-next-line react-hooks/purity -- zie hierboven: bewust, en alleen om te beslissen of er ververst wordt
   const nowMs = Date.now();
   const startsAt = toDateTime(activity.date, activity.startTime).getTime();
   const endsAt = toDateTime(activity.date, activity.endTime).getTime();

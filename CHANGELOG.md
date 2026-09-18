@@ -8,6 +8,58 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.82.0
+
+- **Next.js 15 → 16, React 19.1 → 19.3, vitest 3 → 5.** Aanleiding was een
+  controle die vijf kwetsbaarheden meldde, waarvan twee hoog. Die zaten niet in
+  deze app maar in wat Next meebracht (`postcss` en `sharp`), en `npm audit fix`
+  kwam er niet bij: ze zaten vast in de afhankelijkheden van Next zelf. Vandaar
+  de hoofdversie. Nu: **nul kwetsbaarheden.**
+
+  De app zelf hoefde er niet voor te veranderen. Geen middleware, geen
+  `next/image`, geen `next/font`, geen server-side `params` -- precies de
+  dingen die Next 16 omgooit, en geen ervan zit hierin.
+
+  Wat er wel omging:
+
+  De officiële codemod zette overal `export const instant = false` neer, een
+  opt-out voor Cache Components. Die functie staat in dit project niet eens
+  aan, en de export is zonder die vlag ongeldig -- de typecontrole viel er
+  meteen over. Weggehaald, zoals de codemod er zelf bij zet.
+
+  De codemod tilde ESLint ook naar 10. Dat kan niet: `eslint-config-next` 16
+  bundelt `eslint-plugin-react` 7.37.5, en die ondersteunt hoogstens ESLint 9.7
+  (het viel om op een functie die in 10 is verdwenen). ESLint staat weer op 9.
+  De `FlatCompat`-brug in `eslint.config.mjs` is wel weg: sinds
+  eslint-config-next 16 zijn beide sets zelf al een flat config.
+
+- **De regels van de React Compiler doen mee.** Die komen met Next 16 mee en
+  vonden zevenentwintig plekken.
+
+  Vijfentwintig zijn `setState` in een effect, en geen ervan is een fout: deze
+  app bewaart alles in localStorage, dat bestaat niet op de server, dus lezen
+  kan pas ná het mounten -- in precies zo'n effect. Die regel staat uit, met de
+  reden in `eslint.config.mjs`. Een regel die permanent staat te waarschuwen
+  leert mensen alleen om waarschuwingen te negeren.
+
+  Eén is echt: `Date.now()` tijdens het renderen in `useOccurrenceTravel`. Dat
+  is bewust -- de vraag is "doet deze reis er nú nog toe" en dat antwoord hóórt
+  mee te veranderen met de tijd -- maar het is wel onzuiver. Er staat een
+  gerichte uitzondering met uitleg; de regel blijft voor de rest van de code
+  scherp staan. Het netjes oplossen raakt de logica waar de vertrektijden uit
+  komen, en dat is geen klus om tijdens een framework-upgrade even mee te
+  nemen.
+
+  En één was gewoon dode code: `getoond` en `looptijd` in
+  `scripts/overstap-vergelijking.mjs`, restanten van een eerdere versie van dat
+  script. Weg.
+
+- **Alles nagemeten.** 559 rekentests, 10 browsertests, typecontrole en lint
+  schoon, alle negen pagina's 200, en de beveiligingsroutes doen nog precies
+  wat ze deden: `/api/push/send` weigert zonder geheim, `/api/rooster` weigert
+  het eigen netwerk en `file://`, en er staat geen enkel geheim in de
+  browserbundel.
+
 ## 0.81.0
 
 - **Een beveiligingsronde langs de hele app.** Geen melding vooraf, maar de

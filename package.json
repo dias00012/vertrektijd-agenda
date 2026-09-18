@@ -1,6 +1,6 @@
 {
   "name": "vertrektijd-agenda",
-  "version": "0.81.0",
+  "version": "0.82.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,9 +15,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
-    "next": "^15.5.25",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "server-only": "^0.0.1",
     "web-push": "^3.6.7"
   },
@@ -25,13 +25,17 @@
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "4.1.13",
     "@types/node": "22.15.3",
-    "@types/react": "19.1.9",
-    "@types/react-dom": "19.1.7",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@types/web-push": "^3.6.4",
     "eslint": "^9.39.5",
-    "eslint-config-next": "^15.5.25",
+    "eslint-config-next": "16.3.5",
     "tailwindcss": "4.1.13",
     "typescript": "5.8.3",
-    "vitest": "^3.2.7"
+    "vitest": "^5.0.1"
+  },
+  "overrides": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0"
   }
 }
