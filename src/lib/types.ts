@@ -260,6 +260,12 @@ export interface ActivityDraft {
   location: GeoLocation | null;
   color: string | null;
   travelMode: TravelMode | null;
+  /**
+   * Eigen marge voor deze activiteit, in minuten; `null` volgt de algemene
+   * marge uit de instellingen. Voor de sportschool is vijf minuten genoeg,
+   * voor school wil je er twintig.
+   */
+  bufferMinutes?: number | null;
   recurrence: Recurrence | null;
   /**
    * Koppeling aan schoolwerk. Alleen gezet wanneer je vanuit een opdracht of
@@ -364,7 +370,7 @@ export interface CalendarSubscription {
 /** Een locatie die de gebruiker heeft bewaard om te hergebruiken. */
 export interface SavedPlace {
   id: string;
-  /** Naam uit de zoekopdracht, bv. "Basic-Fit, Almere". */
+  /** Naam uit de zoekopdracht, bv. "Fitpunt, Almere". */
   name: string;
   /**
    * Zelfgekozen naam ("Werk", "Bijbaan"). Staat die er, dan wint hij van zowel

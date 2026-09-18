@@ -86,6 +86,11 @@ function initialDraft(
       color: activity.color ?? resolveCategory(activity.category, settings.customCategories, settings.categoryOverrides)
         .color,
       travelMode: activity.travelMode ?? settings.travelMode,
+      // Anders dan kleur en vervoermiddel bewust wél met een "standaard"-stand:
+      // een marge is een getal, en een ingevuld veld dat de algemene waarde
+      // toont zou die bij het opslaan vastzetten op deze activiteit. Dan volgt
+      // hij de instellingen niet meer als je die later verandert.
+      bufferMinutes: activity.bufferMinutes ?? null,
       recurrence: activity.recurrence,
     };
   }
@@ -102,6 +107,7 @@ function initialDraft(
     location: placeForCategory(settings, category)?.location ?? null,
     color: resolveCategory(category, settings.customCategories, settings.categoryOverrides).color,
     travelMode: settings.travelMode,
+    bufferMinutes: null,
     recurrence: null,
     ...preset,
   };
@@ -1034,6 +1040,54 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
                 {t("form.transitHintFull")}
               </p>
+
+              {/*
+                Marge per activiteit. Het veld ontbrak als enige: `Activity`
+                kende hem al en `bufferFor` gebruikte hem al, alleen kon je
+                hem nergens invullen -- dus gold één marge voor alles. Voor de
+                sportschool is vijf minuten genoeg, voor school wil je er
+                twintig, en dat scheelt elke dag een kwartier onnodig vroeg weg.
+
+                Leeg = volg de instellingen. Bewust geen voorgevuld getal: dat
+                zou de algemene marge bij het opslaan vastzetten op deze
+                activiteit, en dan verandert hij niet meer mee.
+              */}
+              <div className="mt-4">
+                <label className="label" htmlFor="activity-buffer">
+                  {t("form.buffer")}
+                </label>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    id="activity-buffer"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={120}
+                    step={5}
+                    className="input w-28"
+                    placeholder={t("form.bufferDefault", { count: settings.bufferMinutes })}
+                    value={draft.bufferMinutes ?? ""}
+                    onChange={(event) => {
+                      const waarde = event.target.value.trim();
+                      if (waarde === "") {
+                        patch({ bufferMinutes: null });
+                        return;
+                      }
+                      const minuten = Number(waarde);
+                      // Onzin en negatieve tijd niet doorlaten: een negatieve
+                      // marge zou je ná je starttijd laten vertrekken.
+                      if (!Number.isFinite(minuten)) return;
+                      patch({ bufferMinutes: Math.min(120, Math.max(0, Math.round(minuten))) });
+                    }}
+                  />
+                  <span className="text-sm" style={{ color: "var(--muted)" }}>
+                    {t("form.bufferUnit")}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
+                  {t("form.bufferHint")}
+                </p>
+              </div>
             </fieldset>
           ) : null}
         </div>

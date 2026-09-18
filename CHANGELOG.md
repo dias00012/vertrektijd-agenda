@@ -8,6 +8,40 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.86.0
+
+- **Marge per activiteit.** Het veld ontbrak als enige van de "klaar voor
+  later"-lijst: `Activity.bufferMinutes` bestond al en `bufferFor` gebruikte
+  hem al, alleen kon je hem nergens invullen. Eén marge gold dus voor alles.
+
+  Nu staat er bij een activiteit met een bestemming een veld "Marge voor deze
+  activiteit". Voor de sportschool is vijf minuten genoeg, voor school wil je
+  er twintig -- dat scheelt elke dag een kwartier onnodig vroeg weg.
+
+  Leeg laten volgt de algemene marge uit Instellingen. Bewust geen voorgevuld
+  getal: dat zou de algemene waarde bij het opslaan vastzetten op deze
+  activiteit, en dan verandert hij niet meer mee als je hem in Instellingen
+  aanpast. Bij OV zit de marge in de sleutel van de rit, dus een andere marge
+  laat de app vanzelf een andere trein zoeken.
+
+  Vier browsertests, nagelopen door de code op drie plekken te breken. De
+  derde mutatie -- de marge wegvegen bij het *aanmaken* van een activiteit --
+  glipte er eerst doorheen, omdat alle tests een bestaande activiteit
+  bewerkten. Daar staat nu een test naast die er een nieuwe maakt.
+
+- **De lijst "Klaar voor later" in de README klopte niet meer.** Vier van de
+  zes punten waren allang gebouwd: vervoermiddel per activiteit, tweewekelijks
+  en maandelijks herhalen, een leerblok koppelen aan een opdracht, en
+  synchronisatie tussen je apparaten. Dat is vervelender dan het lijkt -- je
+  gaat iets bouwen dat er al is, of je denkt dat de app minder kan dan hij kan.
+  Er staat nu een tabel met wat er wél is, wat er echt nog niet is, en wat
+  bewust niet komt (lopen als keuze).
+
+- **Een merknaam uit de tests en het commentaar gehaald.** "Basic-Fit Almere
+  Buiten" is geen adres, maar wel een specifieke vestiging, en dat botst met de
+  regel dat er geen echte plekken in tests of documentatie staan. Nu een
+  verzonnen naam.
+
 ## 0.85.0
 
 - **Twee beveiligingscontroles hebben nu tests.** Bij de ronde in 0.81.0 heb ik
