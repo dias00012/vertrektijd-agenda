@@ -22,6 +22,7 @@ export function JourneyCard({
   fastest = false,
   latestOnTime = false,
   now,
+  onToAgenda,
 }: {
   journey: Journey;
   fastest?: boolean;
@@ -29,6 +30,8 @@ export function JourneyCard({
   latestOnTime?: boolean;
   /** Van buiten, zodat het renderen niet zelf de klok afleest. */
   now: Date;
+  /** Deze rit in de agenda zetten; weglaten en de knop verschijnt niet. */
+  onToAgenda?: () => void;
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -162,6 +165,22 @@ export function JourneyCard({
             </li>
           ))}
         </ol>
+      ) : null}
+
+      {/*
+        Van de planner terug naar je agenda. Andersom kon al (de agenda linkt
+        door naar hier met de bestemming erin), deze kant niet -- dus tikte je
+        een rit die je net gevonden had alsnog met de hand over.
+
+        Alleen in het uitgeklapte deel: op de dichte kaart telt elke regel, en
+        dit is niet wat je als eerste doet.
+      */}
+      {open && onToAgenda ? (
+        <div className="border-t px-4 py-3" style={{ borderColor: "var(--line)" }}>
+          <button type="button" className="btn btn-ghost w-full text-sm" onClick={onToAgenda}>
+            {t("journey.toAgenda")}
+          </button>
+        </div>
       ) : null}
 
       {/* Voor schermlezers: de kern van de rit ook zonder uitklappen. */}

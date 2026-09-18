@@ -8,7 +8,10 @@ import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
 import { JourneyCard } from "@/components/JourneyCard";
-import { latestOnTime } from "@/lib/journeyList";
+import { endOfDay, latestOnTime } from "@/lib/journeyList";
+import { ActivityForm } from "@/components/ActivityForm";
+import { minutesToTime, timeToMinutes, toDateKey } from "@/lib/time";
+import { legTime } from "@/lib/travelModes";
 import { useNow } from "@/hooks/useNow";
 import { EmptyState, Spinner } from "@/components/ui";
 import type { GeoLocation, Journey } from "@/lib/types";
@@ -79,6 +82,8 @@ export default function TravelPlannerPage() {
    * vraag hoe laat je er moet zijn.
    */
   const [arrivalTarget, setArrivalTarget] = useState<string | null>(null);
+  /** De rit die je in je agenda wilt zetten; null = het formulier is dicht. */
+  const [toAgenda, setToAgenda] = useState<Journey | null>(null);
   const [cursors, setCursors] = useState<{ previous?: string; next?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +128,17 @@ export default function TravelPlannerPage() {
   }, [hydrated, t]);
 
   const search = useCallback(
-    async (cursor?: string, direction: "next" | "previous" = "next") => {
+    async (
+      cursor?: string,
+      direction: "next" | "previous" = "next",
+      /*
+       * Een vraag die niet uit het formulier komt, zoals "laatste rit
+       * vanavond". Meegeven en niet eerst de velden aanpassen: dan hoeft er
+       * niet gewacht te worden tot React die verandering verwerkt heeft, en
+       * blijft staan wat jij had ingevuld.
+       */
+      override?: { time: string; arriveBy: boolean },
+    ) => {
       if (!from || !to) {
         setError(t("travel.needBoth"));
         return;
@@ -132,8 +147,12 @@ export default function TravelPlannerPage() {
       setError(null);
       setNotice(null);
       setSearched(true);
+      const vraag = override ?? {
+        time: when === "now" ? "" : new Date(dateTime).toISOString(),
+        arriveBy: when === "arrive",
+      };
       if (!cursor) {
-        setArrivalTarget(when === "arrive" ? new Date(dateTime).toISOString() : null);
+        setArrivalTarget(vraag.arriveBy && vraag.time ? vraag.time : null);
       }
 
       try {
@@ -142,8 +161,8 @@ export default function TravelPlannerPage() {
           ...(cursor
             ? { cursor }
             : {
-                time: when === "now" ? undefined : new Date(dateTime).toISOString(),
-                arriveBy: when === "arrive",
+                time: vraag.time || undefined,
+                arriveBy: vraag.arriveBy,
               }),
           count: 5,
           // In de reisplanner kies je zelf van en naar; het vertrekpunt staat
@@ -324,6 +343,28 @@ export default function TravelPlannerPage() {
         >
           {loading ? <Spinner size={16} /> : t("travel.go")}
         </button>
+
+        {/*
+          "Hoe laat moet ik uiterlijk weg om vanavond nog thuis te komen" is
+          een andere vraag dan een tijdstip invullen, en het is de vraag die je
+          's avonds op school stelt. Onder water is het gewoon een zoekopdracht
+          op aankomst, met middernacht als grens -- dus wijst het merkje
+          "laatste op tijd" vanzelf de goede rit aan.
+        */}
+        <button
+          type="button"
+          className="btn btn-ghost w-full text-sm"
+          onClick={() => {
+            const grens = endOfDay(now);
+            setWhen("arrive");
+            setDateTime(toLocalInput(grens));
+            void search(undefined, "next", { time: grens.toISOString(), arriveBy: true });
+          }}
+          disabled={loading || !from || !to}
+          title={t("travel.lastTonightHint")}
+        >
+          {t("travel.lastTonight")}
+        </button>
       </section>
 
       {loading && journeys.length === 0 ? (
@@ -351,6 +392,7 @@ export default function TravelPlannerPage() {
                 fastest={journey.id === fastestId}
                 latestOnTime={journey.id === latestId}
                 now={now}
+                onToAgenda={() => setToAgenda(journey)}
               />
             ))}
           </div>
@@ -425,6 +467,34 @@ export default function TravelPlannerPage() {
             description={t("travel.empty.body")}
           />
         </div>
+      ) : null}
+
+      {/*
+        Het gewone activiteitenformulier, met de rit er al in.
+        
+        Bewust geen activiteit die stilletjes wordt aangemaakt: welk type het
+        is en hoe het heet weet alleen jij. Wat de app wél weet vult hij in --
+        de bestemming en hoe laat je er bent.
+
+        De begintijd is je aankomst, niet je vertrek. De agenda rekent de
+        vertrektijd zelf uit en houdt hem bij met de vertragingen van dat
+        moment; zou de rit er als blok in staan, dan stond er straks een tijd
+        van vandaag bij een dag van volgende week.
+      */}
+      {toAgenda ? (
+        <ActivityForm
+          preset={{
+            date: toDateKey(new Date(toAgenda.arrival)),
+            startTime: legTime(toAgenda.arrival) ?? "09:00",
+            endTime: minutesToTime(
+              timeToMinutes(legTime(toAgenda.arrival) ?? "09:00") + 60,
+            ),
+            location: to,
+            title: t("journey.toAgendaTitle"),
+            travelMode: "transit",
+          }}
+          onClose={() => setToAgenda(null)}
+        />
       ) : null}
     </div>
   );

@@ -68,3 +68,19 @@ export function latestOnTime(journeys: readonly Journey[], arriveBy: Date): stri
 
   return beste?.id ?? null;
 }
+
+/**
+ * Het laatste moment van deze dag, in lokale tijd.
+ *
+ * Voor "laatste rit vanavond": de vraag is dan niet hoe laat je wilt aankomen
+ * maar of je er nog vóór middernacht bent. Zo wordt dat één gewone zoekopdracht
+ * op aankomst, en wijst het merkje "laatste op tijd" vanzelf de goede rit aan.
+ *
+ * Bewust de kalenderdag en niet "over zoveel uur": "vanavond" gaat over
+ * vandaag, ook als je het om vier uur 's middags vraagt.
+ */
+export function endOfDay(now: Date): Date {
+  const eind = new Date(now);
+  eind.setHours(23, 59, 59, 999);
+  return eind;
+}

@@ -8,6 +8,45 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.88.0
+
+- **"Laatste rit vanavond."** Zit je 's avonds op school, dan is de vraag niet
+  "hoe laat wil ik aankomen" maar "hoe laat moet ik uiterlijk weg om vanavond
+  nog thuis te komen". Daarvoor moest je zelf een tijdstip invullen en dan
+  doorbladeren.
+
+  Eén knop nu. Onder water is het een gewone zoekopdracht op aankomst met
+  middernacht als grens -- dus wijst het merkje "laatste op tijd" uit 0.87.0
+  vanzelf de goede rit aan. Tegen de echte dienst:
+
+      21:10 -> 21:59
+      21:40 -> 22:29
+      22:10 -> 22:59
+      22:40 -> 23:29
+      23:10 -> 23:59  <- laatste op tijd
+
+  Rijdt er daarna nog iets, dan staat dat gewoon in de gewone zoekopdracht, met
+  de dag erbij. De knop verzwijgt niets, hij beantwoordt één vraag.
+
+- **Van de planner naar je agenda.** Andersom kon al -- de agenda linkt door
+  naar de planner met de bestemming erin -- maar deze kant niet. Een rit die je
+  net gevonden had, tikte je alsnog met de hand over.
+
+  Onder een uitgeklapte rit staat nu "Zet in agenda". Dat opent het gewone
+  activiteitenformulier met de bestemming en de aankomsttijd er al in. Bewust
+  geen activiteit die stilletjes wordt aangemaakt: welk type het is en hoe het
+  heet weet alleen jij.
+
+  De begintijd is je aankomst, niet je vertrek. De agenda rekent de vertrektijd
+  zelf uit en houdt hem bij met de vertragingen van dat moment; zou de rit als
+  blok in je agenda staan, dan stond er straks een tijd van vandaag bij een dag
+  van volgende week.
+
+- **Drie rekentests en twee browsertests erbij**, nagelopen door de code op vier
+  plekken te breken -- vier mutaties, vier keer betrapt. De test op de knop
+  kijkt niet alleen naar het antwoord maar ook naar de vraag: er hoort om
+  aankomst gevraagd te worden, met vandaag als grens.
+
 ## 0.87.0
 
 Drie dingen in de reisplanner, gevonden door hem tegen de echte dienst te
