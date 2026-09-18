@@ -359,6 +359,8 @@ export const nl = {
   "next.buffer": "+ {count} min marge",
   "next.homeAt": "Terug thuis om {time}",
   "next.needHome": "Stel je thuislocatie in om de vertrektijd te zien.",
+  "next.travelOld":
+    "De reisplanner reageert niet. Dit is de tijd van de vorige berekening, dus hij kan afwijken.",
   "next.startsAt": "Begint om",
   "next.atHome": ". Thuis, dus geen reistijd.",
   "next.noLocation": ". Geen locatie, dus geen reistijd.",
@@ -1302,6 +1304,8 @@ export const en: Record<TranslationKey, string> = {
   "next.buffer": "+ {count} min buffer",
   "next.homeAt": "Home again at {time}",
   "next.needHome": "Set your home location to see your departure time.",
+  "next.travelOld":
+    "The journey planner is not responding. This is the time from the previous calculation, so it may be off.",
   "next.startsAt": "Starts at",
   "next.atHome": ". At home, so no travel time.",
   "next.noLocation": ". No location, so no travel time.",

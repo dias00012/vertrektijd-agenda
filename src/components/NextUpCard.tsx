@@ -172,11 +172,20 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
           <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--line)" }}>
             {calculating ? (
               <Spinner size={14} label={t("activity.calculating")} />
-            ) : activity.travelError ? (
-              <p className="text-sm" style={{ color: "var(--danger)" }}>
-                &#9888;&#65039; {activity.travelError}
-              </p>
-            ) : departure && shown.travel ? (
+            ) : /*
+                 * Een tijd die we hebben gaat vóór een storing die we melden.
+                 *
+                 * Andersom stond hier alleen een rode regel en geen vertrektijd,
+                 * terwijl de reis van de vorige berekening er gewoon was. Precies
+                 * 's ochtends, als de planner even hapert en jij naar je trein
+                 * moet, kreeg je dan niets -- terwijl die oude tijd meestal nog
+                 * prima klopt. De hook eronder doet het al zo ("liever een
+                 * benadering dan een lege kaart"); deze kaart deed het niet.
+                 *
+                 * De storing verdwijnt niet, hij komt er als notitie onder te
+                 * staan, zodat je weet dat het een schatting van eerder is.
+                 */
+            departure && shown.travel ? (
               <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
                 <div>
                   <p className="text-[0.7rem] uppercase tracking-wide" style={{ color: "var(--muted)" }}>
@@ -288,9 +297,20 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
                   </p>
                 </div>
               </div>
+            ) : activity.travelError ? (
+              <p className="text-sm" style={{ color: "var(--danger)" }}>
+                &#9888;&#65039; {activity.travelError}
+              </p>
             ) : !settings.home ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {t("next.needHome")}
+              </p>
+            ) : null}
+
+            {/* Er staat een tijd, maar hij is niet van nu. Dat hoort erbij. */}
+            {activity.travelError && departure && shown.travel ? (
+              <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+                &#9888;&#65039; {t("next.travelOld")}
               </p>
             ) : null}
 

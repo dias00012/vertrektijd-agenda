@@ -508,17 +508,24 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         failedKeys.current.set(plan.outboundKey, Date.now());
         const message =
           error instanceof Error ? error.message : say("error.travel");
+        /*
+         * De melding erbij, de reistijden laten staan.
+         *
+         * Hier stond `travel: null`. Een hapering van de reisplanner gooide
+         * daarmee je laatst bekende vertrektijd weg -- en omdat dit bewaard en
+         * gesynchroniseerd wordt, was hij ook echt weg, tot een volgende
+         * berekening wél lukte. Op je telefoon 's ochtends betekende dat: geen
+         * tijd, alleen een rode regel, precies wanneer je hem nodig hebt.
+         *
+         * Weggooien hoeft ook niet. Verandert de bestemming, dan worden ze al
+         * apart opgeruimd (zie `updateActivity`), dus wat hier staat hoort bij
+         * dezelfde reis -- alleen berekend op een eerder moment. Dat is een
+         * benadering, en een benadering is meer waard dan niets. De kaart zegt
+         * er nu bij dat hij van eerder is.
+         */
         setActivities((current) =>
           current.map((item) =>
-            item.id === activity.id
-              ? {
-                  ...item,
-                  travel: null,
-                  returnTravel: null,
-                  onwardTravel: null,
-                  travelError: message,
-                }
-              : item,
+            item.id === activity.id ? { ...item, travelError: message } : item,
           ),
         );
       } finally {

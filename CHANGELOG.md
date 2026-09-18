@@ -8,6 +8,90 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.85.0
+
+- **Twee beveiligingscontroles hebben nu tests.** Bij de ronde in 0.81.0 heb ik
+  ze gelezen en goed bevonden, maar gelezen is niet getest: een volgende
+  wijziging kan ze stil kapotmaken.
+
+  `rateLimit.ts` is het enige dat voorkomt dat één script de gratis OV- en
+  adresdiensten voor iedereen laat blokkeren. Tien tests: hoeveel er precies
+  doorgelaten wordt, dat bezoekers en routes elkaar niet in de weg zitten, dat
+  het venster opnieuw begint, en dat er een `Retry-After` meekomt.
+
+  `network.ts` houdt `/api/rooster` ervan af een deur naar binnen te worden.
+  Dertien tests: een gewone naam die naar `127.0.0.1` wijst, het metadata-adres
+  van de cloudprovider, een naam met meerdere adressen waarvan er één naar
+  binnen wijst, en de groottegrens die tijdens het lezen al telt in plaats van
+  achteraf.
+
+- **De opslaglaag ook.** Daar gaat alles doorheen wat je bezit, en er stond
+  geen enkele test op. Veertien stuks, over de gevallen die je pas merkt als
+  het misgaat: onleesbare JSON na een afgebroken schrijfactie, een lijst die
+  geen lijst blijkt, losse rommel tussen je activiteiten, instellingen uit een
+  oudere versie, en een volle of geblokkeerde opslag (daar hoort `false` uit te
+  komen -- mislukte het stil, dan was een avond invoeren na één keer herladen
+  weg).
+
+- **Een fout in de hoofdlayout laat de app niet meer leeg achter.** Er was
+  `error.tsx`, maar die vangt alleen fouten ín een pagina: hij wordt zélf in de
+  hoofdlayout getekend, dus als die omvalt is er niets om het in te tonen. Je
+  kreeg dan de kale foutpagina van de browser, en Sentry hoorde er niets over.
+
+  `global-error.tsx` staat daarom helemaal op zichzelf: eigen `<html>`, stijl
+  in het bestand (het stijlblad wordt door de kapotte layout geladen) en de
+  taal rechtstreeks uit de opslag in plaats van uit een provider die er dan
+  niet is.
+
+- **Alle 37 nieuwe tests zijn nagelopen door de code expres te breken.** Dertien
+  van de veertien mutaties werden betrapt. De veertiende niet, en dat staat in
+  de test erbij: de `Math.max(1, ...)` op `Retry-After` is onbereikbaar, want
+  het venster wordt al ververst zodra de tijd om is. Geen testgat maar dubbele
+  beveiliging.
+
+## 0.84.0
+
+- **Een hapering van de reisplanner gooide je vertrektijd weg.** Gevonden door
+  de eerste browsertest te schrijven voor waar deze app voor bestaat: "hoe laat
+  moet ik weg".
+
+  Mislukte het berekenen van een reis, dan zette de app `travel: null` en liet
+  alleen een rode regel zien. Dat werd bewaard én gesynchroniseerd, dus je
+  laatst bekende vertrektijd was daarmee echt weg -- tot een volgende
+  berekening wél lukte. 's Ochtends op je telefoon, als je naar je trein moet,
+  stond er dan geen tijd.
+
+  Weggooien hoefde ook niet: verandert de bestemming, dan worden de reistijden
+  al apart opgeruimd. Wat er stond hoorde dus bij dezelfde reis, alleen
+  berekend op een eerder moment. Nu blijft die staan, met de melding eronder
+  dat hij van eerder is en kan afwijken. De kaart liet de storing ook nog eens
+  vóórgaan op de tijd; dat is omgedraaid.
+
+- **Drie browsertests over reistijd**, de eerste die deze kant van de app raken:
+  de tijd van vanochtend wint van een berekening van gisteravond, een mislukte
+  poging laat de oude tijd staan mét notitie, en een rit die al vertrokken is
+  wordt niet meer opgehaald. De OV-dienst wordt niet echt gebeld -- een test
+  die van een dienstregeling afhangt zegt morgen iets anders.
+
+- **De browsertests hadden geen vaste klok, en één ervan slaagde daardoor om de
+  verkeerde reden.** De tijdzone lag niet vast (de rekentests zijn wél op
+  Amsterdam gepind) en "nu" was het echte moment van draaien. De test die
+  controleert dat een leerblok nooit in je reistijd valt, slaagde alleen zolang
+  hij vóór achten 's ochtends draaide.
+
+  De klok staat nu vast op donderdag 17 september 2026, 07:00 in Amsterdam, en
+  de tijdzone staat in de configuratie.
+
+- **Twee van de nieuwe tests bleken eerst niets te toetsen.** Nagelopen door de
+  logica expres te breken: de test over een vertrokken rit slaagde omdat de
+  kaart 's avonds helemaal niet meer getekend werd, en omdat de gezaaide reis
+  al als exact gold. Beide zijn rechtgezet en betrappen de mutatie nu wel.
+
+  Wat niet lukte, en dat staat er ook bij: aanwijzen wélke laag een reis
+  ververst heeft. Twee lagen doen dat werk en allebei verversen ze op ouderdom,
+  dus op het scherm zie je hetzelfde. Deze tests toetsen wat de gebruiker ziet;
+  de losse beslissing staat als `refreshDecision` in de rekentests.
+
 ## 0.83.0
 
 - **De klok uit de reistijd-hook gehaald.** Blijven staan uit 0.82.0: de React
