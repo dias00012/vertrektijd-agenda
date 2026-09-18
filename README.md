@@ -28,7 +28,7 @@ app voor elke activiteit met een locatie automatisch de reistijd en de vertrekti
 
 | Keuze | Waarom |
 | --- | --- |
-| **Next.js 15 (App Router) + TypeScript** | Eén project voor frontend én server. De API-routes draaien op de server, dus geocoding en routing gebeuren nooit vanuit de browser. |
+| **Next.js 16 (App Router) + TypeScript** | Eén project voor frontend én server. De API-routes draaien op de server, dus geocoding en routing gebeuren nooit vanuit de browser. |
 | **Tailwind CSS v4** | Snel, klein en consistent. Categoriekleuren gaan via CSS-variabelen, zodat ze dynamisch kunnen zijn zonder gegenereerde klassen. |
 | **Nominatim + OSRM (standaard)** | Gratis, open en **zonder API-sleutel**, dus de app werkt meteen na `npm install`. |
 | **OpenRouteService (optioneel)** | Nauwkeuriger en met hogere limieten. Zet `TRAVEL_PROVIDER=ors` en `ORS_API_KEY=…` in `.env.local`; de key blijft server-side. |

@@ -56,19 +56,6 @@ async function geocode(q) {
   const [lon, lat] = h.centroide_ll.replace(/POINT\(|\)/g, "").split(" ").map(Number);
   return { lat, lon };
 }
-function looptijd(leg) {
-  const s = leg.duration ?? 0;
-  if (typeof leg.distance !== "number" || leg.distance <= 0) return s;
-  return Math.min(s, Math.ceil(leg.distance / SPEED / 60) * 60);
-}
-function getoond(rit) {
-  const legs = rit.legs ?? [];
-  const uiteinden = legs.length > 1 ? [legs[0], legs.at(-1)] : [legs[0]];
-  const winst = uiteinden
-    .filter((l) => (l?.mode ?? "").toUpperCase() === "WALK")
-    .reduce((som, l) => som + ((l.duration ?? 0) - looptijd(l)), 0);
-  return Math.round(((rit.duration ?? 0) - winst) / 60);
-}
 async function plan(van, naar, tijd, routed) {
   const p = new URLSearchParams({
     fromPlace: `${van.lat},${van.lon}`, toPlace: `${naar.lat},${naar.lon}`,
