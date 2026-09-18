@@ -85,6 +85,51 @@ export function lastPlanVersion(): string | null {
   return planVersion;
 }
 
+/** Even wachten voor de tweede poging; niet meteen er weer bovenop. */
+const HERKANSING_MS = 300;
+
+const wacht = (ms: number) => new Promise((klaar) => setTimeout(klaar, ms));
+
+/**
+ * Eén herkansing bij een hapering.
+ *
+ * Dit is een gratis dienst van een gemeenschap, en die hikt wel eens. Zonder
+ * herkansing kreeg je dan meteen "de planner is even niet bereikbaar" en moest
+ * je zelf opnieuw drukken -- voor iets wat een fractie van een seconde later
+ * gewoon werkt.
+ *
+ * Twee dingen doen we bewust níét opnieuw. Een tijdslimiet niet: je stond al
+ * twaalf seconden te wachten, en vierentwintig is geen verbetering. En een 429
+ * niet: dat is de dienst die zegt dat het te veel wordt, en dan is er nog eens
+ * aankloppen precies het verkeerde.
+ */
+async function vraagPlan(url: string, userAgent: string): Promise<Response> {
+  for (let poging = 0; ; poging += 1) {
+    const laatste = poging >= 1;
+    try {
+      const response = await fetchWithTimeout(
+        url,
+        { headers: { "User-Agent": userAgent, Accept: "application/json" } },
+        12_000,
+      );
+      // 5xx is de server die struikelt, niet ons verzoek dat fout is.
+      if (response.status >= 500 && !laatste) {
+        await wacht(HERKANSING_MS);
+        continue;
+      }
+      return response;
+    } catch (error) {
+      const onbereikbaar =
+        error instanceof ProviderError && error.key === "api.mapUnreachable";
+      if (onbereikbaar && !laatste) {
+        await wacht(HERKANSING_MS);
+        continue;
+      }
+      throw error;
+    }
+  }
+}
+
 /** Roept de MOTIS-reisplanner aan en vertaalt fouten naar nette meldingen. */
 export async function motisPlan(params: URLSearchParams): Promise<MotisPlanResponse> {
   const config = getProviderConfig();
@@ -92,11 +137,7 @@ export async function motisPlan(params: URLSearchParams): Promise<MotisPlanRespo
 
   for (const version of versions) {
     const url = `${config.motisBaseUrl}/api/${version}/plan?${params.toString()}`;
-    const response = await fetchWithTimeout(
-      url,
-      { headers: { "User-Agent": config.userAgent, Accept: "application/json" } },
-      12_000,
-    );
+    const response = await vraagPlan(url, config.userAgent);
 
     if (response.status === 429) {
       throw new ProviderError("api.tooManyJourneys", 429);

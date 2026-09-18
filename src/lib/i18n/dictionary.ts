@@ -211,6 +211,10 @@ export const nl = {
   "journey.hide": "verberg",
   "journey.options": "Reismogelijkheden",
   "journey.fastest": "snelste",
+  "journey.transferSlack": "{count} min overstaptijd in {place}",
+  "journey.transferTight": "{count} min overstaptijd in {place} \u2014 krap",
+  "journey.tightWarning":
+    "Krappe overstap in {place}: {count} min speling. Is je trein later, dan haal je de aansluiting niet.",
   "journey.toAgenda": "Zet in agenda",
   "journey.toAgendaTitle": "Afspraak",
   "journey.latestOnTime": "laatste op tijd",
@@ -390,6 +394,8 @@ export const nl = {
   "travel.depart": "Vertrek",
   "travel.arrive": "Aankomst",
   "travel.go": "Zoek reis",
+  "travel.suggestions": "Uit je agenda",
+  "travel.suggestion": "Naar {title}, {day} om {time}",
   "travel.lastTonight": "Laatste rit vanavond",
   "travel.lastTonightHint":
     "Zoekt de laatste rit die je vóór middernacht op je bestemming zet. Rijdt er daarna nog iets, dan staat dat gewoon in de gewone zoekopdracht, met de dag erbij.",
@@ -1176,6 +1182,10 @@ export const en: Record<TranslationKey, string> = {
   "journey.hide": "hide",
   "journey.options": "Journey options",
   "journey.fastest": "fastest",
+  "journey.transferSlack": "{count} min to change at {place}",
+  "journey.transferTight": "{count} min to change at {place} \u2014 tight",
+  "journey.tightWarning":
+    "Tight change at {place}: {count} min to spare. If your train runs late you will miss it.",
   "journey.toAgenda": "Add to calendar",
   "journey.toAgendaTitle": "Appointment",
   "journey.latestOnTime": "last in time",
@@ -1348,6 +1358,8 @@ export const en: Record<TranslationKey, string> = {
   "travel.depart": "Depart",
   "travel.arrive": "Arrive",
   "travel.go": "Find journeys",
+  "travel.suggestions": "From your calendar",
+  "travel.suggestion": "To {title}, {day} at {time}",
   "travel.lastTonight": "Last journey tonight",
   "travel.lastTonightHint":
     "Finds the last journey that gets you there before midnight. Anything running later shows up in a normal search, with the day next to it.",
