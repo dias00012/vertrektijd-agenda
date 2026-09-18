@@ -8,6 +8,8 @@ import { placeChoices } from "@/lib/places";
 import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
 import { JourneyCard } from "@/components/JourneyCard";
+import { latestOnTime } from "@/lib/journeyList";
+import { useNow } from "@/hooks/useNow";
 import { EmptyState, Spinner } from "@/components/ui";
 import type { GeoLocation, Journey } from "@/lib/types";
 
@@ -66,7 +68,17 @@ export default function TravelPlannerPage() {
   const [when, setWhen] = useState<WhenMode>("now");
   const [dateTime, setDateTime] = useState(() => toLocalInput(new Date()));
 
+  const now = useNow(60_000);
   const [journeys, setJourneys] = useState<Journey[]>([]);
+  /*
+   * De aankomsttijd waarop de lijst die er nú staat gezocht is.
+   *
+   * Apart van het formulier, want daar mag je in blijven typen zonder opnieuw
+   * te zoeken -- dan hoort het merkje nog bij de vorige vraag. Bij bladeren
+   * blijft hij staan: "eerder" en "later" veranderen het tijdvenster, niet de
+   * vraag hoe laat je er moet zijn.
+   */
+  const [arrivalTarget, setArrivalTarget] = useState<string | null>(null);
   const [cursors, setCursors] = useState<{ previous?: string; next?: string }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +94,9 @@ export default function TravelPlannerPage() {
   // De lijst staat op vertrektijd; de snelste rit hoeft dus niet bovenaan te
   // staan. Alleen merken als er echt iets te kiezen valt.
   const fastestId = fastestJourneyId(journeys);
+  // Bij "uiterlijk aankomen om" is dit de rit die je zocht: de laatste die het
+  // nog haalt. Hij staat onderaan, want de lijst is een vertrekbord.
+  const latestId = arrivalTarget ? latestOnTime(journeys, new Date(arrivalTarget)) : null;
 
   // Vertrekpunt standaard op thuis: dat is bijna altijd waar je vandaan gaat.
   useEffect(() => {
@@ -117,6 +132,9 @@ export default function TravelPlannerPage() {
       setError(null);
       setNotice(null);
       setSearched(true);
+      if (!cursor) {
+        setArrivalTarget(when === "arrive" ? new Date(dateTime).toISOString() : null);
+      }
 
       try {
         const result = await fetchJourneys(from, to, {
@@ -331,6 +349,8 @@ export default function TravelPlannerPage() {
                 key={journey.id}
                 journey={journey}
                 fastest={journey.id === fastestId}
+                latestOnTime={journey.id === latestId}
+                now={now}
               />
             ))}
           </div>

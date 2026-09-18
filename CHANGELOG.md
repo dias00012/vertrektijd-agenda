@@ -8,6 +8,54 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.87.0
+
+Drie dingen in de reisplanner, gevonden door hem tegen de echte dienst te
+houden en de antwoorden naast het scherm te leggen.
+
+- **Bij "uiterlijk aankomen om" stond de verkeerde rit bovenaan.** Gevraagd:
+  ik moet om 14:00 in Zwolle zijn. Wat je kreeg:
+
+      vertrek 11:01  aankomst 11:48   <- bovenaan
+      vertrek 11:31  aankomst 12:17
+      vertrek 12:01  aankomst 12:48
+      vertrek 12:31  aankomst 13:17
+      vertrek 13:01  aankomst 13:48   <- dit was je vraag
+
+  De lijst staat op vertrektijd, zoals een vertrekbord. Dat klopt bij
+  "vertrekken vanaf nu", maar bij "uiterlijk aankomen om" is de laatste rit die
+  het nog haalt precies het antwoord -- en die staat onderaan. De bovenste zet
+  je er twee uur te vroeg af.
+
+  Die rit heeft nu een merkje, net als de snelste. Markeren en niet omdraaien:
+  de volgorde van een vertrekbord is vertrouwd, en "eerder" en "later" blijven
+  kloppen. Een uitgevallen rit telt niet mee -- die haalt het per definitie
+  niet.
+
+- **Een rit van morgen zag eruit als een rit van vanavond.** Gezocht op
+  vrijdag om 23:15, terug van Zwolle naar Almere: zes opties, waarvan er vijf
+  op zaterdag vallen. Op de kaart stond alleen een kloktijd, dus "05:40" las
+  als een vroege trein in plaats van als een rit over zes uur.
+
+  De dag staat er nu bij zodra een rit niet vandaag vertrekt, en een rit die na
+  middernacht aankomt krijgt een `+1` achter de aankomsttijd -- anders leest
+  "23:40 naar 00:29" als een reis terug in de tijd.
+
+- **"spoor" stond hardgecodeerd in de lijst**, terwijl de vertaling bestond en
+  het detailscherm hem gewoon gebruikte. Een Engelse gebruiker las dus
+  "spoor 4" in de lijst en "platform 4" als hij doorklikte.
+
+- **Dertien rekentests en drie browsertests**, nagelopen door de code expres te
+  breken -- negen mutaties, negen keer betrapt. Eén daarvan ging bijna mis: de
+  test op het spoor stond eerst in het Nederlands, en daar is de hardgecodeerde
+  tekst toevallig gelijk aan de vertaling. Die slaagde dus ook met de fout er
+  nog in. Nu in het Engels, waar het verschil zichtbaar is.
+
+  De browsertests bellen de OV-dienst niet: een test die van een
+  dienstregeling afhangt zegt morgen iets anders, en dan weet je bij rood niet
+  of jouw app stuk is of hun trein. Wel is de uitkomst daarna tegen de echte
+  dienst nagemeten, en daar wijst hij de goede rit aan.
+
 ## 0.86.0
 
 - **Marge per activiteit.** Het veld ontbrak als enige van de "klaar voor

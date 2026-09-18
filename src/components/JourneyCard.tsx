@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatDuration } from "@/lib/time";
+import { formatDateLabel, formatDuration } from "@/lib/time";
+import { arrivesNextDay, departureDay } from "@/lib/journeyList";
 import { LEG_EMOJI, describeLeg, legTime } from "@/lib/travelModes";
 import { useT } from "@/hooks/useLanguage";
 import { JourneyStatus } from "./JourneyStatus";
@@ -12,17 +13,29 @@ import type { Journey, TravelLeg } from "@/lib/types";
  * met live vertraging in het rood. Uitklappen toont de hele rit.
  *
  * De lijst staat op vertrektijd, zoals op een vertrekbord. Dat betekent dat de
- * snelste rit niet bovenaan hoeft te staan, dus krijgt die een merkje.
+ * snelste rit niet bovenaan hoeft te staan, dus krijgt die een merkje. Bij
+ * "uiterlijk aankomen om" geldt hetzelfde voor de laatste die het nog haalt --
+ * dat is dan juist de rit die je zocht, en die staat onderaan.
  */
 export function JourneyCard({
   journey,
   fastest = false,
+  latestOnTime = false,
+  now,
 }: {
   journey: Journey;
   fastest?: boolean;
+  /** De laatste rit die nog op tijd aankomt; alleen bij "uiterlijk aankomen om". */
+  latestOnTime?: boolean;
+  /** Van buiten, zodat het renderen niet zelf de klok afleest. */
+  now: Date;
 }) {
   const t = useT();
   const [open, setOpen] = useState(false);
+
+  // Een kaart met alleen een kloktijd liegt zodra de rit niet vandaag is.
+  const andereDag = departureDay(journey, now);
+  const volgendeDag = arrivesNextDay(journey);
 
   const delayed = journey.delayMinutes > 0;
   const accent = journey.cancelled
@@ -49,7 +62,19 @@ export function JourneyCard({
           <span aria-hidden style={{ color: "var(--muted)" }}>
             →
           </span>
-          <span className="text-xl font-semibold tabular-nums">{legTime(journey.arrival)}</span>
+          <span className="text-xl font-semibold tabular-nums">
+            {legTime(journey.arrival)}
+            {/* "23:40 -> 00:29" leest als een reis terug in de tijd. */}
+            {volgendeDag ? (
+              <sup
+                className="ml-0.5 text-[0.6rem] font-medium"
+                style={{ color: "var(--muted)" }}
+                title={t("journey.nextDayHint")}
+              >
+                {t("journey.nextDay")}
+              </sup>
+            ) : null}
+          </span>
 
           {fastest ? (
             <span
@@ -57,6 +82,30 @@ export function JourneyCard({
               style={{ background: "var(--surface-soft)", color: "var(--accent)" }}
             >
               {t("journey.fastest")}
+            </span>
+          ) : null}
+
+          {latestOnTime ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-[0.65rem] font-medium"
+              style={{ background: "var(--surface-soft)", color: "var(--accent)" }}
+              title={t("journey.latestOnTimeHint")}
+            >
+              {t("journey.latestOnTime")}
+            </span>
+          ) : null}
+
+          {/*
+            Niet vandaag? Dan hoort de dag erbij te staan. Zoek je 's avonds om
+            kwart over elf een rit terug, dan zijn vijf van de zes opties van
+            morgen -- en met alleen "05:40" op de kaart zie je dat niet.
+          */}
+          {andereDag ? (
+            <span
+              className="rounded-full px-2 py-0.5 text-[0.65rem] font-medium"
+              style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
+            >
+              {formatDateLabel(andereDag, now)}
             </span>
           ) : null}
 
@@ -151,14 +200,14 @@ function LegRow({ leg }: { leg: TravelLeg }) {
         {leg.from && leg.to && leg.from !== leg.to ? (
           <span className="block" style={{ color: "var(--muted)" }}>
             {leg.from}
-            {leg.track ? ` · spoor ${leg.track}` : ""}
+            {leg.track ? ` · ${t("leg.track", { track: leg.track })}` : ""}
             {` → ${leg.to}`}
             {leg.arrival ? ` (${legTime(leg.arrival)})` : ""}
           </span>
         ) : (
           <span className="block" style={{ color: "var(--muted)" }}>
             {formatDuration(leg.durationMinutes)}
-            {leg.track ? ` · spoor ${leg.track}` : ""}
+            {leg.track ? ` · ${t("leg.track", { track: leg.track })}` : ""}
           </span>
         )}
         {leg.cancelled ? (

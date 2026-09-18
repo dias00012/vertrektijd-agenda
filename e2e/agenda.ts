@@ -116,21 +116,27 @@ export const AGENDA = {
  * vlag voorkomt dat je wijzigingen halverwege een test worden teruggedraaid --
  * daar ben ik eerder ingetrapt.
  */
-export async function zaai(page: Page, agenda: unknown = AGENDA, nu: string = NU) {
+export async function zaai(
+  page: Page,
+  agenda: unknown = AGENDA,
+  nu: string = NU,
+  taal: "nl" | "en" = "nl",
+) {
   // De klok eerst: zetten ná het laden is te laat, dan heeft de app al met de
   // echte tijd gerekend.
   await page.clock.setFixedTime(new Date(nu));
 
   await page.addInitScript((data) => {
     if (window.localStorage.getItem("e2e-gezaaid")) return;
-    const payload = data as Record<string, unknown>;
+    const { agenda: gegevens, taal: taalkeuze } = data as { agenda: unknown; taal: string };
+    const payload = gegevens as Record<string, unknown>;
     window.localStorage.setItem("agenda.settings.v1", JSON.stringify(payload.settings));
     window.localStorage.setItem("agenda.activities.v1", JSON.stringify(payload.activities));
     window.localStorage.setItem("agenda.tasks.v1", JSON.stringify(payload.tasks));
     window.localStorage.setItem("agenda.exams.v1", JSON.stringify(payload.exams));
-    window.localStorage.setItem("agenda.language.v1", "nl");
+    window.localStorage.setItem("agenda.language.v1", taalkeuze);
     // De rondleiding hoort bij een eerste keer, niet bij elke test.
     window.localStorage.setItem("agenda.intro.v1", JSON.stringify({ seen: true, tourSeen: true }));
     window.localStorage.setItem("e2e-gezaaid", "ja");
-  }, agenda);
+  }, { agenda, taal });
 }
