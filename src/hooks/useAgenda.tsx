@@ -34,10 +34,10 @@ import {
   type ImportMode,
   type ImportSummary,
 } from "@/lib/backup";
-import { needsTravelRefresh, nextOccurrenceDate, travelPlanFor } from "@/lib/travel";
-import { daysBetween, todayKey } from "@/lib/time";
+import { travelPlanFor } from "@/lib/travel";
+import { travelQueue } from "@/lib/travelQueue";
 import { relocatePoint } from "@/lib/places";
-import { applyFeed, dayRoleFor, goneFromFeed } from "@/lib/agenda";
+import { applyFeed, goneFromFeed } from "@/lib/agenda";
 import { statusAfterSteps } from "@/lib/schoolwork";
 import { track } from "@/lib/stats";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
@@ -196,24 +196,6 @@ interface AgendaContextValue {
 }
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
-
-/**
- * Zo ver vooruit rekent de app uit zichzelf reistijden uit.
- *
- * Verder heeft weinig zin: vervoerders publiceren hun dienstregeling niet
- * betrouwbaar over drie weken heen, en een gekoppeld rooster staat er voor een
- * heel semester in. Dat betekende bij het opstarten honderden aanvragen
- * tegelijk aan de gratis OV-dienst — waarvan het grootste deel stukliep op
- * onze eigen verkeersdrempel, met lege vertrektijden als resultaat. Kijk je
- * naar een dag die verder weg ligt, dan haalt `useOccurrenceTravel` die rit
- * alsnog op, en dan gaat het om één dag in plaats van om alles tegelijk.
- *
- * Een week dekt waar de app voor is: vandaag, morgen en het weekoverzicht.
- */
-const TRAVEL_HORIZON_DAYS = 7;
-
-/** Na deze tijd mag een mislukte reisberekening het opnieuw proberen. */
-const FAILED_RETRY_MS = 15 * 60_000;
 
 /** Hoe vaak we kijken of zo'n wachttijd om is. */
 const RETRY_TICK_MS = 5 * 60_000;
@@ -539,47 +521,18 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
   // Reactieve herberekening: elke activiteit met een verouderde reistijdsleutel
   // wordt opnieuw doorgerekend. Dit dekt zowel het wijzigen van een activiteit
   // als het wijzigen van de thuislocatie in de instellingen.
+  //
+  // Wélke activiteiten dat zijn en in welke volgorde staat in `travelQueue`:
+  // los, zonder klok van zichzelf, en daardoor na te rekenen zonder de app te
+  // starten. Daar zitten de grenzen in die voorkomen dat een gekoppeld rooster
+  // honderden aanvragen ineens doet.
   useEffect(() => {
     if (!hydrated || !settings.home) return;
-    const now = new Date();
-    const today = todayKey(now);
-    const wachtrij: { activity: Activity; onward: GeoLocation | null; dag: string }[] = [];
 
-    for (const activity of activities) {
-      // De uren midden op een schooldag hebben geen eigen reis: je bent er al.
-      // Zonder deze regel haalt een gekoppeld rooster tientallen routes op voor
-      // hetzelfde ritje van huis naar school.
-      const role = dayRoleFor(activity, activities, now);
-      if (!activity.location || (role && !role.outbound && !role.inbound)) continue;
-
-      // Alleen wat binnenkort speelt. Een gekoppeld rooster staat er voor een
-      // heel semester in: 480 lesuren betekende 461 aanvragen ineens, waarvan
-      // er 446 stukliepen op onze eigen verkeersdrempel — en dus 446 lege
-      // vertrektijden. Verder vooruit heeft het ook weinig zin: zo ver
-      // publiceren vervoerders hun dienstregeling niet betrouwbaar. Kijk je
-      // wél naar zo'n dag, dan haalt `useOccurrenceTravel` hem alsnog op.
-      const dag = nextOccurrenceDate(activity, now);
-      const dagen = daysBetween(today, dag);
-      if (dagen < 0 || dagen > TRAVEL_HORIZON_DAYS) continue;
-
-      const onward = role?.onward ?? null;
-      if (!needsTravelRefresh(activity, settings, now, onward)) continue;
-      const plan = travelPlanFor(activity, settings, now, onward);
-      if (plan) {
-        const mislukt = failedKeys.current.get(plan.outboundKey);
-        if (mislukt !== undefined) {
-          if (now.getTime() - mislukt < FAILED_RETRY_MS) continue;
-          // De wachttijd is om: van de lijst af, zodat hij het opnieuw probeert.
-          failedKeys.current.delete(plan.outboundKey);
-        }
-      }
-      wachtrij.push({ activity, onward, dag });
-    }
-
-    // Dichtstbijzijnde dag eerst. Loopt het toch tegen een grens aan, dan
-    // sneuvelt de verste dag en niet die van morgenochtend.
-    wachtrij.sort((a, b) => (a.dag < b.dag ? -1 : a.dag > b.dag ? 1 : 0));
-    for (const { activity, onward } of wachtrij) void computeTravel(activity, settings, onward);
+    const { items, expired } = travelQueue(activities, settings, new Date(), failedKeys.current);
+    // De wachttijd is om: van de lijst af, zodat hij het opnieuw probeert.
+    for (const sleutel of expired) failedKeys.current.delete(sleutel);
+    for (const { activity, onward } of items) void computeTravel(activity, settings, onward);
     // `reconnected` staat er bewust bij: het is het sein dat mislukte ritten
     // weer een kans krijgen.
   }, [activities, settings, hydrated, computeTravel, reconnected]);
