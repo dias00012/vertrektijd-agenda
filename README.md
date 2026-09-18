@@ -496,6 +496,26 @@ npm test
 Vitest draait de tests over tijdrekenen, herhalingen, vertrek-/thuiskomsttijd en
 de sync-samenvoeging. Draai ze voordat je iets pusht.
 
+### Browsertests
+
+```
+npm run e2e
+```
+
+Playwright doet wat een gebruiker doet: een formulier openen, een eigen type
+maken, leertijd inplannen, huiswerk afvinken. Dat vangt precies de fouten die
+een rekentest niet kan zien — een verplicht veld dat niemand kan invullen, een
+knop die te klein is om te raken, een scherm dat wel de goede getallen heeft en
+toch niet werkt. Het draait op een telefoonmaat, want daar wordt de app gebruikt.
+
+De tests bouwen de app eerst (`next build`) en starten hem op poort 3210; ze
+testen dus de echte build en niet `next dev`. Staat Chromium al ergens op je
+machine, zet dan `PLAYWRIGHT_CHROMIUM_PATH` naar dat pad — anders haalt
+Playwright er zelf een op.
+
+Bewust een handjevol tests, geen dekking-om-de-dekking. Wat erin staat zijn de
+dingen die eerder kapot zijn gegaan zonder dat een unittest piepte.
+
 **Geen echte adressen in tests, commentaar of documentatie.** Het is verleidelijk
 om je eigen huis en werk als voorbeeld te nemen — ze zijn bij de hand en ze
 kloppen. Maar een testbestand blijft staan, en een repo wordt ooit gedeeld of
