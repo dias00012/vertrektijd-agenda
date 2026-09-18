@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arrivesNextDay, departureDay, latestOnTime } from "./journeyList";
+import { arrivesNextDay, departureDay, endOfDay, latestOnTime } from "./journeyList";
 import type { Journey } from "./types";
 
 const rit = (patch: Partial<Journey> = {}): Journey => ({
@@ -114,5 +114,29 @@ describe("latestOnTime", () => {
   it("valt niet om over een lege lijst of een onleesbare tijd", () => {
     expect(latestOnTime([], new Date(2026, 8, 18, 14, 0))).toBeNull();
     expect(latestOnTime(lijst, new Date("banaan"))).toBeNull();
+  });
+});
+
+describe("endOfDay", () => {
+  it("geeft het laatste moment van dezelfde dag", () => {
+    const eind = endOfDay(new Date(2026, 8, 18, 14, 30));
+    expect(eind.getFullYear()).toBe(2026);
+    expect(eind.getMonth()).toBe(8);
+    expect(eind.getDate()).toBe(18);
+    expect(eind.getHours()).toBe(23);
+    expect(eind.getMinutes()).toBe(59);
+  });
+
+  it("blijft op vandaag, ook vlak voor middernacht", () => {
+    // Om 23:50 is "vanavond" nog steeds vanavond, geen tien minuten later.
+    expect(endOfDay(new Date(2026, 8, 18, 23, 50)).getDate()).toBe(18);
+  });
+
+  it("raakt de meegegeven datum niet aan", () => {
+    // Een functie die zijn invoer verandert is een val: de aanroeper rekent
+    // daarna met een ander moment dan hij dacht.
+    const nu = new Date(2026, 8, 18, 14, 30);
+    endOfDay(nu);
+    expect(nu.getHours()).toBe(14);
   });
 });

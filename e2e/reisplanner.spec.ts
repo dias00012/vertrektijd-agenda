@@ -45,9 +45,13 @@ function rit(id: string, vertrek: string, aankomst: string, patch: Record<string
 }
 
 function vangRitten(page: Page, journeys: unknown[]) {
+  /** Wat er gevraagd is; zo kan een test ook de vraag zelf toetsen. */
+  const gevraagd: { body?: { time?: string; arriveBy?: boolean } } = {};
   page.route("**/api/journeys", async (route: Route) => {
+    gevraagd.body = route.request().postDataJSON();
     await route.fulfill({ json: { journeys, meta: { received: journeys.length } } });
   });
+  return gevraagd;
 }
 
 /** Naar de planner, met de bestemming en de aankomsttijd al ingevuld. */
@@ -142,4 +146,69 @@ test("het spoor staat er in de taal van de app", async ({ page }) => {
   await lijst.locator("article").first().getByRole("button").first().click();
   await expect(lijst).toContainText("platform 4");
   await expect(lijst).not.toContainText("spoor");
+});
+
+test("'laatste rit vanavond' vraagt om aankomst vóór middernacht", async ({ page }) => {
+  /*
+   * "Hoe laat moet ik uiterlijk weg om vanavond nog thuis te komen" is de
+   * vraag die je 's avonds op school stelt, en daarvoor moest je zelf een
+   * tijdstip invullen.
+   *
+   * Onder water is het een gewone zoekopdracht op aankomst met middernacht
+   * als grens -- dus wijst het merkje "laatste op tijd" vanzelf de goede rit
+   * aan. Deze test kijkt naar allebei: de vraag én het antwoord.
+   */
+  const gevraagd = vangRitten(page, [
+    rit("vroeg", `${DAG}T18:00:00.000Z`, `${DAG}T18:47:00.000Z`),
+    // Komt om 23:47 lokaal aan: haalt het net.
+    rit("laatste", `${DAG}T21:00:00.000Z`, `${DAG}T21:47:00.000Z`),
+    // Komt na middernacht aan: haalt het niet meer.
+    rit("teLaat", `${DAG}T22:30:00.000Z`, `${DAG}T23:17:00.000Z`),
+  ]);
+  await zaai(page);
+  await page.goto(`/reizen?toLat=${ZWOLLE.lat}&toLon=${ZWOLLE.lon}&toLabel=Zwolle`);
+  await page.getByRole("button", { name: "Laatste rit vanavond" }).click();
+
+  // Er is om aankomst gevraagd, met het einde van vandaag als grens.
+  await expect.poll(() => gevraagd.body?.arriveBy).toBe(true);
+  expect(gevraagd.body?.time?.startsWith(DAG.slice(0, 8))).toBe(true);
+
+  const kaarten = opties(page).locator("article");
+  await expect(kaarten).toHaveCount(3);
+  await expect(kaarten.nth(1)).toContainText("laatste op tijd");
+  await expect(kaarten.nth(2)).not.toContainText("laatste op tijd");
+});
+
+test("een gevonden rit is vanuit de planner in je agenda te zetten", async ({ page }) => {
+  /*
+   * Van de agenda naar de planner kon al; deze kant niet. Een rit die je net
+   * gevonden had tikte je alsnog met de hand over.
+   *
+   * Het gewone formulier gaat open met de bestemming en de aankomsttijd erin.
+   * Niet stilletjes een activiteit aanmaken: welk type het is en hoe het heet
+   * weet alleen jij.
+   */
+  vangRitten(page, [rit("a", `${DAG}T06:01:00.000Z`, `${DAG}T06:48:00.000Z`)]);
+  await zaai(page);
+  await page.goto(`/reizen?toLat=${ZWOLLE.lat}&toLon=${ZWOLLE.lon}&toLabel=Zwolle`);
+  await page.getByRole("button", { name: "Zoek reis" }).click();
+
+  // De knop zit in het uitgeklapte deel: op de dichte kaart telt elke regel.
+  const kaart = opties(page).locator("article").first();
+  await expect(kaart.getByRole("button", { name: "Zet in agenda" })).toHaveCount(0);
+  await kaart.getByRole("button").first().click();
+  await kaart.getByRole("button", { name: "Zet in agenda" }).click();
+
+  // Begintijd is je aankomst (08:48 lokaal), bestemming staat er al in.
+  const form = page.locator('[role="dialog"]');
+  await expect(form.getByLabel("Starttijd")).toHaveValue("08:48");
+  await expect(form.getByRole("textbox", { name: /Locatie/ })).toHaveValue("Zwolle");
+
+  await form.getByLabel(/^Naam$/).first().fill("Open dag");
+  await form.getByRole("button", { name: "Toevoegen" }).click();
+  await expect(form).toHaveCount(0);
+
+  // En hij staat er echt in.
+  await page.goto("/agenda");
+  await expect(page.getByRole("heading", { name: "Open dag" })).toBeVisible();
 });
