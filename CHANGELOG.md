@@ -8,6 +8,62 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.89.0
+
+Vier gaten in de dekking, op de plekken waar een stille fout het meeste kost.
+
+- **De offline-belofte wordt nu bewaakt.** De service worker zegt het zelf:
+  juist in de trein, in een tunnel of op een station met slecht bereik wil je
+  zien hoe laat je moet vertrekken. Dat wérkte -- nagemeten met het bereik uit
+  -- maar er stond niets op dat het zo blijft. Eén verkeerde wijziging en het
+  is stil kapot; je merkt het ondergronds, precies wanneer je er niets meer aan
+  kunt doen.
+
+  Twee browsertests: je agenda opent zonder bereik, en ook een scherm dat je in
+  die sessie nog niet geopend had. Dat tweede is waar het eerder op misging --
+  binnen de app wisselt een tab zonder echte navigatie, dus de worker zag die
+  schermen nooit langskomen.
+
+- **De twee lijsten die gelijk moeten blijven, blijven dat nu ook.** Het menu
+  staat in `AppShell` en de voorlaadlijst van de service worker in
+  `public/sw.js`. Ze klopten, maar niets dwong dat af: voeg een tabblad toe en
+  vergeet de worker, en dat scherm doet het niet zonder bereik. Geen
+  foutmelding, geen waarschuwing.
+
+  Het menu staat nu in `src/lib/nav.ts` en een test legt de twee naast elkaar.
+  Een service worker kan geen module importeren, dus die lijst blijft daar
+  noodgedwongen staan -- maar hij kan niet meer stilletjes uit de pas lopen.
+
+- **De zwaarste beslissing uit `useAgenda` is eruit gehaald en getest.** Welke
+  activiteiten krijgen een reistijd, en in welke volgorde? Daar zit een echt
+  incident achter: een gekoppeld rooster staat er voor een heel semester in, en
+  zonder de grenzen werden dat honderden aanvragen ineens aan de gratis
+  OV-dienst -- waarvan het grootste deel stukliep op onze eigen
+  verkeersdrempel, met lege vertrektijden als resultaat.
+
+  Dat stond in een hook en was dus niet na te rekenen. Nu `travelQueue` in
+  `src/lib/travelQueue.ts`, met de klok als parameter, met elf tests: de
+  horizon van een week, de wachttijd na een mislukte rit, en de volgorde
+  (dichtstbijzijnde dag eerst, zodat bij een grens de verste dag sneuvelt en
+  niet die van morgenochtend).
+
+  De functie ruimt niet meer stilletjes de mislukt-lijst op maar geeft terug
+  welke sleutels eraf mogen. Dat stille opruimen was precies wat de code
+  onnavolgbaar maakte.
+
+- **`src/lib/api.ts` heeft tests.** Alles wat de browser aan de server vraagt
+  gaat hierdoorheen. Twaalf tests over wat er misgaat: geen verbinding (dan
+  hoort er geen "Failed to fetch" op je scherm te staan), een afgebroken
+  zoekopdracht die géén storing is, een server die HTML terugstuurt in plaats
+  van een melding, en een adres met een `&` erin dat de rest van de vraag niet
+  mag omgooien.
+
+- **Alle 25 nieuwe tests zijn nagelopen door de code expres te breken.** Vijftien
+  mutaties, veertien betrapt. De vijftiende niet, en dat staat in de test erbij:
+  de controle op een ontbrekende bestemming is dubbel dichtgezet, want
+  `needsTravelRefresh` valt zonder bestemming al af. Geen testgat maar een
+  vroege afslag die een berekening per activiteit scheelt.
+
 ## 0.88.0
 
 - **"Laatste rit vanavond."** Zit je 's avonds op school, dan is de vraag niet

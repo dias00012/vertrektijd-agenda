@@ -14,14 +14,8 @@ import { useTimetableSync } from "@/hooks/useTimetableSync";
 import { usePushQueue } from "@/hooks/usePushQueue";
 import { track } from "@/lib/stats";
 import { useT } from "@/hooks/useLanguage";
+import { NAV } from "@/lib/nav";
 
-const NAV = [
-  { href: "/", key: "nav.today", icon: "☀️" },
-  { href: "/agenda", key: "nav.agenda", icon: "\u{1F5D3}️" },
-  { href: "/reizen", key: "nav.travel", icon: "\u{1F686}" },
-  { href: "/schoolwerk", key: "nav.schoolwork", icon: "\u{1F4DA}" },
-  { href: "/instellingen", key: "nav.settings", icon: "⚙️" },
-] as const;
 
 /**
  * Applicatieframe.
