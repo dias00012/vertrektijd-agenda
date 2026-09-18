@@ -225,7 +225,7 @@ function TimelineRow({
             {workDone ? (
               <span
                 className="shrink-0 text-[0.6rem] font-semibold"
-                style={{ color: "#16a34a" }}
+                style={{ color: "var(--ok)" }}
                 title={t("activity.workDone")}
               >
                 &#10003; {t("activity.workDone")}

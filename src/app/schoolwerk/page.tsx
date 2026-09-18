@@ -387,7 +387,7 @@ function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: numbe
   const { planned, estimate, pct, enough } = plannedProgress(plannedMinutes, estimateMinutes);
   if (estimate === 0 && planned === 0) return null;
 
-  const barColor = enough ? "#22c55e" : "var(--accent)";
+  const barColor = enough ? "var(--ok)" : "var(--accent)";
   return (
     <div className="mt-2">
       <p className="text-xs" style={{ color: "var(--muted)" }}>

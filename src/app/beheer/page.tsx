@@ -37,9 +37,9 @@ interface Overview {
 }
 
 const STATE_META: Record<ServiceCheck["state"], { label: string; color: string; dot: string }> = {
-  ok: { label: "werkt", color: "#16a34a", dot: "●" },
-  traag: { label: "traag", color: "#f59e0b", dot: "●" },
-  storing: { label: "storing", color: "#dc2626", dot: "●" },
+  ok: { label: "werkt", color: "var(--ok)", dot: "●" },
+  traag: { label: "traag", color: "var(--warn)", dot: "●" },
+  storing: { label: "storing", color: "var(--danger)", dot: "●" },
 };
 
 /** Namen zoals ze in de database staan, met een uitleg die je kunt lezen. */
