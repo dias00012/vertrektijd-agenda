@@ -8,6 +8,47 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.85.0
+
+- **Twee beveiligingscontroles hebben nu tests.** Bij de ronde in 0.81.0 heb ik
+  ze gelezen en goed bevonden, maar gelezen is niet getest: een volgende
+  wijziging kan ze stil kapotmaken.
+
+  `rateLimit.ts` is het enige dat voorkomt dat één script de gratis OV- en
+  adresdiensten voor iedereen laat blokkeren. Tien tests: hoeveel er precies
+  doorgelaten wordt, dat bezoekers en routes elkaar niet in de weg zitten, dat
+  het venster opnieuw begint, en dat er een `Retry-After` meekomt.
+
+  `network.ts` houdt `/api/rooster` ervan af een deur naar binnen te worden.
+  Dertien tests: een gewone naam die naar `127.0.0.1` wijst, het metadata-adres
+  van de cloudprovider, een naam met meerdere adressen waarvan er één naar
+  binnen wijst, en de groottegrens die tijdens het lezen al telt in plaats van
+  achteraf.
+
+- **De opslaglaag ook.** Daar gaat alles doorheen wat je bezit, en er stond
+  geen enkele test op. Veertien stuks, over de gevallen die je pas merkt als
+  het misgaat: onleesbare JSON na een afgebroken schrijfactie, een lijst die
+  geen lijst blijkt, losse rommel tussen je activiteiten, instellingen uit een
+  oudere versie, en een volle of geblokkeerde opslag (daar hoort `false` uit te
+  komen -- mislukte het stil, dan was een avond invoeren na één keer herladen
+  weg).
+
+- **Een fout in de hoofdlayout laat de app niet meer leeg achter.** Er was
+  `error.tsx`, maar die vangt alleen fouten ín een pagina: hij wordt zélf in de
+  hoofdlayout getekend, dus als die omvalt is er niets om het in te tonen. Je
+  kreeg dan de kale foutpagina van de browser, en Sentry hoorde er niets over.
+
+  `global-error.tsx` staat daarom helemaal op zichzelf: eigen `<html>`, stijl
+  in het bestand (het stijlblad wordt door de kapotte layout geladen) en de
+  taal rechtstreeks uit de opslag in plaats van uit een provider die er dan
+  niet is.
+
+- **Alle 37 nieuwe tests zijn nagelopen door de code expres te breken.** Dertien
+  van de veertien mutaties werden betrapt. De veertiende niet, en dat staat in
+  de test erbij: de `Math.max(1, ...)` op `Retry-After` is onbereikbaar, want
+  het venster wordt al ververst zodra de tijd om is. Geen testgat maar dubbele
+  beveiliging.
+
 ## 0.84.0
 
 - **Een hapering van de reisplanner gooide je vertrektijd weg.** Gevonden door
