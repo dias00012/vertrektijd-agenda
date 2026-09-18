@@ -438,8 +438,17 @@ function TaskCard({
       style={{ borderLeft: `4px solid ${priority.color}`, opacity: done ? 0.7 : 1 }}
     >
       <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-0.5 text-base leading-none" title={t("schoolwork.priorityLabel", { label: priority.label })}>
-          {priority.emoji}
+        {/*
+          De prioriteit stond alleen in het bolletje, met de uitleg in een
+          `title`. Op een telefoon zie je die nooit, en `aria-hidden` hield hem
+          ook bij een schermlezer weg -- terwijl "hoog" of "later" juist bepaalt
+          waar je aan begint.
+        */}
+        <span className="mt-0.5 text-base leading-none">
+          <span aria-hidden>{priority.emoji}</span>
+          <span className="sr-only">
+            {t("schoolwork.priorityLabel", { label: priority.label })}
+          </span>
         </span>
 
         <div className="min-w-0 flex-1">
@@ -559,8 +568,17 @@ function ExamCard({
       style={{ borderLeft: `4px solid ${priority.color}`, opacity: done ? 0.7 : 1 }}
     >
       <div className="flex items-start gap-3">
-        <span aria-hidden className="mt-0.5 text-base leading-none" title={t("schoolwork.priorityLabel", { label: priority.label })}>
-          &#128221;
+        {/*
+          De prioriteit stond alleen in het bolletje, met de uitleg in een
+          `title`. Op een telefoon zie je die nooit, en `aria-hidden` hield hem
+          ook bij een schermlezer weg -- terwijl "hoog" of "later" juist bepaalt
+          waar je aan begint.
+        */}
+        <span className="mt-0.5 text-base leading-none">
+          <span aria-hidden>&#128221;</span>
+          <span className="sr-only">
+            {t("schoolwork.priorityLabel", { label: priority.label })}
+          </span>
         </span>
 
         <div className="min-w-0 flex-1">

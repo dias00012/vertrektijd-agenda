@@ -8,6 +8,40 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.91.0
+
+- **Drie plekken waar informatie voor niemand zichtbaar was.** Een icoon met
+  `aria-hidden` erop en de uitleg in een `title`: op een telefoon zie je een
+  tooltip nooit, en `aria-hidden` houdt hem ook bij een schermlezer weg. De
+  informatie was er dus alleen voor wie met een muis stil bleef hangen.
+
+  Het ging om de prioriteit van een opdracht en van een toets ("hoog", "later")
+  -- juist wat bepaalt waar je aan begint -- en om het boekje dat aangeeft dat
+  iets een leerblok is. Alle drie nu zichtbaar als icoon én voor te lezen als
+  tekst, net als het merkje in de reisplanner.
+
+- **De grens "te ver om te lopen" is nu na te rekenen.** Die stond in
+  `server/routing.ts` en was daardoor niet te testen, terwijl er een gemelde
+  fout achter zit: voor lopen stond de grens op vier uur, en Almere Buiten naar
+  Lelystad is 19,5 km -- vier uur en achttien minuten. Net erboven, dus de app
+  zei "geen looproute gevonden" terwijl die route gewoon bestaat en je hem
+  alleen niet wilt lopen.
+
+  Staat nu als `beyondReach` in `src/lib/reach.ts`, met zeven tests. Inclusief
+  het geval dat toen misging, en het waarom van iets dat omgekeerd lijkt: de
+  grens voor lopen is in tijd ruimer dan die voor fietsen, want acht uur lopen
+  is nog geen vijftig kilometer en vier uur fietsen is er ruim tachtig.
+
+- **`describeLeg` en `legTime` hebben tests.** Kleine logica, veel
+  zichtbaarheid: die tekst staat op elke reiskaart, bij elk loopstuk en elke
+  trein. Twaalf tests, waaronder het geval waarvoor de code een uitzondering
+  maakt -- sommige vervoerders geven de lijn al mét nummer terug ("ICD 2422"),
+  en zonder die controle stond er "ICD 2422 2422" op je scherm.
+
+- **Achttien nieuwe tests, zes mutaties, zes betrapt.** Onder andere door de
+  loopgrens terug te zetten op vier uur: dan valt de test om die precies die
+  gemelde fout vastlegt.
+
 ## 0.90.0
 
 De vier laatste punten van de reisplanner.

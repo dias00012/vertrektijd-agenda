@@ -47,3 +47,18 @@ test("het filter onthoudt je keuze na een herlading", async ({ page }) => {
     "true",
   );
 });
+
+test("de prioriteit is voor te lezen, niet alleen een bolletje", async ({ page }) => {
+  /*
+   * De prioriteit stond alleen in een gekleurd bolletje, met de uitleg in een
+   * `title`. Op een telefoon zie je een tooltip nooit, en `aria-hidden` hield
+   * hem ook bij een schermlezer weg -- terwijl "hoog" of "later" juist bepaalt
+   * waar je aan begint. De informatie was er dus voor niemand behalve wie met
+   * een muis stil bleef hangen.
+   */
+  await page.goto("/schoolwerk");
+
+  const kaart = page.locator("article").filter({ hasText: "Hoofdstuk 4" });
+  // Onzichtbaar op het scherm, maar wel in de toegankelijkheidsboom.
+  await expect(kaart.getByText(/Prioriteit:/)).toBeAttached();
+});
