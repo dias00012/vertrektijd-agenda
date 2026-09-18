@@ -8,6 +8,205 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.81.0
+
+- **Een beveiligingsronde langs de hele app.** Geen melding vooraf, maar de
+  vraag "waar zou dit misgaan" een keer systematisch langs elke route.
+
+  Het meeste kwam schoon terug, en dat is ook een uitkomst: het weren van
+  adressen in het eigen netwerk, het meelopen met omleidingen en opnieuw
+  controleren bij elke stap, de grens op de omvang die al tijdens het lezen
+  geldt, de drempels per route, de connector-token die als hash is opgeslagen.
+
+  Drie dingen wel:
+
+  `/api/push/send` vergeleek zijn geheim met `!==`. Dat stopt bij het eerste
+  teken dat afwijkt, en wie mag blijven proberen en de tijd meet, leest het
+  geheim daar teken voor teken uit. Het is het enige geheim in de app dat een
+  buitenstaander zelf aanlevert, dus juist daar hoort het niet. Vergelijken
+  gebeurt nu in `src/lib/secretEquals.ts`, op tijd-veilige manier, en die
+  functie is er een voor alle gevallen -- hij stond al in `connectorToken.ts`
+  met de aantekening dat hij ooit ergens anders nodig zou zijn.
+
+  Afmelden voor meldingen (`DELETE /api/push/subscribe`) had als enige route
+  geen drempel, terwijl hij twee tabellen aanraakt en niet om een wachtwoord
+  vraagt. Twintig per uur nu, net als aanmelden.
+
+  En de README beweerde dat er "geen enkele `NEXT_PUBLIC_`-variabele" is.
+  Inmiddels zijn het er vier, allemaal terecht openbaar -- maar een
+  documentatieregel die niet meer klopt is precies hoe er ooit wel een sleutel
+  in de bundel belandt. Er staat nu welke vier het zijn, waarom dat mag, en dat
+  er niets bij hoort te komen.
+
+- **Het apparaat-id van de meldingen staat nu beschreven** als wat het is: een
+  sleutel. Meldingen kennen geen account -- je telefoon verzint een willekeurig
+  id en meldt zich daarmee aan -- en dat is met opzet, want zo hoeft de server
+  niet te weten wie je bent. De keerzijde is dat wie dat id heeft een melding
+  met eigen tekst voor jouw telefoon kan klaarzetten. Niet te raden en niet uit
+  te lezen, wel weg te geven. Staat in de README, met wat je doet als het
+  gebeurd is (meldingen uit en weer aan; dan is het oude id niets meer waard).
+
+## 0.80.0
+
+- **Tien tests die de app werkelijk openen** (Playwright, op een telefoonscherm).
+  De 558 tests die er al waren rekenen allemaal: tijden, herhalingen,
+  samenvoegen. Geen enkele deed wat een gebruiker doet, en dat is precies waar
+  deze sessie doorheen viel -- een formulier dat een emoji eiste en een
+  bewerkknop die nergens werd aangeroepen, zijn met rekentests niet te vangen.
+
+  De eerste ronde vond meteen een aanraakvlak van 44 pixels dat er 43,99 bleek
+  te zijn. Dat is de grens verlegd naar 48, niet de test verlaagd.
+
+## 0.79.0
+
+- **Echte woon- en werkadressen uit de repo gehaald.** Het thuisadres, het
+  werkadres en de sportschool stonden vierenzestig keer verspreid door tests,
+  commentaar, scripts en documentatie. De repo is openbaar, dus dat is iemands
+  adres op internet, met zijn rooster erbij.
+
+  Tests en commentaar geocoderen niets, dus daar staan nu overduidelijk
+  verzonnen adressen met dezelfde plaatsnamen en dezelfde coordinaten: alle 558
+  tests groen zonder een enkele aangepaste verwachting. De scripts roepen de
+  echte geocoder aan en staan nu standaard op een stationsplein.
+
+  Let op: dit haalt de adressen uit de huidige bestanden, niet uit de
+  git-geschiedenis.
+
+## 0.78.0
+
+- **Een telling die niet aankomt is niet meer verloren.** Het dashboard stond op
+  nul terwijl de app de hele dag gebruikt werd, door twee dingen tegelijk: de
+  app streepte "vandaag geteld" af voordat hij het verstuurde, en `/api/stats`
+  antwoordde "gelukt" ook toen de tabel nog niet bestond. De route zegt nu met
+  `counted` of er werkelijk iets is opgehoogd, en de app onthoudt de dag pas
+  dan. Het verzoek geeft altijd een 200: statistieken zijn nooit een reden om
+  de app te storen.
+
+## 0.77.0
+
+- **Je apparaten werken elkaar nu live bij.** Plande je op je laptop iets in --
+  zelf of via Claude -- dan stond het pas op je telefoon zodra je die oppakte.
+  Nu duwt de database de wijziging erheen (Supabase realtime op `user_data`) en
+  haalt het apparaat meteen op: binnen een seconde in plaats van bij de
+  volgende keer dat je kijkt. Een apparaat negeert daarbij zijn eigen echo.
+
+  Er is een regel SQL voor nodig (zie SUPABASE-SETUP.md). Laat je die weg, dan
+  werkt de app gewoon zoals hiervoor.
+
+## 0.76.0
+
+- **Achterstallig werk valt nu op.** Een deadline die voorbij was kleurde de
+  datum rood, maar de opdracht stond gewoon tussen de rest -- en met dertien
+  opdrachten scrol je daaroverheen. Bovenaan Schoolwerk staat nu een regel
+  wanneer er iets over tijd is, met een tik naar precies die dingen, plus een
+  filterknop die alleen verschijnt als er iets over tijd is.
+
+## 0.75.0
+
+- **De app kan geen wijziging meer overschrijven.** De connector kreeg in 0.70.0
+  een versiecontrole; de app zelf deed het nog op de oude manier, en tussen
+  ophalen en terugschrijven paste precies een wijziging van je andere apparaat.
+  Nu schrijft ook de app alleen als de rij nog is zoals hij hem las, en probeert
+  hij het anders opnieuw op verse gegevens -- tot drie keer, daarna een eerlijke
+  foutmelding.
+
+  De logica staat nu een keer, in `src/lib/optimistic.ts`, en wordt door server
+  en app gebruikt: twee versies hiervan naast elkaar liepen in deze app al twee
+  keer uit de pas.
+
+## 0.74.0
+
+- **Claude kreeg geen reistijd te zien, en vulde dat zelf in.** "Claude zit er
+  vaak naast met reistijden" bleek geen gokwerk van het model maar een gat in
+  wat de app hem stuurt: de terugreis had een terugvaloptie, de heenreis niet.
+  Zonder berekende heenreis stond er geen vertrektijd in het antwoord -- geen
+  "onbekend", maar stilte. En stilte vult een planner in met iets plausibels.
+
+  Nu is het symmetrisch: een ontbrekende heenreis wordt geschat uit de thuisreis
+  met `departureEstimated` erbij, en is er in beide richtingen niets bekend, dan
+  staat dat er met zoveel woorden. De beschrijving van `read_agenda` zegt nu
+  ook: reken zelf nooit een reistijd uit en schat er nooit een.
+
+## 0.73.0
+
+- **Ook de standaardtypes zijn aan te passen.** "Gym" heet bij de een Sporten en
+  bij de ander Fitness, en de kleur is smaak. Je aanpassing komt als
+  `categoryOverrides` over het standaardtype heen; het id blijft staan, want
+  daar hangen je activiteiten aan. Er wordt alleen bewaard wat je werkelijk
+  anders maakte: verander je enkel de kleur, dan blijft de naam meelopen met de
+  taal. Weggooien kan niet -- daar staat "Standaard herstellen".
+
+- **Account, connector, back-up en rondleiding staan bovenaan Instellingen** in
+  plaats van onderaan. Dat zijn de dingen waarvoor je daar komt.
+
+## 0.72.0
+
+- **Een beheerdersoverzicht op `/beheer`:** welke diensten het doen en hoe snel,
+  hoeveel accounts er zijn, hoeveel mensen de app per dag openden. De
+  afscherming zit in `/api/admin/overview` en niet in het scherm, want daar
+  komen de gegevens langs; de route vergelijkt het e-mailadres uit het
+  Supabase-token met `ADMIN_EMAILS` en antwoordt met 404 in plaats van
+  "verboden". Staat die variabele leeg, dan kan niemand erbij.
+
+## 0.71.0
+
+- **Een emoji is niet meer verplicht bij een eigen type.** Dat is een rare eis
+  aan iemand achter een laptop -- daar is het een sneltoets die je moet kennen,
+  en wie die niet kende typte maar iets (er stond een type "Huiswerk" met een 7
+  ervoor). Het icoonveld mag nu leeg; dan is het de eerste letter van de naam,
+  bepaald bij het tonen zodat het meeverandert als je hernoemt.
+
+- **Eigen types zijn te bewerken.** Dat bestond simpelweg niet: verwijderen zat
+  al in de code maar werd nergens aangeroepen, bijwerken was er helemaal niet.
+  Onder de tegels staat nu "bewerken" zodra je een eigen type kiest. En voor op
+  de telefoon: tegels van 46 naar 62 pixels hoog, kleurstippen een raakvlak van
+  44 in plaats van 24.
+
+## 0.70.0
+
+- **Twee oorzaken van de sportavond die bleef terugkomen.** `skip_occurrence`
+  zei twee keer dat het gelukt was, maar bij opnieuw uitlezen stond sporten er
+  weer. Twee onafhankelijke oorzaken, allebei echt.
+
+  Twee verzoeken tegelijk lazen dezelfde rij en de laatste schreef eroverheen,
+  terwijl beide "gelukt" antwoordden. De rij heeft al een `updated_at` -- die
+  wordt nu gebruikt zoals bedoeld.
+
+  En het verversen van een gekoppelde agenda wiste de overgeslagen dagen:
+  `replaceActivities` zette `exceptions` onvoorwaardelijk leeg, en die
+  verversing loopt vanzelf. Elke les die je voor een dag had weggehaald kwam zo
+  terug.
+
+- **`update_schoolwork` kan nu de prioriteit zetten.** Een rooster dat in een
+  keer wordt ingevoerd zet alles op "hoog", en dan is rood geen signaal meer
+  maar behang.
+
+## 0.69.0
+
+- **Drie gereedschappen erbij voor de connector.** Elke maandag sporten en er
+  komt een keer fysio tussen: het enige wat Claude kon was de hele reeks
+  weggooien. Nu kan `skip_occurrence` een dag uit een reeks halen (en
+  terugzetten), `move_occurrence` een dag verzetten, en `update_schoolwork`
+  stappen afvinken.
+
+  `movable` liet alleen dingen zonder adres zien, waardoor sporten er niet in
+  stond; nu staat erbij of iets herhalend is en of er een plek aan hangt. Een
+  geweigerd blok noemt nu wat er in de weg staat en wat er wel kan.
+
+## 0.68.0
+
+- **"Leertijd inplannen" past het werk nu in je eigen agenda.** Het zette een
+  blok neer met de hele schatting erin, op de dag voor de deadline, ook als je
+  dan aan het werk was. Nu wordt het voorstel uitgerekend met je agenda erbij:
+  alleen de gaten waarin je thuis bent (reistijd eraf), per open stap, opgeknipt
+  in blokken van hoogstens anderhalf uur met een pauze na aaneengesloten werk,
+  en met wat er al staat eraf zodat inplannen niets verdubbelt. Je ziet het
+  eerst; pas op de knop staat het er.
+
+  De kaart op Vandaag zegt nu ook hoeveel er nog moet voor de eerstvolgende
+  deadline en hoeveel tijd daar tegenover staat. De rekenkant staat in
+  `src/lib/planning.ts`.
+
 ## 0.67.0
 
 - **Twee filters op Schoolwerk: op status en op prioriteit.** Met het aantal

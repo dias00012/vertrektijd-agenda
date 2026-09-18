@@ -3,7 +3,6 @@ import {
   createConnectorToken,
   hashConnectorToken,
   readConnectorToken,
-  tokenHashEquals,
 } from "./connectorToken";
 
 describe("createConnectorToken", () => {
@@ -59,16 +58,5 @@ describe("readConnectorToken", () => {
     expect(ask({})).toBeNull();
     expect(ask({ authorization: "Basic vta_abc" })).toBeNull();
     expect(ask({ authorization: "Bearer" })).toBeNull();
-  });
-});
-
-describe("tokenHashEquals", () => {
-  it("herkent gelijk en ongelijk", () => {
-    expect(tokenHashEquals("abc", "abc")).toBe(true);
-    expect(tokenHashEquals("abc", "abd")).toBe(false);
-  });
-
-  it("valt niet om bij een andere lengte", () => {
-    expect(tokenHashEquals("abc", "abcdef")).toBe(false);
   });
 });
