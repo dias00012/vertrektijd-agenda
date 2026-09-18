@@ -414,10 +414,23 @@ export default function TravelPlannerPage() {
             void search(undefined, "next", { time: grens.toISOString(), arriveBy: true });
           }}
           disabled={loading || !from || !to}
-          title={t("travel.lastTonightHint")}
+          aria-describedby="laatste-rit-uitleg"
         >
           {t("travel.lastTonight")}
         </button>
+        {/*
+          Deze uitleg stond in een tooltip. Dat werkt op een laptop en nergens
+          anders: op de telefoon waar je hem 's avonds op school openslaat is
+          er niets om op te zweven, dus las je alleen de knoptekst en moest je
+          maar gokken wat er gebeurt.
+        */}
+        <p
+          id="laatste-rit-uitleg"
+          className="mt-1.5 text-xs leading-relaxed"
+          style={{ color: "var(--muted)" }}
+        >
+          {t("travel.lastTonightHint")}
+        </p>
       </section>
 
       {loading && journeys.length === 0 ? (

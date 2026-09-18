@@ -30,9 +30,9 @@ export function JourneyStatus({
   const { color, label } = cancelled
     ? { color: "var(--danger)", label: t(long ? "status.cancelledLong" : "status.cancelled") }
     : delayMinutes > 0
-      ? { color: "#f97316", label: t("status.delayed", { count: delayMinutes }) }
+      ? { color: "var(--warn)", label: t("status.delayed", { count: delayMinutes }) }
       : realTime
-        ? { color: "#22c55e", label: `${t("status.onTime")} · ${t("status.live")}` }
+        ? { color: "var(--ok)", label: `${t("status.onTime")} · ${t("status.live")}` }
         : { color: "var(--muted)", label: t("status.scheduled") };
 
   const planned = legTime(scheduledDeparture);

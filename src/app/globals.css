@@ -30,9 +30,27 @@
   --surface-soft: #f2f4f7;
   --line: #e4e7ec;
   --ink: #111827;
-  --muted: #6b7280;
-  --danger: #dc2626;
+  --muted: #646d7a;
+  --danger: #c81e1e;
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.05);
+
+  /*
+   * Statuskleuren: groen voor "gaat goed", oranje voor "let op". Twee tinten,
+   * net als het accent, en om dezelfde reden: een groen dat op een donkere
+   * achtergrond mooi oplicht is op wit veel te licht om te lezen. Ze stonden
+   * hiervoor als vaste kleurcode in zeven componenten, met maar een tint, en
+   * dan kies je onvermijdelijk voor de ene modus en verlies je de andere.
+   *
+   * Elke tint haalt 4,5:1 op elke achtergrond waar hij op kan staan. Dat is
+   * geen streven maar een eis: `contrast.test.ts` leest dit bestand uit en
+   * rekent het na.
+   */
+  --ok-light: #15803d;
+  --ok-dark: #4ade80;
+  --ok: var(--ok-light);
+  --warn-light: #b45309;
+  --warn-dark: #fbbf24;
+  --warn: var(--warn-light);
 
   /*
    * De accentkleur komt uit het gekozen thema. Twee tinten, want een kleur die
@@ -55,6 +73,8 @@
     --ink: #e9edf3;
     --muted: #9aa4b2;
     --danger: #f87171;
+    --ok: var(--ok-dark);
+    --warn: var(--warn-dark);
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
   }
 }
@@ -62,9 +82,15 @@
 /*
  * Achtergrond meekleuren met je thema. Aan te zetten in Instellingen; in het
  * donker iets zachter, omdat een lichte kleur daar harder naar voren springt.
+ *
+ * De tint was 16% accent in een grijzige basis, en dat was te sterk: niet alle
+ * tekst staat op een kaart. De datum onder "Vandaag" en de kopjes boven je dag
+ * staan rechtstreeks op deze achtergrond, en die kwamen zo op 3,3:1 uit. Nu
+ * mengt hij in wit en veel zachter, waarmee elke tekstkleur op elk thema boven
+ * 4,5:1 blijft. Je ziet je kleur nog steeds; je leest er alleen weer bij.
  */
 :root[data-tint="on"] {
-  --canvas: color-mix(in srgb, var(--accent) 16%, #eef0f4);
+  --canvas: color-mix(in srgb, var(--accent) 6%, #ffffff);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -192,6 +218,18 @@ body {
 .btn-primary {
   background: var(--accent);
   color: #fff;
+}
+
+/*
+ * In het donker is het accent juist de lichte tint, en dan is wit erop niet te
+ * lezen: dat liep van 2,98:1 (indigo) tot 1,74:1 (groen), terwijl 4,5:1 de eis
+ * is. Donkere inkt op diezelfde lichte knop haalt 6,3:1 tot 10,9:1. Het is
+ * dezelfde knop, alleen andersom.
+ */
+@media (prefers-color-scheme: dark) {
+  .btn-primary {
+    color: #0d1117;
+  }
 }
 
 .btn-ghost {

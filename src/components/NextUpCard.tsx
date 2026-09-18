@@ -133,7 +133,7 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
               {activity.title}
             </h2>
             {workDone ? (
-              <p className="text-sm font-semibold" style={{ color: "#16a34a" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--ok)" }}>
                 &#10003; {t("activity.freeAgain")}
               </p>
             ) : null}
@@ -156,7 +156,7 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
               </p>
             ) : null}
             {clash ? (
-              <p className="mt-1 text-sm font-medium" style={{ color: "#b45309" }}>
+              <p className="mt-1 text-sm font-medium" style={{ color: "var(--warn)" }}>
                 &#9888;&#65039;{" "}
                 {t(clash.travelOnly ? "activity.clashTravel" : "activity.clash", {
                   title: clash.other.title,
@@ -193,7 +193,7 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
                   </p>
                   <p
                     className="text-3xl font-semibold tabular-nums leading-tight"
-                    style={delay > 0 ? { color: "#f97316" } : undefined}
+                    style={delay > 0 ? { color: "var(--warn)" } : undefined}
                   >
                     {departure.time}
                   </p>

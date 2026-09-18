@@ -54,7 +54,7 @@ export function JourneyCard({
   const accent = journey.cancelled
     ? "var(--danger)"
     : delayed
-      ? "#f97316"
+      ? "var(--warn)"
       : "var(--accent)";
 
   // De onderdelen waar je echt iets moet doen: instappen, overstappen, lopen.
@@ -181,7 +181,7 @@ export function JourneyCard({
 
         {/* Ook zonder uitklappen: dit bepaalt of je deze rit wilt. */}
         {krapste?.tight ? (
-          <p className="mt-2 text-left text-xs font-medium" style={{ color: "#f97316" }}>
+          <p className="mt-2 text-left text-xs font-medium" style={{ color: "var(--warn)" }}>
             &#9888;&#65039;{" "}
             {t("journey.tightWarning", { place: krapste.at, count: krapste.slackMinutes })}
           </p>
@@ -202,7 +202,7 @@ export function JourneyCard({
                 {overstap ? (
                   <p
                     className="mt-2 pl-14 text-xs"
-                    style={{ color: overstap.tight ? "#f97316" : "var(--muted)" }}
+                    style={{ color: overstap.tight ? "var(--warn)" : "var(--muted)" }}
                   >
                     {overstap.tight ? "\u26A0\uFE0F " : "\u23F1\uFE0F "}
                     {t(overstap.tight ? "journey.transferTight" : "journey.transferSlack", {
@@ -248,7 +248,7 @@ function LegRow({ leg }: { leg: TravelLeg }) {
   return (
     <div className="flex gap-3 text-xs">
       <span className="w-11 shrink-0 tabular-nums">
-        <span className={delayed ? "font-semibold" : ""} style={delayed ? { color: "#f97316" } : undefined}>
+        <span className={delayed ? "font-semibold" : ""} style={delayed ? { color: "var(--warn)" } : undefined}>
           {legTime(leg.departure)}
         </span>
         {delayed && leg.scheduledDeparture ? (

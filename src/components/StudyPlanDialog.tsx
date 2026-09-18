@@ -154,7 +154,7 @@ export function StudyPlanDialog({ item, onClose }: { item: Task | Exam; onClose:
               ))}
 
               {plan.leftoverMinutes > 0 ? (
-                <p className="text-sm font-semibold" style={{ color: "#dc2626" }}>
+                <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
                   &#9888;&#65039;{" "}
                   {t("studyPlan.leftover", {
                     duration: formatDuration(plan.leftoverMinutes),

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgenda } from "./useAgenda";
 import { plannedReminders } from "@/lib/reminders";
+import { REPLAN_MS, dueReminders } from "@/lib/reminderTimers";
 
 /**
  * Herinneringen: "over 15 minuten vertrekken".
@@ -14,15 +15,6 @@ import { plannedReminders } from "@/lib/reminders";
  * berichten kant-en-klaar op de server. Allebei rekenen ze met
  * `plannedReminders`, zodat ze nooit iets anders kunnen zeggen.
  */
-
-/** Zo ver vooruit plannen we meldingen; verder is een timer niet betrouwbaar. */
-const HORIZON_MS = 6 * 60 * 60 * 1000;
-/**
- * En zo vaak kijken we opnieuw. Zonder dit werd een vertrek van vanmiddag om
- * 17:00 's ochtends overgeslagen (verder weg dan de horizon) en daarna nooit
- * meer bekeken: laat je de app openstaan, dan kwam die melding gewoon niet.
- */
-const REPLAN_MS = 15 * 60 * 1000;
 
 export function useReminders(): void {
   const { activities, settings, hydrated } = useAgenda();
@@ -51,11 +43,9 @@ export function useReminders(): void {
 
     // Twee dagen: een vertrek vlak na middernacht hoort bij de activiteit van
     // morgen, maar valt vanavond al binnen de horizon.
-    for (const reminder of plannedReminders(activities, settings, now, 2)) {
-      const delay = reminder.at.getTime() - now.getTime();
-      if (delay <= 0 || delay > HORIZON_MS) continue;
-      if (announced.current.has(reminder.key)) continue;
+    const planned = plannedReminders(activities, settings, now, 2);
 
+    for (const { reminder, delay } of dueReminders(planned, now, announced.current)) {
       timers.current.push(
         setTimeout(() => {
           announced.current.add(reminder.key);

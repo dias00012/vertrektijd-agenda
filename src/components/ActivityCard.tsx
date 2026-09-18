@@ -130,7 +130,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold"
                     style={{
                       background: "color-mix(in srgb, #16a34a 16%, transparent)",
-                      color: "#16a34a",
+                      color: "var(--ok)",
                     }}
                   >
                     &#10003; {t("activity.workDone")}
@@ -201,7 +201,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                 <p
                   key={clash.other.occurrenceId}
                   className="mt-1 text-xs font-medium"
-                  style={{ color: "#b45309" }}
+                  style={{ color: "var(--warn)" }}
                 >
                   &#9888;&#65039;{" "}
                   {t(clash.travelOnly ? "activity.clashTravel" : "activity.clash", {
@@ -271,7 +271,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                           </p>
                           <p className="text-sm font-semibold tabular-nums">
                             &#127968; {t("activity.leaveAt")}{" "}
-                            <span style={delay > 0 ? { color: "#f97316" } : undefined}>
+                            <span style={delay > 0 ? { color: "var(--warn)" } : undefined}>
                               {departure.time}
                             </span>
                             {/* Bij vertraging: de tijd uit de dienstregeling erbij,

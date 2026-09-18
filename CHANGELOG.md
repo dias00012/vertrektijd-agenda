@@ -8,6 +8,59 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.92.0
+
+- **Statuskleuren die in de lichte modus nauwelijks te lezen waren.** Het groen
+  van "Op tijd · live", het oranje van een vertraging en het groen van je
+  vertrektijd stonden als vaste kleurcode in zeven componenten. Eén tint voor
+  allebei de modi, gekozen voor het donker -- dus in het licht kwamen ze uit op
+  2,28:1, 2,80:1 en 3,30:1, waar 4,5:1 de eis is. Precies de regels waar je op
+  een perron naar staat te turen.
+
+  Ze zijn nu `--ok` en `--warn`, met een lichte en een donkere tint, net als het
+  accent dat al had.
+
+- **Vier van de acht thema's waren als tekst niet te lezen.** Het accent is niet
+  alleen een vlak achter witte tekst, maar op een stuk of tien plekken ook de
+  tekstkleur zelf ("Opgeslagen", "Rooster bijgewerkt"). Groen kwam op 2,99:1 uit,
+  oranje op 3,23:1. Alle lichte tinten die het niet haalden zijn een stap
+  donkerder gezet.
+
+- **De hoofdknop had in het donker witte letters op een lichte kleur.** Bij elk
+  thema: van 2,98:1 (indigo) tot 1,74:1 (groen). In het donker is het accent
+  juist de lichte tint, dus de tekst moet daar donker zijn. Nu 6,3:1 tot 10,9:1.
+
+- **De meekleurende achtergrond was te sterk.** Niet alle tekst staat op een
+  kaart: de datum onder "Vandaag" en de kopjes boven je dag staan rechtstreeks
+  op de achtergrond, en die kwamen op 3,3:1 uit. De tint mengt nu veel zachter
+  in wit. Je ziet je kleur nog steeds; je leest er alleen weer bij.
+
+  Alles hierboven wordt bewaakt door `contrast.test.ts`, die `globals.css` en
+  `theme.ts` uitleest -- inclusief het recept van de meekleurende achtergrond,
+  zodat er geen kopie in de test zit die ernaast kan gaan lopen.
+
+- **Knoppen in het weekrooster zonder naam.** Het reisblokje toont de
+  vertrektijd alleen als het hoog genoeg is voor tekst; bij een korte rit bleef
+  er een knop over met niets erin. Een kort activiteitenblok toonde alleen een
+  emoji, en die staat op `aria-hidden`. In allebei de gevallen was een tooltip
+  het enige wat er stond, en zweven bestaat niet op een telefoon. Ze hebben nu
+  altijd een naam met de tijd erin.
+
+- **De uitleg bij "Laatste rit vanavond" staat op het scherm.** Stond alleen in
+  een tooltip, terwijl dat de knop is die je 's avonds op school op je telefoon
+  zoekt.
+
+- **De wekker van de app heeft tests.** `plannedReminders` bepaalt wanneer je te
+  horen krijgt dat je weg moet en had er geen enkele -- terwijl een melding die
+  niet komt je pas opvalt als je te laat bent. Twaalf tests, waaronder het
+  verschil tussen "herinneringen uit" en "waarschuw me precies op het moment
+  zelf": dat zijn twee verschillende keuzes en ze werden bijna hetzelfde.
+
+  De beslissing welke meldingen een timer krijgen zat in `useReminders` en was
+  dus niet na te rekenen. Staat nu als `dueReminders` in
+  `src/lib/reminderTimers.ts`, met acht tests -- inclusief de reden dat er
+  überhaupt elk kwartier opnieuw gepland wordt.
+
 ## 0.91.0
 
 - **Drie plekken waar informatie voor niemand zichtbaar was.** Een icoon met

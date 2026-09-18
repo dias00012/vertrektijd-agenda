@@ -191,7 +191,7 @@ export function Onboarding({
                           className="ml-1.5 rounded px-1 py-px text-[10px] font-semibold whitespace-nowrap"
                           style={{
                             background: "color-mix(in srgb, #f97316 18%, transparent)",
-                            color: "#f97316",
+                            color: "var(--warn)",
                           }}
                         >
                           {row.delay}

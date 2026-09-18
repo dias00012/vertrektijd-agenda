@@ -635,6 +635,13 @@ function GridBlock({
         <button
           type="button"
           onClick={onSelect}
+          // De tijd staat hieronder alleen als het blokje hoog genoeg is; bij
+          // een korte rit is het te laag voor tekst en bleef er een knop over
+          // met niets erin. `title` alleen is te weinig: dat is een tooltip,
+          // en op een telefoon bestaat zweven niet.
+          aria-label={t("week.leaveAt", {
+            time: minutesToTime(item.departureMinutes + startOffset),
+          })}
           title={t("week.leaveAt", { time: minutesToTime(item.departureMinutes + startOffset) })}
           className="absolute overflow-hidden rounded-md text-left"
           style={{
@@ -673,6 +680,13 @@ function GridBlock({
           }
           onSelect();
         }}
+        // Een kort blok toont alleen de emoji, en die is aria-hidden: dan
+        // bleef er een knop zonder naam over.
+        aria-label={t("week.blockTitle", {
+          title: item.occurrence.title,
+          from: minutesToTime(item.startMinutes + startOffset),
+          to: minutesToTime(item.endMinutes + endOffset),
+        })}
         title={t("week.blockTitle", {
           title: item.occurrence.title,
           from: minutesToTime(item.startMinutes + startOffset),
@@ -744,6 +758,14 @@ function GridBlock({
         <button
           type="button"
           onClick={onSelect}
+          aria-label={
+            onward
+              ? t("week.onwardTo", {
+                  place: onward.to.label,
+                  time: minutesToTime(item.returnMinutes + endOffset),
+                })
+              : t("week.homeAt", { time: minutesToTime(item.returnMinutes + endOffset) })
+          }
           title={
             onward
               ? t("week.onwardTo", {

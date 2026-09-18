@@ -9,6 +9,13 @@
  * Per thema staan er twee tinten: een voor licht en een voor donker. In het
  * donker moet een kleur lichter zijn om nog leesbaar te blijven op een donkere
  * achtergrond.
+ *
+ * Het accent is niet alleen een vlak achter witte tekst, maar op een stuk of
+ * tien plekken ook de tekstkleur zelf ("Opgeslagen", "Rooster bijgewerkt").
+ * Daarom moet de lichte tint 4,5:1 halen op een lichte achtergrond. Vier van
+ * de acht deden dat niet: groen kwam op 2,99:1 uit en oranje op 3,23:1, dus
+ * wie die koos kreeg meldingen die hij nauwelijks kon lezen. Ze zijn een stap
+ * donkerder gezet; `contrast.test.ts` leest deze tabel uit en rekent het na.
  */
 
 export interface Theme {
@@ -23,11 +30,11 @@ export const THEMES: Theme[] = [
   { id: "blue", nameKey: "theme.blue", light: "#2563eb", dark: "#60a5fa" },
   { id: "indigo", nameKey: "theme.indigo", light: "#4f46e5", dark: "#818cf8" },
   { id: "purple", nameKey: "theme.purple", light: "#7c3aed", dark: "#a78bfa" },
-  { id: "pink", nameKey: "theme.pink", light: "#db2777", dark: "#f472b6" },
-  { id: "red", nameKey: "theme.red", light: "#dc2626", dark: "#f87171" },
-  { id: "orange", nameKey: "theme.orange", light: "#ea580c", dark: "#fb923c" },
-  { id: "green", nameKey: "theme.green", light: "#16a34a", dark: "#4ade80" },
-  { id: "teal", nameKey: "theme.teal", light: "#0d9488", dark: "#2dd4bf" },
+  { id: "pink", nameKey: "theme.pink", light: "#be185d", dark: "#f472b6" },
+  { id: "red", nameKey: "theme.red", light: "#c81e1e", dark: "#f87171" },
+  { id: "orange", nameKey: "theme.orange", light: "#c2410c", dark: "#fb923c" },
+  { id: "green", nameKey: "theme.green", light: "#15803d", dark: "#4ade80" },
+  { id: "teal", nameKey: "theme.teal", light: "#0f766e", dark: "#2dd4bf" },
 ];
 
 export const DEFAULT_THEME = "blue";

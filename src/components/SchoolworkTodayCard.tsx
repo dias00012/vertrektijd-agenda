@@ -85,7 +85,7 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
               {")"}
             </span>
             {doneMinutes > 0 ? (
-              <span className="font-semibold" style={{ color: "#16a34a" }}>
+              <span className="font-semibold" style={{ color: "var(--ok)" }}>
                 {" \u00b7 "}
                 {t("schoolworkToday.doneShare", { duration: formatDuration(doneMinutes) })}
               </span>
@@ -105,7 +105,7 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
                 duration: formatDuration(stand.todoMinutes),
                 day: describeDaysUntil(stand.until, now),
               })}
-              <span style={{ color: tekort > 0 ? "#dc2626" : "var(--muted)" }}>
+              <span style={{ color: tekort > 0 ? "var(--danger)" : "var(--muted)" }}>
                 {" \u00b7 "}
                 {tekort > 0
                   ? t("schoolworkToday.tight", { duration: formatDuration(tekort) })
