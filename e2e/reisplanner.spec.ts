@@ -44,6 +44,57 @@ function rit(id: string, vertrek: string, aankomst: string, patch: Record<string
   };
 }
 
+/** Een rit met twee treinen en een overstap ertussen. */
+function metOverstap(id: string, speling: number) {
+  const aankomst = `${DAG}T11:05:00.000Z`;
+  const vertrek = new Date(Date.parse(aankomst) + (speling + 3) * 60_000).toISOString();
+  return {
+    id,
+    departure: `${DAG}T10:21:00.000Z`,
+    arrival: `${DAG}T13:03:00.000Z`,
+    durationMinutes: 162,
+    transfers: 1,
+    legs: [
+      {
+        mode: "rail",
+        durationMinutes: 44,
+        from: "Almere Centrum",
+        to: "Utrecht Centraal",
+        departure: `${DAG}T10:21:00.000Z`,
+        arrival: aankomst,
+        line: "Sprinter",
+        realTime: true,
+        cancelled: false,
+      },
+      // Drie minuten lopen op het station; de rest is wachten.
+      {
+        mode: "walk",
+        durationMinutes: 3,
+        from: "Utrecht Centraal",
+        to: "Utrecht Centraal",
+        departure: aankomst,
+        arrival: vertrek,
+        realTime: false,
+        cancelled: false,
+      },
+      {
+        mode: "rail",
+        durationMinutes: 114,
+        from: "Utrecht Centraal",
+        to: "Maastricht",
+        departure: vertrek,
+        arrival: `${DAG}T13:03:00.000Z`,
+        line: "Intercity",
+        realTime: true,
+        cancelled: false,
+      },
+    ],
+    delayMinutes: 0,
+    realTime: true,
+    cancelled: false,
+  };
+}
+
 function vangRitten(page: Page, journeys: unknown[]) {
   /** Wat er gevraagd is; zo kan een test ook de vraag zelf toetsen. */
   const gevraagd: { body?: { time?: string; arriveBy?: boolean } } = {};
@@ -211,4 +262,57 @@ test("een gevonden rit is vanuit de planner in je agenda te zetten", async ({ pa
   // En hij staat er echt in.
   await page.goto("/agenda");
   await expect(page.getByRole("heading", { name: "Open dag" })).toBeVisible();
+});
+
+test("een krappe overstap staat op de kaart, ook zonder uitklappen", async ({ page }) => {
+  /*
+   * Dit is de rit die dit aan het licht bracht: aankomst Utrecht 13:05, drie
+   * minuten lopen, en om 13:09 vertrekt de volgende trein. Eén minuut speling
+   * -- is de eerste trein twee minuten te laat, dan sta je een half uur te
+   * wachten.
+   *
+   * Op het scherm stond daar niets over. Je zag "1 overstap" en de tijden per
+   * onderdeel; dat het krap was moest je zelf uitrekenen.
+   */
+  vangRitten(page, [metOverstap("krap", 1)]);
+  await zaai(page);
+  await open(page);
+
+  const kaart = opties(page).locator("article").first();
+  await expect(kaart).toContainText("Krappe overstap in Utrecht Centraal");
+  await expect(kaart).toContainText("1 min speling");
+});
+
+test("een ruime overstap wordt niet als krap gemeld", async ({ page }) => {
+  // Anders staat er bij elke rit een waarschuwing en kijkt niemand er meer naar.
+  vangRitten(page, [metOverstap("ruim", 12)]);
+  await zaai(page);
+  await open(page);
+
+  const kaart = opties(page).locator("article").first();
+  await expect(kaart).not.toContainText("Krappe overstap");
+  // Uitgeklapt staat de overstaptijd er wel gewoon.
+  await kaart.getByRole("button").first().click();
+  await expect(kaart).toContainText("overstaptijd in Utrecht Centraal");
+});
+
+test("de snelkeuzes uit je agenda vullen bestemming en tijd in", async ({ page }) => {
+  /*
+   * De planner wist niets van je agenda, terwijl dat juist is wat deze app
+   * onderscheidt: hij kent je bestemming en je aankomsttijd al. Toch begon je
+   * met een leeg "naar"-veld.
+   *
+   * De agenda in de zaai heeft werken op de testdag van 09:00 tot 17:00, met
+   * een marge van 5 minuten -- dus uiterlijk om 08:55 daar zijn.
+   */
+  const gevraagd = vangRitten(page, [rit("a", `${DAG}T06:01:00.000Z`, `${DAG}T06:48:00.000Z`)]);
+  await zaai(page);
+  await page.goto("/reizen");
+
+  await page.getByRole("button", { name: /Naar Werken/ }).click();
+
+  await expect.poll(() => gevraagd.body?.arriveBy).toBe(true);
+  // 08:55 lokaal is 06:55 in UTC.
+  expect(gevraagd.body?.time).toBe(`${DAG}T06:55:00.000Z`);
+  await expect(opties(page).locator("article")).toHaveCount(1);
 });

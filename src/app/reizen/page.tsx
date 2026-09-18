@@ -9,6 +9,8 @@ import { track } from "@/lib/stats";
 import { LocationInput } from "@/components/LocationInput";
 import { JourneyCard } from "@/components/JourneyCard";
 import { endOfDay, latestOnTime } from "@/lib/journeyList";
+import { upcomingTrips } from "@/lib/tripSuggestions";
+import { formatDateLabel } from "@/lib/time";
 import { ActivityForm } from "@/components/ActivityForm";
 import { minutesToTime, timeToMinutes, toDateKey } from "@/lib/time";
 import { legTime } from "@/lib/travelModes";
@@ -63,7 +65,7 @@ function pointLabel(point: GeoLocation | null): string {
 
 /** Reisplanner: zoek een rit met trein, bus, tram of metro. */
 export default function TravelPlannerPage() {
-  const { settings, hydrated } = useAgenda();
+  const { settings, hydrated, activities } = useAgenda();
   const t = useT();
 
   const [from, setFrom] = useState<GeoLocation | null>(null);
@@ -98,6 +100,15 @@ export default function TravelPlannerPage() {
   const places = hydrated ? placeChoices(settings) : [];
   // De lijst staat op vertrektijd; de snelste rit hoeft dus niet bovenaan te
   // staan. Alleen merken als er echt iets te kiezen valt.
+  /*
+   * Je eerstvolgende ritten uit je agenda.
+   *
+   * Dit is wat deze app onderscheidt van elke andere reisplanner: hij weet al
+   * waar je heen moet en hoe laat je er moet zijn. Toch begon deze pagina met
+   * een leeg "naar"-veld en typte je elke keer je bestemming.
+   */
+  const suggesties = hydrated ? upcomingTrips(activities, settings, now) : [];
+
   const fastestId = fastestJourneyId(journeys);
   // Bij "uiterlijk aankomen om" is dit de rit die je zocht: de laatste die het
   // nog haalt. Hij staat onderaan, want de lijst is een vertrekbord.
@@ -137,9 +148,13 @@ export default function TravelPlannerPage() {
        * niet gewacht te worden tot React die verandering verwerkt heeft, en
        * blijft staan wat jij had ingevuld.
        */
-      override?: { time: string; arriveBy: boolean },
+      override?: { time: string; arriveBy: boolean; to?: GeoLocation },
     ) => {
-      if (!from || !to) {
+      // De bestemming mag meekomen om dezelfde reden als de tijd: zet je hem
+      // eerst in de velden, dan is de state hier nog de oude en zoekt hij naar
+      // waar je net vandaan kwam.
+      const bestemming = override?.to ?? to;
+      if (!from || !bestemming) {
         setError(t("travel.needBoth"));
         return;
       }
@@ -156,7 +171,7 @@ export default function TravelPlannerPage() {
       }
 
       try {
-        const result = await fetchJourneys(from, to, {
+        const result = await fetchJourneys(from, bestemming, {
           // Bij bladeren bepaalt de cursor het tijdvenster.
           ...(cursor
             ? { cursor }
@@ -333,6 +348,44 @@ export default function TravelPlannerPage() {
           <p className="text-sm" style={{ color: "var(--danger)" }} role="alert">
             &#9888;&#65039; {error}
           </p>
+        ) : null}
+
+        {/*
+          Eén tik in plaats van je bestemming overtypen. Zet meteen de
+          aankomsttijd goed, zodat je hetzelfde antwoord krijgt als je agenda
+          voor precies dezelfde vraag.
+        */}
+        {suggesties.length > 0 ? (
+          <div>
+            <span className="label">{t("travel.suggestions")}</span>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {suggesties.map((rit) => (
+                <button
+                  key={rit.id}
+                  type="button"
+                  className="rounded-full border px-3 py-2 text-xs"
+                  style={{ borderColor: "var(--line)" }}
+                  onClick={() => {
+                    setTo(rit.to);
+                    setWhen("arrive");
+                    setDateTime(toLocalInput(new Date(rit.arriveBy)));
+                    void search(undefined, "next", {
+                      time: rit.arriveBy,
+                      arriveBy: true,
+                      to: rit.to,
+                    });
+                  }}
+                  disabled={loading}
+                >
+                  {t("travel.suggestion", {
+                    title: rit.label,
+                    day: formatDateLabel(rit.date, now),
+                    time: legTime(rit.arriveBy) ?? "",
+                  })}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         <button

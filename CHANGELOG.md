@@ -8,6 +8,63 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.90.0
+
+De vier laatste punten van de reisplanner.
+
+- **Je ziet nu hoeveel speling je hebt bij een overstap.** Dit is de rit die de
+  planner teruggaf, Almere Buiten naar Maastricht:
+
+      14:35  aankomst Utrecht Centraal
+      3 min lopen
+      14:39  vertrek Intercity
+
+  Eén minuut speling. Is die eerste trein twee minuten te laat, dan sta je een
+  half uur te wachten. Op het scherm stond daar niets over -- je zag "2
+  overstappen" en de tijden per onderdeel, en dat 14:39 min 14:35 krap is moest
+  je zelf bedenken.
+
+  Onder de vijf minuten heet het krap, en dan staat het op de kaart zelf: dit
+  bepaalt of je deze rit wilt, en dat wil je weten zonder eerst uit te klappen.
+  Uitgeklapt staat de overstaptijd er altijd bij.
+
+  Lopen telt niet als speling -- dat moet je toch. En de tijd vóór je eerste
+  rit telt niet mee: te laat op je eerste trein is iets wat jij doet, geen
+  aansluiting die je mist.
+
+- **De `+1` is nu ook hoorbaar.** Die zette ik vanmiddag zelf neer met alleen
+  een `title`. Op een telefoon zie je een tooltip nooit, en een schermlezer las
+  "plus één" zonder uitleg -- terwijl dat juist het verschil is tussen vanavond
+  en morgenochtend. Nu zichtbaar een "+1" en hoorbaar een hele zin. Hetzelfde
+  voor het merkje "laatste op tijd".
+
+- **Snelkeuzes uit je agenda.** De planner wist niets van je agenda, terwijl
+  dat juist is wat deze app onderscheidt: hij kent je bestemming en je
+  aankomsttijd al. Toch begon je met een leeg "naar"-veld en typte je elke keer
+  je bestemming.
+
+  Boven de zoekknop staan nu je eerstvolgende ritten: "Naar School, morgen om
+  08:50". Eén tik vult de bestemming én de aankomsttijd in en zoekt meteen.
+
+  Die aankomsttijd is dezelfde die de agenda aanhoudt (starttijd min je marge,
+  ook de marge per activiteit). Zou de planner een ander tijdstip nemen, dan
+  gaf hij een ander antwoord dan je agenda op precies dezelfde vraag.
+
+- **Eén herkansing bij een hapering.** De OV-dienst is gratis en door een
+  gemeenschap gedraaid; die hikt wel eens. Je kreeg dan meteen "de planner is
+  even niet bereikbaar" en moest zelf opnieuw drukken, voor iets wat een
+  fractie later gewoon werkt.
+
+  Twee dingen bewust niet opnieuw: een tijdslimiet (je stond al twaalf seconden
+  te wachten, en vierentwintig is geen verbetering) en een 429 (dan zegt de
+  dienst zelf dat het te veel wordt, en dan is nog eens aankloppen precies het
+  verkeerde).
+
+- **Alle 26 nieuwe tests zijn nagelopen door de code te breken.** Veertien
+  mutaties, veertien betrapt. Twee eerdere pogingen bleken niet te compileren;
+  daar vangt de typecontrole het al, maar dat bewijst niets over de tests -- dus
+  zijn die opnieuw gedaan met varianten die wél door de compiler komen.
+
 ## 0.89.0
 
 Vier gaten in de dekking, op de plekken waar een stille fout het meeste kost.
