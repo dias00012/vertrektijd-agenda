@@ -9,6 +9,7 @@ import {
   travelPlanForDate,
   travelIsStale,
   tripHasLeft,
+  refreshDecision,
 } from "./travel";
 import type { ActivityOccurrence, Settings, TravelInfo } from "./types";
 
@@ -685,5 +686,180 @@ describe("travelIsStale", () => {
     // Staat de klok van een ander apparaat voor, dan is dat geen reden om
     // eindeloos opnieuw op te halen.
     expect(travelIsStale("2026-09-07T07:30:00.000Z", TWEE_MINUTEN, nu)).toBe(false);
+  });
+});
+
+describe("refreshDecision", () => {
+  const DAG = "2026-09-07";
+  const ov = () =>
+    activity({ date: DAG, startTime: "09:00", endTime: "17:00", travelMode: "transit" });
+  const planVan = (dag = DAG) => travelPlanForDate(ov(), settings({ travelMode: "transit" }), dag);
+
+  /** De beslissing op dit tijdstip, met alles op "er staat nog niets". */
+  const beslis = (
+    now: Date,
+    patch: Partial<Parameters<typeof refreshDecision>[0]> = {},
+  ) =>
+    refreshDecision(
+      {
+        date: DAG,
+        startTime: "09:00",
+        endTime: "17:00",
+        plan: planVan(),
+        alreadyExact: false,
+        shownAt: undefined,
+        ...patch,
+      },
+      now,
+    );
+
+  describe("welke dagen meedoen", () => {
+    it("haalt een rit van vandaag op", () => {
+      expect(beslis(new Date(2026, 8, 7, 5, 0)).offset).toBe(0);
+      expect(beslis(new Date(2026, 8, 7, 5, 0)).shouldFetch).toBe(true);
+    });
+
+    it("haalt ook voor een dag verderop op -- daar kijk je juist vooruit", () => {
+      // Het verversvenster gaat over opnieuw ophalen, niet over de eerste keer.
+      const d = beslis(new Date(2026, 8, 6, 12, 0));
+      expect(d.offset).toBe(1);
+      expect(d.worthRefreshing).toBe(false);
+      expect(d.shouldFetch).toBe(true);
+    });
+
+    it("laat een dag die voorbij is met rust", () => {
+      const d = beslis(new Date(2026, 8, 8, 12, 0));
+      expect(d.offset).toBe(-1);
+      expect(d.inRange).toBe(false);
+      expect(d.shouldFetch).toBe(false);
+    });
+
+    it("stopt waar de dienstregeling ophoudt", () => {
+      // Eenentwintig dagen vooruit mag nog, tweeentwintig niet: verder publiceren
+      // vervoerders niets betrouwbaars, en dan haal je een verzinsel op.
+      expect(beslis(new Date(2026, 7, 17, 12, 0)).offset).toBe(21);
+      expect(beslis(new Date(2026, 7, 17, 12, 0)).inRange).toBe(true);
+      expect(beslis(new Date(2026, 7, 16, 12, 0)).offset).toBe(22);
+      expect(beslis(new Date(2026, 7, 16, 12, 0)).inRange).toBe(false);
+      expect(beslis(new Date(2026, 7, 16, 12, 0)).shouldFetch).toBe(false);
+    });
+  });
+
+  describe("wanneer een rit er nog toe doet", () => {
+    it("begint drie uur voor de start", () => {
+      expect(beslis(new Date(2026, 8, 7, 5, 59, 59)).worthRefreshing).toBe(false);
+      expect(beslis(new Date(2026, 8, 7, 6, 0, 0)).worthRefreshing).toBe(true);
+    });
+
+    it("loopt door tot het einde en niet langer", () => {
+      expect(beslis(new Date(2026, 8, 7, 17, 0, 0)).worthRefreshing).toBe(true);
+      expect(beslis(new Date(2026, 8, 7, 17, 0, 1)).worthRefreshing).toBe(false);
+    });
+
+    it("gaat niet de avond ervoor al open, ook niet bij een rit net na middernacht", () => {
+      /*
+       * Het venster van drie uur zou hier over middernacht heen reiken: een
+       * activiteit om 01:00 begint te verversen om 22:00 de dag ervoor. Dat is
+       * precies het geval waarin de dag-eis ergens toe doet, en het enige waar
+       * hij te betrappen is -- bij een rit overdag valt de tijd toch al buiten
+       * het venster, en dan lijkt elke test te slagen.
+       *
+       * Waarom het zo hoort: 's avonds kijkt er niemand, en elke kaart die dan
+       * gaat verversen kost verkeer naar de gratis OV-dienst zonder dat het
+       * iemand iets oplevert.
+       */
+      const nacht = {
+        date: DAG,
+        startTime: "01:00",
+        endTime: "02:00",
+        plan: planVan(),
+        alreadyExact: false,
+        shownAt: undefined,
+      };
+      // 22:30 de avond ervoor: binnen de drie uur, maar niet vandaag.
+      const ervoor = refreshDecision(nacht, new Date(2026, 8, 6, 22, 30));
+      expect(ervoor.offset).toBe(1);
+      expect(ervoor.worthRefreshing).toBe(false);
+
+      // En na middernacht, op de dag zelf, gaat hij wel open.
+      const opDeDag = refreshDecision(nacht, new Date(2026, 8, 7, 0, 30));
+      expect(opDeDag.offset).toBe(0);
+      expect(opDeDag.worthRefreshing).toBe(true);
+    });
+  });
+
+  describe("ouderdom van wat er staat", () => {
+    const tijdens = new Date(2026, 8, 7, 12, 0);
+
+    it("rekent iets van twee minuten oud als te oud", () => {
+      const shownAt = new Date(2026, 8, 7, 11, 58).toISOString();
+      expect(beslis(tijdens, { shownAt }).stale).toBe(true);
+    });
+
+    it("laat iets van een minuut oud staan", () => {
+      const shownAt = new Date(2026, 8, 7, 11, 59).toISOString();
+      expect(beslis(tijdens, { shownAt }).stale).toBe(false);
+    });
+
+    it("telt de ouderdom niet buiten het venster mee", () => {
+      // Een rit van volgende week hoeft niet om de twee minuten opnieuw, hoe
+      // oud de uitkomst ook is.
+      const oud = new Date(2026, 8, 1, 12, 0).toISOString();
+      expect(beslis(new Date(2026, 8, 7, 5, 0), { shownAt: oud }).stale).toBe(false);
+    });
+  });
+
+  describe("wel of niet ophalen", () => {
+    it("doet niets zonder rit om op te halen", () => {
+      expect(beslis(new Date(2026, 8, 7, 12, 0), { plan: null }).shouldFetch).toBe(false);
+    });
+
+    it("laat een rit die al klopt en vers is met rust", () => {
+      const vers = new Date(2026, 8, 7, 11, 59, 30).toISOString();
+      const d = beslis(new Date(2026, 8, 7, 12, 0), { alreadyExact: true, shownAt: vers });
+      expect(d.shouldFetch).toBe(false);
+    });
+
+    it("haalt een rit die al klopt tóch op zodra hij veroudert", () => {
+      // Dit was de fout: de sleutel klopte, dus er werd niets meer opgehaald --
+      // en de vertrektijd van gisteravond bleef staan met "op tijd" erbij,
+      // terwijl de trein een kwartier later reed.
+      const oud = new Date(2026, 8, 7, 11, 50).toISOString();
+      const d = beslis(new Date(2026, 8, 7, 12, 0), { alreadyExact: true, shownAt: oud });
+      expect(d.stale).toBe(true);
+      expect(d.shouldFetch).toBe(true);
+    });
+
+    it("stopt zodra de rit vertrokken is", () => {
+      // Na het einde heeft de planner geen dienstregeling meer; wat hij dan
+      // teruggeeft ziet er echt uit maar klopt niet.
+      expect(beslis(new Date(2026, 8, 7, 17, 30)).shouldFetch).toBe(false);
+    });
+  });
+
+  describe("één klok voor de hele beslissing", () => {
+    it("gebruikt de meegegeven tijd en niet de echte", () => {
+      // Draait deze test in 2030, dan verandert er niets aan de uitkomst.
+      expect(beslis(new Date(2026, 8, 7, 12, 0)).offset).toBe(0);
+      expect(beslis(new Date(2026, 8, 7, 12, 0)).worthRefreshing).toBe(true);
+    });
+
+    it("geeft twee keer hetzelfde antwoord op hetzelfde moment", () => {
+      // Dit is waarom de klok uit state komt: eerst las deze logica de tijd
+      // drie keer los af, en dan kon dezelfde beslissing met twee
+      // verschillende "nu" rekenen zodra er een grens tussen viel.
+      const now = new Date(2026, 8, 7, 12, 0);
+      expect(beslis(now)).toEqual(beslis(now));
+    });
+
+    it("houdt dag en vertrek bij elkaar op de grens", () => {
+      // Precies op het einde: nog binnen het venster, en de rit is nog niet
+      // vertrokken. Met twee losse aflezingen kon dat uiteenlopen.
+      const opDeGrens = new Date(2026, 8, 7, 17, 0, 0);
+      const d = beslis(opDeGrens);
+      expect(d.offset).toBe(0);
+      expect(d.worthRefreshing).toBe(true);
+      expect(d.shouldFetch).toBe(true);
+    });
   });
 });

@@ -8,6 +8,53 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.83.0
+
+- **De klok uit de reistijd-hook gehaald.** Blijven staan uit 0.82.0: de React
+  Compiler wees `Date.now()` tijdens het renderen aan in
+  `useOccurrenceTravel`. Er stond toen een uitzondering met uitleg, omdat dit
+  de logica is waar de vertrektijden uit komen en dat geen zijsprong tijdens
+  een framework-upgrade hoorde te zijn.
+
+  Bij het oplossen bleken het er **drie** te zijn, niet één: `offset` las de
+  klok, `nowMs` las de klok, en `tripHasLeft` deed het via zijn
+  standaardwaarde. Die konden onderling verschillen -- viel er een dag- of
+  vertrekgrens tussen twee aflezingen, dan rekende dezelfde beslissing met twee
+  verschillende "nu". Nu is er één klok, uit `useNow`: dezelfde die het
+  dashboard en de agenda al gebruiken.
+
+  Dat lost meteen iets op wat niemand gemeld had: het verversvenster ging
+  vroeger pas open zodra er om een andere reden gerenderd werd. Nu tikt de klok
+  en gaat het vanzelf open.
+
+- **En die logica had geen enkele test.** Dat was het echte risico, niet de
+  onzuiverheid. De beslissing "moet deze rit opgehaald worden, en doet hij er
+  nu toe" zat verstopt in een hook, en hooks worden hier niet getest -- de
+  browsertests gaan over schoolwerk en types en raken de reistijden niet.
+
+  Die beslissing staat nu als `refreshDecision` in `src/lib/travel.ts`, met
+  `now` als gewone parameter, en er zijn zeventien tests bij. Wat die
+  vastleggen:
+
+  - vandaag en tot eenentwintig dagen vooruit wordt opgehaald, een dag die
+    voorbij is niet;
+  - het verversvenster loopt van drie uur voor de start tot het einde, en geldt
+    alleen vandaag -- ook bij een rit vlak na middernacht, waar het venster
+    anders de avond ervoor al open zou gaan;
+  - buiten dat venster wordt er wél voor het eerst opgehaald, want dat venster
+    gaat over *opnieuw* ophalen;
+  - een rit die al klopt maar ouder is dan twee minuten wordt alsnog opgehaald
+    (de fout waardoor de vertrektijd van gisteravond bleef staan met "op tijd"
+    erbij);
+  - en zodra de rit vertrokken is stopt het, want dan heeft de planner geen
+    dienstregeling meer.
+
+  De tests zijn nagelopen door de logica expres op vier plekken te breken. Drie
+  mutaties werden meteen betrapt; de vierde -- de eis dat het vandaag moet zijn
+  -- glipte erdoor, omdat bij een rit overdag de tijd tóch al buiten het venster
+  valt en de test dus om de verkeerde reden slaagde. Daar staat nu de rit vlak
+  na middernacht, en die betrapt hem wel.
+
 ## 0.82.0
 
 - **Next.js 15 → 16, React 19.1 → 19.3, vitest 3 → 5.** Aanleiding was een

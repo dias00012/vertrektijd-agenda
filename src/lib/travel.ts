@@ -561,3 +561,82 @@ export function computeReturn(
     nextDay: minutes >= MINUTES_PER_DAY,
   };
 }
+
+/** Zo ver vooruit publiceren vervoerders hun dienstregeling betrouwbaar. */
+export const MAX_LOOKAHEAD_DAYS = 21;
+
+/** Hoe vaak we een rit opnieuw ophalen voor actuele vertragingen. */
+export const REFRESH_MS = 2 * 60 * 1000;
+
+/** Zo lang voor de start begint het verversen; eerder heeft het geen zin. */
+export const REFRESH_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+function daysBetween(fromKey: string, toKey: string): number {
+  const from = new Date(`${fromKey}T00:00:00`);
+  const to = new Date(`${toKey}T00:00:00`);
+  return Math.round((to.getTime() - from.getTime()) / 86_400_000);
+}
+
+export interface RefreshInput {
+  /** De dag van deze activiteit (jjjj-mm-dd). */
+  date: string;
+  startTime: string;
+  endTime: string;
+  /** De rit die we zoeken, of null wanneer er niets te reizen valt. */
+  plan: TravelPlan | null;
+  /** Staat de rit van deze dag al in de activiteit zelf? */
+  alreadyExact: boolean;
+  /** Wanneer is uitgerekend wat we nú laten zien? */
+  shownAt: string | undefined;
+}
+
+export interface RefreshDecision {
+  /** Hoeveel dagen deze activiteit van vandaag af ligt; negatief is verleden. */
+  offset: number;
+  /** Ligt die dag binnen wat de vervoerders publiceren? */
+  inRange: boolean;
+  /** Doet deze reis er nú toe? Vanaf een paar uur voor de start tot het einde. */
+  worthRefreshing: boolean;
+  /** Is wat we laten zien te oud om nog te vertrouwen? */
+  stale: boolean;
+  /** En dus: moet er opgehaald worden? */
+  shouldFetch: boolean;
+}
+
+/**
+ * Moet deze rit (opnieuw) opgehaald worden, en doet hij er nu toe?
+ *
+ * Dit stond los in `useOccurrenceTravel`, waar het drie keer zelf de klok las
+ * -- onzuiver tijdens het renderen, en het kon uiteenlopen wanneer er een dag-
+ * of vertrekgrens tussen twee van die aflezingen viel. Hier komt `now` van
+ * buiten: één tijd voor de hele beslissing, en te testen zonder de app te
+ * starten. Dat laatste was de echte reden om het te verplaatsen -- dit is de
+ * logica waar de vertrektijden uit komen, en die had geen enkele test.
+ */
+export function refreshDecision(input: RefreshInput, now: Date): RefreshDecision {
+  const { date, startTime, endTime, plan, alreadyExact, shownAt } = input;
+
+  const nowMs = now.getTime();
+  const offset = daysBetween(toDateKey(now), date);
+  const inRange = offset >= 0 && offset <= MAX_LOOKAHEAD_DAYS;
+
+  // Alleen vandaag, en alleen rond de activiteit zelf. Daarbuiten kost het
+  // alleen verkeer naar de gratis OV-dienst zonder dat iemand kijkt: je les van
+  // vanochtend hoeft om acht uur 's avonds niet meer bijgewerkt.
+  const startsAt = toDateTime(date, startTime).getTime();
+  const endsAt = toDateTime(date, endTime).getTime();
+  const worthRefreshing =
+    offset === 0 && nowMs >= startsAt - REFRESH_WINDOW_MS && nowMs <= endsAt;
+
+  // Binnen dat venster telt ook de ouderdom van wat we tonen: de sleutel zegt
+  // wélke rit je zoekt, niet hoe laat die vandaag echt rijdt.
+  const stale = worthRefreshing && travelIsStale(shownAt, REFRESH_MS, now);
+
+  // En de rit moet nog moeten rijden. Van vanochtend heeft de planner geen
+  // dienstregeling meer; wat hij dan teruggeeft ziet er echt uit maar klopt
+  // niet. Zie `tripHasLeft`.
+  const shouldFetch =
+    Boolean(plan) && (!alreadyExact || stale) && inRange && !(plan && tripHasLeft(plan, now));
+
+  return { offset, inRange, worthRefreshing, stale, shouldFetch };
+}

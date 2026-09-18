@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { fetchTravel } from "@/lib/api";
-import { travelIsStale, travelModeFor, travelPlanForDate, tripHasLeft } from "@/lib/travel";
-import { toDateKey, toDateTime } from "@/lib/time";
+import { useNow } from "@/hooks/useNow";
+import { REFRESH_MS, refreshDecision, travelModeFor, travelPlanForDate } from "@/lib/travel";
 import type { ActivityOccurrence, Settings, TravelInfo, TravelResult } from "@/lib/types";
 
 /**
@@ -26,13 +26,7 @@ interface OccurrenceTravel {
   exact: boolean;
 }
 
-/** Zo ver vooruit publiceren vervoerders hun dienstregeling betrouwbaar. */
-const MAX_LOOKAHEAD_DAYS = 21;
 const CACHE_TTL_MS = 5 * 60 * 1000;
-/** Hoe vaak we een rit opnieuw ophalen voor actuele vertragingen. */
-const REFRESH_MS = 2 * 60 * 1000;
-/** Zo lang voor de start begint het verversen; eerder heeft het geen zin. */
-const REFRESH_WINDOW_MS = 3 * 60 * 60 * 1000;
 /** Bij een verversing hergebruiken we alleen een heel verse uitkomst. */
 const FRESH_MS = 20 * 1000;
 
@@ -46,12 +40,6 @@ interface CacheEntry {
  * dezelfde rit tien keer opvraagt bij de (gratis) OV-dienst.
  */
 const cache = new Map<string, CacheEntry>();
-
-function daysBetween(fromKey: string, toKey: string): number {
-  const from = new Date(`${fromKey}T00:00:00`);
-  const to = new Date(`${toKey}T00:00:00`);
-  return Math.round((to.getTime() - from.getTime()) / 86_400_000);
-}
 
 export function useOccurrenceTravel(
   activity: ActivityOccurrence,
@@ -75,8 +63,6 @@ export function useOccurrenceTravel(
       activity.travel?.key === plan.outboundKey &&
       activity.returnTravel?.key === plan.returnKey,
   );
-  const offset = daysBetween(toDateKey(new Date()), activity.date);
-  const inRange = offset >= 0 && offset <= MAX_LOOKAHEAD_DAYS;
   const [fetched, setFetched] = useState<{
     key: string;
     travel: TravelInfo;
@@ -91,59 +77,35 @@ export function useOccurrenceTravel(
   const tripKey = plan ? `${plan.outboundKey}|${plan.returnKey}` : null;
 
   /*
-   * Vertragingen veranderen, dus halen we een OV-rit regelmatig opnieuw op, en
-   * meteen wanneer je de app weer voor je neus haalt: dat is het moment waarop
-   * je écht wilt weten of je trein rijdt.
+   * Eén klok voor deze hele hook.
    *
-   * Maar alleen wanneer de reis er nog toe doet: vanaf een paar uur voor de
-   * start tot het einde van de activiteit. Daarbuiten kost het alleen verkeer
-   * naar de gratis OV-dienst zonder dat iemand kijkt; je les van vanochtend
-   * hoeft om acht uur 's avonds niet meer bijgewerkt.
+   * Hier werd de echte tijd drie keer los afgelezen: voor `offset`, voor
+   * `nowMs` en via de standaardwaarde van `tripHasLeft`. Dat is onzuiver
+   * tijdens het renderen -- twee renders geven een andere uitkomst -- en het
+   * kon ook echt uiteenlopen: viel er een dag- of vertrekgrens tussen twee van
+   * die aflezingen, dan rekende dezelfde render met twee verschillende "nu".
+   *
+   * `useNow` is de klok die het dashboard en de agenda al gebruiken: hij staat
+   * in state en tikt, dus renderen is nu een som van wat erin gaat. Dat het
+   * antwoord meeverandert met de tijd blijft de bedoeling -- dat komt nu van
+   * een tik, en niet van een render die toevallig langskomt. Dat is meteen
+   * betrouwbaarder: het verversvenster ging vroeger pas open zodra er om een
+   * andere reden gerenderd werd.
    */
-  /*
-   * De React Compiler wijst dit terecht aan: `Date.now()` tijdens het renderen
-   * is onzuiver, want twee renders geven een andere uitkomst.
-   *
-   * Hier is dat precies de bedoeling. De vraag is "doet deze reis er nú nog
-   * toe", en dat antwoord hóórt te veranderen als de tijd verstrijkt. Het
-   * wordt alleen gebruikt om te beslissen of er ververst moet worden, nooit om
-   * iets op het scherm te zetten -- een render extra levert dus hooguit een
-   * verse reistijd op, nooit een ander beeld.
-   *
-   * Het netjes oplossen betekent de tijd via state binnenbrengen, en dat raakt
-   * de logica waar de vertrektijden uit komen. Dat is een aparte ronde waard
-   * met de tests ernaast, niet iets om en passant mee te nemen.
-   */
-  // eslint-disable-next-line react-hooks/purity -- zie hierboven: bewust, en alleen om te beslissen of er ververst wordt
-  const nowMs = Date.now();
-  const startsAt = toDateTime(activity.date, activity.startTime).getTime();
-  const endsAt = toDateTime(activity.date, activity.endTime).getTime();
-  const worthRefreshing =
-    offset === 0 && nowMs >= startsAt - REFRESH_WINDOW_MS && nowMs <= endsAt;
-
-  /*
-   * En een rit die er al staat is niet vanzelf nog waar.
-   *
-   * De sleutel gaat over wélke rit je zoekt — van hier naar daar, uiterlijk
-   * aankomen om — en niet over hoe laat die rit vandaag echt rijdt. Klopte de
-   * sleutel, dan gold de opgeslagen uitkomst als exact en werd er niets meer
-   * opgehaald: de vertrektijd die gisteravond werd uitgerekend stond er
-   * vanochtend nog, met "op tijd" erbij, terwijl je trein een kwartier later
-   * reed of helemaal niet. Juist de eerstvolgende activiteit, waar je op
-   * afgaat, raakte zo nooit ververst.
-   *
-   * Daarom telt binnen het verversvenster ook de ouderdom van wat we laten
-   * zien. Daarbuiten verandert er niets: een rit van volgende week hoeft niet
-   * om de twee minuten opnieuw.
-   */
-  const shownAt =
-    fetched?.key === tripKey ? fetched.travel.computedAt : activity.travel?.computedAt;
-  const stale = worthRefreshing && travelIsStale(shownAt, REFRESH_MS, new Date(nowMs));
-  // En de rit moet nog moeten rijden. Van vanochtend heeft de planner geen
-  // dienstregeling meer; wat hij dan teruggeeft ziet er echt uit maar klopt
-  // niet. Zie `tripHasLeft`.
-  const shouldFetch =
-    Boolean(plan) && (!alreadyExact || stale) && inRange && !(plan && tripHasLeft(plan));
+  const now = useNow();
+  const { worthRefreshing, shouldFetch } = refreshDecision(
+    {
+      date: activity.date,
+      startTime: activity.startTime,
+      endTime: activity.endTime,
+      plan,
+      alreadyExact,
+      // Wat we nú tonen: het verse antwoord als dat bij deze rit hoort, anders
+      // wat er in de activiteit staat.
+      shownAt: fetched?.key === tripKey ? fetched.travel.computedAt : activity.travel?.computedAt,
+    },
+    now,
+  );
 
   useEffect(() => {
     if (!isTransit || !worthRefreshing) return;
