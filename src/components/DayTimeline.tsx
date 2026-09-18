@@ -210,9 +210,17 @@ function TimelineRow({
             (entry.activity.source === "leerplan" ||
               entry.activity.linkedTaskId ||
               entry.activity.linkedExamId) ? (
-              <span aria-hidden title={t("timeline.studyBlock")}>
-                📚
-              </span>
+              <>
+                {/*
+                  Het boekje vertelt dat dit een leerblok is. Dat stond alleen
+                  in een `title`: onzichtbaar op een telefoon, en met
+                  `aria-hidden` erbij ook nog eens niet voor te lezen. De
+                  informatie was er dus voor niemand behalve wie met een muis
+                  stil bleef hangen.
+                */}
+                <span aria-hidden>📚</span>
+                <span className="sr-only">{t("timeline.studyBlock")}</span>
+              </>
             ) : null}
             {workDone ? (
               <span
