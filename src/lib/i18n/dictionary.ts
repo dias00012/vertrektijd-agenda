@@ -557,6 +557,11 @@ export const nl = {
   "color.green": "Groen",
   "color.turquoise": "Turquoise",
   "color.slate": "Grijsblauw",
+  "form.buffer": "Marge voor deze activiteit",
+  "form.bufferDefault": "Algemeen ({count} min)",
+  "form.bufferHint":
+    "Hoeveel eerder je er wilt zijn. Leeg laten volgt de algemene marge uit Instellingen, dus die past zich aan als je hem daar verandert.",
+  "form.bufferUnit": "min",
   "form.transitHintFull": "Bij OV zoekt de app een echte rit die je op tijd laat aankomen, inclusief overstappen en spoor.",
 
   /* --- Kennismaking en herinneringen ------------------------------------- */
@@ -1486,6 +1491,11 @@ export const en: Record<TranslationKey, string> = {
   "color.green": "Green",
   "color.turquoise": "Turquoise",
   "color.slate": "Slate",
+  "form.buffer": "Margin for this activity",
+  "form.bufferDefault": "Default ({count} min)",
+  "form.bufferHint":
+    "How early you want to arrive. Leave empty to follow the general margin from Settings, so it adapts when you change it there.",
+  "form.bufferUnit": "min",
   "form.transitHintFull": "For public transport the app finds a real service that gets you there on time, including changes and platforms.",
 
   "intro.label": "Welcome to Vertrektijd",

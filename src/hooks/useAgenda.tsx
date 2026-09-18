@@ -597,7 +597,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       travel: null,
       returnTravel: null,
       travelError: null,
-      bufferMinutes: null,
+      // Uit het formulier, niet altijd leeg: anders viel een eigen marge bij
+      // het aanmaken stil weg en gold hij pas na een keer bewerken.
+      bufferMinutes: draft.bufferMinutes ?? null,
       createdAt: now,
       updatedAt: now,
     };

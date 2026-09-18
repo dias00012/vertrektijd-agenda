@@ -411,19 +411,36 @@ instellingen. Zie [`SUPABASE-SETUP.md`](SUPABASE-SETUP.md) stap 10 voor het aanz
 
 ## Klaar voor later
 
-Het model is bewust ruim opgezet, maar deze functies zijn nog **niet** gebouwd:
+Deze lijst stond een tijd lang stil terwijl de app doorliep: vier van de zes punten waren
+allang gebouwd. Dat is vervelender dan het lijkt — je gaat iets bouwen dat er al is, of je
+denkt dat de app minder kan dan hij kan. Daarom hieronder eerst wat er wél staat.
 
-- `TravelMode` kent al `bike`, `walk` en `transit`; de routingproviders hebben de profielen
-  al gemapt, alleen de UI-keuze ontbreekt.
-- `Recurrence.freq` staat op `"weekly"`; dagelijks of maandelijks kan er later bij zonder de
-  opgeslagen gegevens te breken.
-- `Activity.bufferMinutes` maakt een marge per activiteit mogelijk naast de globale marge.
-- De provider-abstractie in `src/lib/server/` maakt ruimte voor verkeersinformatie of een
-  andere routeservice zonder de rest van de app aan te raken.
-- De opslaglaag maakt synchronisatie met Google/Apple Calendar of een server-backend mogelijk
-  zonder de componenten te wijzigen; de JSON-import/export is hiervan de eerste bouwsteen.
-- `Task`/`Exam` kennen `linkedTaskId`/`linkedExamId` op `Activity`, zodat een leerblok later
-  expliciet aan een opdracht of toets gekoppeld kan worden in de UI.
+**Inmiddels gebouwd:**
+
+| | waar |
+| --- | --- |
+| Vervoermiddel per activiteit | keuze in het activiteitenformulier |
+| Tweewekelijks en maandelijks herhalen | `RecurrenceFreq`, met keuze in het formulier |
+| Marge per activiteit (`Activity.bufferMinutes`) | veld in het formulier; leeg volgt de algemene marge |
+| Leerblok gekoppeld aan opdracht of toets | `linkedTaskId` / `linkedExamId`, gezet door "Leertijd inplannen" |
+| Synchronisatie tussen je eigen apparaten | Supabase, met realtime en versiecontrole |
+| Roosters van buiten inlezen | `.ics`-abonnementen via `/api/rooster` |
+
+**Nog niet gebouwd:**
+
+- Terugschrijven naar Google/Apple Calendar. Lezen kan (via een `.ics`-link), schrijven niet.
+  Dat is een andere orde: daarvoor moet je bij het account van de gebruiker kunnen.
+- Verkeersinformatie, of een andere routeservice naast de huidige. De provider-abstractie in
+  `src/lib/server/` houdt daar ruimte voor: die kan erbij zonder de rest aan te raken.
+- Dagelijks herhalen. `RecurrenceFreq` kent week, twee weken en maand; dagelijks kan erbij
+  zonder de opgeslagen gegevens te breken.
+
+**Bewust niet:**
+
+- Lopen als vervoermiddel om te kiezen. `walk` zit nog in het model zodat oude activiteiten
+  die erop stonden hun naam en icoon houden, maar hij staat niet in de keuze: voor de
+  afstanden waar deze app over gaat is het OV of de fiets, en een looproute van tien
+  kilometer helpt niemand. Binnen een OV-reis wordt lopen wél getoond.
 
 ## Scripts
 

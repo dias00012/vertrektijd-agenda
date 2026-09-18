@@ -43,7 +43,7 @@ interface OrsFeature {
 }
 
 /**
- * Zet een vrij ingetypte locatie ("Basic-Fit Almere Buiten") om in coordinaten.
+ * Zet een vrij ingetypte locatie ("Fitpunt Almere Buiten") om in coordinaten.
  * Resultaten zijn gefocust op Nederland maar niet gelimiteerd tot NL.
  *
  * `includeStops` zet er haltes en stations voor (voor de reisplanner): wie

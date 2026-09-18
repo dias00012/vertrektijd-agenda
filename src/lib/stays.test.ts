@@ -3,7 +3,7 @@ import { assignTravelRoles } from "./stays";
 import type { ActivityOccurrence, GeoLocation, TravelInfo } from "./types";
 
 const SCHOOL: GeoLocation = { label: "Windesheim", lat: 52.49, lon: 6.07 };
-const GYM: GeoLocation = { label: "Basic-Fit", lat: 52.37, lon: 5.22 };
+const GYM: GeoLocation = { label: "Fitpunt", lat: 52.37, lon: 5.22 };
 
 function travel(durationMinutes: number): TravelInfo {
   return {
