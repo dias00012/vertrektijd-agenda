@@ -519,7 +519,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               <button
                 type="button"
                 onClick={() => startEditingType(selected.id)}
-                className="mt-2 flex min-h-[2.75rem] w-full items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-medium"
+                className="mt-2 flex min-h-[3rem] w-full items-center justify-center gap-1.5 rounded-xl border border-dashed text-xs font-medium"
                 style={{ borderColor: "var(--line)", color: "var(--muted)" }}
               >
                 <span aria-hidden>&#9998;</span>
@@ -605,14 +605,14 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    className="btn btn-primary min-h-[2.5rem] px-3 text-xs"
+                    className="btn btn-primary min-h-[3rem] px-3 text-xs"
                     onClick={saveType}
                   >
                     {editingType ? t("form.saveType") : t("form.addType")}
                   </button>
                   <button
                     type="button"
-                    className="btn btn-ghost min-h-[2.5rem] px-3 text-xs"
+                    className="btn btn-ghost min-h-[3rem] px-3 text-xs"
                     onClick={closeTypePanel}
                   >
                     {t("common.cancel")}
@@ -623,7 +623,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     // gat vallen waar al je activiteiten aan hangen. Wel terug.
                     <button
                       type="button"
-                      className="btn btn-ghost ml-auto min-h-[2.5rem] px-3 text-xs"
+                      className="btn btn-ghost ml-auto min-h-[3rem] px-3 text-xs"
                       onClick={restoreType}
                       disabled={!hasOverride}
                     >
@@ -632,7 +632,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                   ) : editingType ? (
                     <button
                       type="button"
-                      className="btn btn-ghost ml-auto min-h-[2.5rem] px-3 text-xs"
+                      className="btn btn-ghost ml-auto min-h-[3rem] px-3 text-xs"
                       style={{ color: "var(--danger)" }}
                       onClick={() => setConfirmDeleteType(true)}
                     >
@@ -650,14 +650,14 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        className="btn btn-danger min-h-[2.5rem] px-3 text-xs"
+                        className="btn btn-danger min-h-[3rem] px-3 text-xs"
                         onClick={deleteType}
                       >
                         {t("form.deleteType")}
                       </button>
                       <button
                         type="button"
-                        className="btn btn-ghost min-h-[2.5rem] px-3 text-xs"
+                        className="btn btn-ghost min-h-[3rem] px-3 text-xs"
                         onClick={() => setConfirmDeleteType(false)}
                       >
                         {t("common.cancel")}

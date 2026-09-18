@@ -11,3 +11,8 @@ next-env.d.ts
 *probe*.test.ts
 __*.test.ts
 src/**/__*.test.ts
+
+# Browsertests: verslagen en sporen van een mislukte run.
+/test-results/
+/playwright-report/
+/blob-report/
