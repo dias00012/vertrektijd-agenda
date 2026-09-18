@@ -27,6 +27,16 @@ export default defineConfig({
     // Alleen bewaren wat je nodig hebt als er iets misgaat.
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    /*
+     * Dezelfde tijdzone als de rekentests (`vitest.config.mts`).
+     *
+     * Stond vrij, en dat werkt zolang je niets over tijden toetst. Zodra dat
+     * wel gebeurt -- en dat is precies waar deze app over gaat -- rekent de
+     * browser in de tijdzone van de machine en de app in die van de gebruiker,
+     * en dan zegt een test iets anders op een laptop dan op een server.
+     */
+    timezoneId: "Europe/Amsterdam",
+    locale: "nl-NL",
   },
 
   projects: [

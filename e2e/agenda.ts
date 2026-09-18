@@ -17,6 +17,20 @@ export const SPORT = { label: "Voorbeeldlaan 19, Almere", lat: 52.37, lon: 5.24 
 /** De dag waarop deze tests spelen. Vast, zodat "vandaag" niets uitmaakt. */
 export const DAG = "2026-09-17";
 
+/**
+ * Het moment waarop de tests spelen: die donderdag om 07:00 in Amsterdam.
+ *
+ * Alleen de dag vastzetten was niet genoeg. De klok van de browser liep gewoon
+ * door, dus "vandaag" was de echte dag en "nu" het echte tijdstip -- en dan
+ * zegt een test iets anders om half acht 's ochtends dan om tien uur. Eén test
+ * over leertijd slaagde daardoor alleen zolang hij vóór achten draaide.
+ *
+ * 07:00, omdat de app vanaf dat uur plant en de eerste activiteit om 09:00
+ * begint: zo is er een ochtend om in te plannen en staat de rit naar het werk
+ * nog te wachten.
+ */
+export const NU = `${DAG}T07:00:00+02:00`;
+
 const activiteit = (patch: Record<string, unknown> = {}) => ({
   id: "werk",
   category: "werk",
@@ -102,7 +116,11 @@ export const AGENDA = {
  * vlag voorkomt dat je wijzigingen halverwege een test worden teruggedraaid --
  * daar ben ik eerder ingetrapt.
  */
-export async function zaai(page: Page, agenda: unknown = AGENDA) {
+export async function zaai(page: Page, agenda: unknown = AGENDA, nu: string = NU) {
+  // De klok eerst: zetten ná het laden is te laat, dan heeft de app al met de
+  // echte tijd gerekend.
+  await page.clock.setFixedTime(new Date(nu));
+
   await page.addInitScript((data) => {
     if (window.localStorage.getItem("e2e-gezaaid")) return;
     const payload = data as Record<string, unknown>;

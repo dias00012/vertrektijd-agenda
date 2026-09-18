@@ -8,6 +8,49 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.84.0
+
+- **Een hapering van de reisplanner gooide je vertrektijd weg.** Gevonden door
+  de eerste browsertest te schrijven voor waar deze app voor bestaat: "hoe laat
+  moet ik weg".
+
+  Mislukte het berekenen van een reis, dan zette de app `travel: null` en liet
+  alleen een rode regel zien. Dat werd bewaard én gesynchroniseerd, dus je
+  laatst bekende vertrektijd was daarmee echt weg -- tot een volgende
+  berekening wél lukte. 's Ochtends op je telefoon, als je naar je trein moet,
+  stond er dan geen tijd.
+
+  Weggooien hoefde ook niet: verandert de bestemming, dan worden de reistijden
+  al apart opgeruimd. Wat er stond hoorde dus bij dezelfde reis, alleen
+  berekend op een eerder moment. Nu blijft die staan, met de melding eronder
+  dat hij van eerder is en kan afwijken. De kaart liet de storing ook nog eens
+  vóórgaan op de tijd; dat is omgedraaid.
+
+- **Drie browsertests over reistijd**, de eerste die deze kant van de app raken:
+  de tijd van vanochtend wint van een berekening van gisteravond, een mislukte
+  poging laat de oude tijd staan mét notitie, en een rit die al vertrokken is
+  wordt niet meer opgehaald. De OV-dienst wordt niet echt gebeld -- een test
+  die van een dienstregeling afhangt zegt morgen iets anders.
+
+- **De browsertests hadden geen vaste klok, en één ervan slaagde daardoor om de
+  verkeerde reden.** De tijdzone lag niet vast (de rekentests zijn wél op
+  Amsterdam gepind) en "nu" was het echte moment van draaien. De test die
+  controleert dat een leerblok nooit in je reistijd valt, slaagde alleen zolang
+  hij vóór achten 's ochtends draaide.
+
+  De klok staat nu vast op donderdag 17 september 2026, 07:00 in Amsterdam, en
+  de tijdzone staat in de configuratie.
+
+- **Twee van de nieuwe tests bleken eerst niets te toetsen.** Nagelopen door de
+  logica expres te breken: de test over een vertrokken rit slaagde omdat de
+  kaart 's avonds helemaal niet meer getekend werd, en omdat de gezaaide reis
+  al als exact gold. Beide zijn rechtgezet en betrappen de mutatie nu wel.
+
+  Wat niet lukte, en dat staat er ook bij: aanwijzen wélke laag een reis
+  ververst heeft. Twee lagen doen dat werk en allebei verversen ze op ouderdom,
+  dus op het scherm zie je hetzelfde. Deze tests toetsen wat de gebruiker ziet;
+  de losse beslissing staat als `refreshDecision` in de rekentests.
+
 ## 0.83.0
 
 - **De klok uit de reistijd-hook gehaald.** Blijven staan uit 0.82.0: de React
