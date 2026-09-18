@@ -115,6 +115,21 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  // Ook afmelden heeft een drempel nodig. Deze route vraagt niet om een
+  // wachtwoord — een apparaat-id is genoeg — en raakt twee tabellen aan. Zonder
+  // drempel kon iemand hem in een lus zetten en zo onze database bezighouden,
+  // zonder dat hij ergens bij hoefde te kunnen.
+  const limit = checkRateLimit(`push-unsubscribe:${clientKey(request)}`, {
+    limit: 20,
+    windowMs: 60 * 60_000,
+  });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: say(request, "api.tooMany", { seconds: limit.retryAfter }) },
+      { status: 429, headers: { "Retry-After": String(limit.retryAfter) } },
+    );
+  }
+
   const admin = adminClient();
   if (!admin) {
     return NextResponse.json({ error: say(request, "api.pushNotConfigured") }, { status: 501 });

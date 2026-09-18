@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
+import { secretEquals } from "@/lib/secretEquals";
 import { DEVICES_TABLE, QUEUE_TABLE, adminClient } from "@/lib/server/push";
 
 export const runtime = "nodejs";
@@ -41,7 +42,10 @@ interface DeviceRow {
 export async function POST(request: Request) {
   const secret = process.env.PUSH_CRON_SECRET?.trim();
   const given = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
-  if (!secret || given !== secret) {
+  // Vergelijken op tijd-veilige manier: dit is het enige geheim in de app dat
+  // een aanvaller zelf mag aanleveren én zo vaak mag proberen als hij wil.
+  // `!==` stopt bij het eerste teken dat afwijkt, en dat verschil is meetbaar.
+  if (!secret || !given || !secretEquals(given, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 /**
  * De sleutel waarmee Claude bij één agenda mag.
@@ -46,18 +46,4 @@ export function readConnectorToken(request: Request): string | null {
   if (!match) return null;
   const token = match[1];
   return token.startsWith(PREFIX) ? token : null;
-}
-
-/**
- * Vergelijken zonder te verklappen hoeveel tekens er klopten.
- *
- * Overdreven? De hashes komen uit de database en niet van de aanvaller, dus
- * hier valt weinig te meten. Maar het kost één regel, en de dag dat iemand
- * deze functie ergens anders gebruikt is het wél de vergelijking die je wilt.
- */
-export function tokenHashEquals(a: string, b: string): boolean {
-  const left = Buffer.from(a, "utf8");
-  const right = Buffer.from(b, "utf8");
-  if (left.length !== right.length) return false;
-  return timingSafeEqual(left, right);
 }

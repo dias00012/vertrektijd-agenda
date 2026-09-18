@@ -38,14 +38,36 @@ app voor elke activiteit met een locatie automatisch de reistijd en de vertrekti
 
 De browser praat uitsluitend met `/api/geocode` en `/api/travel`. Providerkeuze, basis-URL's
 en de eventuele API-sleutel staan in `.env.local` en worden alleen in `src/lib/server/*`
-gelezen (met `import "server-only"` als extra slot op de deur). Er is geen enkele
-`NEXT_PUBLIC_`-variabele, dus er kan geen sleutel in de client-bundle belanden.
+gelezen (met `import "server-only"` als extra slot op de deur).
+
+Wat wél in de browser terechtkomt, staat er met opzet: alles met `NEXT_PUBLIC_` ervoor
+belandt in de bundel die iedere bezoeker kan lezen. Dat zijn er vier, en alle vier zijn ze
+openbaar bedoeld: `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_ANON_KEY` (de anon-sleutel
+is geen geheim — waar een gebruiker bij mag, bepaalt Supabase met row level security),
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY` (de publieke helft van het meldingen-sleutelpaar) en
+`NEXT_PUBLIC_SENTRY_DSN`. **Zet nooit iets anders achter `NEXT_PUBLIC_`.** De echte geheimen —
+`SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_CRON_SECRET` — hebben dat voorvoegsel
+niet en horen het nooit te krijgen.
 
 Kopieer `.env.example` naar `.env.local` als je iets wilt aanpassen:
 
 ```bash
 cp .env.example .env.local
 ```
+
+### Het apparaat-id van de meldingen
+
+De meldingen kennen geen account. Je telefoon verzint één keer een willekeurig id
+(`crypto.randomUUID()`, 122 bits toeval) en bewaart dat lokaal; daarmee meldt hij zich aan
+en zet hij zijn wachtrij klaar. Bewust, want zo hoeft de server niet te weten wíé je bent om
+je op tijd te kunnen porren.
+
+De keerzijde hoort er eerlijk bij te staan: **dat id ís de sleutel.** Wie het in handen krijgt,
+kan dat apparaat afmelden en er een melding met zelfgekozen tekst voor klaarzetten. Uitlezen
+lukt niet — de tabellen staan alleen open voor de service-sleutel — en raden ook niet, maar
+weggeven wel. Dus: niet in een logregel, niet in een foutmelding, niet in een screenshot.
+Wie het vermoeden heeft dat het gelekt is, zet meldingen in Instellingen uit en weer aan;
+dan komt er een nieuw id en is het oude niets meer waard.
 
 ## Bestanden
 
