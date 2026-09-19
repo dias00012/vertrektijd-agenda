@@ -62,3 +62,57 @@ test("de prioriteit is voor te lezen, niet alleen een bolletje", async ({ page }
   // Onzichtbaar op het scherm, maar wel in de toegankelijkheidsboom.
   await expect(kaart.getByText(/Prioriteit:/)).toBeAttached();
 });
+
+/**
+ * De melding "je hebt iets over tijd".
+ *
+ * Twee dingen gingen mis en horen allebei bewaakt te worden. Hij lag twaalf
+ * pixels over de filterknoppen heen -- een negatieve marge die in Tailwind 3
+ * van een marge afhaalde, maar in Tailwind 4 de hele marge vervángt. En je kon
+ * hem niet wegklikken: had je gezien dat je iets te laat was, dan bleef hij
+ * staan tot je het afmaakte.
+ */
+test.describe("de melding over tijd", () => {
+  test("ligt niet over de filterknoppen heen", async ({ page }) => {
+    await page.goto("/schoolwerk");
+
+    const melding = page.getByRole("status");
+    const filters = page.getByRole("group", { name: "Waar wil je naar kijken?" });
+    await expect(melding).toBeVisible();
+
+    const boven = await melding.boundingBox();
+    const onder = await filters.boundingBox();
+    if (!boven || !onder) throw new Error("Geen afmetingen gevonden");
+
+    // Niet alleen "niet overlappen": er hoort ook ruimte tussen te zitten.
+    expect(onder.y).toBeGreaterThan(boven.y + boven.height);
+  });
+
+  test("is weg te klikken en blijft weg na herladen", async ({ page }) => {
+    await page.goto("/schoolwerk");
+
+    const melding = page.getByRole("status");
+    await expect(melding).toBeVisible();
+
+    await page.getByRole("button", { name: "Melding sluiten" }).click();
+    await expect(melding).toHaveCount(0);
+
+    // De filters staan er nog gewoon; alleen de melding is weg.
+    await expect(page.getByRole("button", { name: "Over tijd (1)" })).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Over tijd (1)" })).toBeVisible();
+    await expect(page.getByRole("status")).toHaveCount(0);
+  });
+
+  /** De sluitknop moet met een duim te raken zijn, net als de rest. */
+  test("heeft een sluitknop die groot genoeg is", async ({ page }) => {
+    await page.goto("/schoolwerk");
+
+    const doos = await page.getByRole("button", { name: "Melding sluiten" }).boundingBox();
+    if (!doos) throw new Error("Geen afmetingen gevonden");
+
+    expect(doos.width).toBeGreaterThanOrEqual(44);
+    expect(doos.height).toBeGreaterThanOrEqual(44);
+  });
+});

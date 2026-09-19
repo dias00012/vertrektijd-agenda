@@ -20,6 +20,7 @@ import {
   taskProgress,
 } from "@/lib/schoolwork";
 import { formatDateLabel, formatDuration } from "@/lib/time";
+import { loadSeen, pruneSeen, saveSeen, unseenOverdue } from "@/lib/overdueNotice";
 import { EmptyState, Spinner } from "@/components/ui";
 import type { Exam, SchoolworkPriority, SchoolworkStatus, Task } from "@/lib/types";
 
@@ -124,8 +125,8 @@ export default function SchoolworkPage() {
    * opdracht is.
    */
   const alles = [
-    ...tasks.map((x) => ({ status: x.status, priority: x.priority, dag: x.deadline })),
-    ...exams.map((x) => ({ status: x.status, priority: x.priority, dag: x.date })),
+    ...tasks.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.deadline })),
+    ...exams.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.date })),
   ];
   const aantal = (keuze: Exclude<Keuze, "all">) =>
     alles.filter(
@@ -148,7 +149,40 @@ export default function SchoolworkPage() {
    * voorbij is kleurde de datum rood, maar de opdracht stond gewoon tussen de
    * rest en met dertien opdrachten scrol je eroverheen.
    */
-  const teLaat = alles.filter((x) => isOverdue(x.status, x.dag, now)).length;
+  const overtijd = alles.filter((x) => isOverdue(x.status, x.dag, now)).map((x) => x.id);
+  const teLaat = overtijd.length;
+
+  /**
+   * Wat je al hebt weggeklikt. Pas na het laden gevuld: op de server bestaat
+   * `localStorage` niet, en zou de eerste weergave verschillen van wat de
+   * browser er daarna van maakt.
+   */
+  const [gezien, setGezien] = useState<string[]>([]);
+  useEffect(() => setGezien(loadSeen()), []);
+
+  /**
+   * Opruimen zodra er iets van het lijstje af is. Zonder dit groeit het een
+   * heel schooljaar door, en zwijgt de app over een opdracht die je afmaakte
+   * en later opnieuw laat verlopen.
+   */
+  const sleutel = overtijd.join(",");
+  useEffect(() => {
+    if (!hydrated) return;
+    const opgeschoond = pruneSeen(loadSeen(), sleutel ? sleutel.split(",") : []);
+    setGezien(opgeschoond);
+    saveSeen(opgeschoond);
+  }, [hydrated, sleutel]);
+
+  const nietGezien = unseenOverdue(overtijd, gezien);
+
+  const melding =
+    teLaat === 1 ? t("schoolwork.lateOne") : t("schoolwork.lateMany", { count: teLaat });
+
+  const klikWeg = () => {
+    const bijgewerkt = pruneSeen([...gezien, ...overtijd], overtijd);
+    setGezien(bijgewerkt);
+    saveSeen(bijgewerkt);
+  };
 
   return (
     <div>
@@ -185,30 +219,63 @@ export default function SchoolworkPage() {
         />
       ) : (
         <div className="space-y-8">
-          {teLaat > 0 && filter !== "late" ? (
-            <button
-              type="button"
-              onClick={() => kies("late")}
-              className="-mb-3 flex w-full items-center gap-2 rounded-xl border px-4 py-3 text-left text-sm"
-              style={{ borderColor: "var(--danger)", color: "var(--danger)" }}
-            >
-              <span aria-hidden>&#9888;&#65039;</span>
-              <span className="font-semibold">
-                {teLaat === 1
-                  ? t("schoolwork.lateOne")
-                  : t("schoolwork.lateMany", { count: teLaat })}
-              </span>
-              <span className="ml-auto" aria-hidden>
-                &rarr;
-              </span>
-            </button>
-          ) : null}
+          {/*
+            De melding en de twee filterrijen horen bij elkaar en staan daarom in
+            een eigen groepje met `gap`. Dat is niet alleen netter: ze stonden
+            hiervoor los in `space-y-8` en werden met negatieve marges weer naar
+            elkaar toe getrokken. In Tailwind 4 zet `space-y-*` een marge ónder
+            elk kind, dus `-mb-3` verving die 32 pixels in plaats van er iets
+            van af te halen -- en lag de melding twaalf pixels over de filters.
+          */}
+          <div className="flex flex-col gap-3">
+            {nietGezien.length > 0 && filter !== "late" ? (
+              <div
+                role="status"
+                className="flex items-stretch overflow-hidden rounded-xl border"
+                style={{
+                  borderColor: "var(--danger)",
+                  background: "color-mix(in srgb, var(--danger) 8%, transparent)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => kies("late")}
+                  aria-label={`${melding} \u2014 ${t("schoolwork.lateShow")}`}
+                  className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left text-sm"
+                  style={{ color: "var(--danger)" }}
+                >
+                  <span aria-hidden>&#9888;&#65039;</span>
+                  <span className="min-w-0 font-semibold">{melding}</span>
+                  <span className="ml-auto shrink-0" aria-hidden>
+                    &rarr;
+                  </span>
+                </button>
+                {/*
+                  Wegklikken kan niet ín de knop hierboven -- een knop in een knop
+                  bestaat niet -- dus staat hij ernaast, met een eigen naam en
+                  genoeg breedte voor een duim. De scheidingslijn is zachter dan
+                  het kader: even sterk las als een tweede rand.
+                */}
+                <button
+                  type="button"
+                  onClick={klikWeg}
+                  aria-label={t("schoolwork.lateDismiss")}
+                  className="flex w-11 shrink-0 items-center justify-center self-stretch border-l text-lg leading-none"
+                  style={{
+                    borderColor: "color-mix(in srgb, var(--danger) 35%, transparent)",
+                    color: "var(--danger)",
+                  }}
+                >
+                  <span aria-hidden>&times;</span>
+                </button>
+              </div>
+            ) : null}
 
-          <div
-            className="flex flex-wrap gap-1.5"
-            role="group"
-            aria-label={t("schoolwork.filterLabel")}
-          >
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="group"
+              aria-label={t("schoolwork.filterLabel")}
+            >
             {KEUZES.map((keuze) => {
               const actief = filter === keuze;
               const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
@@ -237,13 +304,13 @@ export default function SchoolworkPage() {
                 </button>
               );
             })}
-          </div>
+            </div>
 
-          <div
-            className="-mt-5 flex flex-wrap gap-1.5"
-            role="group"
-            aria-label={t("schoolwork.filterPriority")}
-          >
+            <div
+              className="flex flex-wrap gap-1.5"
+              role="group"
+              aria-label={t("schoolwork.filterPriority")}
+            >
             {(["all", "high", "medium", "low", "later"] as const).map((keuze) => {
               const actief = prio === keuze;
               const telling =
@@ -270,6 +337,7 @@ export default function SchoolworkPage() {
                 </button>
               );
             })}
+            </div>
           </div>
 
           <section aria-label={t("schoolwork.tasks")}>
