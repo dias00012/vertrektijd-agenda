@@ -8,6 +8,29 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.93.0
+
+- **De melding "je hebt iets over tijd" lag over de filterknoppen heen.** Twaalf
+  pixels, precies over de rij waar je op tikt. De oorzaak is een overblijfsel van
+  de overstap naar Tailwind 4: `space-y-*` zet daar een marge ónder elk kind, niet
+  bóven het volgende. De `-mb-3` die bedoeld was om die afstand te verkleinen
+  verving hem daardoor helemaal, en -12px is een overlap.
+
+  De melding en de twee filterrijen staan nu in een eigen groepje met `gap`, en
+  de negatieve marges zijn weg. Een browsertest meet de afstand na, zodat dit
+  niet nog een keer ongemerkt kan gebeuren.
+
+- **De melding is nu weg te klikken.** Dat kon niet: had je gezien dat je iets
+  te laat was, dan bleef hij staan tot je het afmaakte. Er zit een sluitknop
+  naast, breed genoeg voor een duim.
+
+  Wegklikken onthoudt *welke* dingen je hebt weggeklikt, niet dát je hebt
+  weggeklikt. Dat scheelt het geval waar het om gaat: gaat er morgen iets nieuws
+  over tijd, dan hoor je dat gewoon weer. De lijst wordt opgeschoond zodra iets
+  niet meer over tijd is, zodat een opdracht die je afmaakte en later opnieuw
+  laat verlopen wél weer meldt. Staat in `src/lib/overdueNotice.ts` met acht
+  tests.
+
 ## 0.92.0
 
 - **Statuskleuren die in de lichte modus nauwelijks te lezen waren.** Het groen

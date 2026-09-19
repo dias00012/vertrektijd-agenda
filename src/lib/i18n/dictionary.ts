@@ -426,6 +426,8 @@ export const nl = {
   // weet dat meestal zelf al.
   "schoolwork.lateOne": "Je hebt 1 ding over tijd",
   "schoolwork.lateMany": "Je hebt {count} dingen over tijd",
+  "schoolwork.lateShow": "Bekijk wat er over tijd is",
+  "schoolwork.lateDismiss": "Melding sluiten",
   "schoolwork.filterPriority": "Op prioriteit",
   "schoolwork.ofTotal": "{shown} van {total}",
   "schoolwork.noTasks": "Geen opdrachten.",
@@ -1387,6 +1389,8 @@ export const en: Record<TranslationKey, string> = {
   "schoolwork.filterLate": "Overdue",
   "schoolwork.lateOne": "You have 1 item overdue",
   "schoolwork.lateMany": "You have {count} items overdue",
+  "schoolwork.lateShow": "Show what is overdue",
+  "schoolwork.lateDismiss": "Dismiss notice",
   "schoolwork.filterPriority": "By priority",
   "schoolwork.ofTotal": "{shown} of {total}",
   "schoolwork.noTasks": "No assignments.",
