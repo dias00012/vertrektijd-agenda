@@ -55,3 +55,51 @@ test("breken de app niet", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Vandaag", exact: true })).toBeVisible();
   expect(fouten.filter((f) => /Content Security Policy|Refused to/i.test(f))).toEqual([]);
 });
+
+/**
+ * Klaar om geïnstalleerd en gevonden te worden.
+ *
+ * Het manifest en de robots staan in de code, maar wat telt is wat de server
+ * echt teruggeeft -- en dat is precies wat een winkel of een zoekmachine
+ * ophaalt.
+ */
+test("het manifest wordt geserveerd met schermafdrukken erin", async ({ request }) => {
+  const antwoord = await request.get("/manifest.webmanifest");
+  expect(antwoord.status()).toBe(200);
+
+  const manifest = (await antwoord.json()) as {
+    id?: string;
+    screenshots?: { src: string }[];
+    shortcuts?: unknown[];
+  };
+  expect(manifest.id).toBe("/");
+  expect(manifest.screenshots?.length ?? 0).toBeGreaterThan(0);
+  expect(manifest.shortcuts?.length ?? 0).toBeGreaterThan(0);
+
+  // En de afbeeldingen zelf moeten ook echt op te halen zijn.
+  for (const afbeelding of manifest.screenshots ?? []) {
+    const plaatje = await request.get(afbeelding.src);
+    expect(plaatje.status(), afbeelding.src).toBe(200);
+  }
+});
+
+test("robots.txt houdt de API en het beheer buiten de zoekresultaten", async ({ request }) => {
+  const tekst = await (await request.get("/robots.txt")).text();
+
+  expect(tekst).toContain("Disallow: /api/");
+  expect(tekst).toContain("Disallow: /beheer");
+  expect(tekst).toContain("Disallow: /wachtwoord");
+});
+
+test("de privacyverklaring is er ook zonder bereik", async ({ page, context }) => {
+  // Eerst online openen, zodat de service worker hem kan voorladen.
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1200);
+
+  await context.setOffline(true);
+  await page.goto("/privacy");
+
+  await expect(page.getByRole("heading", { name: /Privacy/i }).first()).toBeVisible();
+  await context.setOffline(false);
+});
