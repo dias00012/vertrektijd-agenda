@@ -266,9 +266,14 @@ export default function AgendaPage() {
               <p className="mt-3 text-center text-xs" style={{ color: "var(--muted)" }}>
                 {t("agenda.travelHint")}
               </p>
-              {/* Slepen kan alleen met een muis, dus alleen daar de uitleg. */}
+              {/* Slepen kan alleen met een muis, dus alleen daar de uitleg.
+                  De toetsuitleg staat ernaast: die geldt juist voor wie geen
+                  muis gebruikt. */}
               <p className="mt-1 hidden text-center text-xs lg:block" style={{ color: "var(--muted)" }}>
                 {t("week.dragHint")}
+              </p>
+              <p className="mt-1 hidden text-center text-xs lg:block" style={{ color: "var(--muted)" }}>
+                {t("week.keyHint")}
               </p>
             </>
           ) : (

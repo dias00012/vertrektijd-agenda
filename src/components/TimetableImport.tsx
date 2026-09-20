@@ -266,7 +266,7 @@ export function TimetableImport() {
                   type="button"
                   aria-pressed={category === item.id}
                   onClick={() => setCategory(item.id)}
-                  className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+                  className="chip"
                   style={{
                     borderColor: category === item.id ? item.color : "var(--line)",
                     color: category === item.id ? item.color : "var(--muted)",

@@ -270,7 +270,7 @@ export default function TravelPlannerPage() {
               type="button"
               onClick={useMyLocation}
               disabled={locating}
-              className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+              className="chip"
               style={{ borderColor: "var(--line)", color: "var(--muted)" }}
             >
               {locating ? t("travel.locating") : `📍 ${t("travel.myLocation")}`}
@@ -283,7 +283,7 @@ export default function TravelPlannerPage() {
             type="button"
             onClick={swap}
             aria-label={t("travel.swap")}
-            className="rounded-full border px-3 py-1 text-sm"
+            className="icon-btn rounded-full border text-sm"
             style={{ borderColor: "var(--line)", color: "var(--muted)" }}
           >
             <span aria-hidden className="block lg:rotate-90">
@@ -323,7 +323,7 @@ export default function TravelPlannerPage() {
                 type="button"
                 aria-pressed={when === option.id}
                 onClick={() => setWhen(option.id)}
-                className="flex-1 rounded-lg px-2 py-1.5 text-sm font-medium transition-colors"
+                className="chip flex-1 border-0 text-sm font-medium"
                 style={{
                   background: when === option.id ? "var(--surface-soft)" : "transparent",
                   color: when === option.id ? "var(--ink)" : "var(--muted)",
@@ -363,7 +363,7 @@ export default function TravelPlannerPage() {
                 <button
                   key={rit.id}
                   type="button"
-                  className="rounded-full border px-3 py-2 text-xs"
+                  className="chip"
                   style={{ borderColor: "var(--line)" }}
                   onClick={() => {
                     setTo(rit.to);

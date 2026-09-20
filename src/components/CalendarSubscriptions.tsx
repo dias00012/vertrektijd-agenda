@@ -232,7 +232,7 @@ export function CalendarSubscriptions() {
                     type="button"
                     aria-pressed={active}
                     onClick={() => setCategory(item.id)}
-                    className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+                    className="chip"
                     style={{
                       borderColor: active ? "var(--accent)" : "var(--line)",
                       background: active ? "var(--surface-soft)" : "transparent",

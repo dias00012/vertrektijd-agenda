@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
 import { PRIORITY_META, STATUS_META, STATUS_ORDER } from "@/lib/schoolwork";
 import { todayKey } from "@/lib/time";
@@ -47,17 +48,8 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, onClose);
 
   const errors = useMemo(() => {
     const next: { subject?: string; title?: string; date?: string } = {};
@@ -129,6 +121,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
     <div
       className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
+      ref={dialog}
       role="dialog"
       aria-modal="true"
       aria-label={isEdit ? t("swForm.editTitle") : t("swForm.addTitle")}

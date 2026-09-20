@@ -26,6 +26,7 @@ import {
   timeToMinutes,
 } from "@/lib/time";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { shiftRecurrence, weekdayHeadings } from "@/lib/recurrence";
 import { ActivityForm } from "./ActivityForm";
 import type { Activity, ActivityDraft, ActivityOccurrence } from "@/lib/types";
@@ -412,11 +413,9 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
       {/* Een reeks verplaatsen is nooit vanzelfsprekend: bedoel je deze ene
           dag of alle dagen? Dat vragen we, in plaats van het te gokken. */}
       {asking ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("week.move.title")}
+        <VerplaatsVenster
+          titel={t("week.move.title")}
+          onClose={() => setAsking(null)}
         >
           <div className="card animate-sheet-in w-full max-w-sm rounded-b-none px-5 py-5 sm:rounded-2xl">
             <h2 className="text-base font-semibold">{t("week.move.title")}</h2>
@@ -457,9 +456,42 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
               </button>
             </div>
           </div>
-        </div>
+        </VerplaatsVenster>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Het vraagvenster "deze dag of de hele reeks?".
+ *
+ * Een eigen component omdat `useDialog` een hook is en dit venster maar soms
+ * bestaat: in `WeekGrid` zelf zou de hook ook draaien als er niets te vragen
+ * valt, en dan zou hij de focus verplaatsen terwijl je gewoon aan het slepen
+ * bent.
+ */
+function VerplaatsVenster({
+  titel,
+  onClose,
+  children,
+}: {
+  titel: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, onClose);
+
+  return (
+    <div
+      ref={dialog}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={titel}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -668,6 +700,40 @@ function GridBlock({
 
       <button
         type="button"
+        /*
+         * Verplaatsen met een toetsenbord.
+         *
+         * Slepen werkte alleen met een aanwijzer. De activiteit zelf was wel te
+         * wijzigen -- via het formulier dat achter Enter zit -- dus het was geen
+         * functie die ontbrak, maar wel de snelle manier die iedereen met een
+         * muis wel had. Shift erbij, want een kale pijltjestoets hoort de
+         * pagina te scrollen, en Alt+pijl is in een browser "terug".
+         */
+        aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
+        onKeyDown={(event) => {
+          if (!event.shiftKey) return;
+          const dagen =
+            event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+          const minuten =
+            event.key === "ArrowUp"
+              ? -DRAG_SNAP_MINUTES
+              : event.key === "ArrowDown"
+                ? DRAG_SNAP_MINUTES
+                : 0;
+          if (dagen === 0 && minuten === 0) return;
+          event.preventDefault();
+
+          const duur = item.endMinutes - item.startMinutes;
+          const start = Math.max(
+            0,
+            Math.min(MINUTES_PER_DAY - duur, item.startMinutes + minuten),
+          );
+          onDrop(item.occurrence, {
+            date: addDaysToKey(item.occurrence.date, dagen),
+            startTime: minutesToTime(start),
+            endTime: minutesToTime(start + duur),
+          });
+        }}
         onPointerDown={(event) => begin(event, "move")}
         onPointerMove={move}
         onPointerUp={finish}

@@ -210,6 +210,46 @@ body {
   transition: opacity 120ms ease, background 120ms ease;
 }
 
+/*
+ * Een keuzeknop in een rij: filters, snelkeuzes, segmentkeuzes.
+ *
+ * 44 pixels hoog, want dat is wat een duim nodig heeft -- dezelfde maat die
+ * `types.spec.ts` al voor de typeknoppen afdwong. Ze stonden hiervoor op 25 tot
+ * 32, en dat zijn juist de knoppen die je het vaakst aantikt: het statusfilter
+ * op schoolwerk, "Te doen / Bezig / Klaar", de snelkeuzes in de reisplanner.
+ *
+ * Het kost verticale ruimte, en dat is de bedoeling: een rij die je raakt is
+ * meer waard dan een rij die compact is.
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  background: transparent;
+  color: var(--muted);
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+/*
+ * Een knop die alleen een icoon toont: een kruisje, een potlood, een pijl.
+ * Het icoon blijft klein; het vlak eromheen is wat je raakt.
+ */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 12px;
+}
+
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;

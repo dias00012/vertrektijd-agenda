@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   activityColor,
   activityColors,
@@ -9,6 +9,7 @@ import {
   resolveCategory,
 } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
 import { addDaysToKey, minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
 import { defaultRecurrence, monthDayLabel, sortWeekdays, weekdays } from "@/lib/recurrence";
@@ -210,32 +211,10 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
   const editingSeries = Boolean(activity?.recurrence);
 
   const dialog = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  /**
-   * De focus naar het formulier brengen zodra het opengaat.
-   *
-   * Zonder dit blijft hij achter op de knop eronder: wie met een toetsenbord
-   * of een schermlezer werkt staat dan nog steeds op de pagina achter het
-   * venster en moet er eerst doorheen tabben om bij "Naam" te komen.
-   */
-  useEffect(() => {
-    const eerste = dialog.current?.querySelector<HTMLElement>(
-      'input:not([type="hidden"]), select, textarea, button',
-    );
-    eerste?.focus();
-  }, []);
+  // Escape, de focus naar binnen, de focus vasthouden en hem daarna
+  // terugzetten -- zie `useDialog`; dat stond hier los en op de andere zes
+  // vensters helemaal niet.
+  useDialog(dialog, onClose);
 
   const errors = useMemo<FormErrors>(() => {
     const next: FormErrors = {};

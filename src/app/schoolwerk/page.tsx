@@ -288,7 +288,7 @@ export default function SchoolworkPage() {
                   type="button"
                   aria-pressed={actief}
                   onClick={() => kies(keuze)}
-                  className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                  className="chip"
                   style={{
                     borderColor: actief ? "var(--accent)" : "var(--line)",
                     background: actief ? "var(--accent)" : "transparent",
@@ -323,7 +323,7 @@ export default function SchoolworkPage() {
                   type="button"
                   aria-pressed={actief}
                   onClick={() => kiesPrio(keuze)}
-                  className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+                  className="chip"
                   style={{
                     borderColor: actief ? "var(--ink)" : "var(--line)",
                     color: actief ? "var(--ink)" : "var(--muted)",
@@ -435,7 +435,7 @@ function StatusControl({
             type="button"
             aria-pressed={active}
             onClick={() => onChange(status)}
-            className="rounded-md px-2 py-1 text-[0.7rem] font-medium transition-colors"
+            className="chip min-w-0 rounded-md border-0 px-2.5 text-[0.7rem] font-medium"
             style={{
               background: active ? `color-mix(in srgb, ${meta.color} 18%, transparent)` : "transparent",
               color: active ? meta.color : "var(--muted)",
@@ -534,7 +534,7 @@ function TaskCard({
               type="button"
               onClick={onEdit}
               aria-label={t("schoolwork.editTask", { title: task.title })}
-              className="ml-auto shrink-0 rounded-lg px-2 py-0.5 text-xs"
+              className="icon-btn -my-2 ml-auto shrink-0 text-xs"
               style={{ color: "var(--muted)" }}
             >
               &#9998;
@@ -664,7 +664,7 @@ function ExamCard({
               type="button"
               onClick={onEdit}
               aria-label={t("schoolwork.editExam", { subject: exam.subject })}
-              className="ml-auto shrink-0 rounded-lg px-2 py-0.5 text-xs"
+              className="icon-btn -my-2 ml-auto shrink-0 text-xs"
               style={{ color: "var(--muted)" }}
             >
               &#9998;
