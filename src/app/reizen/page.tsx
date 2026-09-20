@@ -11,7 +11,7 @@ import { JourneyCard } from "@/components/JourneyCard";
 import { endOfDay, latestOnTime } from "@/lib/journeyList";
 import { upcomingTrips } from "@/lib/tripSuggestions";
 import { formatDateLabel } from "@/lib/time";
-import { ActivityForm } from "@/components/ActivityForm";
+import { ActivityForm } from "@/components/LazyActivityForm";
 import { minutesToTime, timeToMinutes, toDateKey } from "@/lib/time";
 import { legTime } from "@/lib/travelModes";
 import { useNow } from "@/hooks/useNow";
@@ -37,9 +37,7 @@ function fastestJourneyId(journeys: Journey[]): string | null {
   const fastest = journeys.reduce((best, journey) =>
     journey.durationMinutes < best.durationMinutes ? journey : best,
   );
-  const shared = journeys.every(
-    (journey) => journey.durationMinutes === fastest.durationMinutes,
-  );
+  const shared = journeys.every((journey) => journey.durationMinutes === fastest.durationMinutes);
   return shared ? null : fastest.id;
 }
 
@@ -256,51 +254,51 @@ export default function TravelPlannerPage() {
         {/* Op een laptop stonden van, wisselen en naar onder elkaar met een
             lege rechterhelft ernaast. Naast elkaar lees je de rit als één regel. */}
         <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-start lg:gap-3 lg:space-y-0">
-        <LocationInput
-          label={t("travel.from")}
-          value={from}
-          onChange={setFrom}
-          required
-          includeStops
-          places={places}
-          placeholder={t("travel.placeholder")}
-          extraActions={
-            // Thuis, gym en school staan al bij de snelkeuzes hieronder.
+          <LocationInput
+            label={t("travel.from")}
+            value={from}
+            onChange={setFrom}
+            required
+            includeStops
+            places={places}
+            placeholder={t("travel.placeholder")}
+            extraActions={
+              // Thuis, gym en school staan al bij de snelkeuzes hieronder.
+              <button
+                type="button"
+                onClick={useMyLocation}
+                disabled={locating}
+                className="chip"
+                style={{ borderColor: "var(--line)", color: "var(--muted)" }}
+              >
+                {locating ? t("travel.locating") : `📍 ${t("travel.myLocation")}`}
+              </button>
+            }
+          />
+
+          <div className="flex justify-center lg:pt-7">
             <button
               type="button"
-              onClick={useMyLocation}
-              disabled={locating}
-              className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+              onClick={swap}
+              aria-label={t("travel.swap")}
+              className="icon-btn rounded-full border text-sm"
               style={{ borderColor: "var(--line)", color: "var(--muted)" }}
             >
-              {locating ? t("travel.locating") : `📍 ${t("travel.myLocation")}`}
+              <span aria-hidden className="block lg:rotate-90">
+                &#8645;
+              </span>
             </button>
-          }
-        />
+          </div>
 
-        <div className="flex justify-center lg:pt-7">
-          <button
-            type="button"
-            onClick={swap}
-            aria-label={t("travel.swap")}
-            className="rounded-full border px-3 py-1 text-sm"
-            style={{ borderColor: "var(--line)", color: "var(--muted)" }}
-          >
-            <span aria-hidden className="block lg:rotate-90">
-              &#8645;
-            </span>
-          </button>
-        </div>
-
-        <LocationInput
-          label={t("travel.to")}
-          value={to}
-          onChange={setTo}
-          required
-          includeStops
-          places={places}
-          placeholder={t("travel.placeholder")}
-        />
+          <LocationInput
+            label={t("travel.to")}
+            value={to}
+            onChange={setTo}
+            required
+            includeStops
+            places={places}
+            placeholder={t("travel.placeholder")}
+          />
         </div>
 
         <div>
@@ -323,7 +321,7 @@ export default function TravelPlannerPage() {
                 type="button"
                 aria-pressed={when === option.id}
                 onClick={() => setWhen(option.id)}
-                className="flex-1 rounded-lg px-2 py-1.5 text-sm font-medium transition-colors"
+                className="chip flex-1 border-0 text-sm font-medium"
                 style={{
                   background: when === option.id ? "var(--surface-soft)" : "transparent",
                   color: when === option.id ? "var(--ink)" : "var(--muted)",
@@ -363,7 +361,7 @@ export default function TravelPlannerPage() {
                 <button
                   key={rit.id}
                   type="button"
-                  className="rounded-full border px-3 py-2 text-xs"
+                  className="chip"
                   style={{ borderColor: "var(--line)" }}
                   onClick={() => {
                     setTo(rit.to);
@@ -504,10 +502,7 @@ export default function TravelPlannerPage() {
                   <p className="mb-2">{t("travel.why.intro")}</p>
                   <Detail label={t("travel.why.from")} value={pointLabel(from)} />
                   <Detail label={t("travel.why.to")} value={pointLabel(to)} />
-                  <Detail
-                    label={t("travel.why.planner")}
-                    value={details.planVersion ?? "?"}
-                  />
+                  <Detail label={t("travel.why.planner")} value={details.planVersion ?? "?"} />
                   <Detail
                     label={t("travel.why.transfers")}
                     value={t(details.routedTransfers ? "travel.why.on" : "travel.why.off")}
@@ -552,9 +547,7 @@ export default function TravelPlannerPage() {
           preset={{
             date: toDateKey(new Date(toAgenda.arrival)),
             startTime: legTime(toAgenda.arrival) ?? "09:00",
-            endTime: minutesToTime(
-              timeToMinutes(legTime(toAgenda.arrival) ?? "09:00") + 60,
-            ),
+            endTime: minutesToTime(timeToMinutes(legTime(toAgenda.arrival) ?? "09:00") + 60),
             location: to,
             title: t("journey.toAgendaTitle"),
             travelMode: "transit",

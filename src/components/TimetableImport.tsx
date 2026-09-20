@@ -235,8 +235,7 @@ export function TimetableImport() {
             {preview.map((event) => (
               <li key={event.uid} className="tabular-nums">
                 {formatDateLabel(event.date, new Date())} &middot; {event.startTime}&ndash;
-                {event.endTime} &middot;{" "}
-                <span style={{ color: "var(--ink)" }}>{event.title}</span>
+                {event.endTime} &middot; <span style={{ color: "var(--ink)" }}>{event.title}</span>
                 {event.location ? ` (${event.location})` : ""}
               </li>
             ))}
@@ -266,7 +265,7 @@ export function TimetableImport() {
                   type="button"
                   aria-pressed={category === item.id}
                   onClick={() => setCategory(item.id)}
-                  className="rounded-full border px-2.5 py-1 text-xs transition-colors"
+                  className="chip"
                   style={{
                     borderColor: category === item.id ? item.color : "var(--line)",
                     color: category === item.id ? item.color : "var(--muted)",
@@ -368,7 +367,10 @@ export function TimetableImport() {
           {t("timetable.current", {
             count: existing.length,
             date: formatDateLabel(
-              existing.map((item) => item.date).sort().at(-1) ?? todayKey(),
+              existing
+                .map((item) => item.date)
+                .sort()
+                .at(-1) ?? todayKey(),
               new Date(),
             ),
           })}

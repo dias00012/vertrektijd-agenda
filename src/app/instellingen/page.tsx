@@ -1,15 +1,27 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
-import { categoriesUsingPlace, placeDisplayName, placeEmoji, sortedPlaces, missesStreet } from "@/lib/places";
+import {
+  categoriesUsingPlace,
+  placeDisplayName,
+  placeEmoji,
+  sortedPlaces,
+  missesStreet,
+} from "@/lib/places";
 import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { ConnectorSection } from "@/components/ConnectorSection";
 import { RemindersSection } from "@/components/RemindersSection";
-import { TimetableImport } from "@/components/TimetableImport";
+/* Het inlezen van een rooster: een scherm dat je zelden opent. */
+const TimetableImport = dynamic(
+  () => import("@/components/TimetableImport").then((m) => ({ default: m.TimetableImport })),
+  { ssr: false },
+);
 import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
 import { LanguageSection } from "@/components/LanguageSection";
 import { ThemeSection } from "@/components/ThemeSection";
@@ -108,13 +120,7 @@ function TravelSection() {
     setBuffer(String(settings.bufferMinutes));
     setMode(settings.travelMode);
     setBike(settings.transitBike ?? "none");
-  }, [
-    hydrated,
-    settings.home,
-    settings.bufferMinutes,
-    settings.travelMode,
-    settings.transitBike,
-  ]);
+  }, [hydrated, settings.home, settings.bufferMinutes, settings.travelMode, settings.transitBike]);
 
   const activitiesWithLocation = activities.filter((activity) => activity.location).length;
   /* Zonder thuisadres rekent de app geen enkele vertrektijd uit. Dat hoort te
@@ -403,7 +409,10 @@ function SavedPlaces() {
                         aria-label={t("places.nameLabel")}
                         onChange={(event) => setDraftName(event.target.value)}
                       />
-                      <button type="submit" className="btn btn-primary shrink-0 px-3 py-1.5 text-xs">
+                      <button
+                        type="submit"
+                        className="btn btn-primary shrink-0 px-3 py-1.5 text-xs"
+                      >
                         {t("common.save")}
                       </button>
                     </form>
@@ -452,8 +461,7 @@ function SavedPlaces() {
                               color: category.color,
                             }}
                           >
-                            {category.emoji}{" "}
-                            {t("places.fixedFor", { category: category.label })}
+                            {category.emoji} {t("places.fixedFor", { category: category.label })}
                           </span>
                         );
                       })}

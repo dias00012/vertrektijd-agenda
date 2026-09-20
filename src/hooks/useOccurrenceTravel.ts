@@ -60,8 +60,8 @@ export function useOccurrenceTravel(
   // exact bleef staan.
   const alreadyExact = Boolean(
     plan &&
-      activity.travel?.key === plan.outboundKey &&
-      activity.returnTravel?.key === plan.returnKey,
+    activity.travel?.key === plan.outboundKey &&
+    activity.returnTravel?.key === plan.returnKey,
   );
   const [fetched, setFetched] = useState<{
     key: string;

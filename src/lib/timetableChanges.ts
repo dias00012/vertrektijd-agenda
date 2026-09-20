@@ -85,7 +85,8 @@ function firstStart(lessons: Lesson[] | undefined): string | null {
 function lastEnd(lessons: Lesson[] | undefined): string | null {
   if (!lessons || lessons.length === 0) return null;
   return lessons.reduce(
-    (latest, lesson) => (timeToMinutes(lesson.endTime) > timeToMinutes(latest) ? lesson.endTime : latest),
+    (latest, lesson) =>
+      timeToMinutes(lesson.endTime) > timeToMinutes(latest) ? lesson.endTime : latest,
     lessons[0].endTime,
   );
 }

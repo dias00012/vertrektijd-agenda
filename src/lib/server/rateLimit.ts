@@ -68,8 +68,6 @@ export function checkRateLimit(key: string, rule: RateLimitRule): RateLimitResul
   return { ok: true, retryAfter: 0, remaining: rule.limit - existing.count };
 }
 
-
-
 /** Standaardgrenzen per route. Ruim boven normaal gebruik, ver onder misbruik. */
 export const LIMITS = {
   /** Zoeken tijdens typen; de client wacht al 400 ms tussen toetsaanslagen. */
@@ -80,6 +78,12 @@ export const LIMITS = {
   journeys: { limit: 25, windowMs: 60_000 },
   /** Rooster ophalen: doe je een paar keer, niet honderd keer per minuut. */
   rooster: { limit: 10, windowMs: 60_000 },
+  /**
+   * De klok die de meldingenwachtrij leegtrekt. Die belt een keer per minuut,
+   * dus tien is ruim. Dit is een tweede slot naast het geheim: raden mag, maar
+   * niet eindeloos.
+   */
+  pushSend: { limit: 10, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 /**

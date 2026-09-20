@@ -38,7 +38,7 @@ export function adminClient(): SupabaseClient | null {
 export function pushConfigured(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() &&
-      process.env.VAPID_PRIVATE_KEY?.trim() &&
-      adminClient(),
+    process.env.VAPID_PRIVATE_KEY?.trim() &&
+    adminClient(),
   );
 }

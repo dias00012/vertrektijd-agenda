@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { requestLanguage, say } from "@/lib/server/language";
 import { geocode } from "@/lib/server/geocoding";
 import { ProviderError } from "@/lib/server/config";
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
     if (error instanceof ProviderError) {
       return NextResponse.json({ error: say(request, error.key) }, { status: error.status });
     }
-    console.error("[api/geocode]", error);
+    reportServerError("api/geocode", error);
     return NextResponse.json({ error: say(request, "api.searchFailed") }, { status: 500 });
   }
 }

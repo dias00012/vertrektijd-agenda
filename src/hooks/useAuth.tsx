@@ -47,17 +47,13 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 function translateError(message: string): string {
   const m = message.toLowerCase();
   if (m.includes("invalid login")) return word("auth.invalidLogin");
-  if (m.includes("already registered") || m.includes("already exists"))
-    return word("auth.exists");
-  if (m.includes("password") && m.includes("6"))
-    return word("auth.shortPassword");
+  if (m.includes("already registered") || m.includes("already exists")) return word("auth.exists");
+  if (m.includes("password") && m.includes("6")) return word("auth.shortPassword");
   if (m.includes("email") && m.includes("valid")) return word("auth.invalidEmail");
-  if (m.includes("rate limit") || m.includes("too many"))
-    return word("auth.tooMany");
+  if (m.includes("rate limit") || m.includes("too many")) return word("auth.tooMany");
   if (m.includes("email logins are disabled") || m.includes("signups not allowed"))
     return word("auth.emailDisabled");
-  if (m.includes("email not confirmed"))
-    return word("auth.notConfirmed");
+  if (m.includes("email not confirmed")) return word("auth.notConfirmed");
   if (m.includes("same password") || m.includes("should be different"))
     return word("auth.samePassword");
   return message;

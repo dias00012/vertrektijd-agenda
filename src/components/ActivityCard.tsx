@@ -18,7 +18,7 @@ import {
   scheduledDeparture,
   travelModeMeta,
 } from "@/lib/travelModes";
-import { ActivityForm } from "./ActivityForm";
+import { ActivityForm } from "./LazyActivityForm";
 import { JourneyDetails } from "./JourneyDetails";
 import { JourneyStatus } from "./JourneyStatus";
 import { ErrorNote, Spinner } from "./ui";
@@ -72,8 +72,12 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
   const live = hasRealTime(legs);
   const cancelled = isCancelled(legs);
   const plannedTime = legTime(scheduledDeparture(legs));
-  const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
-  const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
+  const linkedTask = activity.linkedTaskId
+    ? tasks.find((t) => t.id === activity.linkedTaskId)
+    : null;
+  const linkedExam = activity.linkedExamId
+    ? exams.find((e) => e.id === activity.linkedExamId)
+    : null;
 
   // Is het werk waar dit blok voor staat al af? Dan is die tijd vrij, en dat
   // hoort te zien te zijn zonder dat je de taak erbij zoekt.
@@ -115,7 +119,9 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
               <div className="flex flex-wrap items-baseline gap-x-2">
                 <h3
                   className="truncate text-[0.95rem] font-semibold"
-                  style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+                  style={
+                    workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined
+                  }
                 >
                   {activity.title}
                 </h3>
@@ -154,7 +160,10 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                   <span
                     className="rounded-full px-1.5 py-0.5 text-[0.6rem] font-medium"
                     style={{ background: "var(--surface-soft)", color: "var(--muted)" }}
-                    title={t("activity.studyFor", { subject: linkedTask.subject, title: linkedTask.title })}
+                    title={t("activity.studyFor", {
+                      subject: linkedTask.subject,
+                      title: linkedTask.title,
+                    })}
                   >
                     📚 {linkedTask.subject}
                   </span>
@@ -177,7 +186,9 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
               </div>
 
               <p className="mt-0.5 text-sm tabular-nums" style={{ color: "var(--muted)" }}>
-                {activity.allDay ? t("activity.allDay") : `${activity.startTime} – ${activity.endTime}`}
+                {activity.allDay
+                  ? t("activity.allDay")
+                  : `${activity.startTime} – ${activity.endTime}`}
                 {activity.span ? (
                   <span className="ml-1.5 font-normal" style={{ color: "var(--muted)" }}>
                     ·{" "}
@@ -301,7 +312,8 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
                                 className="ml-1.5 text-xs font-semibold"
                                 style={{ color: "var(--danger)" }}
                               >
-                                &#9888;&#65039; {t("activity.arriveLate", { time: departure.arrival })}
+                                &#9888;&#65039;{" "}
+                                {t("activity.arriveLate", { time: departure.arrival })}
                               </span>
                             ) : null}
                           </p>
@@ -358,7 +370,11 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
         {shown.travel?.legs?.length || shown.returnTravel?.legs?.length ? (
           <div className="px-4 pb-3.5">
             {shown.travel ? (
-              <JourneyDetails travel={shown.travel} label={`🚆 ${t("journey.outbound")}`} defaultOpen={isNow} />
+              <JourneyDetails
+                travel={shown.travel}
+                label={`🚆 ${t("journey.outbound")}`}
+                defaultOpen={isNow}
+              />
             ) : null}
             {shown.returnTravel ? (
               <JourneyDetails travel={shown.returnTravel} label={`↩️ ${t("journey.return")}`} />

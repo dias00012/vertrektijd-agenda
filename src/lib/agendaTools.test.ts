@@ -99,11 +99,7 @@ describe("readAgenda", () => {
       NOW,
     );
     const withActivity = result.days.filter((day) => day.activities.length > 0);
-    expect(withActivity.map((day) => day.date)).toEqual([
-      "2026-09-14",
-      "2026-09-21",
-      "2026-09-28",
-    ]);
+    expect(withActivity.map((day) => day.date)).toEqual(["2026-09-14", "2026-09-21", "2026-09-28"]);
     expect(withActivity[1].activities[0].recurring).toBe(true);
   });
 
@@ -177,7 +173,11 @@ describe("saveActivities", () => {
 
   it("werkt een bestaand blok bij op id, zodat verplaatsen werkt", () => {
     const before = data({ activities: [activity()] });
-    const result = saveActivities(before, [{ id: "a1", title: "Wiskunde", date: "2026-09-16" }], NOW);
+    const result = saveActivities(
+      before,
+      [{ id: "a1", title: "Wiskunde", date: "2026-09-16" }],
+      NOW,
+    );
     expect(result.added).toBe(0);
     expect(result.updated).toBe(1);
     expect(result.data.activities).toHaveLength(1);
@@ -490,8 +490,20 @@ describe("ingeplande tijd per opdracht", () => {
       settings: settings(),
       tasks: [task({ id: "be", estimatedMinutes: 180 })],
       activities: [
-        activity({ id: "b1", date: "2026-09-16", startTime: "19:00", endTime: "20:00", linkedTaskId: "be" }),
-        activity({ id: "b2", date: "2026-09-17", startTime: "19:00", endTime: "19:30", linkedTaskId: "be" }),
+        activity({
+          id: "b1",
+          date: "2026-09-16",
+          startTime: "19:00",
+          endTime: "20:00",
+          linkedTaskId: "be",
+        }),
+        activity({
+          id: "b2",
+          date: "2026-09-17",
+          startTime: "19:00",
+          endTime: "19:30",
+          linkedTaskId: "be",
+        }),
       ],
     });
     const gevonden = readAgenda(wereld, {}, NOW).tasks.find((item) => item.id === "be");
@@ -504,7 +516,13 @@ describe("ingeplande tijd per opdracht", () => {
       settings: settings(),
       tasks: [task({ id: "be", estimatedMinutes: 30 })],
       activities: [
-        activity({ id: "b1", date: "2026-09-16", startTime: "19:00", endTime: "21:00", linkedTaskId: "be" }),
+        activity({
+          id: "b1",
+          date: "2026-09-16",
+          startTime: "19:00",
+          endTime: "21:00",
+          linkedTaskId: "be",
+        }),
       ],
     });
     const gevonden = readAgenda(wereld, {}, NOW).tasks.find((item) => item.id === "be");
@@ -542,7 +560,12 @@ describe("dubbel en botsend", () => {
     const wereld = data({
       settings: settings(),
       tasks: [
-        task({ id: "be3", subject: "Bedrijfseconomie", title: "BE week 3 - H5", deadline: "2026-09-25" }),
+        task({
+          id: "be3",
+          subject: "Bedrijfseconomie",
+          title: "BE week 3 - H5",
+          deadline: "2026-09-25",
+        }),
         task({
           id: "ex3",
           subject: "Bedrijfseconomie",
@@ -558,7 +581,13 @@ describe("dubbel en botsend", () => {
     const wereld = data({
       settings: settings(),
       activities: [
-        activity({ id: "l1", title: "Lezen", date: "2026-09-16", startTime: "21:15", endTime: "22:15" }),
+        activity({
+          id: "l1",
+          title: "Lezen",
+          date: "2026-09-16",
+          startTime: "21:15",
+          endTime: "22:15",
+        }),
         activity({
           id: "l2",
           title: "Lezen (voor het slapen)",
@@ -578,8 +607,20 @@ describe("dubbel en botsend", () => {
     const wereld = data({
       settings: settings(),
       activities: [
-        activity({ id: "a", title: "Sporten", date: "2026-09-16", startTime: "18:00", endTime: "19:30" }),
-        activity({ id: "b", title: "Koken", date: "2026-09-16", startTime: "19:00", endTime: "19:45" }),
+        activity({
+          id: "a",
+          title: "Sporten",
+          date: "2026-09-16",
+          startTime: "18:00",
+          endTime: "19:30",
+        }),
+        activity({
+          id: "b",
+          title: "Koken",
+          date: "2026-09-16",
+          startTime: "19:00",
+          endTime: "19:45",
+        }),
       ],
     });
     const dag = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW).days[0];
@@ -772,7 +813,11 @@ describe("skipOccurrence", () => {
 
   it("stuurt je bij een losse afspraak naar het juiste gereedschap", () => {
     const los = activity({ id: "los", recurrence: null });
-    const result = skipOccurrence(data({ activities: [los] }), { id: "los", date: "2026-09-14" }, NOW);
+    const result = skipOccurrence(
+      data({ activities: [los] }),
+      { id: "los", date: "2026-09-14" },
+      NOW,
+    );
     expect(result.ok).toBe(false);
     expect(result.reason).toContain("delete_activities");
   });
@@ -896,7 +941,13 @@ describe("updateSchoolwork", () => {
   it("zet de opdracht vanzelf op af zodra de laatste stap af is", () => {
     const result = updateSchoolwork(
       data({ tasks: [metStappen] }),
-      { taskId: "t1", steps: [{ id: "s1", done: true }, { id: "s2", done: true }] },
+      {
+        taskId: "t1",
+        steps: [
+          { id: "s1", done: true },
+          { id: "s2", done: true },
+        ],
+      },
       NOW,
     );
     expect(result.data.tasks[0].status).toBe("done");
@@ -917,7 +968,11 @@ describe("updateSchoolwork", () => {
   });
 
   it("zet de stand van een opdracht zonder stappen", () => {
-    const result = updateSchoolwork(data({ tasks: [task()] }), { taskId: "t1", status: "doing" }, NOW);
+    const result = updateSchoolwork(
+      data({ tasks: [task()] }),
+      { taskId: "t1", status: "doing" },
+      NOW,
+    );
     expect(result.data.tasks[0].status).toBe("doing");
   });
 
@@ -932,7 +987,11 @@ describe("updateSchoolwork", () => {
   });
 
   it("weigert een stand die niet bestaat", () => {
-    const result = updateSchoolwork(data({ tasks: [task()] }), { taskId: "t1", status: "bijna" }, NOW);
+    const result = updateSchoolwork(
+      data({ tasks: [task()] }),
+      { taskId: "t1", status: "bijna" },
+      NOW,
+    );
     expect(result.ok).toBe(false);
   });
 
@@ -977,7 +1036,11 @@ describe("updateSchoolwork", () => {
   });
 
   it("zet de stand van een toets", () => {
-    const result = updateSchoolwork(data({ exams: [exam()] }), { examId: "e1", status: "done" }, NOW);
+    const result = updateSchoolwork(
+      data({ exams: [exam()] }),
+      { examId: "e1", status: "done" },
+      NOW,
+    );
     expect(result.ok).toBe(true);
     expect(result.data.exams[0].status).toBe("done");
   });
@@ -1078,8 +1141,8 @@ describe("wat read_agenda over de reistijd zegt", () => {
     });
 
   const lees = (item: Activity) =>
-    readAgenda(data({ activities: [item] }), { from: "2026-09-14", to: "2026-09-14" }, NOW)
-      .days[0].activities[0];
+    readAgenda(data({ activities: [item] }), { from: "2026-09-14", to: "2026-09-14" }, NOW).days[0]
+      .activities[0];
 
   it("schat de vertrektijd uit de thuisreis wanneer de heenreis ontbreekt", () => {
     const item = buiten({

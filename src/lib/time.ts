@@ -54,9 +54,7 @@ export function isDateKey(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const [y, m, d] = value.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  return (
-    date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d
-  );
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
 }
 
 /** Is dit echt een "HH:mm" op de klok? */
@@ -137,7 +135,6 @@ export function formatDateShort(dateKey: string): string {
     : `${weekday} ${d.getDate()} ${month}`;
 }
 
-
 /* --- Week- en maandrasters --------------------------------------------- */
 
 /** Maandag van de week waarin deze dag valt. */
@@ -167,9 +164,7 @@ export function isoWeekNumber(dateKey: string): number {
 /** Hele dagen tussen twee dagsleutels; negatief als `toKey` eerder ligt. */
 export function daysBetween(fromKey: string, toKey: string): number {
   // Afronden vangt het uur op dat de zomertijd erin of eruit haalt.
-  return Math.round(
-    (parseDateKey(toKey).getTime() - parseDateKey(fromKey).getTime()) / 86_400_000,
-  );
+  return Math.round((parseDateKey(toKey).getTime() - parseDateKey(fromKey).getTime()) / 86_400_000);
 }
 
 /** De zeven dagen (ma t/m zo) van de kalenderweek rond deze dag. */

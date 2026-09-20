@@ -206,7 +206,10 @@ describe("buildTimeline en de thuiskomst", () => {
     const item = activity({
       location: { label: "School", lat: 52.49, lon: 6.07 },
       travelMode: "transit",
-      returnTravel: bus({ plannedDeparture: "2026-09-07T15:02:00.000Z", plannedArrival: "2026-09-07T15:46:00.000Z" }),
+      returnTravel: bus({
+        plannedDeparture: "2026-09-07T15:02:00.000Z",
+        plannedArrival: "2026-09-07T15:46:00.000Z",
+      }),
     });
 
     const back = buildTimeline([item], settings(), "2026-09-07").find((e) => e.kind === "return");
@@ -267,9 +270,12 @@ describe("timeStatusFor bij een dienst over middernacht", () => {
   });
 
   it("laat een gewone activiteit met rust", () => {
-    const les = { ...activity({ date: "2026-09-07", startTime: "09:00", endTime: "17:00" }),
-      occurrenceId: "a1:2026-09-07", recurring: false,
-      travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null } };
+    const les = {
+      ...activity({ date: "2026-09-07", startTime: "09:00", endTime: "17:00" }),
+      occurrenceId: "a1:2026-09-07",
+      recurring: false,
+      travelRole: { outbound: true, inbound: true, onward: null, arrivesFrom: null },
+    };
     expect(timeStatusFor(les as never, new Date(2026, 8, 7, 18, 0))).toBe("past");
     expect(timeStatusFor(les as never, new Date(2026, 8, 7, 12, 0))).toBe("now");
   });
@@ -277,13 +283,20 @@ describe("timeStatusFor bij een dienst over middernacht", () => {
 
 describe("clashesOnDate", () => {
   const school = activity({
-    id: "school", title: "School", startTime: "08:30", endTime: "15:00",
+    id: "school",
+    title: "School",
+    startTime: "08:30",
+    endTime: "15:00",
     location: { label: "School", lat: 52.49, lon: 6.07 },
   });
   /** Een reis van een half uur, zoals de app hem opslaat. */
   const rit = (minuten: number) => ({
-    durationMinutes: minuten, distanceKm: 20, mode: "car" as const, provider: "osrm",
-    computedAt: "2026-09-07T06:00:00.000Z", key: "k",
+    durationMinutes: minuten,
+    distanceKm: 20,
+    mode: "car" as const,
+    provider: "osrm",
+    computedAt: "2026-09-07T06:00:00.000Z",
+    key: "k",
   });
 
   function botsingen(activiteiten: Activity[], id: string) {
@@ -299,14 +312,22 @@ describe("clashesOnDate", () => {
     // controle niets; met de schatting moet je om 16:45 weg -- en dan zit je
     // nog op je werk.
     const werk = activity({
-      id: "werk", title: "Werken", startTime: "09:00", endTime: "17:00",
+      id: "werk",
+      title: "Werken",
+      startTime: "09:00",
+      endTime: "17:00",
       location: { label: "Lelystad", lat: 52.5, lon: 5.47 },
-      travel: rit(54), returnTravel: rit(54),
+      travel: rit(54),
+      returnTravel: rit(54),
     });
     const sporten = activity({
-      id: "gym", title: "Sporten", startTime: "17:15", endTime: "18:30",
+      id: "gym",
+      title: "Sporten",
+      startTime: "17:15",
+      endTime: "18:30",
       location: { label: "Sportschool", lat: 52.37, lon: 5.24 },
-      travel: null, returnTravel: rit(20),
+      travel: null,
+      returnTravel: rit(20),
     });
 
     const gevonden = botsingen([werk, sporten], "gym");
@@ -316,7 +337,12 @@ describe("clashesOnDate", () => {
   });
 
   it("ziet twee dingen op hetzelfde moment", () => {
-    const bijbaan = activity({ id: "bijbaan", title: "Bijbaan", startTime: "14:00", endTime: "18:00" });
+    const bijbaan = activity({
+      id: "bijbaan",
+      title: "Bijbaan",
+      startTime: "14:00",
+      endTime: "18:00",
+    });
     const botsing = botsingen([school, bijbaan], "school");
 
     expect(botsing).toHaveLength(1);
@@ -325,20 +351,33 @@ describe("clashesOnDate", () => {
   });
 
   it("meldt het bij allebei", () => {
-    const bijbaan = activity({ id: "bijbaan", title: "Bijbaan", startTime: "14:00", endTime: "18:00" });
+    const bijbaan = activity({
+      id: "bijbaan",
+      title: "Bijbaan",
+      startTime: "14:00",
+      endTime: "18:00",
+    });
     expect(botsingen([school, bijbaan], "bijbaan")).toHaveLength(1);
   });
 
   it("noemt aansluitend geen botsing", () => {
     // Om 15:00 uit en om 15:00 verder is precies wat een schooldag doet.
-    const training = activity({ id: "training", title: "Training", startTime: "15:00", endTime: "16:00" });
+    const training = activity({
+      id: "training",
+      title: "Training",
+      startTime: "15:00",
+      endTime: "16:00",
+    });
     expect(botsingen([school, training], "school")).toEqual([]);
   });
 
   it("ziet dat je weg moet terwijl je er nog zit", () => {
     // Training begint pas na school, maar je moet er een half uur voor rijden.
     const training = activity({
-      id: "training", title: "Training", startTime: "15:15", endTime: "16:30",
+      id: "training",
+      title: "Training",
+      startTime: "15:15",
+      endTime: "16:30",
       location: { label: "Sporthal", lat: 52.4, lon: 5.3 },
       travel: rit(30),
     });
@@ -350,7 +389,12 @@ describe("clashesOnDate", () => {
   });
 
   it("laat een dag zonder botsingen met rust", () => {
-    const avond = activity({ id: "avond", title: "Avondeten", startTime: "18:00", endTime: "19:00" });
+    const avond = activity({
+      id: "avond",
+      title: "Avondeten",
+      startTime: "18:00",
+      endTime: "19:00",
+    });
     expect(botsingen([school, avond], "school")).toEqual([]);
     expect(botsingen([school, avond], "avond")).toEqual([]);
   });
@@ -362,7 +406,12 @@ describe("clashesOnDate", () => {
   });
 
   it("ziet een blok dat over middernacht loopt", () => {
-    const nacht = activity({ id: "nacht", title: "Nachtdienst", startTime: "23:00", endTime: "00:30" });
+    const nacht = activity({
+      id: "nacht",
+      title: "Nachtdienst",
+      startTime: "23:00",
+      endTime: "00:30",
+    });
     const laat = activity({ id: "laat", title: "Feest", startTime: "22:00", endTime: "23:30" });
     expect(botsingen([nacht, laat], "nacht")).toHaveLength(1);
   });

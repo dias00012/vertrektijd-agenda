@@ -16,7 +16,7 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
  */
 const PARTIAL_CACHE_TTL_MS = 60 * 1000;
 
-interface NominatimAddress {
+export interface NominatimAddress {
   road?: string;
   house_number?: string;
   suburb?: string;
@@ -29,7 +29,7 @@ interface NominatimAddress {
   country?: string;
 }
 
-interface NominatimItem {
+export interface NominatimItem {
   lat: string;
   lon: string;
   name?: string;
@@ -191,48 +191,59 @@ async function geocodeNominatim(
   }
 
   const items = (await response.json()) as NominatimItem[];
-  return items.map((item) => {
-    const parts = item.display_name.split(",").map((part) => part.trim());
-    const address = item.address ?? {};
-    const place = address.city ?? address.town ?? address.village ?? address.municipality;
-    const street = [address.road, address.house_number].filter(Boolean).join(" ");
+  return items.map(nominatimResult);
+}
 
-    // Bij een huisadres geeft Nominatim alleen het huisnummer als naam ("60").
-    // "Wisselweg 60" is dan een stuk herkenbaarder dan "60".
-    const rawName = item.name?.trim() ?? "";
-    const numberOnly = /^\d+[a-zA-Z]?$/.test(rawName);
-    // Ontbreekt de straat in de adresgegevens, dan staat hij meestal nog wel
-    // in de volledige omschrijving ("184, Voorbeeldweg, Lelystad, ..."). Zonder
-    // deze regel heet zo'n bestemming gewoon "184, Lelystad", en dan zie je
-    // niet dat je een zwakke match hebt gekozen die honderden meters naast je
-    // voordeur kan liggen — je merkt het pas aan een looptijd die niet klopt.
-    const fromDisplay =
-      numberOnly && !street && parts[1] ? `${parts[1]} ${rawName}` : "";
-    const name =
-      (numberOnly && street ? street : "") ||
-      fromDisplay ||
-      rawName ||
-      street ||
-      parts[0] ||
-      item.display_name;
+/**
+ * Wat een gebruiker van een Nominatim-treffer te zien krijgt.
+ *
+ * Apart en geexporteerd omdat hier de meeste keuzes in zitten, en omdat er een
+ * gemelde fout achter zit: bij een huisadres geeft Nominatim als naam alleen
+ * het huisnummer ("184"). Zonder de regels hieronder heette een bestemming dus
+ * "184, Lelystad" -- en dan zie je niet dat je een zwakke match hebt gekozen
+ * die honderden meters naast je voordeur kan liggen. Je merkt het pas aan een
+ * looptijd die niet klopt.
+ */
+export function nominatimResult(item: NominatimItem): GeocodeResult {
+  const parts = item.display_name.split(",").map((part) => part.trim());
+  const address = item.address ?? {};
+  const place = address.city ?? address.town ?? address.village ?? address.municipality;
+  // Alleen een straat als er ook een straatnaam is. Stond hier eerst zonder die
+  // voorwaarde, en dan werd bij een treffer zonder `road` het huisnummer zelf de
+  // "straat" -- waarmee de terugval hieronder onbereikbaar werd in precies het
+  // geval waarvoor hij bedoeld was, en er "184, Lelystad" op je scherm bleef
+  // staan.
+  const street = address.road ? [address.road, address.house_number].filter(Boolean).join(" ") : "";
 
-    // Tweede regel van de suggestie: straat, wijk en plaats, zonder herhaling
-    // van de naam die al op de eerste regel staat.
-    const context = [street, address.suburb ?? address.neighbourhood, place, address.state]
-      .filter((value): value is string => Boolean(value) && value !== name)
-      .filter((value, index, all) => all.indexOf(value) === index)
-      .slice(0, 3)
-      .join(", ");
+  const rawName = item.name?.trim() ?? "";
+  const numberOnly = /^\d+[a-zA-Z]?$/.test(rawName);
+  // Ontbreekt de straat in de adresgegevens, dan staat hij meestal nog wel in
+  // de volledige omschrijving ("184, Voorbeeldweg, Lelystad, ...").
+  const fromDisplay = numberOnly && !street && parts[1] ? `${parts[1]} ${rawName}` : "";
+  const name =
+    (numberOnly && street ? street : "") ||
+    fromDisplay ||
+    rawName ||
+    street ||
+    parts[0] ||
+    item.display_name;
 
-    return {
-      // Label dat de gebruiker terugziet in de agenda: "Windesheim, Almere".
-      label: place && !name.includes(place) ? `${name}, ${place}` : name,
-      name,
-      context,
-      lat: Number(item.lat),
-      lon: Number(item.lon),
-    };
-  });
+  // Tweede regel van de suggestie: straat, wijk en plaats, zonder herhaling
+  // van de naam die al op de eerste regel staat.
+  const context = [street, address.suburb ?? address.neighbourhood, place, address.state]
+    .filter((value): value is string => Boolean(value) && value !== name)
+    .filter((value, index, all) => all.indexOf(value) === index)
+    .slice(0, 3)
+    .join(", ");
+
+  return {
+    // Label dat de gebruiker terugziet in de agenda: "Windesheim, Almere".
+    label: place && !name.includes(place) ? `${name}, ${place}` : name,
+    name,
+    context,
+    lat: Number(item.lat),
+    lon: Number(item.lon),
+  };
 }
 
 async function geocodeOrs(query: string, limit: number): Promise<GeocodeResult[]> {

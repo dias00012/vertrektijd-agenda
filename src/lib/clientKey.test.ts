@@ -30,9 +30,9 @@ describe("clientKey", () => {
   });
 
   it("kiest het platform boven de ketting", () => {
-    expect(
-      clientKey(ask({ "x-forwarded-for": "1.2.3.4", "x-real-ip": "203.0.113.9" })),
-    ).toBe("203.0.113.9");
+    expect(clientKey(ask({ "x-forwarded-for": "1.2.3.4", "x-real-ip": "203.0.113.9" }))).toBe(
+      "203.0.113.9",
+    );
   });
 
   it("gooit alle anonieme aanvragen op één emmer als er geen bron is", () => {

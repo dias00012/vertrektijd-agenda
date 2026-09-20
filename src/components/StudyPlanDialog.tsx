@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
 import { planStudy } from "@/lib/planning";
 import { formatDateLabel, formatDuration } from "@/lib/time";
@@ -78,8 +79,12 @@ export function StudyPlanDialog({ item, onClose }: { item: Task | Exam; onClose:
     onClose();
   }
 
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, onClose);
+
   return (
     <div
+      ref={dialog}
       className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
       role="dialog"

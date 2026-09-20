@@ -10,7 +10,10 @@ import { zaai } from "./agenda";
 test.beforeEach(async ({ page }) => {
   await zaai(page);
   await page.goto("/agenda");
-  await page.getByRole("button", { name: /Activiteit toevoegen|Toevoegen/ }).first().click();
+  await page
+    .getByRole("button", { name: /Activiteit toevoegen|Toevoegen/ })
+    .first()
+    .click();
 });
 
 /** Het formulier, zodat we nooit per ongeluk een knop erachter raken. */
@@ -19,7 +22,10 @@ const venster = (page: import("@playwright/test").Page) => page.locator('[role="
 test("een eigen type maken kan zonder emoji", async ({ page }) => {
   const form = venster(page);
   await form.getByRole("button", { name: /Eigen/ }).click();
-  await form.getByLabel(/^Naam$/).first().fill("Bijbaan");
+  await form
+    .getByLabel(/^Naam$/)
+    .first()
+    .fill("Bijbaan");
   await form.getByRole("button", { name: "Type toevoegen" }).click();
 
   // Geen icoon gekozen: dan de eerste letter van de naam.
@@ -30,11 +36,20 @@ test("een eigen type maken kan zonder emoji", async ({ page }) => {
 test("een eigen type is daarna te hernoemen, en het icoon verandert mee", async ({ page }) => {
   const form = venster(page);
   await form.getByRole("button", { name: /Eigen/ }).click();
-  await form.getByLabel(/^Naam$/).first().fill("Huiswerk");
+  await form
+    .getByLabel(/^Naam$/)
+    .first()
+    .fill("Huiswerk");
   await form.getByRole("button", { name: "Type toevoegen" }).click();
 
-  await form.getByRole("button", { name: /bewerken/ }).first().click();
-  await form.getByLabel(/^Naam$/).first().fill("Schoolwerk");
+  await form
+    .getByRole("button", { name: /bewerken/ })
+    .first()
+    .click();
+  await form
+    .getByLabel(/^Naam$/)
+    .first()
+    .fill("Schoolwerk");
   await form.getByRole("button", { name: "Opslaan" }).click();
 
   const types = form.getByRole("group", { name: "Type" });
@@ -47,12 +62,21 @@ test("ook een standaardtype is te hernoemen en weer te herstellen", async ({ pag
   const types = form.getByRole("group", { name: "Type" });
 
   await types.getByRole("button", { name: "Gym", exact: true }).click();
-  await form.getByRole("button", { name: /bewerken/ }).first().click();
-  await form.getByLabel(/^Naam$/).first().fill("Sporten");
+  await form
+    .getByRole("button", { name: /bewerken/ })
+    .first()
+    .click();
+  await form
+    .getByLabel(/^Naam$/)
+    .first()
+    .fill("Sporten");
   await form.getByRole("button", { name: "Opslaan" }).click();
   await expect(types.getByRole("button", { name: "Sporten", exact: true })).toBeVisible();
 
-  await form.getByRole("button", { name: /bewerken/ }).first().click();
+  await form
+    .getByRole("button", { name: /bewerken/ })
+    .first()
+    .click();
   await form.getByRole("button", { name: "Standaard herstellen" }).click();
   await expect(types.getByRole("button", { name: "Gym", exact: true })).toBeVisible();
 });

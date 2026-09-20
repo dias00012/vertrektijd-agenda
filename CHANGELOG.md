@@ -8,6 +8,76 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.94.0
+
+Een doorlichting van de hele app: vijftig punten, in acht blokken, elk apart
+nagerekend. De belangrijkste vondsten stonden niet op de lijst maar kwamen
+tijdens het werk boven -- dat zijn de vier hieronder met "fout" ervoor.
+
+**Bediening op de telefoon**
+
+- 28 knoppen waren kleiner dan 40 pixels, de kleinste 12 bij 14: het kruisje om
+  een bestemming te wissen. Ook het potlood om een opdracht te bewerken, de
+  knoppen "Te doen / Bezig / Klaar" en het hele statusfilter. Twee gedeelde
+  klassen in plaats van 28 losse fixes, en een browsertest die over alle
+  schermen loopt -- ook de uitgeklapte instellingen, waar er nog zes zaten.
+- Van de zeven vensters reageerden er drie op Escape, zette er één de focus naar
+  binnen, hield er geen enkele de focus vast en bracht er geen enkele hem terug.
+  Dat staat nu in `useDialog`.
+- Een blok in het weekrooster verplaatsen kan nu ook met Shift en de pijltjes.
+
+**Vier fouten die bij het testen bovenkwamen**
+
+- **Fout:** de routesleutel haalde "vertrek om 08:00" en "wees er om 08:00" door
+  elkaar. Binnen het cachevenster kreeg je een vertrektijd die voor de andere
+  vraag klopte -- veertig minuten verschil, zonder dat iets op fout wees.
+- **Fout:** de geocoder gebruikte het huisnummer als straatnaam wanneer de
+  adresgegevens geen straat hadden, waarmee de terugval onbereikbaar werd in
+  precies het geval waarvoor hij geschreven was.
+- **Fout:** de cache gooide de drukst gebruikte route er als eerste uit, omdat
+  een Map de volgorde van toevoegen onthoudt en herschrijven die niet verandert.
+- **Fout:** een roostermelding met een onleesbare datum bleef eeuwig staan.
+
+**Beveiliging**
+
+- Er stond geen enkele beveiligingsheader. Nu een inhoudspolitie die toelaat wat
+  de app nodig heeft, plus X-Frame-Options, nosniff, Referrer-Policy,
+  Permissions-Policy en HSTS -- met een test die ze bij de draaiende server
+  ophaalt en er een die controleert dat de app het er nog mee doet.
+- Serverfouten kwamen nergens terecht: de routes logden naar de console terwijl
+  de monitoring alleen in de browser draait.
+- Een opdracht of toets verwijderen is nu terug te draaien.
+
+**Sneller**
+
+- De klok stond niet stil als je scherm uit ging. Elke tik rendert de pagina, en
+  dat gebeurde de hele dag door.
+- Schoolwerk liep vijftien keer door al je opdrachten heen per render.
+- Het woordenboek stuurde beide talen naar iedereen; Engels wordt nu pas
+  opgehaald als je die taal kiest. Met de zware vensters erbij: 1029 kB naar
+  983 kB op het dashboard.
+
+**Klaar voor de Play Store**
+
+- Het manifest heeft schermafdrukken, snelkoppelingen en een vaste `id`. Die
+  laatste is de stilste: zonder dat veld verliest iedereen zijn installatie
+  zodra `start_url` ooit verandert.
+- De privacyverklaring werkt nu ook zonder bereik.
+- Robots en sitemap erbij.
+
+**Dekking en onderhoud**
+
+- Tien bestanden hadden geen enkele test; die hebben er nu samen ruim honderd.
+- Het woordenboek heeft een bewaker gekregen (plaatshouders, ontbrekende
+  waarden, dode sleutels) en negentien dode sleutels zijn eruit.
+- `agendaTools.ts` is gesplitst in lezen en schrijven; `initialDraft` is uit het
+  activiteitenformulier gehaald en getest.
+- Het project heeft één opmaak, met prettier, en een `.git-blame-ignore-revs`
+  zodat `git blame` de normalisatie overslaat.
+
+964 rekentests (was 775), 60 browsertests (was 34). 27 mutaties geprobeerd,
+27 gevangen -- drie daarvan pas nadat een te zwakke test was herschreven.
+
 ## 0.93.0
 
 - **De melding "je hebt iets over tijd" lag over de filterknoppen heen.** Twaalf

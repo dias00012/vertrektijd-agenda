@@ -35,7 +35,10 @@ test("een stap afvinken zet de opdracht op bezig", async ({ page }) => {
 
 test("het filter onthoudt je keuze na een herlading", async ({ page }) => {
   await page.goto("/schoolwerk");
-  await page.getByRole("button", { name: /^Te doen/ }).first().click();
+  await page
+    .getByRole("button", { name: /^Te doen/ })
+    .first()
+    .click();
   await expect(page.getByRole("button", { name: /^Te doen/ }).first()).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -115,4 +118,76 @@ test.describe("de melding over tijd", () => {
     expect(doos.width).toBeGreaterThanOrEqual(44);
     expect(doos.height).toBeGreaterThanOrEqual(44);
   });
+});
+
+/**
+ * De tellingen op de filterknoppen.
+ *
+ * Ze werden met tien losse rondes door de lijst berekend en zijn samengevoegd
+ * tot één ronde. Dat is een herschrijving van rekenwerk dat je op het scherm
+ * ziet staan, dus hoort er vast te liggen wat eruit hoort te komen -- en ook
+ * dat een filter de tellingen van het ándere filter beïnvloedt, want dat is
+ * precies de subtiliteit die bij zo'n samenvoeging sneuvelt.
+ */
+test.describe("de tellingen op de filters", () => {
+  test("tellen alles zolang er niets gefilterd is", async ({ page }) => {
+    await page.goto("/schoolwerk");
+
+    await expect(page.getByRole("button", { name: "Alles (2)" }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Over tijd (1)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Te doen (2)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Bezig (0)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Klaar (0)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Hoog \(2\)/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Middel \(0\)/ })).toBeVisible();
+  });
+
+  test("rekenen het andere filter mee", async ({ page }) => {
+    await page.goto("/schoolwerk");
+
+    // Op "over tijd": dan hoort de prioriteitsrij alleen dat ene ding te tellen.
+    await page.getByRole("button", { name: "Over tijd (1)" }).click();
+
+    await expect(page.getByRole("button", { name: /Hoog \(1\)/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Middel \(0\)/ })).toBeVisible();
+  });
+
+  test("tellen iets dat over tijd is ook als te doen", async ({ page }) => {
+    await page.goto("/schoolwerk");
+
+    // De achterstallige opdracht staat op "te doen", dus telt hij in allebei.
+    await expect(page.getByRole("button", { name: "Over tijd (1)" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Te doen (2)" })).toBeVisible();
+  });
+});
+
+/**
+ * Een opdracht of toets weggooien kon niet teruggedraaid worden.
+ *
+ * Voor activiteiten bestond de ongedaan-balk al, voor schoolwerk niet -- terwijl
+ * daar stappen, onderwerpen en ingeplande leertijd aan hangen. Twee keer tikken
+ * op verwijderen en het was echt weg.
+ */
+test("een verwijderde opdracht is terug te halen", async ({ page }) => {
+  await page.goto("/schoolwerk");
+
+  const kaart = page.locator("article").filter({ hasText: "Excel week 1" });
+  await expect(kaart).toBeVisible();
+
+  await kaart.getByRole("button", { name: /bewerken/ }).click();
+  await expect(page.locator('[role="dialog"]')).toBeVisible();
+
+  // Verwijderen vraagt eerst om een bevestiging.
+  const weg = page.getByRole("button", { name: "Verwijderen" });
+  await weg.click();
+  await page
+    .getByRole("button", { name: /Zeker weten|Verwijderen/ })
+    .last()
+    .click();
+
+  await expect(page.locator("article").filter({ hasText: "Excel week 1" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Ongedaan maken/ }).click();
+
+  await expect(page.locator("article").filter({ hasText: "Excel week 1" })).toBeVisible();
 });

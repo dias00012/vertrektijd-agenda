@@ -33,10 +33,8 @@ export function getProviderConfig(): ProviderConfig {
     orsApiKey,
     nominatimBaseUrl:
       process.env.NOMINATIM_BASE_URL?.replace(/\/$/, "") ?? "https://nominatim.openstreetmap.org",
-    osrmBaseUrl:
-      process.env.OSRM_BASE_URL?.replace(/\/$/, "") ?? "https://router.project-osrm.org",
-    motisBaseUrl:
-      process.env.MOTIS_BASE_URL?.replace(/\/$/, "") ?? "https://api.transitous.org",
+    osrmBaseUrl: process.env.OSRM_BASE_URL?.replace(/\/$/, "") ?? "https://router.project-osrm.org",
+    motisBaseUrl: process.env.MOTIS_BASE_URL?.replace(/\/$/, "") ?? "https://api.transitous.org",
     pdokBaseUrl:
       process.env.PDOK_BASE_URL?.replace(/\/$/, "") ??
       "https://api.pdok.nl/bzk/locatieserver/search/v3_1",

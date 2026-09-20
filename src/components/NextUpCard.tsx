@@ -64,8 +64,12 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
   const delay = journeyDelay(legs);
   const live = hasRealTime(legs);
   const cancelled = isCancelled(legs);
-  const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
-  const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
+  const linkedTask = activity.linkedTaskId
+    ? tasks.find((t) => t.id === activity.linkedTaskId)
+    : null;
+  const linkedExam = activity.linkedExamId
+    ? exams.find((e) => e.id === activity.linkedExamId)
+    : null;
   /** Werk dat al af is: dan hoef je hier niets meer te doen. */
   const workDone = linkedWorkDone(activity, tasks, exams);
 
@@ -128,7 +132,9 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
           <div className="min-w-0 flex-1">
             <h2
               className="truncate text-lg font-semibold"
-              style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+              style={
+                workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined
+              }
             >
               {activity.title}
             </h2>
@@ -173,22 +179,25 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             {calculating ? (
               <Spinner size={14} label={t("activity.calculating")} />
             ) : /*
-                 * Een tijd die we hebben gaat vóór een storing die we melden.
-                 *
-                 * Andersom stond hier alleen een rode regel en geen vertrektijd,
-                 * terwijl de reis van de vorige berekening er gewoon was. Precies
-                 * 's ochtends, als de planner even hapert en jij naar je trein
-                 * moet, kreeg je dan niets -- terwijl die oude tijd meestal nog
-                 * prima klopt. De hook eronder doet het al zo ("liever een
-                 * benadering dan een lege kaart"); deze kaart deed het niet.
-                 *
-                 * De storing verdwijnt niet, hij komt er als notitie onder te
-                 * staan, zodat je weet dat het een schatting van eerder is.
-                 */
+             * Een tijd die we hebben gaat vóór een storing die we melden.
+             *
+             * Andersom stond hier alleen een rode regel en geen vertrektijd,
+             * terwijl de reis van de vorige berekening er gewoon was. Precies
+             * 's ochtends, als de planner even hapert en jij naar je trein
+             * moet, kreeg je dan niets -- terwijl die oude tijd meestal nog
+             * prima klopt. De hook eronder doet het al zo ("liever een
+             * benadering dan een lege kaart"); deze kaart deed het niet.
+             *
+             * De storing verdwijnt niet, hij komt er als notitie onder te
+             * staan, zodat je weet dat het een schatting van eerder is.
+             */
             departure && shown.travel ? (
               <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
                 <div>
-                  <p className="text-[0.7rem] uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+                  <p
+                    className="text-[0.7rem] uppercase tracking-wide"
+                    style={{ color: "var(--muted)" }}
+                  >
                     {t("next.leaveAt")}
                   </p>
                   <p
@@ -261,9 +270,7 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
                 <div className="pb-1">
                   <p className="text-sm" style={{ color: "var(--muted)" }}>
                     &#10230; {formatDuration(onward.travelMinutes)}{" "}
-                    {t(
-                      shown.onwardTravel?.mode === "car" ? "timeline.drive" : "timeline.travel",
-                    )}
+                    {t(shown.onwardTravel?.mode === "car" ? "timeline.drive" : "timeline.travel")}
                   </p>
                   {onward.late ? (
                     <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
@@ -318,7 +325,9 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
             {missedRide && !calculating ? (
               <p
                 className="mt-2 text-sm font-semibold tabular-nums"
-                style={{ color: catchUp && catchUp.lateMinutes > 0 ? "var(--danger)" : "var(--ink)" }}
+                style={{
+                  color: catchUp && catchUp.lateMinutes > 0 ? "var(--danger)" : "var(--ink)",
+                }}
               >
                 {catchUp ? (
                   <>
@@ -340,7 +349,11 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
 
             {/* Je eerstvolgende reis staat open: dít is wat je nu wilt weten. */}
             {shown.travel?.legs?.length ? (
-              <JourneyDetails travel={shown.travel} label={`🚆 ${t("journey.yours")}`} defaultOpen />
+              <JourneyDetails
+                travel={shown.travel}
+                label={`🚆 ${t("journey.yours")}`}
+                defaultOpen
+              />
             ) : null}
           </div>
         ) : (

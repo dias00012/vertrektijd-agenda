@@ -281,9 +281,7 @@ describe("meerdaagse activiteiten", () => {
   });
 
   it("vertelt bij elke dag de hoeveelste het is", () => {
-    const dagen = ["2026-10-19", "2026-10-21", "2026-10-23"].map((d) =>
-      toOccurrence(vakantie, d),
-    );
+    const dagen = ["2026-10-19", "2026-10-21", "2026-10-23"].map((d) => toOccurrence(vakantie, d));
     expect(dagen.map((d) => d.span?.index)).toEqual([0, 2, 4]);
     expect(dagen.map((d) => d.span?.total)).toEqual([5, 5, 5]);
     expect(dagen[0].span?.start).toBe("2026-10-19");

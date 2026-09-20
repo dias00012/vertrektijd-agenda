@@ -53,11 +53,7 @@ function taal(): keyof typeof TEKST {
   }
 }
 
-export default function GlobalError({
-  error,
-}: {
-  error: Error & { digest?: string };
-}) {
+export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
     reportError(error, { digest: error.digest, scope: "global" });
   }, [error]);
@@ -76,20 +72,15 @@ export default function GlobalError({
           padding: "1.5rem",
           background: "#f8fafc",
           color: "#0f172a",
-          fontFamily:
-            "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+          fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
         }}
       >
         <main style={{ maxWidth: "28rem", textAlign: "center" }}>
           <p aria-hidden style={{ fontSize: "2rem", margin: 0 }}>
             ⚠️
           </p>
-          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, margin: "0.5rem 0 0" }}>
-            {t.titel}
-          </h1>
-          <p style={{ fontSize: "0.875rem", color: "#475569", margin: "0.5rem 0 0" }}>
-            {t.uitleg}
-          </p>
+          <h1 style={{ fontSize: "1.125rem", fontWeight: 600, margin: "0.5rem 0 0" }}>{t.titel}</h1>
+          <p style={{ fontSize: "0.875rem", color: "#475569", margin: "0.5rem 0 0" }}>{t.uitleg}</p>
           <button
             type="button"
             onClick={() => window.location.reload()}

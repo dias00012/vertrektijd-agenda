@@ -26,12 +26,16 @@ test.describe("in het weekrooster", () => {
    * helemaal niets erin -- geen tekst om te lezen, geen naam om voor te lezen.
    */
   test("heeft het reisblok een naam met de vertrektijd erin", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /Vertrekken om \d\d:\d\d/ }).first()).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Vertrekken om \d\d:\d\d/ }).first(),
+    ).toBeVisible();
   });
 
   /** Een kort blok toont alleen een emoji, en die telt niet als naam. */
   test("heeft elk blok in het rooster een naam", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /Werken · \d\d:\d\d tot \d\d:\d\d/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Werken · \d\d:\d\d tot \d\d:\d\d/ }),
+    ).toBeVisible();
   });
 });
 

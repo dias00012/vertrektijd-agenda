@@ -10,7 +10,13 @@ import type { TravelLeg } from "./types";
 
 const t = (klok: string) => `2026-09-18T${klok}:00.000Z`;
 
-const loop = (van: string, naar: string, minuten: number, aan?: string, af?: string): TravelLeg => ({
+const loop = (
+  van: string,
+  naar: string,
+  minuten: number,
+  aan?: string,
+  af?: string,
+): TravelLeg => ({
   mode: "walk",
   durationMinutes: minuten,
   from: van,
@@ -108,14 +114,8 @@ describe("transfersOf", () => {
 
   it("legt de grens bij vijf minuten", () => {
     expect(TIGHT_TRANSFER_MINUTES).toBe(5);
-    const krap = [
-      rit("A", "x", "y", "08:00", "08:30"),
-      rit("B", "y", "z", "08:34", "09:00"),
-    ];
-    const net = [
-      rit("A", "x", "y", "08:00", "08:30"),
-      rit("B", "y", "z", "08:35", "09:00"),
-    ];
+    const krap = [rit("A", "x", "y", "08:00", "08:30"), rit("B", "y", "z", "08:34", "09:00")];
+    const net = [rit("A", "x", "y", "08:00", "08:30"), rit("B", "y", "z", "08:35", "09:00")];
     expect(transfersOf(krap)[0].tight).toBe(true);
     expect(transfersOf(net)[0].tight).toBe(false);
   });

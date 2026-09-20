@@ -126,9 +126,7 @@ export function LocationInput({
     <div ref={containerRef} className="relative">
       <label className="label" htmlFor={listId}>
         {label}
-        {!required ? (
-          <span style={{ fontWeight: 400 }}> · {t("common.optional")}</span>
-        ) : null}
+        {!required ? <span style={{ fontWeight: 400 }}> · {t("common.optional")}</span> : null}
       </label>
 
       <div className="relative">
@@ -138,7 +136,7 @@ export function LocationInput({
           className="field"
           // Ruimte voor het icoon rechts. Als klasse zou `.field` met zijn
           // padding-shorthand ertegenin gaan, dus inline.
-          style={{ paddingRight: "2.5rem" }}
+          style={{ paddingRight: "3rem" }}
           placeholder={placeholder ?? t("location.placeholder")}
           value={query}
           autoComplete="off"
@@ -154,7 +152,15 @@ export function LocationInput({
           }}
         />
 
-        <span className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted)" }}>
+        {/*
+          De wisknop was 12 bij 14 pixels: het kruisje zelf, zonder meer. Op een
+          telefoon is dat niet te raken. Het kruisje blijft even klein, maar het
+          vlak eromheen is nu 44 -- de maat die een duim nodig heeft.
+        */}
+        <span
+          className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center"
+          style={{ color: "var(--muted)" }}
+        >
           {loading ? (
             <Spinner size={14} />
           ) : value ? (
@@ -162,7 +168,7 @@ export function LocationInput({
               type="button"
               onClick={clear}
               aria-label={t("location.clear")}
-              className="text-sm leading-none"
+              className="flex h-11 w-11 items-center justify-center text-sm leading-none"
             >
               ✕
             </button>
@@ -199,7 +205,7 @@ export function LocationInput({
                   setOpen(false);
                   setSearchError(null);
                 }}
-                className="max-w-full truncate rounded-full border px-2.5 py-1 text-xs transition-colors"
+                className="chip max-w-full truncate"
                 style={{
                   borderColor: active ? "var(--accent)" : "var(--line)",
                   background: active ? "var(--surface-soft)" : "transparent",
@@ -218,11 +224,7 @@ export function LocationInput({
            zoeker niet kon plaatsen. Dat kan honderden meters verkeerd liggen,
            en dan klopt de hele reistijd niet — zonder dat je iets ziet. Dus
            zeggen we het, precies daar waar het adres staat. */
-        <p
-          className="mt-1.5 text-xs"
-          style={{ color: "var(--danger)" }}
-          role="status"
-        >
+        <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }} role="status">
           &#9888;&#65039; {t("place.noStreet")}
           <span className="mt-0.5 block" style={{ color: "var(--muted)" }}>
             {t("place.noStreet.body")}

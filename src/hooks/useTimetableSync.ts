@@ -88,7 +88,9 @@ export function useTimetableSync(): void {
   useEffect(() => {
     if (!hydrated) return;
 
-    const due = feedsOf(settings).filter((feed) => isDue(feed) && !running.current.has(feed.source));
+    const due = feedsOf(settings).filter(
+      (feed) => isDue(feed) && !running.current.has(feed.source),
+    );
     if (due.length === 0) return;
 
     let active = true;

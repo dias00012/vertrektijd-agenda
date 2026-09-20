@@ -476,8 +476,7 @@ describe("nextOccurrenceDate", () => {
 });
 
 describe("travelPlanFor en een rit die al gereden is", () => {
-  const bus = (patch = {}) =>
-    activity({ date: "2026-09-14", travelMode: "transit", ...patch });
+  const bus = (patch = {}) => activity({ date: "2026-09-14", travelMode: "transit", ...patch });
 
   it("geeft niets terug voor een losse activiteit die vanavond al voorbij is", () => {
     expect(travelPlanFor(bus(), settings(), new Date(2026, 8, 14, 22, 0))).toBeNull();
@@ -625,7 +624,12 @@ describe("travelKey", () => {
  */
 describe("computeDeparture bij een rit die je niet op tijd afzet", () => {
   const bus = (vertrek: string, aankomst: string) =>
-    travel({ mode: "transit", provider: "motis", plannedDeparture: vertrek, plannedArrival: aankomst });
+    travel({
+      mode: "transit",
+      provider: "motis",
+      plannedDeparture: vertrek,
+      plannedArrival: aankomst,
+    });
 
   it("zegt het wanneer je na de starttijd aankomt", () => {
     // Les om 09:00, maar de eerste bus zet je pas om 09:32 af.
@@ -696,10 +700,7 @@ describe("refreshDecision", () => {
   const planVan = (dag = DAG) => travelPlanForDate(ov(), settings({ travelMode: "transit" }), dag);
 
   /** De beslissing op dit tijdstip, met alles op "er staat nog niets". */
-  const beslis = (
-    now: Date,
-    patch: Partial<Parameters<typeof refreshDecision>[0]> = {},
-  ) =>
+  const beslis = (now: Date, patch: Partial<Parameters<typeof refreshDecision>[0]> = {}) =>
     refreshDecision(
       {
         date: DAG,

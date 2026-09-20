@@ -176,9 +176,7 @@ export default function BeheerPage() {
             <h2 className="mb-3 text-sm font-semibold">Gebruik</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {data.accounts ?? "—"}
-                </p>
+                <p className="text-2xl font-semibold tabular-nums">{data.accounts ?? "—"}</p>
                 <p className="text-xs" style={{ color: "var(--muted)" }}>
                   accounts met een agenda
                 </p>
@@ -252,9 +250,9 @@ export default function BeheerPage() {
           ) : null}
 
           <p className="text-xs" style={{ color: "var(--muted)" }}>
-            Deze cijfers gaan over de app, nooit over een persoon. Er wordt geen bezoeker
-            herkend: de app telt hooguit één keer per dag mee dat hij geopend is, en wie dat
-            was weet de server niet.
+            Deze cijfers gaan over de app, nooit over een persoon. Er wordt geen bezoeker herkend:
+            de app telt hooguit één keer per dag mee dat hij geopend is, en wie dat was weet de
+            server niet.
           </p>
         </div>
       ) : null}

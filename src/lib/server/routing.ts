@@ -33,7 +33,6 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
  */
 const TRANSIT_CACHE_TTL_MS = 60 * 1000;
 
-
 export type RouteResult = TravelResult;
 
 export interface RouteOptions {
@@ -54,17 +53,7 @@ export async function route(
 ): Promise<RouteResult> {
   const { mode } = options;
   const config = getProviderConfig();
-
-  // Bij OV hoort de tijd bij de sleutel: een andere dag of tijd is een andere rit.
-  const timePart =
-    mode === "transit" ? `@${options.arriveBy ?? options.departAt ?? "now"}` : "";
-  // En de fietskeuze ook: fietsen naar het station geeft een andere reis dan
-  // lopen. Zonder dit krijg je de eerder berekende looproute terug.
-  const bikePart =
-    mode === "transit" && options.bike && options.bike !== "none"
-      ? `+${options.bike}`
-      : "";
-  const key = `route:${config.provider}:${mode}${timePart}${bikePart}:${coord(from)}>${coord(to)}`;
+  const key = routeCacheKey(config.provider, from, to, options);
 
   const cached = cacheGet<RouteResult>(key);
   if (cached) return cached;
@@ -84,6 +73,39 @@ export async function route(
 
 function coord(point: GeoLocation): string {
   return `${point.lat.toFixed(5)},${point.lon.toFixed(5)}`;
+}
+
+/**
+ * De sleutel waaronder een berekende route in de cache belandt.
+ *
+ * Apart en geexporteerd omdat een sleutel die te weinig onderscheidt de
+ * stilste fout van allemaal geeft: je krijgt gewoon een antwoord terug, alleen
+ * is het dat van een andere vraag. Twee dingen moeten er daarom in.
+ *
+ * De tijd, want bij OV is een andere dag of tijd een andere rit. En de
+ * fietskeuze, want fietsen naar het station geeft een andere reis dan lopen --
+ * zonder dat stuk kreeg je de eerder berekende looproute terug.
+ */
+export function routeCacheKey(
+  provider: string,
+  from: GeoLocation,
+  to: GeoLocation,
+  options: RouteOptions,
+): string {
+  const { mode } = options;
+  // Niet alleen de tijd maar ook wat die tijd betekent. Hier stond eerst
+  // `arriveBy ?? departAt`, en dan kregen "vertrek om 08:00" en "wees er om
+  // 08:00" dezelfde sleutel -- terwijl dat veertig minuten scheelt. Je kreeg
+  // dan een vertrektijd die klopte voor de andere vraag.
+  const timePart =
+    mode === "transit"
+      ? options.arriveBy
+        ? `@aan:${options.arriveBy}`
+        : `@af:${options.departAt ?? "now"}`
+      : "";
+  const bikePart =
+    mode === "transit" && options.bike && options.bike !== "none" ? `+${options.bike}` : "";
+  return `route:${provider}:${mode}${timePart}${bikePart}:${coord(from)}>${coord(to)}`;
 }
 
 /* --- Auto via OSRM ------------------------------------------------------ */
@@ -120,7 +142,6 @@ async function routeCar(from: GeoLocation, to: GeoLocation): Promise<RouteResult
 }
 
 /* --- Fiets en lopen via MOTIS ------------------------------------------- */
-
 
 async function planDirect(
   from: GeoLocation,

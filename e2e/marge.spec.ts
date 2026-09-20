@@ -36,53 +36,63 @@ test.describe("met de standaardagenda", () => {
     await zaai(page);
   });
 
-test("zonder eigen marge geldt die uit de instellingen", async ({ page }) => {
-  await page.goto("/");
-  // 09:00 min 54 minuten reizen min de algemene marge van 5.
-  await expect(kaart(page)).toContainText("08:01");
-});
+  test("zonder eigen marge geldt die uit de instellingen", async ({ page }) => {
+    await page.goto("/");
+    // 09:00 min 54 minuten reizen min de algemene marge van 5.
+    await expect(kaart(page)).toContainText("08:01");
+  });
 
-test("een eigen marge verschuift de vertrektijd, en blijft na herladen staan", async ({ page }) => {
-  await page.goto("/agenda");
-  await page.getByRole("button", { name: /Werken bewerken/ }).first().click();
+  test("een eigen marge verschuift de vertrektijd, en blijft na herladen staan", async ({
+    page,
+  }) => {
+    await page.goto("/agenda");
+    await page
+      .getByRole("button", { name: /Werken bewerken/ })
+      .first()
+      .click();
 
-  const veld = venster(page).getByLabel("Marge voor deze activiteit");
-  // Leeg, want deze activiteit volgt nog de instellingen. Het veld toont de
-  // algemene waarde alleen als hint -- opslaan mag hem niet vastzetten.
-  await expect(veld).toHaveValue("");
-  await expect(veld).toHaveAttribute("placeholder", /5/);
+    const veld = venster(page).getByLabel("Marge voor deze activiteit");
+    // Leeg, want deze activiteit volgt nog de instellingen. Het veld toont de
+    // algemene waarde alleen als hint -- opslaan mag hem niet vastzetten.
+    await expect(veld).toHaveValue("");
+    await expect(veld).toHaveAttribute("placeholder", /5/);
 
-  await veld.fill("20");
-  await venster(page).getByRole("button", { name: "Opslaan" }).click();
-  await expect(venster(page)).toHaveCount(0);
+    await veld.fill("20");
+    await venster(page).getByRole("button", { name: "Opslaan" }).click();
+    await expect(venster(page)).toHaveCount(0);
 
-  // 09:00 min 54 minuten reizen min 20 marge.
-  await page.goto("/");
-  await expect(kaart(page)).toContainText("07:46");
+    // 09:00 min 54 minuten reizen min 20 marge.
+    await page.goto("/");
+    await expect(kaart(page)).toContainText("07:46");
 
-  // En het blijft staan: dit wordt bewaard, niet alleen getoond.
-  await page.reload();
-  await expect(kaart(page)).toContainText("07:46");
-});
+    // En het blijft staan: dit wordt bewaard, niet alleen getoond.
+    await page.reload();
+    await expect(kaart(page)).toContainText("07:46");
+  });
 
-test("de marge is terug te zetten op de algemene", async ({ page }) => {
-  await page.goto("/agenda");
-  await page.getByRole("button", { name: /Werken bewerken/ }).first().click();
-  await venster(page).getByLabel("Marge voor deze activiteit").fill("20");
-  await venster(page).getByRole("button", { name: "Opslaan" }).click();
+  test("de marge is terug te zetten op de algemene", async ({ page }) => {
+    await page.goto("/agenda");
+    await page
+      .getByRole("button", { name: /Werken bewerken/ })
+      .first()
+      .click();
+    await venster(page).getByLabel("Marge voor deze activiteit").fill("20");
+    await venster(page).getByRole("button", { name: "Opslaan" }).click();
 
-  await page.getByRole("button", { name: /Werken bewerken/ }).first().click();
-  const veld = venster(page).getByLabel("Marge voor deze activiteit");
-  await expect(veld).toHaveValue("20");
+    await page
+      .getByRole("button", { name: /Werken bewerken/ })
+      .first()
+      .click();
+    const veld = venster(page).getByLabel("Marge voor deze activiteit");
+    await expect(veld).toHaveValue("20");
 
-  // Leegmaken betekent: volg de instellingen weer.
-  await veld.fill("");
-  await venster(page).getByRole("button", { name: "Opslaan" }).click();
+    // Leegmaken betekent: volg de instellingen weer.
+    await veld.fill("");
+    await venster(page).getByRole("button", { name: "Opslaan" }).click();
 
-  await page.goto("/");
-  await expect(kaart(page)).toContainText("08:01");
-});
-
+    await page.goto("/");
+    await expect(kaart(page)).toContainText("08:01");
+  });
 });
 
 test("een nieuwe activiteit krijgt de marge die je invult", async ({ page }) => {
@@ -109,10 +119,16 @@ test("een nieuwe activiteit krijgt de marge die je invult", async ({ page }) => 
     activities: [],
   });
   await page.goto("/agenda");
-  await page.getByRole("button", { name: /Activiteit toevoegen|Toevoegen/ }).first().click();
+  await page
+    .getByRole("button", { name: /Activiteit toevoegen|Toevoegen/ })
+    .first()
+    .click();
 
   const form = venster(page);
-  await form.getByLabel(/^Naam$/).first().fill("Wiskunde");
+  await form
+    .getByLabel(/^Naam$/)
+    .first()
+    .fill("Wiskunde");
   await form.getByLabel("Marge voor deze activiteit").fill("25");
   // Bij een nieuwe activiteit heet de knop "Toevoegen", niet "Opslaan".
   await form.getByRole("button", { name: "Toevoegen" }).click();
@@ -121,6 +137,9 @@ test("een nieuwe activiteit krijgt de marge die je invult", async ({ page }) => 
   // Terug in het formulier moet die 25 er nog staan -- opgeslagen, niet alleen
   // even getoond.
   await page.reload();
-  await page.getByRole("button", { name: /Wiskunde bewerken/ }).first().click();
+  await page
+    .getByRole("button", { name: /Wiskunde bewerken/ })
+    .first()
+    .click();
   await expect(venster(page).getByLabel("Marge voor deze activiteit")).toHaveValue("25");
 });

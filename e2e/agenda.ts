@@ -46,8 +46,22 @@ const activiteit = (patch: Record<string, unknown> = {}) => ({
   travelMode: null,
   recurrence: null,
   exceptions: [],
-  travel: { durationMinutes: 54, distanceKm: 30, mode: "transit", provider: "motis", computedAt: iso, key: "h" },
-  returnTravel: { durationMinutes: 42, distanceKm: 30, mode: "transit", provider: "motis", computedAt: iso, key: "t" },
+  travel: {
+    durationMinutes: 54,
+    distanceKm: 30,
+    mode: "transit",
+    provider: "motis",
+    computedAt: iso,
+    key: "h",
+  },
+  returnTravel: {
+    durationMinutes: 42,
+    distanceKm: 30,
+    mode: "transit",
+    provider: "motis",
+    computedAt: iso,
+    key: "t",
+  },
   onwardTravel: null,
   travelError: null,
   bufferMinutes: null,
@@ -92,8 +106,22 @@ export const AGENDA = {
       endTime: "19:30",
       location: SPORT,
       recurrence: { freq: "weekly", weekdays: [4], until: null },
-      travel: { durationMinutes: 20, distanceKm: 4, mode: "transit", provider: "motis", computedAt: iso, key: "s1" },
-      returnTravel: { durationMinutes: 20, distanceKm: 4, mode: "transit", provider: "motis", computedAt: iso, key: "s2" },
+      travel: {
+        durationMinutes: 20,
+        distanceKm: 4,
+        mode: "transit",
+        provider: "motis",
+        computedAt: iso,
+        key: "s1",
+      },
+      returnTravel: {
+        durationMinutes: 20,
+        distanceKm: 4,
+        mode: "transit",
+        provider: "motis",
+        computedAt: iso,
+        key: "s2",
+      },
     }),
   ],
   tasks: [
@@ -126,17 +154,23 @@ export async function zaai(
   // echte tijd gerekend.
   await page.clock.setFixedTime(new Date(nu));
 
-  await page.addInitScript((data) => {
-    if (window.localStorage.getItem("e2e-gezaaid")) return;
-    const { agenda: gegevens, taal: taalkeuze } = data as { agenda: unknown; taal: string };
-    const payload = gegevens as Record<string, unknown>;
-    window.localStorage.setItem("agenda.settings.v1", JSON.stringify(payload.settings));
-    window.localStorage.setItem("agenda.activities.v1", JSON.stringify(payload.activities));
-    window.localStorage.setItem("agenda.tasks.v1", JSON.stringify(payload.tasks));
-    window.localStorage.setItem("agenda.exams.v1", JSON.stringify(payload.exams));
-    window.localStorage.setItem("agenda.language.v1", taalkeuze);
-    // De rondleiding hoort bij een eerste keer, niet bij elke test.
-    window.localStorage.setItem("agenda.intro.v1", JSON.stringify({ seen: true, tourSeen: true }));
-    window.localStorage.setItem("e2e-gezaaid", "ja");
-  }, { agenda, taal });
+  await page.addInitScript(
+    (data) => {
+      if (window.localStorage.getItem("e2e-gezaaid")) return;
+      const { agenda: gegevens, taal: taalkeuze } = data as { agenda: unknown; taal: string };
+      const payload = gegevens as Record<string, unknown>;
+      window.localStorage.setItem("agenda.settings.v1", JSON.stringify(payload.settings));
+      window.localStorage.setItem("agenda.activities.v1", JSON.stringify(payload.activities));
+      window.localStorage.setItem("agenda.tasks.v1", JSON.stringify(payload.tasks));
+      window.localStorage.setItem("agenda.exams.v1", JSON.stringify(payload.exams));
+      window.localStorage.setItem("agenda.language.v1", taalkeuze);
+      // De rondleiding hoort bij een eerste keer, niet bij elke test.
+      window.localStorage.setItem(
+        "agenda.intro.v1",
+        JSON.stringify({ seen: true, tourSeen: true }),
+      );
+      window.localStorage.setItem("e2e-gezaaid", "ja");
+    },
+    { agenda, taal },
+  );
 }

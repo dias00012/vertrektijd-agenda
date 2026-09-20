@@ -50,7 +50,9 @@ function unfold(text: string): string[] {
 }
 
 /** "DTSTART;TZID=Europe/Amsterdam:20260907T090000" uit elkaar halen. */
-function parseLine(line: string): { name: string; params: Map<string, string>; value: string } | null {
+function parseLine(
+  line: string,
+): { name: string; params: Map<string, string>; value: string } | null {
   const colon = line.indexOf(":");
   if (colon === -1) return null;
 
@@ -183,9 +185,10 @@ function localParts(date: Date, zone: string): { date: string; time: string } {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const parts = Object.fromEntries(
-    fmt.formatToParts(date).map((p) => [p.type, p.value]),
-  ) as Record<string, string>;
+  const parts = Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value])) as Record<
+    string,
+    string
+  >;
   const hour = String(Number(parts.hour) % 24).padStart(2, "0");
   return { date: `${parts.year}-${parts.month}-${parts.day}`, time: `${hour}:${parts.minute}` };
 }

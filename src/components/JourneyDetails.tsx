@@ -48,7 +48,10 @@ export function JourneyDetails({
       <summary className="cursor-pointer text-xs font-medium" style={{ color: "var(--muted)" }}>
         {label}
         {start && end ? (
-          <span className="tabular-nums"> &middot; {start} &rarr; {end}</span>
+          <span className="tabular-nums">
+            {" "}
+            &middot; {start} &rarr; {end}
+          </span>
         ) : null}{" "}
         &middot; {formatDuration(travel.durationMinutes)}
         {transfers > 0

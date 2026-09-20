@@ -20,13 +20,22 @@
 
 // Ophogen zodra de voorgeladen bestanden veranderen; oude caches worden dan
 // opgeruimd bij het activeren.
-const VERSION = "v4";
+const VERSION = "v5";
 const SHELL_CACHE = `vertrektijd-shell-${VERSION}`;
 const PAGE_CACHE = `vertrektijd-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
 
 /** De schermen van de app; gelijk aan het menu in AppShell. */
 const ROUTES = ["/", "/agenda", "/reizen", "/schoolwerk", "/instellingen"];
+
+/**
+ * Schermen die niet in het menu staan maar wel altijd bereikbaar horen te zijn.
+ *
+ * De privacyverklaring is er zo een. Zonder bereik kreeg je daar de
+ * offline-pagina, en dat is precies het document waarvan een winkel en een
+ * gebruiker verwachten dat het er altijd is.
+ */
+const EXTRA_ROUTES = ["/privacy"];
 
 const SHELL_FILES = [
   OFFLINE_URL,
@@ -57,7 +66,7 @@ self.addEventListener("install", (event) => {
       const shell = await caches.open(SHELL_CACHE);
       await precache(shell, SHELL_FILES);
       const pages = await caches.open(PAGE_CACHE);
-      await precache(pages, ROUTES);
+      await precache(pages, [...ROUTES, ...EXTRA_ROUTES]);
       await self.skipWaiting();
     })(),
   );

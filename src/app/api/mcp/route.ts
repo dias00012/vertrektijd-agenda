@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/server/rateLimit";
 import { BusyError, withAgenda, type AgendaStore } from "@/lib/server/agendaStore";
@@ -108,7 +109,7 @@ const TOOLS: ToolDefinition[] = [
       "een andere activiteit valt wordt geweigerd, met de reden erbij. Wil je een " +
       "bestaande planning vervangen, haal de oude blokken dan eerst weg met " +
       "`delete_activities` — anders staan ze er straks naast.\n\n" +
-      "Gebruik `source: \"leerplan\"` voor leer- en werkblokken, en `linkedTaskId` " +
+      'Gebruik `source: "leerplan"` voor leer- en werkblokken, en `linkedTaskId` ' +
       "of `linkedExamId` om ze aan huiswerk of een toets te koppelen: dan krijgen " +
       "ze een streep zodra dat werk af is. Plan je een opdracht in losse blokken " +
       "per stap, zet dan ook `linkedStepId`: dat blok is dan af zodra die ene " +
@@ -222,8 +223,8 @@ const TOOLS: ToolDefinition[] = [
       "gebeurt als een heel rooster in één keer is ingevoerd — dan zegt rood " +
       "niets meer. Wat deze week af moet is niet even dringend als iets van over " +
       "drie weken. Stel het voor en werk het bij wanneer iemand dat wil.\n\n" +
-      "Vink je de laatste stap af, dan gaat de opdracht vanzelf op \"done\"; " +
-      "haal je er daarna weer een weg, dan komt hij op \"doing\". Dat hoef je " +
+      'Vink je de laatste stap af, dan gaat de opdracht vanzelf op "done"; ' +
+      'haal je er daarna weer een weg, dan komt hij op "doing". Dat hoef je ' +
       "dus niet apart mee te sturen.\n\n" +
       "Nieuw huiswerk aanmaken of weggooien kan hier bewust niet: dat doet de " +
       "gebruiker zelf in de app. Zeg het als er iets bij zou moeten.",
@@ -378,7 +379,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (lookupError) {
-    console.error("[api/mcp] token", lookupError);
+    reportServerError("api/mcp", lookupError, { deel: "token" });
     return NextResponse.json({ error: "De agenda is nu niet bereikbaar." }, { status: 503 });
   }
   if (!row) {
@@ -492,7 +493,9 @@ export async function POST(request: Request) {
     .from("connector_tokens")
     .update({ last_used_at: new Date().toISOString() })
     .eq("token_hash", tokenHash)
-    .then(undefined, (error: unknown) => console.error("[api/mcp] last_used_at", error));
+    .then(undefined, (error: unknown) =>
+      reportServerError("api/mcp", error, { deel: "last_used_at" }),
+    );
 
   // Een notificatie krijgt geen antwoord, alleen een lege bevestiging.
   if (!response) return new Response(null, { status: 202 });

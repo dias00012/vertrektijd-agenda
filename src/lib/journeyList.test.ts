@@ -107,7 +107,10 @@ describe("latestOnTime", () => {
 
   it("slaat een uitgevallen rit over", () => {
     // Die haalt het per definitie niet, hoe mooi de tijd ook staat.
-    const metUitval = [...lijst, rit({ id: "x", arrival: new Date(2026, 8, 18, 13, 55).toISOString(), cancelled: true })];
+    const metUitval = [
+      ...lijst,
+      rit({ id: "x", arrival: new Date(2026, 8, 18, 13, 55).toISOString(), cancelled: true }),
+    ];
     expect(latestOnTime(metUitval, new Date(2026, 8, 18, 14, 0))).toBe("e");
   });
 

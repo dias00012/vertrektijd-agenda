@@ -292,13 +292,17 @@ describe("mergeSettings", () => {
       payload(
         set({
           updatedAt: "2026-09-07T11:00:00.000Z",
-          customCategories: [{ id: "bijbaan", label: "Bijbaan", emoji: "\u{1F4B6}", color: "#f00" }],
+          customCategories: [
+            { id: "bijbaan", label: "Bijbaan", emoji: "\u{1F4B6}", color: "#f00" },
+          ],
         }),
       ),
       payload(
         set({
           updatedAt: "2026-09-06T09:00:00.000Z",
-          customCategories: [{ id: "muziek", label: "Muziekles", emoji: "\u{1F3B8}", color: "#00f" }],
+          customCategories: [
+            { id: "muziek", label: "Muziekles", emoji: "\u{1F3B8}", color: "#00f" },
+          ],
         }),
       ),
       NU,
@@ -336,17 +340,25 @@ describe("rooster op twee apparaten", () => {
   it("laat het rooster niet dubbel staan", () => {
     const telefoon: SyncPayload = {
       ...leeg,
-      activities: [les("les-1", "2026-09-15T06:00:00.000Z"), les("les-2", "2026-09-15T06:00:00.000Z")],
+      activities: [
+        les("les-1", "2026-09-15T06:00:00.000Z"),
+        les("les-2", "2026-09-15T06:00:00.000Z"),
+      ],
     };
     const laptop: SyncPayload = {
       ...leeg,
-      activities: [les("les-1", "2026-09-15T07:00:00.000Z"), les("les-2", "2026-09-15T07:00:00.000Z")],
+      activities: [
+        les("les-1", "2026-09-15T07:00:00.000Z"),
+        les("les-2", "2026-09-15T07:00:00.000Z"),
+      ],
     };
 
     const samen = mergePayload(telefoon, laptop, "2026-09-15T08:00:00.000Z");
     expect(samen.activities).toHaveLength(2);
     // De laptop ververste het laatst, dus die versie telt.
-    expect(samen.activities.every((item) => item.updatedAt === "2026-09-15T07:00:00.000Z")).toBe(true);
+    expect(samen.activities.every((item) => item.updatedAt === "2026-09-15T07:00:00.000Z")).toBe(
+      true,
+    );
   });
 
   it("haalt weg wat op het andere apparaat is losgekoppeld", () => {
@@ -373,7 +385,10 @@ describe("twee apparaten op één account", () => {
     // een dag open met oude data, je laptop had er ondertussen iets bij gezet.
     // Schreef die telefoon botweg zijn eigen agenda weg, dan was het werk van
     // de laptop foetsie. Samenvoegen vóór het wegschrijven houdt allebei.
-    const telefoon: SyncPayload = { ...leeg, activities: [act("oud", "Werken", "2026-09-15T08:00:00.000Z")] };
+    const telefoon: SyncPayload = {
+      ...leeg,
+      activities: [act("oud", "Werken", "2026-09-15T08:00:00.000Z")],
+    };
     const cloud: SyncPayload = {
       ...leeg,
       activities: [
@@ -387,11 +402,20 @@ describe("twee apparaten op één account", () => {
   });
 
   it("ziet aan de vingerafdruk of er iets bij kwam", () => {
-    const local: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
-    const zelfde: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
+    const local: SyncPayload = {
+      ...leeg,
+      activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")],
+    };
+    const zelfde: SyncPayload = {
+      ...leeg,
+      activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")],
+    };
     const anders: SyncPayload = {
       ...leeg,
-      activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z"), act("b", "Leren", "2026-09-16T08:00:00.000Z")],
+      activities: [
+        act("a", "Werken", "2026-09-15T08:00:00.000Z"),
+        act("b", "Leren", "2026-09-16T08:00:00.000Z"),
+      ],
     };
 
     expect(signature(local)).toBe(signature(zelfde));
@@ -400,8 +424,14 @@ describe("twee apparaten op één account", () => {
 
   it("merkt ook een wijziging aan hetzelfde blok", () => {
     // Zelfde id, later gewijzigd: dat is nieuws, ook al verandert het aantal niet.
-    const eerder: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")] };
-    const later: SyncPayload = { ...leeg, activities: [act("a", "Werken", "2026-09-16T08:00:00.000Z")] };
+    const eerder: SyncPayload = {
+      ...leeg,
+      activities: [act("a", "Werken", "2026-09-15T08:00:00.000Z")],
+    };
+    const later: SyncPayload = {
+      ...leeg,
+      activities: [act("a", "Werken", "2026-09-16T08:00:00.000Z")],
+    };
     expect(signature(eerder)).not.toBe(signature(later));
   });
 });
@@ -484,7 +514,10 @@ describe("schrijven terwijl er iemand anders schrijft", () => {
 
   it("schrijft gewoon in één keer wanneer er niemand tussen komt", async () => {
     const rij = cloud(payload());
-    await ronde(rij.store, payload({ activities: [act("a", "Wiskunde", "2026-09-10T10:00:00.000Z")] }));
+    await ronde(
+      rij.store,
+      payload({ activities: [act("a", "Wiskunde", "2026-09-10T10:00:00.000Z")] }),
+    );
     expect(rij.tellers).toMatchObject({ pogingen: 1, geweigerd: 0 });
   });
 

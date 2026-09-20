@@ -1,21 +1,35 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { IntroContext } from "@/hooks/useIntro";
-import { ActivityForm } from "./ActivityForm";
-import { Onboarding } from "./Onboarding";
+import { ActivityForm } from "./LazyActivityForm";
+/*
+ * Drie vensters die pas bestaan als je ze opent, maar die wel op élke pagina
+ * meegeladen werden -- `AppShell` staat om alles heen. Het activiteitenformulier
+ * alleen al is het grootste onderdeel van de app. Met `dynamic` komen ze in een
+ * eigen bestand dat pas wordt opgehaald als je de knop indrukt.
+ *
+ * `ssr: false` omdat het alle drie vensters zijn die alleen in een browser iets
+ * doen; vooraf renderen levert niets op.
+ */
+const Onboarding = dynamic(() => import("./Onboarding").then((m) => ({ default: m.Onboarding })), {
+  ssr: false,
+});
 import { UndoBar } from "./UndoBar";
-import { Tour } from "./Tour";
-import { useAgenda } from "@/hooks/useAgenda";
+const Tour = dynamic(() => import("./Tour").then((m) => ({ default: m.Tour })), {
+  ssr: false,
+});
+import { useAgenda, useAgendaStatus } from "@/hooks/useAgenda";
 import { useReminders } from "@/hooks/useReminders";
 import { useTimetableSync } from "@/hooks/useTimetableSync";
 import { usePushQueue } from "@/hooks/usePushQueue";
 import { track } from "@/lib/stats";
 import { useT } from "@/hooks/useLanguage";
 import { NAV } from "@/lib/nav";
-
 
 /**
  * Applicatieframe.
@@ -31,7 +45,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [introOpen, setIntroOpen] = useState(false);
   /** De rondleiding langs de tabbladen. */
   const [tourOpen, setTourOpen] = useState(false);
-  const { settings, hydrated, storageFull } = useAgenda();
+  const { settings, hydrated } = useAgenda();
+  const { storageFull } = useAgendaStatus();
   const t = useT();
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.

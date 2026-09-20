@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   activityColor,
   activityColors,
@@ -9,22 +9,16 @@ import {
   resolveCategory,
 } from "@/lib/categories";
 import { useT } from "@/hooks/useLanguage";
+import { DEFAULT_DURATION_MINUTES, initialDraft } from "@/lib/activityDraft";
+import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
-import { addDaysToKey, minutesToTime, timeToMinutes, todayKey } from "@/lib/time";
+import { addDaysToKey, minutesToTime, timeToMinutes } from "@/lib/time";
 import { defaultRecurrence, monthDayLabel, sortWeekdays, weekdays } from "@/lib/recurrence";
 import { placeChoices, placeForCategory } from "@/lib/places";
 import { travelModes } from "@/lib/travelModes";
 import { LocationInput } from "./LocationInput";
 import type { TranslationKey } from "@/lib/i18n/dictionary";
-import type {
-  Activity,
-  ActivityDraft,
-  CategoryId,
-  GeoLocation,
-  Recurrence,
-  Settings,
-  ActivityOccurrence,
-} from "@/lib/types";
+import type { Activity, ActivityDraft, CategoryId, GeoLocation, Recurrence } from "@/lib/types";
 
 interface Props {
   /** Meegeven om te bewerken; weglaten om een nieuwe activiteit te maken. */
@@ -51,68 +45,6 @@ interface FormErrors {
   recurrence?: string;
 }
 
-const DEFAULT_DURATION_MINUTES = 60;
-
-/** De startdatum van de reeks; bij een losse activiteit zijn eigen datum. */
-function seriesStart(activity: Activity): string {
-  const occurrence = activity as Partial<ActivityOccurrence>;
-  return occurrence.seriesDate ?? activity.date;
-}
-
-function initialDraft(
-  settings: Settings,
-  activity?: Activity,
-  preset?: Partial<ActivityDraft>,
-): ActivityDraft {
-  if (activity) {
-    return {
-      category: activity.category,
-      title: activity.title,
-      // Bij een reeks de startdatum van de reeks, niet de dag die je toevallig
-      // aanklikte. Opslaan schrijft dit veld terug als startdatum, dus met de
-      // aangeklikte dag erin verdween alles wat daarvóór lag — ook als je
-      // alleen de kleur veranderde.
-      date: seriesStart(activity),
-      // Zonder deze twee klopte het formulier bij bewerken toevallig nog wel
-      // (updateActivity laat ontbrekende velden staan), maar dupliceren maakte
-      // van een vakantie van vijf dagen stil één dag van 09:00 tot 10:00.
-      allDay: activity.allDay ?? false,
-      endDate: activity.endDate ?? null,
-      startTime: activity.startTime,
-      endTime: activity.endTime,
-      location: activity.location,
-      // Geen "standaard"-optie meer: toon meteen de kleur en het vervoermiddel
-      // die nu gelden, zodat wat je ziet ook is wat er gebeurt.
-      color: activity.color ?? resolveCategory(activity.category, settings.customCategories, settings.categoryOverrides)
-        .color,
-      travelMode: activity.travelMode ?? settings.travelMode,
-      // Anders dan kleur en vervoermiddel bewust wél met een "standaard"-stand:
-      // een marge is een getal, en een ingevuld veld dat de algemene waarde
-      // toont zou die bij het opslaan vastzetten op deze activiteit. Dan volgt
-      // hij de instellingen niet meer als je die later verandert.
-      bufferMinutes: activity.bufferMinutes ?? null,
-      recurrence: activity.recurrence,
-    };
-  }
-  const now = new Date();
-  // Rond af op het volgende kwartier: prettiger startpunt dan 14:07.
-  const start = Math.ceil((now.getHours() * 60 + now.getMinutes() + 5) / 15) * 15;
-  const category: CategoryId = preset?.category ?? "school";
-  return {
-    category,
-    title: "",
-    date: todayKey(now),
-    startTime: minutesToTime(start),
-    endTime: minutesToTime(start + DEFAULT_DURATION_MINUTES),
-    location: placeForCategory(settings, category)?.location ?? null,
-    color: resolveCategory(category, settings.customCategories, settings.categoryOverrides).color,
-    travelMode: settings.travelMode,
-    bufferMinutes: null,
-    recurrence: null,
-    ...preset,
-  };
-}
-
 /** Modale sheet voor het toevoegen en bewerken van een activiteit. */
 export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Props) {
   const {
@@ -132,9 +64,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     activities,
   } = useAgenda();
   const t = useT();
-  const [draft, setDraft] = useState<ActivityDraft>(() =>
-    initialDraft(settings, activity, preset),
-  );
+  const [draft, setDraft] = useState<ActivityDraft>(() => initialDraft(settings, activity, preset));
   const [submitted, setSubmitted] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"idle" | "choose" | "confirm">("idle");
   /**
@@ -210,32 +140,10 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
   const editingSeries = Boolean(activity?.recurrence);
 
   const dialog = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  /**
-   * De focus naar het formulier brengen zodra het opengaat.
-   *
-   * Zonder dit blijft hij achter op de knop eronder: wie met een toetsenbord
-   * of een schermlezer werkt staat dan nog steeds op de pagina achter het
-   * venster en moet er eerst doorheen tabben om bij "Naam" te komen.
-   */
-  useEffect(() => {
-    const eerste = dialog.current?.querySelector<HTMLElement>(
-      'input:not([type="hidden"]), select, textarea, button',
-    );
-    eerste?.focus();
-  }, []);
+  // Escape, de focus naar binnen, de focus vasthouden en hem daarna
+  // terugzetten -- zie `useDialog`; dat stond hier los en op de andere zes
+  // vensters helemaal niet.
+  useDialog(dialog, onClose);
 
   const errors = useMemo<FormErrors>(() => {
     const next: FormErrors = {};
@@ -389,7 +297,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
 
   function patchRecurrence(update: Partial<Recurrence>) {
     setDraft((current) =>
-      current.recurrence ? { ...current, recurrence: { ...current.recurrence, ...update } } : current,
+      current.recurrence
+        ? { ...current, recurrence: { ...current.recurrence, ...update } }
+        : current,
     );
   }
 
@@ -746,7 +656,11 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
           <div className={multiDay || allDay ? "grid grid-cols-2 gap-3" : undefined}>
             <div>
               <label className="label" htmlFor="activity-date">
-                {repeats ? t("form.startDate") : multiDay || allDay ? t("form.from") : t("form.date")}
+                {repeats
+                  ? t("form.startDate")
+                  : multiDay || allDay
+                    ? t("form.from")
+                    : t("form.date")}
               </label>
               <input
                 id="activity-date"
@@ -779,9 +693,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                   min={draft.date}
                   value={draft.endDate ?? draft.date}
                   aria-invalid={shown.endDate ? "true" : undefined}
-                  onChange={(event) =>
-                    patch({ endDate: event.target.value || null })
-                  }
+                  onChange={(event) => patch({ endDate: event.target.value || null })}
                 />
                 {shown.endDate ? (
                   <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
@@ -804,44 +716,44 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
           ) : null}
 
           {allDay ? null : (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label" htmlFor="activity-start">
-                {t("form.startTime")}
-              </label>
-              <input
-                id="activity-start"
-                type="time"
-                className="field"
-                value={draft.startTime}
-                aria-invalid={shown.startTime ? "true" : undefined}
-                onChange={(event) => patch({ startTime: event.target.value })}
-              />
-              {shown.startTime ? (
-                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
-                  {shown.startTime}
-                </p>
-              ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label" htmlFor="activity-start">
+                  {t("form.startTime")}
+                </label>
+                <input
+                  id="activity-start"
+                  type="time"
+                  className="field"
+                  value={draft.startTime}
+                  aria-invalid={shown.startTime ? "true" : undefined}
+                  onChange={(event) => patch({ startTime: event.target.value })}
+                />
+                {shown.startTime ? (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
+                    {shown.startTime}
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <label className="label" htmlFor="activity-end">
+                  {t("form.endTime")}
+                </label>
+                <input
+                  id="activity-end"
+                  type="time"
+                  className="field"
+                  value={draft.endTime}
+                  aria-invalid={shown.endTime ? "true" : undefined}
+                  onChange={(event) => patch({ endTime: event.target.value })}
+                />
+                {shown.endTime ? (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
+                    {shown.endTime}
+                  </p>
+                ) : null}
+              </div>
             </div>
-            <div>
-              <label className="label" htmlFor="activity-end">
-                {t("form.endTime")}
-              </label>
-              <input
-                id="activity-end"
-                type="time"
-                className="field"
-                value={draft.endTime}
-                aria-invalid={shown.endTime ? "true" : undefined}
-                onChange={(event) => patch({ endTime: event.target.value })}
-              />
-              {shown.endTime ? (
-                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
-                  {shown.endTime}
-                </p>
-              ) : null}
-            </div>
-          </div>
           )}
 
           <fieldset
@@ -903,38 +815,39 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     {t("form.monthlyHint", { day: monthDayLabel(draft.date) })}
                   </p>
                 ) : (
-                <div>
-                  <span className="label">{t("form.onDays")}</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {weekdays().map((day) => {
-                      const active = draft.recurrence!.weekdays.includes(day.value);
-                      return (
-                        <button
-                          key={day.value}
-                          type="button"
-                          onClick={() => toggleWeekday(day.value)}
-                          aria-pressed={active}
-                          aria-label={day.long}
-                          className="h-10 w-10 rounded-full border text-xs font-semibold uppercase transition-colors"
-                          style={{
-                            borderColor: active ? accent : "var(--line)",
-                            background: active
-                              ? `color-mix(in srgb, ${accent} 15%, transparent)`
-                              : "transparent",
-                            color: active ? accent : "var(--muted)",
-                          }}
-                        >
-                          {day.short}
-                        </button>
-                      );
-                    })}
+                  <div>
+                    <span className="label">{t("form.onDays")}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {weekdays().map((day) => {
+                        const active = draft.recurrence!.weekdays.includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleWeekday(day.value)}
+                            aria-pressed={active}
+                            aria-label={day.long}
+                            className="h-10 w-10 rounded-full border text-xs font-semibold uppercase transition-colors"
+                            style={{
+                              borderColor: active ? accent : "var(--line)",
+                              background: active
+                                ? `color-mix(in srgb, ${accent} 15%, transparent)`
+                                : "transparent",
+                              color: active ? accent : "var(--muted)",
+                            }}
+                          >
+                            {day.short}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
                 )}
 
                 <div>
                   <label className="label" htmlFor="activity-until">
-                    {t("form.until")} <span style={{ fontWeight: 400 }}>· {t("common.optional")}</span>
+                    {t("form.until")}{" "}
+                    <span style={{ fontWeight: 400 }}>· {t("common.optional")}</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -979,11 +892,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               }}
               required={false}
               places={savedPlaces}
-              hint={
-                settings.home
-                  ? t("form.locationHint")
-                  : t("form.needHomeFirst")
-              }
+              hint={settings.home ? t("form.locationHint") : t("form.needHomeFirst")}
             />
 
             {draft.location && !alreadyDefault ? (
@@ -995,14 +904,12 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                   onChange={(event) => setRemember(event.target.checked)}
                 />
                 <span style={{ color: "var(--muted)" }}>
-                  {category.emoji}{" "}
-                  {t("form.remember", { category: category.label })}
+                  {category.emoji} {t("form.remember", { category: category.label })}
                 </span>
               </label>
             ) : alreadyDefault ? (
               <p className="mt-2.5 text-xs" style={{ color: "var(--muted)" }}>
-                &#128278; {category.emoji}{" "}
-                {t("form.alreadyDefault", { category: category.label })}
+                &#128278; {category.emoji} {t("form.alreadyDefault", { category: category.label })}
               </p>
             ) : null}
           </div>

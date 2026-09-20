@@ -30,7 +30,7 @@ export function LanguageSection() {
               aria-pressed={active}
               lang={option.id}
               onClick={() => setLanguage(option.id)}
-              className="flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors"
+              className="chip gap-2 rounded-xl text-sm font-medium"
               style={{
                 borderColor: active ? "var(--accent)" : "var(--line)",
                 background: active

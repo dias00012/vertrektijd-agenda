@@ -63,8 +63,14 @@ export function pushSupported(): boolean {
   );
 }
 
-/** De publieke VAPID-sleutel omzetten naar de vorm die de browser wil. */
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+/**
+ * De publieke VAPID-sleutel omzetten naar de vorm die de browser wil.
+ *
+ * Geexporteerd om na te kunnen rekenen: gaat dit mis, dan weigert de browser
+ * het abonnement met een melding waar niets uit op te maken valt, en krijg je
+ * dus gewoon nooit een melding zonder dat iets zegt waarom.
+ */
+export function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4))
     .replace(/-/g, "+")
     .replace(/_/g, "/");

@@ -7,7 +7,11 @@
   "background_color": "#f6f7f9",
   "theme_color": "#f6f7f9",
   "lang": "nl",
-  "categories": ["productivity", "travel", "education"],
+  "categories": [
+    "productivity",
+    "travel",
+    "education"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -32,6 +36,80 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "id": "/",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Reisplanner",
+      "short_name": "Reizen",
+      "description": "Zoek een rit met trein, bus, tram of metro.",
+      "url": "/reizen",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Schoolwerk",
+      "short_name": "Schoolwerk",
+      "description": "Je opdrachten en toetsen.",
+      "url": "/schoolwerk",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/telefoon-vandaag.png",
+      "sizes": "1082x2402",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Hoe laat je vandaag moet vertrekken"
+    },
+    {
+      "src": "/screenshots/telefoon-agenda.png",
+      "sizes": "1082x2402",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Je week, met reistijd voor en na elke afspraak"
+    },
+    {
+      "src": "/screenshots/telefoon-reisplanner.png",
+      "sizes": "1082x2402",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "De reisplanner, met live vertragingen"
+    },
+    {
+      "src": "/screenshots/breed-vandaag.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Hoe laat je vandaag moet vertrekken"
+    },
+    {
+      "src": "/screenshots/breed-agenda.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Je week, met reistijd voor en na elke afspraak"
+    },
+    {
+      "src": "/screenshots/breed-reisplanner.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "De reisplanner, met live vertragingen"
     }
   ]
 }

@@ -85,10 +85,7 @@ describe("assignTravelRoles", () => {
   });
 
   it("begint een nieuw verblijf op een andere plek", () => {
-    const dag = [
-      les("les", "09:00", "15:00"),
-      les("gym", "18:30", "19:30", { location: GYM }),
-    ];
+    const dag = [les("les", "09:00", "15:00"), les("gym", "18:30", "19:30", { location: GYM })];
     expect(roles(dag)).toEqual(["heen+terug", "heen+terug"]);
   });
 

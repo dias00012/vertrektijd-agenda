@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
 import { PRIORITY_META, STATUS_META, STATUS_ORDER } from "@/lib/schoolwork";
 import { todayKey } from "@/lib/time";
@@ -35,9 +36,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
   const [title, setTitle] = useState(task?.title ?? exam?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [date, setDate] = useState(task?.deadline ?? exam?.date ?? todayKey());
-  const [minutes, setMinutes] = useState(
-    String(task?.estimatedMinutes ?? exam?.prepMinutes ?? 60),
-  );
+  const [minutes, setMinutes] = useState(String(task?.estimatedMinutes ?? exam?.prepMinutes ?? 60));
   const [priority, setPriority] = useState<SchoolworkPriority>(
     task?.priority ?? exam?.priority ?? "medium",
   );
@@ -47,17 +46,8 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
   const [submitted, setSubmitted] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, onClose);
 
   const errors = useMemo(() => {
     const next: { subject?: string; title?: string; date?: string } = {};
@@ -129,6 +119,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
     <div
       className="animate-fade-in fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       style={{ background: "rgba(9, 12, 18, 0.45)" }}
+      ref={dialog}
       role="dialog"
       aria-modal="true"
       aria-label={isEdit ? t("swForm.editTitle") : t("swForm.addTitle")}
@@ -218,7 +209,9 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
             <input
               id="sw-title"
               className="field"
-              placeholder={kind === "task" ? t("swForm.taskPlaceholder") : t("swForm.examPlaceholder")}
+              placeholder={
+                kind === "task" ? t("swForm.taskPlaceholder") : t("swForm.examPlaceholder")
+              }
               value={title}
               aria-invalid={shown.title ? "true" : undefined}
               onChange={(e) => setTitle(e.target.value)}
@@ -407,9 +400,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                     <button
                       type="button"
                       aria-label={t("swForm.removeStep", { number: index + 1 })}
-                      onClick={() =>
-                        setSteps((current) => current.filter((s) => s.id !== step.id))
-                      }
+                      onClick={() => setSteps((current) => current.filter((s) => s.id !== step.id))}
                       className="shrink-0 rounded-lg px-2 py-1 text-sm"
                       style={{ color: "var(--danger)" }}
                     >
@@ -422,10 +413,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                 type="button"
                 className="btn btn-ghost mt-2 w-full text-xs"
                 onClick={() =>
-                  setSteps((current) => [
-                    ...current,
-                    { id: createId(), title: "", done: false },
-                  ])
+                  setSteps((current) => [...current, { id: createId(), title: "", done: false }])
                 }
               >
                 {t("swForm.addStep")}

@@ -59,9 +59,7 @@ function timeOf(value: string | undefined): number | null {
 /** Bruikbaar is een optie pas als vertrek, aankomst én duur echt bekend zijn. */
 function isUsable(item: ItineraryLike): boolean {
   return (
-    timeOf(item.startTime) !== null &&
-    timeOf(item.endTime) !== null &&
-    (item.duration ?? 0) > 0
+    timeOf(item.startTime) !== null && timeOf(item.endTime) !== null && (item.duration ?? 0) > 0
   );
 }
 
@@ -137,10 +135,8 @@ function dominates(a: ItineraryLike, b: ItineraryLike): boolean {
   const transfersA = a.transfers ?? 0;
   const transfersB = b.transfers ?? 0;
 
-  const neverWorse =
-    departureA >= departureB && arrivalA <= arrivalB && transfersA <= transfersB;
-  const somewhereBetter =
-    departureA > departureB || arrivalA < arrivalB || transfersA < transfersB;
+  const neverWorse = departureA >= departureB && arrivalA <= arrivalB && transfersA <= transfersB;
+  const somewhereBetter = departureA > departureB || arrivalA < arrivalB || transfersA < transfersB;
   return neverWorse && somewhereBetter;
 }
 

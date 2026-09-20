@@ -86,7 +86,9 @@ export function ThemeSection() {
                 className="h-6 w-6 rounded-full"
                 style={{
                   background: option.light,
-                  boxShadow: active ? `0 0 0 3px color-mix(in srgb, ${option.light} 30%, transparent)` : "none",
+                  boxShadow: active
+                    ? `0 0 0 3px color-mix(in srgb, ${option.light} 30%, transparent)`
+                    : "none",
                 }}
               />
               <span className="w-full truncate">{name}</span>

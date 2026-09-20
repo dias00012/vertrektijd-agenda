@@ -1,11 +1,4 @@
-import type {
-  Activity,
-  Exam,
-  SchoolworkPriority,
-  SchoolworkStatus,
-  Task,
-  TaskStep,
-} from "./types";
+import type { Activity, Exam, SchoolworkPriority, SchoolworkStatus, Task, TaskStep } from "./types";
 import { getLanguage } from "./i18n/locale";
 import { translate, type TranslationKey } from "./i18n/dictionary";
 
@@ -19,16 +12,59 @@ export const PRIORITY_META: Record<
   SchoolworkPriority,
   { label: string; emoji: string; color: string; order: number }
 > = {
-  high: { get label() { return word("schoolwork.priority.high"); }, emoji: "\u{1F534}", color: "#ef4444", order: 0 },
-  medium: { get label() { return word("schoolwork.priority.medium"); }, emoji: "\u{1F7E0}", color: "#f97316", order: 1 },
-  low: { get label() { return word("schoolwork.priority.low"); }, emoji: "\u{1F7E1}", color: "#eab308", order: 2 },
-  later: { get label() { return word("schoolwork.priority.later"); }, emoji: "\u{1F7E2}", color: "#22c55e", order: 3 },
+  high: {
+    get label() {
+      return word("schoolwork.priority.high");
+    },
+    emoji: "\u{1F534}",
+    color: "#ef4444",
+    order: 0,
+  },
+  medium: {
+    get label() {
+      return word("schoolwork.priority.medium");
+    },
+    emoji: "\u{1F7E0}",
+    color: "#f97316",
+    order: 1,
+  },
+  low: {
+    get label() {
+      return word("schoolwork.priority.low");
+    },
+    emoji: "\u{1F7E1}",
+    color: "#eab308",
+    order: 2,
+  },
+  later: {
+    get label() {
+      return word("schoolwork.priority.later");
+    },
+    emoji: "\u{1F7E2}",
+    color: "#22c55e",
+    order: 3,
+  },
 };
 
 export const STATUS_META: Record<SchoolworkStatus, { label: string; color: string }> = {
-  todo: { get label() { return word("schoolwork.status.todo"); }, color: "#64748b" },
-  doing: { get label() { return word("schoolwork.status.doing"); }, color: "#3b82f6" },
-  done: { get label() { return word("schoolwork.status.done"); }, color: "#22c55e" },
+  todo: {
+    get label() {
+      return word("schoolwork.status.todo");
+    },
+    color: "#64748b",
+  },
+  doing: {
+    get label() {
+      return word("schoolwork.status.doing");
+    },
+    color: "#3b82f6",
+  },
+  done: {
+    get label() {
+      return word("schoolwork.status.done");
+    },
+    color: "#22c55e",
+  },
 };
 
 export const STATUS_ORDER: SchoolworkStatus[] = ["todo", "doing", "done"];
@@ -254,5 +290,10 @@ export function plannedProgress(
 ): { planned: number; estimate: number; pct: number; enough: boolean } {
   const estimate = estimateMinutes ?? 0;
   const pct = estimate > 0 ? Math.min(100, Math.round((plannedMinutes / estimate) * 100)) : 0;
-  return { planned: plannedMinutes, estimate, pct, enough: estimate > 0 && plannedMinutes >= estimate };
+  return {
+    planned: plannedMinutes,
+    estimate,
+    pct,
+    enough: estimate > 0 && plannedMinutes >= estimate,
+  };
 }

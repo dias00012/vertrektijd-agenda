@@ -9,8 +9,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { detectLanguage, setLanguage as setActive, LANGUAGE_KEY, type Language } from "@/lib/i18n/locale";
-import { translate, type TranslationKey, type Values } from "@/lib/i18n/dictionary";
+import {
+  detectLanguage,
+  setLanguage as setActive,
+  LANGUAGE_KEY,
+  type Language,
+} from "@/lib/i18n/locale";
+import { loadTable, translate, type TranslationKey, type Values } from "@/lib/i18n/dictionary";
 
 interface LanguageValue {
   language: Language;
@@ -28,15 +33,27 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // eerste weergave moet aan beide kanten gelijk zijn.
   useEffect(() => {
     const detected = detectLanguage();
-    setActive(detected);
-    setState(detected);
-    document.documentElement.lang = detected;
+    // Eerst de tabel, dan pas de taal: anders staat het scherm heel even in het
+    // Nederlands terwijl er Engels hoort te staan. Voor Nederlands is dit
+    // meteen klaar, want die tabel zit er altijd al in.
+    let afgebroken = false;
+    void loadTable(detected).then(() => {
+      if (afgebroken) return;
+      setActive(detected);
+      setState(detected);
+      document.documentElement.lang = detected;
+    });
+    return () => {
+      afgebroken = true;
+    };
   }, []);
 
   const setLanguage = useCallback((next: Language) => {
-    setActive(next);
-    setState(next);
-    document.documentElement.lang = next;
+    void loadTable(next).then(() => {
+      setActive(next);
+      setState(next);
+      document.documentElement.lang = next;
+    });
     try {
       window.localStorage.setItem(LANGUAGE_KEY, next);
     } catch {

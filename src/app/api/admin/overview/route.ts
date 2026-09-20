@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
 import { getProviderConfig } from "@/lib/server/config";
@@ -79,7 +80,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Niet ingesteld op deze server." }, { status: 501 });
   }
 
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const token = request.headers
+    .get("authorization")
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
   if (!token) return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
 
   const admin = createClient(url, serviceKey, {
@@ -111,15 +115,11 @@ export async function GET(request: Request) {
       `${config.motisBaseUrl}/api/v1/plan?fromPlace=52.3874,5.2653&toPlace=52.5168,5.4714&time=${new Date().toISOString()}`,
       config.userAgent,
     ),
-    probe(
-      "Adressen zoeken",
-      `${config.pdokBaseUrl}/suggest?q=Almere&rows=1`,
-      config.userAgent,
-    ),
+    probe("Adressen zoeken", `${config.pdokBaseUrl}/suggest?q=Almere&rows=1`, config.userAgent),
   ]);
 
-  if (accounts.error) console.error("[api/admin/overview] accounts", accounts.error);
-  if (events.error) console.error("[api/admin/overview] events", events.error);
+  if (accounts.error) reportServerError("api/admin/overview", accounts.error, { deel: "accounts" });
+  if (events.error) reportServerError("api/admin/overview", events.error, { deel: "events" });
 
   return NextResponse.json({
     accounts: accounts.count ?? null,

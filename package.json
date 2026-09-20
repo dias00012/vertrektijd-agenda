@@ -1,6 +1,6 @@
 {
   "name": "vertrektijd-agenda",
-  "version": "0.93.0",
+  "version": "0.94.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "schermafdrukken": "node scripts/schermafdrukken.mjs",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"e2e/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"e2e/**/*.ts\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
@@ -30,6 +33,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.3.5",
+    "prettier": "^3.9.8",
     "tailwindcss": "4.1.13",
     "typescript": "5.8.3",
     "vitest": "^5.0.1"

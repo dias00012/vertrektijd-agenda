@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
 import { LocationInput } from "./LocationInput";
 import { travelModes } from "@/lib/travelModes";
@@ -46,6 +47,7 @@ export function Onboarding({
 }) {
   const { settings, hydrated, updateSettings } = useAgenda();
   const t = useT();
+  const dialog = useRef<HTMLDivElement | null>(null);
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
@@ -71,12 +73,19 @@ export function Onboarding({
     setOpen(true);
   }, [reopen, settings.home, settings.travelMode, settings.bufferMinutes]);
 
-  if (!open) return null;
-
-  function close() {
+  /**
+   * Escape doet hier hetzelfde als de knop "Overslaan": dit venster is te
+   * slaan, dus hoort de toets die dat overal doet dat hier ook te doen.
+   *
+   * Boven de vroege return, want hooks mogen niet voorwaardelijk draaien.
+   */
+  const close = useCallback(() => {
     setOpen(false);
     onClose?.();
-  }
+  }, [onClose]);
+  useDialog(dialog, close, { lockScroll: open });
+
+  if (!open) return null;
 
   function finish(withTour: boolean) {
     updateSettings({
@@ -122,6 +131,7 @@ export function Onboarding({
 
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"

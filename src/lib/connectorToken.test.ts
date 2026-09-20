@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createConnectorToken,
-  hashConnectorToken,
-  readConnectorToken,
-} from "./connectorToken";
+import { createConnectorToken, hashConnectorToken, readConnectorToken } from "./connectorToken";
 
 describe("createConnectorToken", () => {
   it("begint met een herkenbaar voorvoegsel", () => {

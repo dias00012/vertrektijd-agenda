@@ -70,9 +70,7 @@ describe("zonder verbinding", () => {
       throw new TypeError("Failed to fetch");
     });
 
-    await expect(fetchTravel(HIER, DAAR, { mode: "transit" })).rejects.toThrow(
-      /Geen verbinding/,
-    );
+    await expect(fetchTravel(HIER, DAAR, { mode: "transit" })).rejects.toThrow(/Geen verbinding/);
   });
 
   it("laat een afgebroken aanvraag zijn eigen fout houden", async () => {
@@ -114,7 +112,9 @@ describe("foutmeldingen van de server", () => {
 
 describe("wat er naar de server gaat", () => {
   it("stuurt van, naar en de opties als JSON mee", async () => {
-    serveer(() => antwoord({ durationMinutes: 47, distanceKm: 74, provider: "t", mode: "transit" }));
+    serveer(() =>
+      antwoord({ durationMinutes: 47, distanceKm: 74, provider: "t", mode: "transit" }),
+    );
     await fetchTravel(HIER, DAAR, { mode: "transit", arriveBy: "2026-09-18T07:00:00.000Z" });
 
     expect(gedaan[0].url).toBe("/api/travel");

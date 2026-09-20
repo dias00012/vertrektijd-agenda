@@ -28,3 +28,12 @@ export const NAV: readonly NavItem[] = [
   { href: "/schoolwerk", key: "nav.schoolwork", icon: "\u{1F4DA}" },
   { href: "/instellingen", key: "nav.settings", icon: "\u2699\uFE0F" },
 ] as const;
+
+/**
+ * Schermen buiten het menu die wel voorgeladen horen te worden.
+ *
+ * De privacyverklaring staat niet in de navigatie -- je opent hem een keer --
+ * maar hij hoort ook zonder bereik te openen. Staat hier zodat `nav.test.ts`
+ * hem net als het menu naast de service worker kan leggen.
+ */
+export const EXTRA_ROUTES: readonly string[] = ["/privacy"] as const;

@@ -54,6 +54,9 @@ test("een blok belandt nooit in de tijd dat je van huis bent", async ({ page }) 
     .getByRole("button", { name: /Leertijd inplannen/ })
     .click();
 
+  // Het leerplan-venster wordt pas opgehaald als je het opent.
+  await expect(venster(page)).toBeVisible();
+
   const regels = await venster(page).locator("li").allInnerTexts();
   expect(regels.length).toBeGreaterThan(0);
 

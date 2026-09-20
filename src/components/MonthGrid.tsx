@@ -63,9 +63,9 @@ export function MonthGrid({
               type="button"
               onClick={() => onSelect(dateKey)}
               aria-pressed={isSelected}
-              aria-label={`${parseDateKey(dateKey).getDate()}, ${items.length} ${
-                t(items.length === 1 ? "month.activity" : "month.activities")
-              }`}
+              aria-label={`${parseDateKey(dateKey).getDate()}, ${items.length} ${t(
+                items.length === 1 ? "month.activity" : "month.activities",
+              )}`}
               className="flex min-h-[58px] flex-col items-center gap-1 border-b border-l px-0.5 py-1.5 transition-colors first:border-l-0 lg:min-h-[104px]"
               style={{
                 borderColor: "var(--line)",

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { NAV } from "./nav";
+import { EXTRA_ROUTES, NAV } from "./nav";
 
 /**
  * De service worker laadt de schermen van de app voor, zodat ze ook zonder
@@ -15,19 +15,25 @@ import { NAV } from "./nav";
 
 const worker = readFileSync(new URL("../../public/sw.js", import.meta.url), "utf8");
 
-/** De `ROUTES`-lijst uit de service worker, als gewone array. */
-function routesUitWorker(): string[] {
-  const regel = /^const ROUTES = \[(.*)\];$/m.exec(worker);
-  if (!regel) throw new Error("ROUTES niet gevonden in public/sw.js");
+/** Een lijst met paden uit de service worker, als gewone array. */
+function lijstUitWorker(naam: string): string[] {
+  const regel = new RegExp(`^const ${naam} = \\[(.*)\\];$`, "m").exec(worker);
+  if (!regel) throw new Error(`${naam} niet gevonden in public/sw.js`);
   return regel[1]
     .split(",")
     .map((deel) => deel.trim().replace(/^["']|["']$/g, ""))
     .filter(Boolean);
 }
 
+const routesUitWorker = () => lijstUitWorker("ROUTES");
+
 describe("de service worker en het menu", () => {
   it("laden precies dezelfde schermen voor", () => {
     expect(routesUitWorker()).toEqual(NAV.map((item) => item.href));
+  });
+
+  it("laden ook de schermen voor die niet in het menu staan", () => {
+    expect(lijstUitWorker("EXTRA_ROUTES")).toEqual([...EXTRA_ROUTES]);
   });
 
   it("beginnen allebei bij Vandaag", () => {

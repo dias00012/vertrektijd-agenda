@@ -28,18 +28,14 @@ import {
   saveSettings,
   saveTasks,
 } from "@/lib/storage";
-import {
-  buildBackup,
-  type BackupFile,
-  type ImportMode,
-  type ImportSummary,
-} from "@/lib/backup";
+import { buildBackup, type BackupFile, type ImportMode, type ImportSummary } from "@/lib/backup";
 import { travelPlanFor } from "@/lib/travel";
 import { travelQueue } from "@/lib/travelQueue";
 import { relocatePoint } from "@/lib/places";
 import { applyFeed, goneFromFeed } from "@/lib/agenda";
 import { statusAfterSteps } from "@/lib/schoolwork";
 import { track } from "@/lib/stats";
+import { reportError } from "@/lib/monitoring";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -103,19 +99,12 @@ interface AgendaContextValue {
    * is het enige wat je in deze app echt kwijt kunt raken; een knop van een
    * paar seconden scheelt de schrik.
    */
-  lastRemoved: { title: string; at: number; kind: "removed" | "moved" } | null;
-  /** Zet de laatste verwijdering terug. */
-  undoRemove: () => void;
-  /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
-  forgetRemoved: () => void;
   /**
    * Wijzigt instellingen. Geef een functie mee wanneer de nieuwe waarde van de
    * huidige afhangt: twee agenda's die tegelijk klaar zijn met synchroniseren
    * zouden elkaars tijdstip anders overschrijven.
    */
-  updateSettings: (
-    patch: Partial<Settings> | ((current: Settings) => Partial<Settings>),
-  ) => void;
+  updateSettings: (patch: Partial<Settings> | ((current: Settings) => Partial<Settings>)) => void;
   /**
    * Bewaart een locatie voor hergebruik en maakt hem, als er een categorie
    * bij zit, de vaste locatie voor die categorie.
@@ -173,6 +162,22 @@ interface AgendaContextValue {
   importData: (data: BackupFile, mode: ImportMode) => ImportSummary;
 
   /* --- Synchronisatie --------------------------------------------------- */
+}
+
+/**
+ * Randinformatie die op een heel ander ritme verandert dan je agenda.
+ *
+ * Deze stonden in dezelfde context als je activiteiten, en dus rendeerde elke
+ * synchronisatie op de achtergrond de hele app opnieuw -- terwijl er aan je
+ * agenda niets veranderd was. Drie bestanden gebruiken dit; de rest heeft er
+ * niets aan.
+ */
+export interface AgendaStatusValue {
+  lastRemoved: { title: string; at: number; kind: "removed" | "moved" } | null;
+  /** Zet de laatste verwijdering terug. */
+  undoRemove: () => void;
+  /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
+  forgetRemoved: () => void;
   sync: {
     /** "off" = niet ingelogd/niet ingesteld; anders de live status. */
     status: "off" | "idle" | "syncing" | "error";
@@ -194,6 +199,8 @@ interface AgendaContextValue {
    */
   storageFull: boolean;
 }
+
+const AgendaStatusContext = createContext<AgendaStatusValue | null>(null);
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
 
@@ -488,8 +495,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         );
       } catch (error) {
         failedKeys.current.set(plan.outboundKey, Date.now());
-        const message =
-          error instanceof Error ? error.message : say("error.travel");
+        const message = error instanceof Error ? error.message : say("error.travel");
         /*
          * De melding erbij, de reistijden laten staan.
          *
@@ -620,6 +626,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     // reeks halen en er een losse kopie naast zetten. Alleen de eerste
     // terugdraaien liet de kopie staan, dus stond alles dubbel.
     | { kind: "move"; id: string; date: string; copyId: string }
+    // Een opdracht of toets verwijderen kon niet teruggedraaid worden, terwijl
+    // er wel stappen, onderwerpen en ingeplande leertijd aan hangen. Twee keer
+    // tikken en het was weg.
+    | { kind: "task"; task: Task }
+    | { kind: "exam"; exam: Exam }
     | null
   >(null);
   const [lastRemoved, setLastRemoved] = useState<{
@@ -640,17 +651,20 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     setDeletions((current) => current.filter((entry) => entry.id !== id));
   }, []);
 
-  const removeActivity = useCallback((id: string) => {
-    setActivities((current) => {
-      const going = current.find((item) => item.id === id);
-      if (going) {
-        undoable.current = { kind: "activity", activity: going };
-        setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
-      }
-      return current.filter((item) => item.id !== id);
-    });
-    recordDeletion(id);
-  }, [recordDeletion]);
+  const removeActivity = useCallback(
+    (id: string) => {
+      setActivities((current) => {
+        const going = current.find((item) => item.id === id);
+        if (going) {
+          undoable.current = { kind: "activity", activity: going };
+          setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
+        }
+        return current.filter((item) => item.id !== id);
+      });
+      recordDeletion(id);
+    },
+    [recordDeletion],
+  );
 
   const undoRemove = useCallback(() => {
     const entry = undoable.current;
@@ -667,6 +681,22 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       // De grafsteen moet mee weg, anders wist de eerstvolgende sync precies
       // wat je net hebt teruggehaald: hij is jonger dan de activiteit zelf.
       forgetDeletion(entry.activity.id);
+      return;
+    }
+
+    if (entry.kind === "task") {
+      setTasks((current) =>
+        current.some((task) => task.id === entry.task.id) ? current : [...current, entry.task],
+      );
+      forgetDeletion(entry.task.id);
+      return;
+    }
+
+    if (entry.kind === "exam") {
+      setExams((current) =>
+        current.some((exam) => exam.id === entry.exam.id) ? current : [...current, entry.exam],
+      );
+      forgetDeletion(entry.exam.id);
       return;
     }
     // Eén dag terugzetten betekent: de uitzondering weer weghalen. Ging het om
@@ -793,7 +823,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (!place) return;
       const from = place.location;
       const stamp = new Date().toISOString();
-      setActivities((current) => relocatePoint(settings, current, from, location, stamp).activities);
+      setActivities(
+        (current) => relocatePoint(settings, current, from, location, stamp).activities,
+      );
       setSettings((current) => relocatePoint(current, [], from, location, stamp).settings);
     },
     [settings],
@@ -918,7 +950,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const removeTask = useCallback(
     (id: string) => {
-      setTasks((current) => current.filter((task) => task.id !== id));
+      setTasks((current) => {
+        const going = current.find((task) => task.id === id);
+        if (going) {
+          undoable.current = { kind: "task", task: going };
+          setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
+        }
+        return current.filter((task) => task.id !== id);
+      });
       recordDeletion(id);
     },
     [recordDeletion],
@@ -969,7 +1008,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const removeExam = useCallback(
     (id: string) => {
-      setExams((current) => current.filter((exam) => exam.id !== id));
+      setExams((current) => {
+        const going = current.find((exam) => exam.id === id);
+        if (going) {
+          undoable.current = { kind: "exam", exam: going };
+          setLastRemoved({ title: going.subject, at: Date.now(), kind: "removed" });
+        }
+        return current.filter((exam) => exam.id !== id);
+      });
       recordDeletion(id);
     },
     [recordDeletion],
@@ -1028,8 +1074,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (data.settings) {
         // Bij samenvoegen mag een importbestand bestaande instellingen niet met
         // null wissen (bv. je thuislocatie). Bij vervangen geldt het bestand.
-        const incoming =
-          mode === "replace" ? data.settings : dropNullish(data.settings);
+        const incoming = mode === "replace" ? data.settings : dropNullish(data.settings);
         if (Object.keys(incoming).length > 0) {
           summary.settingsReplaced = true;
           setSettings((current) => ({ ...current, ...incoming }));
@@ -1066,16 +1111,20 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // overdoet wanneer er ondertussen iemand anders schreef. De gegevens
         // zoals ze nú zijn, niet zoals ze waren toen deze ronde begon: tijdens
         // het netwerkverkeer kan er van alles bij gekomen zijn.
-        const { merged, written } = await syncOnce(supabase, user.id, latestData.current, (local, remote) =>
-          // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
-          // en niets wordt overschreven. Tenzij het lokale spul van een ander
-          // account is: dan is de cloud de waarheid en blijft de agenda van die
-          // ander waar hij hoort, in zijn eigen account.
-          someoneElses
-            ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
-            : remote
-              ? mergePayload(local, remote)
-              : local,
+        const { merged, written } = await syncOnce(
+          supabase,
+          user.id,
+          latestData.current,
+          (local, remote) =>
+            // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
+            // en niets wordt overschreven. Tenzij het lokale spul van een ander
+            // account is: dan is de cloud de waarheid en blijft de agenda van die
+            // ander waar hij hoort, in zijn eigen account.
+            someoneElses
+              ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
+              : remote
+                ? mergePayload(local, remote)
+                : local,
         );
         if (cancelled) return;
         lastWritten.current = written;
@@ -1099,6 +1148,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setSyncStatus("error");
         setSyncError(error instanceof Error ? error.message : "Synchroniseren is mislukt.");
+        // De gebruiker ziet het, maar wij niet: zonder deze regel hoor je pas
+        // dat synchroniseren stuk is als iemand het zegt.
+        reportError(error, { scope: "sync-pull" });
       } finally {
         // Iets later vrijgeven zodat de state-update van hierboven de push-effect
         // niet meteen opnieuw triggert.
@@ -1198,8 +1250,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // schrijven zat nog steeds een gaatje, en daar paste precies één
         // wijziging van je andere apparaat in. `syncOnce` schrijft alleen als
         // de rij nog is zoals hij hem las, en doet het anders over.
-        const { merged, remote, written } = await syncOnce(supabase, user.id, local, (mine, theirs) =>
-          theirs ? mergePayload(mine, theirs) : mine,
+        const { merged, remote, written } = await syncOnce(
+          supabase,
+          user.id,
+          local,
+          (mine, theirs) => (theirs ? mergePayload(mine, theirs) : mine),
         );
         lastWritten.current = written;
 
@@ -1224,6 +1279,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         setSyncStatus("error");
         setSyncError(error instanceof Error ? error.message : say("error.cloudSave"));
+        reportError(error, { scope: "sync-push" });
       }
     }, 800);
 
@@ -1244,9 +1300,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeActivity,
       removeOccurrence,
       moveOccurrence,
-      lastRemoved,
-      undoRemove,
-      forgetRemoved,
       updateSettings,
       rememberPlace,
       renamePlace,
@@ -1273,8 +1326,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
-      sync: { status: syncStatus, error: syncError, lastSyncedAt, now: syncNow },
-      storageFull,
     }),
     [
       activities,
@@ -1287,9 +1338,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeActivity,
       removeOccurrence,
       moveOccurrence,
-      lastRemoved,
-      undoRemove,
-      forgetRemoved,
       updateSettings,
       rememberPlace,
       renamePlace,
@@ -1316,15 +1364,48 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
-      syncStatus,
-      syncError,
-      storageFull,
-      lastSyncedAt,
-      syncNow,
     ],
   );
 
-  return <AgendaContext.Provider value={value}>{children}</AgendaContext.Provider>;
+  /*
+   * Een tweede context voor wat op een ander ritme verandert. Zonder deze
+   * splitsing rendeerde elke synchronisatie op de achtergrond de hele app
+   * opnieuw, terwijl er aan je agenda niets veranderd was.
+   */
+  const status = useMemo<AgendaStatusValue>(
+    () => ({
+      lastRemoved,
+      undoRemove,
+      forgetRemoved,
+      sync: { status: syncStatus, error: syncError, lastSyncedAt, now: syncNow },
+      storageFull,
+    }),
+    [
+      lastRemoved,
+      undoRemove,
+      forgetRemoved,
+      syncStatus,
+      syncError,
+      lastSyncedAt,
+      syncNow,
+      storageFull,
+    ],
+  );
+
+  return (
+    <AgendaContext.Provider value={value}>
+      <AgendaStatusContext.Provider value={status}>{children}</AgendaStatusContext.Provider>
+    </AgendaContext.Provider>
+  );
+}
+
+/** De randinformatie: synchronisatie, opslag en de ongedaan-balk. */
+export function useAgendaStatus(): AgendaStatusValue {
+  const context = useContext(AgendaStatusContext);
+  if (!context) {
+    throw new Error("useAgendaStatus moet binnen een <AgendaProvider> gebruikt worden.");
+  }
+  return context;
 }
 
 export function useAgenda(): AgendaContextValue {

@@ -5,7 +5,7 @@ import { headers } from "@/lib/api";
 import { useT } from "@/hooks/useLanguage";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { useAgenda } from "@/hooks/useAgenda";
+import { useAgendaStatus } from "@/hooks/useAgenda";
 import { getSupabase } from "@/lib/supabase";
 import { Spinner } from "./ui";
 import { SettingsRow } from "./SettingsRow";
@@ -17,7 +17,7 @@ import { SettingsRow } from "./SettingsRow";
  */
 export function AccountSection() {
   const { configured, ready, user, signIn, signUp, signOut, resetPassword } = useAuth();
-  const { sync } = useAgenda();
+  const { sync } = useAgendaStatus();
   const t = useT();
 
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
@@ -68,11 +68,7 @@ export function AccountSection() {
   // beheerder de sleutels heeft toegevoegd. De app werkt lokaal gewoon door.
   if (!configured) {
     return (
-      <SettingsRow
-        icon={"\u{1F464}"}
-        title={t("account.title")}
-        summary={t("account.summaryOff")}
-      >
+      <SettingsRow icon={"\u{1F464}"} title={t("account.title")} summary={t("account.summaryOff")}>
         <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
           {t("account.notConfigured")}
         </p>
@@ -220,9 +216,7 @@ export function AccountSection() {
       ) : (
         <>
           <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-            {mode === "reset"
-              ? t("account.resetIntro")
-              : t("account.loginIntro")}
+            {mode === "reset" ? t("account.resetIntro") : t("account.loginIntro")}
           </p>
 
           <div

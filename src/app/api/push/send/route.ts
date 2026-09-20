@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { secretEquals } from "@/lib/secretEquals";
+import { enforceRateLimit } from "@/lib/server/rateLimit";
 import { DEVICES_TABLE, QUEUE_TABLE, adminClient } from "@/lib/server/push";
 
 export const runtime = "nodejs";
@@ -40,8 +41,18 @@ interface DeviceRow {
 }
 
 export async function POST(request: Request) {
+  // Een tweede slot, geen eerste: het geheim hieronder is de afscherming. Maar
+  // het commentaar erbij zei zelf al dat een aanvaller "zo vaak mag proberen
+  // als hij wil", en dat hoeft niet. De klok in Supabase belt een keer per
+  // minuut, dus tien is ruim.
+  const limited = enforceRateLimit(request, "pushSend");
+  if (limited) return limited;
+
   const secret = process.env.PUSH_CRON_SECRET?.trim();
-  const given = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const given = request.headers
+    .get("authorization")
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
   // Vergelijken op tijd-veilige manier: dit is het enige geheim in de app dat
   // een aanvaller zelf mag aanleveren én zo vaak mag proberen als hij wil.
   // `!==` stopt bij het eerste teken dat afwijkt, en dat verschil is meetbaar.
@@ -118,8 +129,14 @@ export async function POST(request: Request) {
     await admin.from(QUEUE_TABLE).update({ sent_at: new Date().toISOString() }).in("id", done);
   }
   if (gone.size > 0) {
-    await admin.from(QUEUE_TABLE).delete().in("device_id", [...gone]);
-    await admin.from(DEVICES_TABLE).delete().in("id", [...gone]);
+    await admin
+      .from(QUEUE_TABLE)
+      .delete()
+      .in("device_id", [...gone]);
+    await admin
+      .from(DEVICES_TABLE)
+      .delete()
+      .in("id", [...gone]);
   }
 
   return NextResponse.json({ sent: done.length });

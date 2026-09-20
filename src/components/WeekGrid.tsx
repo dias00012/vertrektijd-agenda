@@ -26,8 +26,9 @@ import {
   timeToMinutes,
 } from "@/lib/time";
 import { useT } from "@/hooks/useLanguage";
+import { useDialog } from "@/hooks/useDialog";
 import { shiftRecurrence, weekdayHeadings } from "@/lib/recurrence";
-import { ActivityForm } from "./ActivityForm";
+import { ActivityForm } from "./LazyActivityForm";
 import type { Activity, ActivityDraft, ActivityOccurrence } from "@/lib/types";
 
 /** Hoogte van één uur in het raster. */
@@ -101,7 +102,6 @@ function draftFrom(activity: Activity, overrides: Partial<ActivityDraft>): Activ
   };
 }
 
-
 /**
  * Weekraster: zeven dagen naast elkaar op een tijdas. De reistijd staat als
  * gestreept aanloopblok direct boven de activiteit, zodat je in één oogopslag
@@ -109,8 +109,7 @@ function draftFrom(activity: Activity, overrides: Partial<ActivityDraft>): Activ
  */
 export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
   const dayLabels = weekdayHeadings();
-  const { activities, settings, updateActivity, moveOccurrence, categoryFor } =
-    useAgenda();
+  const { activities, settings, updateActivity, moveOccurrence, categoryFor } = useAgenda();
   const [editing, setEditing] = useState<ActivityOccurrence | null>(null);
   /** Een gesleepte reeks wacht hier tot je kiest: deze dag of alle dagen. */
   const [asking, setAsking] = useState<{
@@ -129,11 +128,7 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
    * als in andere agenda's: alleen deze dag (die dag valt uit de reeks en komt
    * er los naast te staan) of de hele reeks, die dan in zijn geheel opschuift.
    */
-  function applyMove(
-    occurrence: ActivityOccurrence,
-    target: DropTarget,
-    scope: "one" | "series",
-  ) {
+  function applyMove(occurrence: ActivityOccurrence, target: DropTarget, scope: "one" | "series") {
     const series = activities.find((item) => item.id === occurrence.id);
     if (!series) return;
 
@@ -151,7 +146,11 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
       // Als één handeling: de dag uit de reeks halen én de losse kopie
       // neerzetten. Twee losse aanroepen lieten "ongedaan maken" alleen het
       // eerste terugdraaien, waarna de activiteit dubbel stond.
-      moveOccurrence(series.id, occurrence.date, draftFrom(series, { ...target, recurrence: null }));
+      moveOccurrence(
+        series.id,
+        occurrence.date,
+        draftFrom(series, { ...target, recurrence: null }),
+      );
       return;
     }
 
@@ -191,7 +190,8 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
 
   const today = toDateKey(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const nowVisible = dateKeys.includes(today) && nowMinutes >= range.start && nowMinutes <= range.end;
+  const nowVisible =
+    dateKeys.includes(today) && nowMinutes >= range.start && nowMinutes <= range.end;
 
   const hours = Array.from(
     { length: (range.end - range.start) / 60 + 1 },
@@ -312,7 +312,10 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
               <span
                 key={hour}
                 className="absolute right-1 text-[0.65rem] tabular-nums"
-                style={{ top: (hour * 60 - range.start) * PX_PER_MINUTE + 2, color: "var(--muted)" }}
+                style={{
+                  top: (hour * 60 - range.start) * PX_PER_MINUTE + 2,
+                  color: "var(--muted)",
+                }}
               >
                 {pad2(hour)}:00
               </span>
@@ -412,12 +415,7 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
       {/* Een reeks verplaatsen is nooit vanzelfsprekend: bedoel je deze ene
           dag of alle dagen? Dat vragen we, in plaats van het te gokken. */}
       {asking ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("week.move.title")}
-        >
+        <VerplaatsVenster titel={t("week.move.title")} onClose={() => setAsking(null)}>
           <div className="card animate-sheet-in w-full max-w-sm rounded-b-none px-5 py-5 sm:rounded-2xl">
             <h2 className="text-base font-semibold">{t("week.move.title")}</h2>
             <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--muted)" }}>
@@ -457,9 +455,42 @@ export function WeekGrid({ weekStart, now }: { weekStart: string; now: Date }) {
               </button>
             </div>
           </div>
-        </div>
+        </VerplaatsVenster>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Het vraagvenster "deze dag of de hele reeks?".
+ *
+ * Een eigen component omdat `useDialog` een hook is en dit venster maar soms
+ * bestaat: in `WeekGrid` zelf zou de hook ook draaien als er niets te vragen
+ * valt, en dan zou hij de focus verplaatsen terwijl je gewoon aan het slepen
+ * bent.
+ */
+function VerplaatsVenster({
+  titel,
+  onClose,
+  children,
+}: {
+  titel: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const dialog = useRef<HTMLDivElement | null>(null);
+  useDialog(dialog, onClose);
+
+  return (
+    <div
+      ref={dialog}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={titel}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -668,6 +699,36 @@ function GridBlock({
 
       <button
         type="button"
+        /*
+         * Verplaatsen met een toetsenbord.
+         *
+         * Slepen werkte alleen met een aanwijzer. De activiteit zelf was wel te
+         * wijzigen -- via het formulier dat achter Enter zit -- dus het was geen
+         * functie die ontbrak, maar wel de snelle manier die iedereen met een
+         * muis wel had. Shift erbij, want een kale pijltjestoets hoort de
+         * pagina te scrollen, en Alt+pijl is in een browser "terug".
+         */
+        aria-keyshortcuts="Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
+        onKeyDown={(event) => {
+          if (!event.shiftKey) return;
+          const dagen = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
+          const minuten =
+            event.key === "ArrowUp"
+              ? -DRAG_SNAP_MINUTES
+              : event.key === "ArrowDown"
+                ? DRAG_SNAP_MINUTES
+                : 0;
+          if (dagen === 0 && minuten === 0) return;
+          event.preventDefault();
+
+          const duur = item.endMinutes - item.startMinutes;
+          const start = Math.max(0, Math.min(MINUTES_PER_DAY - duur, item.startMinutes + minuten));
+          onDrop(item.occurrence, {
+            date: addDaysToKey(item.occurrence.date, dagen),
+            startTime: minutesToTime(start),
+            endTime: minutesToTime(start + duur),
+          });
+        }}
         onPointerDown={(event) => begin(event, "move")}
         onPointerMove={move}
         onPointerUp={finish}
@@ -721,7 +782,9 @@ function GridBlock({
             <>
               <span
                 className="truncate text-[0.65rem] font-semibold leading-tight"
-                style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+                style={
+                  workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined
+                }
               >
                 {item.occurrence.title}
               </span>
@@ -791,8 +854,7 @@ function GridBlock({
               className="block truncate text-[0.55rem] font-semibold leading-none"
               style={{ color }}
             >
-              {onward ? "\u27F6" : "\u21A9\uFE0F"}{" "}
-              {minutesToTime(item.returnMinutes + endOffset)}
+              {onward ? "\u27F6" : "\u21A9\uFE0F"} {minutesToTime(item.returnMinutes + endOffset)}
             </span>
           ) : null}
         </button>

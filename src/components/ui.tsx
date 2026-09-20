@@ -21,7 +21,11 @@ export function Spinner({ size = 16, label }: { size?: number; label?: string })
           animation: "spin 700ms linear infinite",
         }}
       />
-      {label ? <span className="text-xs">{label}</span> : <span className="sr-only">{t("ui.busy")}</span>}
+      {label ? (
+        <span className="text-xs">{label}</span>
+      ) : (
+        <span className="sr-only">{t("ui.busy")}</span>
+      )}
     </span>
   );
 }
@@ -61,7 +65,14 @@ export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?
     >
       <span>⚠️ {children}</span>
       {onRetry ? (
-        <button type="button" onClick={onRetry} className="underline underline-offset-2">
+        // Deze knop was 16 pixels hoog: alleen de tekstregel zelf. Juist deze
+        // knop tik je met haast aan, want hij staat er als de reistijd niet
+        // opgehaald kon worden.
+        <button
+          type="button"
+          onClick={onRetry}
+          className="-my-2 inline-flex min-h-11 items-center px-1 underline underline-offset-2"
+        >
           {t("common.retry")}
         </button>
       ) : null}

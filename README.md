@@ -432,8 +432,9 @@ denkt dat de app minder kan dan hij kan. Daarom hieronder eerst wat er wél staa
   Dat is een andere orde: daarvoor moet je bij het account van de gebruiker kunnen.
 - Verkeersinformatie, of een andere routeservice naast de huidige. De provider-abstractie in
   `src/lib/server/` houdt daar ruimte voor: die kan erbij zonder de rest aan te raken.
-- Dagelijks herhalen. `RecurrenceFreq` kent week, twee weken en maand; dagelijks kan erbij
-  zonder de opgeslagen gegevens te breken.
+- Een eigen keuze "dagelijks" bij herhalen. Het *effect* kan al wel: kies "wekelijks" en
+  vink alle zeven dagen aan, dan noemt de app het zelf "Elke dag". Wat ontbreekt is de
+  knop ernaast, niet de mogelijkheid.
 
 **Bewust niet:**
 
