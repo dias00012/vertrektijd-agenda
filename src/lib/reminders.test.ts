@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { plannedReminders } from "./reminders";
 import { setLanguage } from "./i18n/locale";
+import { loadTable } from "./i18n/dictionary";
 import type { Activity, GeoLocation, Settings, TravelInfo } from "./types";
 
 /**
@@ -170,7 +171,11 @@ describe("plannedReminders", () => {
     expect(new Set(sleutels).size).toBe(2);
   });
 
-  it("volgt de taal die je gekozen hebt", () => {
+  it("volgt de taal die je gekozen hebt", async () => {
+    // De Engelse tabel staat sinds de splitsing in een eigen bestand en wordt
+    // pas opgehaald als je die taal kiest. In de app doet `LanguageProvider`
+    // dat; hier moet de test het zelf doen.
+    await loadTable("en");
     setLanguage("en");
     const [melding] = plannedReminders([activiteit()], settings(), NU, 2);
 

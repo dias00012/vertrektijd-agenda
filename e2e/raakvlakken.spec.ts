@@ -49,3 +49,36 @@ for (const pad of SCHERMEN) {
     expect(teKlein, `te kleine knoppen op ${pad}`).toEqual([]);
   });
 }
+
+/**
+ * De instellingen staan in uitklapbare rijen, en wat dicht zit meet de test
+ * hierboven niet. Juist daar zitten knoppen die je zelden ziet en dus nooit
+ * opvielen.
+ */
+test("ook de knoppen in de uitgeklapte instellingen zijn groot genoeg", async ({ page }) => {
+  await zaai(page);
+  await page.goto("/instellingen");
+  await page.waitForLoadState("networkidle");
+
+  // Alles opendoen wat opengaat.
+  for (const rij of await page.getByRole("button", { expanded: false }).all()) {
+    if (await rij.isVisible()) await rij.click().catch(() => {});
+  }
+  await page.waitForTimeout(300);
+
+  const teKlein: string[] = [];
+  for (const knop of await page.getByRole("button").all()) {
+    if (!(await knop.isVisible())) continue;
+    const doos = await knop.boundingBox();
+    if (!doos) continue;
+    if (doos.width < 44 || doos.height < 44) {
+      const naam =
+        (await knop.getAttribute("aria-label")) ??
+        (await knop.textContent())?.trim().slice(0, 40) ??
+        "(naamloos)";
+      teKlein.push(`"${naam}" is ${Math.round(doos.width)}x${Math.round(doos.height)}`);
+    }
+  }
+
+  expect(teKlein).toEqual([]);
+});

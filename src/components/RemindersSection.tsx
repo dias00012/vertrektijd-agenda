@@ -122,7 +122,7 @@ export function RemindersSection() {
                 aria-pressed={enabled && minutes === value}
                 disabled={busy}
                 onClick={() => void enable(value)}
-                className="rounded-xl border px-2 py-2.5 text-center text-sm font-medium transition-colors"
+                className="chip rounded-xl text-sm font-medium"
                 style={{
                   borderColor: enabled && minutes === value ? "var(--accent)" : "var(--line)",
                   background:

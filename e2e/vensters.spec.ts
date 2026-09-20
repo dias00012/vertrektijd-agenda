@@ -31,6 +31,9 @@ test("het activiteitenformulier sluit met Escape", async ({ page }) => {
 test("de focus staat in het venster zodra het opengaat", async ({ page }) => {
   await page.goto("/agenda");
   await page.getByRole("button", { name: "Activiteit toevoegen" }).first().click();
+  // Het formulier wordt pas opgehaald als je het opent, dus even wachten tot
+  // het er is -- net als een gebruiker doet.
+  await expect(page.locator('[role="dialog"]')).toBeVisible();
 
   const inVenster = await page.evaluate(() => {
     const venster = document.querySelector('[role="dialog"]');
@@ -50,6 +53,7 @@ test("de focus staat in het venster zodra het opengaat", async ({ page }) => {
 test("Tab springt van de laatste knop terug naar de eerste", async ({ page }) => {
   await page.goto("/agenda");
   await page.getByRole("button", { name: "Activiteit toevoegen" }).first().click();
+  await expect(page.locator('[role="dialog"]')).toBeVisible();
 
   const randen = async () =>
     page.evaluate(() => {

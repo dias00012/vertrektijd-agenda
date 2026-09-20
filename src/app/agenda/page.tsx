@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
@@ -18,7 +20,11 @@ import {
   todayKey,
 } from "@/lib/time";
 import { ActivityCard } from "@/components/ActivityCard";
-import { MonthGrid } from "@/components/MonthGrid";
+/* Het maandraster staat alleen in de maandweergave. */
+const MonthGrid = dynamic(
+  () => import("@/components/MonthGrid").then((m) => ({ default: m.MonthGrid })),
+  { ssr: false },
+);
 import { WeekGrid } from "@/components/WeekGrid";
 import { EmptyState, Spinner } from "@/components/ui";
 import { useT } from "@/hooks/useLanguage";

@@ -28,7 +28,7 @@ import {
 import { useT } from "@/hooks/useLanguage";
 import { useDialog } from "@/hooks/useDialog";
 import { shiftRecurrence, weekdayHeadings } from "@/lib/recurrence";
-import { ActivityForm } from "./ActivityForm";
+import { ActivityForm } from "./LazyActivityForm";
 import type { Activity, ActivityDraft, ActivityOccurrence } from "@/lib/types";
 
 /** Hoogte van één uur in het raster. */

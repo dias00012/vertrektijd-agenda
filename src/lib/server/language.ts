@@ -1,6 +1,11 @@
 import "server-only";
 import type { Language } from "@/lib/i18n/locale";
-import { translate, type TranslationKey, type Values } from "@/lib/i18n/dictionary";
+import { registerTable, translate, type TranslationKey, type Values } from "@/lib/i18n/dictionary";
+import { en } from "@/lib/i18n/dictionary.en";
+
+// Op de server telt de omvang van de bundel niet, en moet elk antwoord meteen
+// in de goede taal kunnen. Dus hier staat Engels er gewoon in.
+registerTable("en", en);
 
 /**
  * De taal van de gebruiker, meegestuurd door de app.

@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useNow } from "@/hooks/useNow";
-import { SchoolworkForm } from "@/components/SchoolworkForm";
-import { StudyPlanDialog } from "@/components/StudyPlanDialog";
+/* Allebei vensters: pas ophalen als je ze opent. */
+const SchoolworkForm = dynamic(
+  () => import("@/components/SchoolworkForm").then((m) => ({ default: m.SchoolworkForm })),
+  { ssr: false },
+);
+const StudyPlanDialog = dynamic(
+  () => import("@/components/StudyPlanDialog").then((m) => ({ default: m.StudyPlanDialog })),
+  { ssr: false },
+);
 import {
   PRIORITY_META,
   STATUS_META,
@@ -96,27 +105,42 @@ export default function SchoolworkPage() {
     onthoud(PRIO_KEY, keuze);
   };
 
-  const sortedTasks = sortTasks(tasks);
-  const sortedExams = sortExams(exams);
+  /*
+   * Sorteren en filteren achter `useMemo`.
+   *
+   * Dit scherm liep vijftien keer door al je opdrachten en toetsen heen bij
+   * elke render: twee keer sorteren, twee keer filteren, tien tellingen voor
+   * de knoppen en een ronde voor wat over tijd is. En renderen gebeurt vaker
+   * dan je denkt -- de klok tikt, en elke wijziging in de agenda-context raakt
+   * dit scherm ook. Met een semester aan ingelezen rooster is dat werk dat
+   * niemand ziet.
+   */
+  const sortedTasks = useMemo(() => sortTasks(tasks), [tasks]);
+  const sortedExams = useMemo(() => sortExams(exams), [exams]);
+
   /** Voldoet dit aan allebei de filters? */
-  const past = (item: {
-    status: SchoolworkStatus;
-    priority: SchoolworkPriority;
-    deadline?: string;
-    date?: string;
-  }) => {
-    const opStatus =
-      filter === "all"
-        ? true
-        : filter === "late"
-          ? isOverdue(item.status, item.deadline ?? item.date ?? "", now)
-          : item.status === filter;
-    return opStatus && (prio === "all" || item.priority === prio);
-  };
+  const past = useCallback(
+    (item: {
+      status: SchoolworkStatus;
+      priority: SchoolworkPriority;
+      deadline?: string;
+      date?: string;
+    }) => {
+      const opStatus =
+        filter === "all"
+          ? true
+          : filter === "late"
+            ? isOverdue(item.status, item.deadline ?? item.date ?? "", now)
+            : item.status === filter;
+      return opStatus && (prio === "all" || item.priority === prio);
+    },
+    [filter, prio, now],
+  );
+
   /** Staat er een filter aan? Dan hoort de kop te zeggen hoeveel je niet ziet. */
   const gefilterd = filter !== "all" || prio !== "all";
-  const zichtbareTasks = sortedTasks.filter(past);
-  const zichtbareExams = sortedExams.filter(past);
+  const zichtbareTasks = useMemo(() => sortedTasks.filter(past), [sortedTasks, past]);
+  const zichtbareExams = useMemo(() => sortedExams.filter(past), [sortedExams, past]);
 
   /**
    * Wat een knop zou opleveren als je hem indrukt, het andere filter
@@ -124,23 +148,37 @@ export default function SchoolworkPage() {
    * komt: "Klaar (1)" terwijl je op "hoog" staat en er geen afgeronde hoge
    * opdracht is.
    */
-  const alles = [
-    ...tasks.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.deadline })),
-    ...exams.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.date })),
-  ];
-  const aantal = (keuze: Exclude<Keuze, "all">) =>
-    alles.filter(
-      (x) =>
-        (keuze === "late" ? isOverdue(x.status, x.dag, now) : x.status === keuze) &&
-        (prio === "all" || x.priority === prio),
-    ).length;
-  const aantalPrio = (p: SchoolworkPriority) =>
-    alles.filter(
-      (x) =>
-        x.priority === p &&
-        (filter === "all" ||
-          (filter === "late" ? isOverdue(x.status, x.dag, now) : x.status === filter)),
-    ).length;
+  const alles = useMemo(
+    () => [
+      ...tasks.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.deadline })),
+      ...exams.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.date })),
+    ],
+    [tasks, exams],
+  );
+
+  /*
+   * De tien tellingen voor de knoppen in één ronde, in plaats van tien keer
+   * door dezelfde lijst. Ze hangen van dezelfde dingen af, dus één tabel.
+   */
+  const tellingen = useMemo(() => {
+    const status: Record<string, number> = { late: 0, todo: 0, doing: 0, done: 0 };
+    const prioriteit: Record<string, number> = { high: 0, medium: 0, low: 0, later: 0 };
+
+    for (const x of alles) {
+      const teLaatNu = isOverdue(x.status, x.dag, now);
+      if (prio === "all" || x.priority === prio) {
+        if (teLaatNu) status.late += 1;
+        status[x.status] = (status[x.status] ?? 0) + 1;
+      }
+      const opStatus =
+        filter === "all" ? true : filter === "late" ? teLaatNu : x.status === filter;
+      if (opStatus) prioriteit[x.priority] = (prioriteit[x.priority] ?? 0) + 1;
+    }
+    return { status, prioriteit };
+  }, [alles, filter, prio, now]);
+
+  const aantal = (keuze: Exclude<Keuze, "all">) => tellingen.status[keuze] ?? 0;
+  const aantalPrio = (p: SchoolworkPriority) => tellingen.prioriteit[p] ?? 0;
 
   /**
    * Hoeveel er over tijd is, ongeacht welk filter er aanstaat.
@@ -149,7 +187,10 @@ export default function SchoolworkPage() {
    * voorbij is kleurde de datum rood, maar de opdracht stond gewoon tussen de
    * rest en met dertien opdrachten scrol je eroverheen.
    */
-  const overtijd = alles.filter((x) => isOverdue(x.status, x.dag, now)).map((x) => x.id);
+  const overtijd = useMemo(
+    () => alles.filter((x) => isOverdue(x.status, x.dag, now)).map((x) => x.id),
+    [alles, now],
+  );
   const teLaat = overtijd.length;
 
   /**

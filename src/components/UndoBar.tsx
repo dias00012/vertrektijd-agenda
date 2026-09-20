@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAgenda } from "@/hooks/useAgenda";
+import { useAgendaStatus } from "@/hooks/useAgenda";
 import { useT } from "@/hooks/useLanguage";
 
 /** Zolang je hem nog terug kunt halen. Daarna verdwijnt het balkje vanzelf. */
@@ -17,7 +17,7 @@ const VISIBLE_MS = 8000;
  * verwijdering hoeft.
  */
 export function UndoBar() {
-  const { lastRemoved, undoRemove, forgetRemoved } = useAgenda();
+  const { lastRemoved, undoRemove, forgetRemoved } = useAgendaStatus();
   const t = useT();
   const [visible, setVisible] = useState(false);
 

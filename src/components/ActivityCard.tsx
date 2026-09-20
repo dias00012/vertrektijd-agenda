@@ -18,7 +18,7 @@ import {
   scheduledDeparture,
   travelModeMeta,
 } from "@/lib/travelModes";
-import { ActivityForm } from "./ActivityForm";
+import { ActivityForm } from "./LazyActivityForm";
 import { JourneyDetails } from "./JourneyDetails";
 import { JourneyStatus } from "./JourneyStatus";
 import { ErrorNote, Spinner } from "./ui";

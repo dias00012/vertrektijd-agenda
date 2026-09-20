@@ -11,7 +11,7 @@ import { JourneyCard } from "@/components/JourneyCard";
 import { endOfDay, latestOnTime } from "@/lib/journeyList";
 import { upcomingTrips } from "@/lib/tripSuggestions";
 import { formatDateLabel } from "@/lib/time";
-import { ActivityForm } from "@/components/ActivityForm";
+import { ActivityForm } from "@/components/LazyActivityForm";
 import { minutesToTime, timeToMinutes, toDateKey } from "@/lib/time";
 import { legTime } from "@/lib/travelModes";
 import { useNow } from "@/hooks/useNow";

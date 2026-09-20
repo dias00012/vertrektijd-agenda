@@ -5,7 +5,7 @@ import { headers } from "@/lib/api";
 import { useT } from "@/hooks/useLanguage";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { useAgenda } from "@/hooks/useAgenda";
+import { useAgendaStatus } from "@/hooks/useAgenda";
 import { getSupabase } from "@/lib/supabase";
 import { Spinner } from "./ui";
 import { SettingsRow } from "./SettingsRow";
@@ -17,7 +17,7 @@ import { SettingsRow } from "./SettingsRow";
  */
 export function AccountSection() {
   const { configured, ready, user, signIn, signUp, signOut, resetPassword } = useAuth();
-  const { sync } = useAgenda();
+  const { sync } = useAgendaStatus();
   const t = useT();
 
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");

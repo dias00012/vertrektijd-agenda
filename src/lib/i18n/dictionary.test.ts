@@ -19,13 +19,16 @@ import { describe, expect, it } from "vitest";
  */
 
 const bron = readFileSync(new URL("./dictionary.ts", import.meta.url), "utf8");
+// Engels staat sinds de splitsing in een eigen bestand, zodat een Nederlandse
+// gebruiker het niet meelaadt. De controles hieronder gelden onverminderd.
+const bronEn = readFileSync(new URL("./dictionary.en.ts", import.meta.url), "utf8");
 
 /** De sleutels en waarden uit één tabel in het bestand. */
-function tabel(vanaf: string, tot: string): Map<string, string> {
-  const start = bron.indexOf(vanaf);
-  const eind = tot ? bron.indexOf(tot) : bron.length;
+function tabel(tekst: string, vanaf: string, tot: string): Map<string, string> {
+  const start = tekst.indexOf(vanaf);
+  const eind = tot ? tekst.indexOf(tot) : tekst.length;
   if (start < 0) throw new Error(`Tabel ${vanaf} niet gevonden`);
-  const deel = bron.slice(start, eind < 0 ? bron.length : eind);
+  const deel = tekst.slice(start, eind < 0 ? tekst.length : eind);
   const uit = new Map<string, string>();
   // `\s*` na de dubbele punt vangt ook een waarde die op de volgende regel
   // staat, zoals bij de langere zinnen gebeurt.
@@ -35,8 +38,8 @@ function tabel(vanaf: string, tot: string): Map<string, string> {
   return uit;
 }
 
-const nl = tabel("export const nl = {", "export const en");
-const en = tabel("export const en", "const TABLES");
+const nl = tabel(bron, "export const nl = {", "export type TranslationKey");
+const en = tabel(bronEn, "export const en", "");
 
 /** De namen tussen accolades, gesorteerd zodat de volgorde niet meetelt. */
 function plaatshouders(waarde: string): string[] {
@@ -47,7 +50,12 @@ const bestanden = execSync('find src e2e -name "*.ts" -o -name "*.tsx"')
   .toString()
   .trim()
   .split("\n")
-  .filter((f) => !f.endsWith("i18n/dictionary.ts") && !f.endsWith("dictionary.test.ts"));
+  .filter(
+    (f) =>
+      !f.endsWith("i18n/dictionary.ts") &&
+      !f.endsWith("i18n/dictionary.en.ts") &&
+      !f.endsWith("dictionary.test.ts"),
+  );
 
 /**
  * De namen van een objectliteraal, alleen die op het bovenste niveau.

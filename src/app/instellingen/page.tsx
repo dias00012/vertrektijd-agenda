@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import { useEffect, useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
@@ -9,7 +11,11 @@ import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { ConnectorSection } from "@/components/ConnectorSection";
 import { RemindersSection } from "@/components/RemindersSection";
-import { TimetableImport } from "@/components/TimetableImport";
+/* Het inlezen van een rooster: een scherm dat je zelden opent. */
+const TimetableImport = dynamic(
+  () => import("@/components/TimetableImport").then((m) => ({ default: m.TimetableImport })),
+  { ssr: false },
+);
 import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
 import { LanguageSection } from "@/components/LanguageSection";
 import { ThemeSection } from "@/components/ThemeSection";

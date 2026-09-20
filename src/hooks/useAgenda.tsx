@@ -103,11 +103,6 @@ interface AgendaContextValue {
    * is het enige wat je in deze app echt kwijt kunt raken; een knop van een
    * paar seconden scheelt de schrik.
    */
-  lastRemoved: { title: string; at: number; kind: "removed" | "moved" } | null;
-  /** Zet de laatste verwijdering terug. */
-  undoRemove: () => void;
-  /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
-  forgetRemoved: () => void;
   /**
    * Wijzigt instellingen. Geef een functie mee wanneer de nieuwe waarde van de
    * huidige afhangt: twee agenda's die tegelijk klaar zijn met synchroniseren
@@ -173,6 +168,22 @@ interface AgendaContextValue {
   importData: (data: BackupFile, mode: ImportMode) => ImportSummary;
 
   /* --- Synchronisatie --------------------------------------------------- */
+}
+
+/**
+ * Randinformatie die op een heel ander ritme verandert dan je agenda.
+ *
+ * Deze stonden in dezelfde context als je activiteiten, en dus rendeerde elke
+ * synchronisatie op de achtergrond de hele app opnieuw -- terwijl er aan je
+ * agenda niets veranderd was. Drie bestanden gebruiken dit; de rest heeft er
+ * niets aan.
+ */
+export interface AgendaStatusValue {
+  lastRemoved: { title: string; at: number; kind: "removed" | "moved" } | null;
+  /** Zet de laatste verwijdering terug. */
+  undoRemove: () => void;
+  /** Laat de laatste verwijdering staan; het balkje verdwijnt. */
+  forgetRemoved: () => void;
   sync: {
     /** "off" = niet ingelogd/niet ingesteld; anders de live status. */
     status: "off" | "idle" | "syncing" | "error";
@@ -194,6 +205,8 @@ interface AgendaContextValue {
    */
   storageFull: boolean;
 }
+
+const AgendaStatusContext = createContext<AgendaStatusValue | null>(null);
 
 const AgendaContext = createContext<AgendaContextValue | null>(null);
 
@@ -1244,9 +1257,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeActivity,
       removeOccurrence,
       moveOccurrence,
-      lastRemoved,
-      undoRemove,
-      forgetRemoved,
       updateSettings,
       rememberPlace,
       renamePlace,
@@ -1273,8 +1283,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
-      sync: { status: syncStatus, error: syncError, lastSyncedAt, now: syncNow },
-      storageFull,
     }),
     [
       activities,
@@ -1287,9 +1295,6 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeActivity,
       removeOccurrence,
       moveOccurrence,
-      lastRemoved,
-      undoRemove,
-      forgetRemoved,
       updateSettings,
       rememberPlace,
       renamePlace,
@@ -1316,15 +1321,48 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       setExamStatus,
       exportData,
       importData,
-      syncStatus,
-      syncError,
-      storageFull,
-      lastSyncedAt,
-      syncNow,
     ],
   );
 
-  return <AgendaContext.Provider value={value}>{children}</AgendaContext.Provider>;
+  /*
+   * Een tweede context voor wat op een ander ritme verandert. Zonder deze
+   * splitsing rendeerde elke synchronisatie op de achtergrond de hele app
+   * opnieuw, terwijl er aan je agenda niets veranderd was.
+   */
+  const status = useMemo<AgendaStatusValue>(
+    () => ({
+      lastRemoved,
+      undoRemove,
+      forgetRemoved,
+      sync: { status: syncStatus, error: syncError, lastSyncedAt, now: syncNow },
+      storageFull,
+    }),
+    [
+      lastRemoved,
+      undoRemove,
+      forgetRemoved,
+      syncStatus,
+      syncError,
+      lastSyncedAt,
+      syncNow,
+      storageFull,
+    ],
+  );
+
+  return (
+    <AgendaContext.Provider value={value}>
+      <AgendaStatusContext.Provider value={status}>{children}</AgendaStatusContext.Provider>
+    </AgendaContext.Provider>
+  );
+}
+
+/** De randinformatie: synchronisatie, opslag en de ongedaan-balk. */
+export function useAgendaStatus(): AgendaStatusValue {
+  const context = useContext(AgendaStatusContext);
+  if (!context) {
+    throw new Error("useAgendaStatus moet binnen een <AgendaProvider> gebruikt worden.");
+  }
+  return context;
 }
 
 export function useAgenda(): AgendaContextValue {

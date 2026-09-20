@@ -8,7 +8,7 @@ import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
 import { formatDuration, MINUTES_PER_DAY, minutesToTime, timeToMinutes } from "@/lib/time";
 import { travelModeMeta } from "@/lib/travelModes";
 import { linkedWorkDone } from "@/lib/schoolwork";
-import { ActivityForm } from "./ActivityForm";
+import { ActivityForm } from "./LazyActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
 /**

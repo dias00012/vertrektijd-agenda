@@ -85,7 +85,7 @@ export function BackupSection() {
               type="button"
               aria-pressed={mode === option.id}
               onClick={() => setMode(option.id)}
-              className="flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+              className="chip flex-1 rounded-lg border-0 text-sm font-medium"
               style={{
                 background: mode === option.id ? "var(--surface-soft)" : "transparent",
                 color: mode === option.id ? "var(--ink)" : "var(--muted)",
