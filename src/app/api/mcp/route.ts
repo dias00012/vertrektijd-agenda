@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { checkRateLimit } from "@/lib/server/rateLimit";
 import { BusyError, withAgenda, type AgendaStore } from "@/lib/server/agendaStore";
@@ -378,7 +379,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (lookupError) {
-    console.error("[api/mcp] token", lookupError);
+    reportServerError("api/mcp", lookupError, { deel: "token" });
     return NextResponse.json({ error: "De agenda is nu niet bereikbaar." }, { status: 503 });
   }
   if (!row) {
@@ -492,7 +493,7 @@ export async function POST(request: Request) {
     .from("connector_tokens")
     .update({ last_used_at: new Date().toISOString() })
     .eq("token_hash", tokenHash)
-    .then(undefined, (error: unknown) => console.error("[api/mcp] last_used_at", error));
+    .then(undefined, (error: unknown) => reportServerError("api/mcp", error, { deel: "last_used_at" }));
 
   // Een notificatie krijgt geen antwoord, alleen een lege bevestiging.
   if (!response) return new Response(null, { status: 202 });

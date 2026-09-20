@@ -157,3 +157,31 @@ test.describe("de tellingen op de filters", () => {
     await expect(page.getByRole("button", { name: "Te doen (2)" })).toBeVisible();
   });
 });
+
+/**
+ * Een opdracht of toets weggooien kon niet teruggedraaid worden.
+ *
+ * Voor activiteiten bestond de ongedaan-balk al, voor schoolwerk niet -- terwijl
+ * daar stappen, onderwerpen en ingeplande leertijd aan hangen. Twee keer tikken
+ * op verwijderen en het was echt weg.
+ */
+test("een verwijderde opdracht is terug te halen", async ({ page }) => {
+  await page.goto("/schoolwerk");
+
+  const kaart = page.locator("article").filter({ hasText: "Excel week 1" });
+  await expect(kaart).toBeVisible();
+
+  await kaart.getByRole("button", { name: /bewerken/ }).click();
+  await expect(page.locator('[role="dialog"]')).toBeVisible();
+
+  // Verwijderen vraagt eerst om een bevestiging.
+  const weg = page.getByRole("button", { name: "Verwijderen" });
+  await weg.click();
+  await page.getByRole("button", { name: /Zeker weten|Verwijderen/ }).last().click();
+
+  await expect(page.locator("article").filter({ hasText: "Excel week 1" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Ongedaan maken/ }).click();
+
+  await expect(page.locator("article").filter({ hasText: "Excel week 1" })).toBeVisible();
+});

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
 import { getProviderConfig } from "@/lib/server/config";
@@ -118,8 +119,8 @@ export async function GET(request: Request) {
     ),
   ]);
 
-  if (accounts.error) console.error("[api/admin/overview] accounts", accounts.error);
-  if (events.error) console.error("[api/admin/overview] events", events.error);
+  if (accounts.error) reportServerError("api/admin/overview", accounts.error, { deel: "accounts" });
+  if (events.error) reportServerError("api/admin/overview", events.error, { deel: "events" });
 
   return NextResponse.json({
     accounts: accounts.count ?? null,

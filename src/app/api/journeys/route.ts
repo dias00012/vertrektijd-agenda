@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { say } from "@/lib/server/language";
 import { planJourneys } from "@/lib/server/journeys";
 import { ProviderError } from "@/lib/server/config";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
-import type { BikeEnds, GeoLocation } from "@/lib/types";
+import { bikeOrNone, isValidPoint, isoOrUndefined } from "@/lib/server/input";
+import type { GeoLocation } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,30 +18,6 @@ interface JourneyRequestBody {
   cursor?: string;
   count?: number;
   bike?: string;
-}
-
-/** Alleen de drie bekende waarden; anders gewoon lopen. */
-/** Alleen de vier bekende kanten; alles anders betekent gewoon lopen. */
-function bikeOrNone(value: unknown): BikeEnds {
-  return value === "origin" || value === "destination" || value === "both" ? value : "none";
-}
-
-function isValidPoint(point: Partial<GeoLocation> | undefined): point is GeoLocation {
-  return (
-    !!point &&
-    typeof point.lat === "number" &&
-    typeof point.lon === "number" &&
-    Number.isFinite(point.lat) &&
-    Number.isFinite(point.lon) &&
-    Math.abs(point.lat) <= 90 &&
-    Math.abs(point.lon) <= 180
-  );
-}
-
-function isoOrUndefined(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? undefined : new Date(parsed).toISOString();
 }
 
 /**
@@ -79,7 +57,7 @@ export async function POST(request: Request) {
     if (error instanceof ProviderError) {
       return NextResponse.json({ error: say(request, error.key) }, { status: error.status });
     }
-    console.error("[api/journeys]", error);
+    reportServerError("api/journeys", error);
     return NextResponse.json({ error: say(request, "api.journeyFailed") }, { status: 500 });
   }
 }

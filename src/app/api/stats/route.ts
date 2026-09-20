@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
 
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
 
   // Wel loggen: dit is precies het geval waarin de tabel of de functie ontbreekt,
   // en dan wil je in de serverlogboeken zien waarom er niets geteld wordt.
-  if (error) console.error("[api/stats]", error);
+  if (error) reportServerError("api/stats", error);
 
   return NextResponse.json({ ok: true, counted: !error });
 }

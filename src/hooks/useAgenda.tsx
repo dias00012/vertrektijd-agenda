@@ -40,6 +40,7 @@ import { relocatePoint } from "@/lib/places";
 import { applyFeed, goneFromFeed } from "@/lib/agenda";
 import { statusAfterSteps } from "@/lib/schoolwork";
 import { track } from "@/lib/stats";
+import { reportError } from "@/lib/monitoring";
 import { allCategories, resolveCategory, type CategoryMeta } from "@/lib/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -633,6 +634,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     // reeks halen en er een losse kopie naast zetten. Alleen de eerste
     // terugdraaien liet de kopie staan, dus stond alles dubbel.
     | { kind: "move"; id: string; date: string; copyId: string }
+    // Een opdracht of toets verwijderen kon niet teruggedraaid worden, terwijl
+    // er wel stappen, onderwerpen en ingeplande leertijd aan hangen. Twee keer
+    // tikken en het was weg.
+    | { kind: "task"; task: Task }
+    | { kind: "exam"; exam: Exam }
     | null
   >(null);
   const [lastRemoved, setLastRemoved] = useState<{
@@ -680,6 +686,22 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       // De grafsteen moet mee weg, anders wist de eerstvolgende sync precies
       // wat je net hebt teruggehaald: hij is jonger dan de activiteit zelf.
       forgetDeletion(entry.activity.id);
+      return;
+    }
+
+    if (entry.kind === "task") {
+      setTasks((current) =>
+        current.some((task) => task.id === entry.task.id) ? current : [...current, entry.task],
+      );
+      forgetDeletion(entry.task.id);
+      return;
+    }
+
+    if (entry.kind === "exam") {
+      setExams((current) =>
+        current.some((exam) => exam.id === entry.exam.id) ? current : [...current, entry.exam],
+      );
+      forgetDeletion(entry.exam.id);
       return;
     }
     // Eén dag terugzetten betekent: de uitzondering weer weghalen. Ging het om
@@ -931,7 +953,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const removeTask = useCallback(
     (id: string) => {
-      setTasks((current) => current.filter((task) => task.id !== id));
+      setTasks((current) => {
+        const going = current.find((task) => task.id === id);
+        if (going) {
+          undoable.current = { kind: "task", task: going };
+          setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
+        }
+        return current.filter((task) => task.id !== id);
+      });
       recordDeletion(id);
     },
     [recordDeletion],
@@ -982,7 +1011,14 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
 
   const removeExam = useCallback(
     (id: string) => {
-      setExams((current) => current.filter((exam) => exam.id !== id));
+      setExams((current) => {
+        const going = current.find((exam) => exam.id === id);
+        if (going) {
+          undoable.current = { kind: "exam", exam: going };
+          setLastRemoved({ title: going.subject, at: Date.now(), kind: "removed" });
+        }
+        return current.filter((exam) => exam.id !== id);
+      });
       recordDeletion(id);
     },
     [recordDeletion],
@@ -1112,6 +1148,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setSyncStatus("error");
         setSyncError(error instanceof Error ? error.message : "Synchroniseren is mislukt.");
+        // De gebruiker ziet het, maar wij niet: zonder deze regel hoor je pas
+        // dat synchroniseren stuk is als iemand het zegt.
+        reportError(error, { scope: "sync-pull" });
       } finally {
         // Iets later vrijgeven zodat de state-update van hierboven de push-effect
         // niet meteen opnieuw triggert.
@@ -1237,6 +1276,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         setSyncStatus("error");
         setSyncError(error instanceof Error ? error.message : say("error.cloudSave"));
+        reportError(error, { scope: "sync-push" });
       }
     }, 800);
 

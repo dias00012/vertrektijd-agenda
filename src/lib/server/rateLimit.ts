@@ -80,6 +80,12 @@ export const LIMITS = {
   journeys: { limit: 25, windowMs: 60_000 },
   /** Rooster ophalen: doe je een paar keer, niet honderd keer per minuut. */
   rooster: { limit: 10, windowMs: 60_000 },
+  /**
+   * De klok die de meldingenwachtrij leegtrekt. Die belt een keer per minuut,
+   * dus tien is ruim. Dit is een tweede slot naast het geheim: raden mag, maar
+   * niet eindeloos.
+   */
+  pushSend: { limit: 10, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 /**

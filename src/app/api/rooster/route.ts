@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { say } from "@/lib/server/language";
 import { enforceRateLimit } from "@/lib/server/rateLimit";
 import { checkPublicUrl } from "@/lib/safeUrl";
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json({ error: say(request, "api.timetableTimeout") }, { status: 504 });
     }
-    console.error("[api/rooster]", error);
+    reportServerError("api/rooster", error);
     return NextResponse.json({ error: say(request, "api.timetableFailedShort") }, { status: 502 });
   } finally {
     clearTimeout(timer);

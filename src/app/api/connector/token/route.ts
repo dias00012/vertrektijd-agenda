@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { reportServerError } from "@/lib/server/report";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { say } from "@/lib/server/language";
 import { checkRateLimit, clientKey } from "@/lib/server/rateLimit";
@@ -58,7 +59,7 @@ export async function GET(request: Request) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    console.error("[api/connector/token] list", error);
+    reportServerError("api/connector/token", error, { deel: "list" });
     return NextResponse.json({ error: say(request, "api.connectorFailed") }, { status: 500 });
   }
 
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
   });
 
   if (error) {
-    console.error("[api/connector/token] create", error);
+    reportServerError("api/connector/token", error, { deel: "create" });
     return NextResponse.json({ error: say(request, "api.connectorFailed") }, { status: 500 });
   }
 
@@ -138,7 +139,7 @@ export async function DELETE(request: Request) {
     .eq("user_id", auth.userId);
 
   if (error) {
-    console.error("[api/connector/token] delete", error);
+    reportServerError("api/connector/token", error, { deel: "delete" });
     return NextResponse.json({ error: say(request, "api.connectorFailed") }, { status: 500 });
   }
 

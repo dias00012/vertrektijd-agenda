@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { secretEquals } from "@/lib/secretEquals";
+import { enforceRateLimit } from "@/lib/server/rateLimit";
 import { DEVICES_TABLE, QUEUE_TABLE, adminClient } from "@/lib/server/push";
 
 export const runtime = "nodejs";
@@ -40,6 +41,13 @@ interface DeviceRow {
 }
 
 export async function POST(request: Request) {
+  // Een tweede slot, geen eerste: het geheim hieronder is de afscherming. Maar
+  // het commentaar erbij zei zelf al dat een aanvaller "zo vaak mag proberen
+  // als hij wil", en dat hoeft niet. De klok in Supabase belt een keer per
+  // minuut, dus tien is ruim.
+  const limited = enforceRateLimit(request, "pushSend");
+  if (limited) return limited;
+
   const secret = process.env.PUSH_CRON_SECRET?.trim();
   const given = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
   // Vergelijken op tijd-veilige manier: dit is het enige geheim in de app dat
