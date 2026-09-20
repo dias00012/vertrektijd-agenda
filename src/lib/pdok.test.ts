@@ -58,7 +58,11 @@ describe("toGeocodeResults", () => {
 
   it("herhaalt de plaatsnaam niet in de tweede regel", () => {
     const [result] = toGeocodeResults(
-      { response: { docs: [{ ...adres, type: "woonplaats", straatnaam: undefined, huis_nlt: undefined }] } },
+      {
+        response: {
+          docs: [{ ...adres, type: "woonplaats", straatnaam: undefined, huis_nlt: undefined }],
+        },
+      },
       5,
     );
 
@@ -86,10 +90,7 @@ describe("toGeocodeResults", () => {
   });
 
   it("houdt zich aan het gevraagde aantal", () => {
-    const results = toGeocodeResults(
-      { response: { docs: [adres, adres, adres, adres] } },
-      2,
-    );
+    const results = toGeocodeResults({ response: { docs: [adres, adres, adres, adres] } }, 2);
 
     expect(results).toHaveLength(2);
   });

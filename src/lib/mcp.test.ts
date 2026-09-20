@@ -76,7 +76,12 @@ describe("handleMessage", () => {
   it("roept een gereedschap aan en verpakt het antwoord als tekst", async () => {
     const spy = vi.fn(async () => ({ text: "hallo" }));
     const response = await handleMessage(
-      { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "read_agenda", arguments: { from: "2026-09-14" } } },
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "read_agenda", arguments: { from: "2026-09-14" } },
+      },
       { list: TOOLS, call: spy },
       "0.52.0",
     );

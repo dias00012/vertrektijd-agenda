@@ -68,8 +68,6 @@ export function checkRateLimit(key: string, rule: RateLimitRule): RateLimitResul
   return { ok: true, retryAfter: 0, remaining: rule.limit - existing.count };
 }
 
-
-
 /** Standaardgrenzen per route. Ruim boven normaal gebruik, ver onder misbruik. */
 export const LIMITS = {
   /** Zoeken tijdens typen; de client wacht al 400 ms tussen toetsaanslagen. */

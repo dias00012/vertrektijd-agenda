@@ -401,10 +401,7 @@ export function workload(
       .filter((exam) => exam.status !== "done" && exam.date >= today)
       .map((exam) => ({
         date: exam.date,
-        minutes: Math.max(
-          0,
-          (exam.prepMinutes ?? 0) - plannedMinutesForExam(activities, exam.id),
-        ),
+        minutes: Math.max(0, (exam.prepMinutes ?? 0) - plannedMinutesForExam(activities, exam.id)),
       })),
   ];
 

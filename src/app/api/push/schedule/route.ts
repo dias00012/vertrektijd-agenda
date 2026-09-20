@@ -26,7 +26,10 @@ interface Message {
   body?: unknown;
 }
 
-function clean(message: Message, now: number): { send_at: string; title: string; body: string } | null {
+function clean(
+  message: Message,
+  now: number,
+): { send_at: string; title: string; body: string } | null {
   if (typeof message.sendAt !== "string") return null;
   const at = Date.parse(message.sendAt);
   if (!Number.isFinite(at)) return null;

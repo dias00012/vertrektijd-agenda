@@ -170,8 +170,7 @@ export default function SchoolworkPage() {
         if (teLaatNu) status.late += 1;
         status[x.status] = (status[x.status] ?? 0) + 1;
       }
-      const opStatus =
-        filter === "all" ? true : filter === "late" ? teLaatNu : x.status === filter;
+      const opStatus = filter === "all" ? true : filter === "late" ? teLaatNu : x.status === filter;
       if (opStatus) prioriteit[x.priority] = (prioriteit[x.priority] ?? 0) + 1;
     }
     return { status, prioriteit };
@@ -317,34 +316,34 @@ export default function SchoolworkPage() {
               role="group"
               aria-label={t("schoolwork.filterLabel")}
             >
-            {KEUZES.map((keuze) => {
-              const actief = filter === keuze;
-              const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
-              // "Over tijd" alleen tonen als er iets over tijd is; een lege
-              // knop die altijd (0) zegt is ruis.
-              if (keuze === "late" && telling === 0 && !actief) return null;
-              return (
-                <button
-                  key={keuze}
-                  type="button"
-                  aria-pressed={actief}
-                  onClick={() => kies(keuze)}
-                  className="chip"
-                  style={{
-                    borderColor: actief ? "var(--accent)" : "var(--line)",
-                    background: actief ? "var(--accent)" : "transparent",
-                    color: actief ? "#fff" : "var(--muted)",
-                  }}
-                >
-                  {keuze === "all"
-                    ? t("schoolwork.filterAll")
-                    : keuze === "late"
-                      ? t("schoolwork.filterLate")
-                      : STATUS_META[keuze].label}{" "}
-                  ({telling})
-                </button>
-              );
-            })}
+              {KEUZES.map((keuze) => {
+                const actief = filter === keuze;
+                const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
+                // "Over tijd" alleen tonen als er iets over tijd is; een lege
+                // knop die altijd (0) zegt is ruis.
+                if (keuze === "late" && telling === 0 && !actief) return null;
+                return (
+                  <button
+                    key={keuze}
+                    type="button"
+                    aria-pressed={actief}
+                    onClick={() => kies(keuze)}
+                    className="chip"
+                    style={{
+                      borderColor: actief ? "var(--accent)" : "var(--line)",
+                      background: actief ? "var(--accent)" : "transparent",
+                      color: actief ? "#fff" : "var(--muted)",
+                    }}
+                  >
+                    {keuze === "all"
+                      ? t("schoolwork.filterAll")
+                      : keuze === "late"
+                        ? t("schoolwork.filterLate")
+                        : STATUS_META[keuze].label}{" "}
+                    ({telling})
+                  </button>
+                );
+              })}
             </div>
 
             <div
@@ -352,42 +351,45 @@ export default function SchoolworkPage() {
               role="group"
               aria-label={t("schoolwork.filterPriority")}
             >
-            {(["all", "high", "medium", "low", "later"] as const).map((keuze) => {
-              const actief = prio === keuze;
-              const telling =
-                keuze === "all"
-                  ? alles.filter((x) => filter === "all" || x.status === filter).length
-                  : aantalPrio(keuze);
-              return (
-                <button
-                  key={keuze}
-                  type="button"
-                  aria-pressed={actief}
-                  onClick={() => kiesPrio(keuze)}
-                  className="chip"
-                  style={{
-                    borderColor: actief ? "var(--ink)" : "var(--line)",
-                    color: actief ? "var(--ink)" : "var(--muted)",
-                    fontWeight: actief ? 600 : 400,
-                  }}
-                >
-                  {keuze === "all"
-                    ? t("schoolwork.filterAll")
-                    : `${PRIORITY_META[keuze].emoji} ${PRIORITY_META[keuze].label}`}{" "}
-                  ({telling})
-                </button>
-              );
-            })}
+              {(["all", "high", "medium", "low", "later"] as const).map((keuze) => {
+                const actief = prio === keuze;
+                const telling =
+                  keuze === "all"
+                    ? alles.filter((x) => filter === "all" || x.status === filter).length
+                    : aantalPrio(keuze);
+                return (
+                  <button
+                    key={keuze}
+                    type="button"
+                    aria-pressed={actief}
+                    onClick={() => kiesPrio(keuze)}
+                    className="chip"
+                    style={{
+                      borderColor: actief ? "var(--ink)" : "var(--line)",
+                      color: actief ? "var(--ink)" : "var(--muted)",
+                      fontWeight: actief ? 600 : 400,
+                    }}
+                  >
+                    {keuze === "all"
+                      ? t("schoolwork.filterAll")
+                      : `${PRIORITY_META[keuze].emoji} ${PRIORITY_META[keuze].label}`}{" "}
+                    ({telling})
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <section aria-label={t("schoolwork.tasks")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
               {t("schoolwork.tasks")} (
-            {gefilterd
-              ? t("schoolwork.ofTotal", { shown: zichtbareTasks.length, total: sortedTasks.length })
-              : sortedTasks.length}
-            )
+              {gefilterd
+                ? t("schoolwork.ofTotal", {
+                    shown: zichtbareTasks.length,
+                    total: sortedTasks.length,
+                  })
+                : sortedTasks.length}
+              )
             </h2>
             {zichtbareTasks.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
@@ -411,10 +413,13 @@ export default function SchoolworkPage() {
           <section aria-label={t("schoolwork.exams")}>
             <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
               {t("schoolwork.exams")} (
-            {gefilterd
-              ? t("schoolwork.ofTotal", { shown: zichtbareExams.length, total: sortedExams.length })
-              : sortedExams.length}
-            )
+              {gefilterd
+                ? t("schoolwork.ofTotal", {
+                    shown: zichtbareExams.length,
+                    total: sortedExams.length,
+                  })
+                : sortedExams.length}
+              )
             </h2>
             {zichtbareExams.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--muted)" }}>
@@ -445,9 +450,7 @@ export default function SchoolworkPage() {
         />
       ) : null}
 
-      {planning ? (
-        <StudyPlanDialog item={planning} onClose={() => setPlanning(null)} />
-      ) : null}
+      {planning ? <StudyPlanDialog item={planning} onClose={() => setPlanning(null)} /> : null}
     </div>
   );
 }
@@ -478,7 +481,9 @@ function StatusControl({
             onClick={() => onChange(status)}
             className="chip min-w-0 rounded-md border-0 px-2.5 text-[0.7rem] font-medium"
             style={{
-              background: active ? `color-mix(in srgb, ${meta.color} 18%, transparent)` : "transparent",
+              background: active
+                ? `color-mix(in srgb, ${meta.color} 18%, transparent)`
+                : "transparent",
               color: active ? meta.color : "var(--muted)",
             }}
           >
@@ -491,7 +496,13 @@ function StatusControl({
 }
 
 /** Balkje: hoeveel leertijd al is ingepland t.o.v. de schatting. */
-function PlannedBar({ plannedMinutes, estimateMinutes }: { plannedMinutes: number; estimateMinutes?: number }) {
+function PlannedBar({
+  plannedMinutes,
+  estimateMinutes,
+}: {
+  plannedMinutes: number;
+  estimateMinutes?: number;
+}) {
   const t = useT();
   const { planned, estimate, pct, enough } = plannedProgress(plannedMinutes, estimateMinutes);
   if (estimate === 0 && planned === 0) return null;
@@ -568,7 +579,10 @@ function TaskCard({
             >
               {task.title}
             </h3>
-            <span className="text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+            <span
+              className="text-[0.7rem] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--muted)" }}
+            >
               {task.subject}
             </span>
             <button
@@ -588,10 +602,17 @@ function TaskCard({
             </p>
           ) : null}
 
-          <p className="mt-1.5 text-xs tabular-nums" style={{ color: overdue ? "var(--danger)" : "var(--muted)" }}>
-            &#128197; {formatDateLabel(task.deadline, now)} &middot; {describeDaysUntil(task.deadline, now)}
+          <p
+            className="mt-1.5 text-xs tabular-nums"
+            style={{ color: overdue ? "var(--danger)" : "var(--muted)" }}
+          >
+            &#128197; {formatDateLabel(task.deadline, now)} &middot;{" "}
+            {describeDaysUntil(task.deadline, now)}
             {task.estimatedMinutes > 0 ? (
-              <span style={{ color: "var(--muted)" }}> &middot; &#9201;&#65039; {formatDuration(task.estimatedMinutes)}</span>
+              <span style={{ color: "var(--muted)" }}>
+                {" "}
+                &middot; &#9201;&#65039; {formatDuration(task.estimatedMinutes)}
+              </span>
             ) : null}
             {progress.total > 0 ? (
               <span style={{ color: "var(--muted)" }}>
@@ -635,13 +656,12 @@ function TaskCard({
           ) : null}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <StatusControl value={task.status} onChange={(status) => setTaskStatus(task.id, status)} />
+            <StatusControl
+              value={task.status}
+              onChange={(status) => setTaskStatus(task.id, status)}
+            />
             {!done ? (
-              <button
-                type="button"
-                className="btn btn-ghost px-3 py-1.5 text-xs"
-                onClick={onPlan}
-              >
+              <button type="button" className="btn btn-ghost px-3 py-1.5 text-xs" onClick={onPlan}>
                 &#128197; {t("schoolwork.planStudy")}
               </button>
             ) : null}
@@ -698,7 +718,10 @@ function ExamCard({
             >
               {exam.title ?? t("schoolwork.examTitle", { subject: exam.subject })}
             </h3>
-            <span className="text-[0.7rem] font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+            <span
+              className="text-[0.7rem] font-semibold uppercase tracking-wide"
+              style={{ color: "var(--muted)" }}
+            >
               {exam.subject}
             </span>
             <button
@@ -712,10 +735,17 @@ function ExamCard({
             </button>
           </div>
 
-          <p className="mt-1.5 text-xs tabular-nums" style={{ color: soon ? "var(--danger)" : "var(--muted)" }}>
+          <p
+            className="mt-1.5 text-xs tabular-nums"
+            style={{ color: soon ? "var(--danger)" : "var(--muted)" }}
+          >
             &#128197; {formatDateLabel(exam.date, now)} &middot; {days}
             {exam.prepMinutes ? (
-              <span> &middot; &#9201;&#65039; {t("schoolwork.study", { duration: formatDuration(exam.prepMinutes) })}</span>
+              <span>
+                {" "}
+                &middot; &#9201;&#65039;{" "}
+                {t("schoolwork.study", { duration: formatDuration(exam.prepMinutes) })}
+              </span>
             ) : null}
           </p>
 
@@ -736,13 +766,12 @@ function ExamCard({
           <PlannedBar plannedMinutes={plannedMinutes} estimateMinutes={exam.prepMinutes} />
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <StatusControl value={exam.status} onChange={(status) => setExamStatus(exam.id, status)} />
+            <StatusControl
+              value={exam.status}
+              onChange={(status) => setExamStatus(exam.id, status)}
+            />
             {!done ? (
-              <button
-                type="button"
-                className="btn btn-ghost px-3 py-1.5 text-xs"
-                onClick={onPlan}
-              >
+              <button type="button" className="btn btn-ghost px-3 py-1.5 text-xs" onClick={onPlan}>
                 &#128197; {t("schoolwork.planStudy")}
               </button>
             ) : null}

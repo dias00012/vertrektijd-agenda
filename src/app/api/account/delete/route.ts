@@ -43,7 +43,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const token = request.headers
+    .get("authorization")
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
   if (!token) {
     return NextResponse.json({ error: say(request, "api.notLoggedIn") }, { status: 401 });
   }
@@ -62,10 +65,7 @@ export async function POST(request: Request) {
   const { error: deleteError } = await admin.auth.admin.deleteUser(data.user.id);
   if (deleteError) {
     reportServerError("api/account/delete", deleteError);
-    return NextResponse.json(
-      { error: say(request, "api.deleteFailed") },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: say(request, "api.deleteFailed") }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

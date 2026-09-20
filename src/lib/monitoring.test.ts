@@ -76,7 +76,9 @@ describe("envelopeBody", () => {
   });
 
   it("neemt de context mee die de app zelf meegeeft", () => {
-    const inhoud = JSON.parse(envelopeBody(new Error("x"), { scope: "global" }, META).split("\n")[2]);
+    const inhoud = JSON.parse(
+      envelopeBody(new Error("x"), { scope: "global" }, META).split("\n")[2],
+    );
 
     expect(inhoud.extra.scope).toBe("global");
   });

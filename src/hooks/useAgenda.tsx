@@ -28,12 +28,7 @@ import {
   saveSettings,
   saveTasks,
 } from "@/lib/storage";
-import {
-  buildBackup,
-  type BackupFile,
-  type ImportMode,
-  type ImportSummary,
-} from "@/lib/backup";
+import { buildBackup, type BackupFile, type ImportMode, type ImportSummary } from "@/lib/backup";
 import { travelPlanFor } from "@/lib/travel";
 import { travelQueue } from "@/lib/travelQueue";
 import { relocatePoint } from "@/lib/places";
@@ -109,9 +104,7 @@ interface AgendaContextValue {
    * huidige afhangt: twee agenda's die tegelijk klaar zijn met synchroniseren
    * zouden elkaars tijdstip anders overschrijven.
    */
-  updateSettings: (
-    patch: Partial<Settings> | ((current: Settings) => Partial<Settings>),
-  ) => void;
+  updateSettings: (patch: Partial<Settings> | ((current: Settings) => Partial<Settings>)) => void;
   /**
    * Bewaart een locatie voor hergebruik en maakt hem, als er een categorie
    * bij zit, de vaste locatie voor die categorie.
@@ -502,8 +495,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         );
       } catch (error) {
         failedKeys.current.set(plan.outboundKey, Date.now());
-        const message =
-          error instanceof Error ? error.message : say("error.travel");
+        const message = error instanceof Error ? error.message : say("error.travel");
         /*
          * De melding erbij, de reistijden laten staan.
          *
@@ -659,17 +651,20 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     setDeletions((current) => current.filter((entry) => entry.id !== id));
   }, []);
 
-  const removeActivity = useCallback((id: string) => {
-    setActivities((current) => {
-      const going = current.find((item) => item.id === id);
-      if (going) {
-        undoable.current = { kind: "activity", activity: going };
-        setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
-      }
-      return current.filter((item) => item.id !== id);
-    });
-    recordDeletion(id);
-  }, [recordDeletion]);
+  const removeActivity = useCallback(
+    (id: string) => {
+      setActivities((current) => {
+        const going = current.find((item) => item.id === id);
+        if (going) {
+          undoable.current = { kind: "activity", activity: going };
+          setLastRemoved({ title: going.title, at: Date.now(), kind: "removed" });
+        }
+        return current.filter((item) => item.id !== id);
+      });
+      recordDeletion(id);
+    },
+    [recordDeletion],
+  );
 
   const undoRemove = useCallback(() => {
     const entry = undoable.current;
@@ -828,7 +823,9 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (!place) return;
       const from = place.location;
       const stamp = new Date().toISOString();
-      setActivities((current) => relocatePoint(settings, current, from, location, stamp).activities);
+      setActivities(
+        (current) => relocatePoint(settings, current, from, location, stamp).activities,
+      );
       setSettings((current) => relocatePoint(current, [], from, location, stamp).settings);
     },
     [settings],
@@ -1077,8 +1074,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       if (data.settings) {
         // Bij samenvoegen mag een importbestand bestaande instellingen niet met
         // null wissen (bv. je thuislocatie). Bij vervangen geldt het bestand.
-        const incoming =
-          mode === "replace" ? data.settings : dropNullish(data.settings);
+        const incoming = mode === "replace" ? data.settings : dropNullish(data.settings);
         if (Object.keys(incoming).length > 0) {
           summary.settingsReplaced = true;
           setSettings((current) => ({ ...current, ...incoming }));
@@ -1115,16 +1111,20 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // overdoet wanneer er ondertussen iemand anders schreef. De gegevens
         // zoals ze nú zijn, niet zoals ze waren toen deze ronde begon: tijdens
         // het netwerkverkeer kan er van alles bij gekomen zijn.
-        const { merged, written } = await syncOnce(supabase, user.id, latestData.current, (local, remote) =>
-          // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
-          // en niets wordt overschreven. Tenzij het lokale spul van een ander
-          // account is: dan is de cloud de waarheid en blijft de agenda van die
-          // ander waar hij hoort, in zijn eigen account.
-          someoneElses
-            ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
-            : remote
-              ? mergePayload(local, remote)
-              : local,
+        const { merged, written } = await syncOnce(
+          supabase,
+          user.id,
+          latestData.current,
+          (local, remote) =>
+            // Lokaal en cloud samenvoegen zodat data van beide apparaten samenkomt
+            // en niets wordt overschreven. Tenzij het lokale spul van een ander
+            // account is: dan is de cloud de waarheid en blijft de agenda van die
+            // ander waar hij hoort, in zijn eigen account.
+            someoneElses
+              ? (remote ?? { settings: null, activities: [], tasks: [], exams: [] })
+              : remote
+                ? mergePayload(local, remote)
+                : local,
         );
         if (cancelled) return;
         lastWritten.current = written;
@@ -1250,8 +1250,11 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
         // schrijven zat nog steeds een gaatje, en daar paste precies één
         // wijziging van je andere apparaat in. `syncOnce` schrijft alleen als
         // de rij nog is zoals hij hem las, en doet het anders over.
-        const { merged, remote, written } = await syncOnce(supabase, user.id, local, (mine, theirs) =>
-          theirs ? mergePayload(mine, theirs) : mine,
+        const { merged, remote, written } = await syncOnce(
+          supabase,
+          user.id,
+          local,
+          (mine, theirs) => (theirs ? mergePayload(mine, theirs) : mine),
         );
         lastWritten.current = written;
 

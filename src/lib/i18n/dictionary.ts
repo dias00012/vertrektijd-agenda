@@ -138,18 +138,24 @@ export const nl = {
   "today.from": "vanaf {place}",
   "today.loading": "Agenda laden…",
   "today.empty.title": "Nog niets gepland voor vandaag",
-  "today.empty.body": "Voeg een activiteit toe en de app rekent meteen uit hoe laat je moet vertrekken.",
+  "today.empty.body":
+    "Voeg een activiteit toe en de app rekent meteen uit hoe laat je moet vertrekken.",
   "today.empty.week": "Bekijk de hele week",
   "today.overview": "Dagoverzicht",
   "tour.progress": "Rondleiding · {step} van {total}",
   "tour.closeLabel": "Rondleiding sluiten",
   "tour.label": "Rondleiding: {title}",
   "tour.finish": "Eerste activiteit toevoegen",
-  "tour.today.body": "Je startscherm. Bovenaan staat je eerstvolgende activiteit met één groot getal: hoe laat je de deur uit moet. Bij OV zie je daaronder welke trein en bussen je pakt, en of ze op tijd rijden.",
-  "tour.agenda.body": "Je planning per dag, week of maand. In het weekraster zie je de reistijd als gestreepte blokken vóór en ná elke activiteit. Zo zie je in één oogopslag hoeveel van je dag onderweg opgaat.",
-  "tour.travel.body": "Een losse reisplanner, zoals 9292. Kies van en naar: een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
-  "tour.schoolwork.body": "Je opdrachten op deadline en je toetsen op datum, met een kleur voor hoe dringend het is. Per opdracht kun je stappen afvinken, en je ziet hoeveel leertijd je er al voor hebt ingepland.",
-  "tour.settings.body": "Vier groepen, dichtgeklapt: onder elke titel zie je meteen wat er nu staat. Je thuislocatie en standaard vervoermiddel, herinneringen vóór vertrek, opgeslagen locaties, een back-up van alles als één bestand, en je account als je je agenda tussen telefoon en laptop wilt delen.",
+  "tour.today.body":
+    "Je startscherm. Bovenaan staat je eerstvolgende activiteit met één groot getal: hoe laat je de deur uit moet. Bij OV zie je daaronder welke trein en bussen je pakt, en of ze op tijd rijden.",
+  "tour.agenda.body":
+    "Je planning per dag, week of maand. In het weekraster zie je de reistijd als gestreepte blokken vóór en ná elke activiteit. Zo zie je in één oogopslag hoeveel van je dag onderweg opgaat.",
+  "tour.travel.body":
+    "Een losse reisplanner, zoals 9292. Kies van en naar: een station, een adres, je huidige locatie of één tik op Thuis, School of Gym. Je krijgt echte ritten met live vertragingen, spoor en overstappen.",
+  "tour.schoolwork.body":
+    "Je opdrachten op deadline en je toetsen op datum, met een kleur voor hoe dringend het is. Per opdracht kun je stappen afvinken, en je ziet hoeveel leertijd je er al voor hebt ingepland.",
+  "tour.settings.body":
+    "Vier groepen, dichtgeklapt: onder elke titel zie je meteen wat er nu staat. Je thuislocatie en standaard vervoermiddel, herinneringen vóór vertrek, opgeslagen locaties, een back-up van alles als één bestand, en je account als je je agenda tussen telefoon en laptop wilt delen.",
 
   /* --- Bouwstenen, schoolwerk en inloggen -------------------------------- */
   "ui.busy": "Bezig…",
@@ -169,7 +175,8 @@ export const nl = {
   "auth.shortPassword": "Kies een wachtwoord van minstens 6 tekens.",
   "auth.invalidEmail": "Vul een geldig e-mailadres in.",
   "auth.tooMany": "Te veel pogingen. Wacht even en probeer opnieuw.",
-  "auth.emailDisabled": "Inloggen met e-mail staat nog uit voor deze app. De beheerder moet e-mail als inlogmethode aanzetten.",
+  "auth.emailDisabled":
+    "Inloggen met e-mail staat nog uit voor deze app. De beheerder moet e-mail als inlogmethode aanzetten.",
   "auth.notConfirmed": "Bevestig eerst je e-mailadres via de link in je mailbox.",
   "auth.samePassword": "Kies een ander wachtwoord dan je vorige.",
   "auth.syncOff": "Synchronisatie is niet ingesteld.",
@@ -178,14 +185,17 @@ export const nl = {
   "error.geocode": "Zoeken naar de locatie is mislukt.",
   "error.travel": "De reistijd kon niet worden berekend.",
   "error.journey": "De reis kon niet worden gepland.",
-  "error.noConnection": "Geen verbinding. Zodra je weer bereik hebt, rekent de app dit opnieuw uit.",
+  "error.noConnection":
+    "Geen verbinding. Zodra je weer bereik hebt, rekent de app dit opnieuw uit.",
   "error.cloudSave": "Opslaan in de cloud is mislukt.",
   "error.title": "Er ging iets mis",
-  "error.body": "Deze pagina kon niet worden geladen. Je agenda staat veilig op je apparaat en in je account. Er is niets weg.",
+  "error.body":
+    "Deze pagina kon niet worden geladen. Je agenda staat veilig op je apparaat en in je account. Er is niets weg.",
   "error.toToday": "Naar Vandaag",
   "error.code": "Foutcode: {digest}",
   "offline.title": "Even geen verbinding",
-  "offline.body": "Deze pagina is nog niet opgeslagen op je apparaat. Je agenda zelf staat er wél op. Open Vandaag of Agenda en je ziet je planning gewoon.",
+  "offline.body":
+    "Deze pagina is nog niet opgeslagen op je apparaat. Je agenda zelf staat er wél op. Open Vandaag of Agenda en je ziet je planning gewoon.",
   "offline.note": "Nieuwe reistijden en live vertragingen komen terug zodra je weer bereik hebt.",
   "offline.toAgenda": "Naar Agenda",
   "notFound.title": "Deze pagina bestaat niet",
@@ -217,14 +227,18 @@ export const nl = {
   "travel.noLater": "Verder rijdt er vandaag niets meer.",
   "travel.why": "Waarom deze ritten?",
   "place.noStreet": "Dit adres mist de straatnaam",
-  "places.noStreet.fix": "Kies het adres hieronder opnieuw; alles wat op het oude punt stond verhuist mee.",
+  "places.noStreet.fix":
+    "Kies het adres hieronder opnieuw; alles wat op het oude punt stond verhuist mee.",
   "places.changeAddress": "Adres wijzigen",
   "places.newAddress": "Nieuw adres",
   "places.newAddress.placeholder": "Straat, huisnummer en plaats",
-  "places.newAddress.hint": "Kies een suggestie m\u00e9t straatnaam. Je activiteiten op deze plek verhuizen mee en hun reistijd wordt opnieuw berekend.",
-  "place.noStreet.body": "Zo'n punt kan honderden meters naast de bedoelde voordeur liggen, en dan klopt je reistijd niet. Typ het adres opnieuw en kies een suggestie mét straatnaam.",
+  "places.newAddress.hint":
+    "Kies een suggestie m\u00e9t straatnaam. Je activiteiten op deze plek verhuizen mee en hun reistijd wordt opnieuw berekend.",
+  "place.noStreet.body":
+    "Zo'n punt kan honderden meters naast de bedoelde voordeur liggen, en dan klopt je reistijd niet. Typ het adres opnieuw en kies een suggestie mét straatnaam.",
   "travel.why.hide": "Verberg details",
-  "travel.why.intro": "Klopt een rit niet? Maak hier een schermafbeelding van; hiermee is te herleiden waar het misgaat.",
+  "travel.why.intro":
+    "Klopt een rit niet? Maak hier een schermafbeelding van; hiermee is te herleiden waar het misgaat.",
   "travel.why.from": "Vertrek",
   "travel.why.to": "Bestemming",
   "travel.why.planner": "Planner",
@@ -234,13 +248,15 @@ export const nl = {
   "travel.why.on": "aan",
   "travel.why.off": "uit",
   "storage.full.title": "Opslaan lukt niet op dit apparaat",
-  "storage.full.body": "Je wijzigingen staan nu alleen op het scherm en zijn na herladen weg. De opslag van je browser zit vol of staat uit \u2014 maak ruimte vrij, of log in zodat je agenda in de cloud staat.",
+  "storage.full.body":
+    "Je wijzigingen staan nu alleen op het scherm en zijn na herladen weg. De opslag van je browser zit vol of staat uit \u2014 maak ruimte vrij, of log in zodat je agenda in de cloud staat.",
   "travel.noEarlier": "Eerder rijdt er niets.",
   "journey.outbound": "Heenreis",
   "journey.return": "Terugreis",
   "journey.yours": "Je reis",
   "journey.walkTotal": "In totaal {duration} lopen.",
-  "journey.otherDay": "Deze tijden komen van een andere dag; open de app op de dag zelf voor de actuele rit.",
+  "journey.otherDay":
+    "Deze tijden komen van een andere dag; open de app op de dag zelf voor de actuele rit.",
   "leg.track": "spoor {track}",
 
   /* --- Agenda ------------------------------------------------------------ */
@@ -257,7 +273,8 @@ export const nl = {
   "agenda.weekView": "Weekweergave",
   "agenda.layout.grid": "raster",
   "agenda.layout.list": "lijst",
-  "agenda.travelHint": "Gestreepte blokken zijn je reistijd: het vervoermiddel erop wijst heen, ↩️ wijst terug naar huis.",
+  "agenda.travelHint":
+    "Gestreepte blokken zijn je reistijd: het vervoermiddel erop wijst heen, ↩️ wijst terug naar huis.",
   "agenda.activitiesOn": "Activiteiten op {date}",
   "agenda.empty.day": "Niets gepland op deze dag.",
   "agenda.empty.title": "Niets gepland",
@@ -271,8 +288,10 @@ export const nl = {
   "month.homeHint": "Stel je thuislocatie in voor vertrektijden.",
   "week.blockTitle": "{title} · {from} tot {to}",
   "week.resize": "Sleep om de eindtijd aan te passen",
-  "week.dragHint": "Sleep een blok naar een ander moment, of pak de onderrand voor een andere eindtijd.",
-  "week.keyHint": "Met een toetsenbord: Shift met de pijltjes verplaatst het blok dat je geselecteerd hebt \u2014 links en rechts een dag, omhoog en omlaag een kwartier.",
+  "week.dragHint":
+    "Sleep een blok naar een ander moment, of pak de onderrand voor een andere eindtijd.",
+  "week.keyHint":
+    "Met een toetsenbord: Shift met de pijltjes verplaatst het blok dat je geselecteerd hebt \u2014 links en rechts een dag, omhoog en omlaag een kwartier.",
   "week.move.title": "Deze herhaling verplaatsen",
   "week.move.body": "“{title}” komt vaker terug. Wat verhuist er naar {when}?",
   "week.move.one": "Alleen deze dag",
@@ -280,7 +299,8 @@ export const nl = {
   "week.addOn": "Iets plannen op {date}",
   "search.open": "Zoeken",
   "search.placeholder": "Zoek in je agenda",
-  "search.hint": "Zoekt in namen, plekken en types. Van een herhaling zie je de eerstvolgende keer.",
+  "search.hint":
+    "Zoekt in namen, plekken en types. Van een herhaling zie je de eerstvolgende keer.",
   "search.count": "{count} gevonden",
   "search.countOne": "1 gevonden",
   "search.empty.title": "Niets gevonden",
@@ -392,7 +412,8 @@ export const nl = {
   "travel.needBoth": "Kies een vertrekpunt en een bestemming.",
   "travel.failed": "De reis kon niet worden gepland.",
   "travel.noGeolocation": "Je browser ondersteunt locatiebepaling niet.",
-  "travel.locationFailed": "Kon je locatie niet bepalen. Geef de app toestemming of vul een adres in.",
+  "travel.locationFailed":
+    "Kon je locatie niet bepalen. Geef de app toestemming of vul een adres in.",
   "travel.empty.title": "Geen ritten gevonden",
   "travel.empty.body": "Probeer een ander tijdstip, of een halte in de buurt.",
 
@@ -402,7 +423,8 @@ export const nl = {
   "schoolwork.addShort": "+ Toevoegen",
   "schoolwork.loading": "Schoolwerk laden…",
   "schoolwork.empty.title": "Nog geen schoolwerk",
-  "schoolwork.empty.body": "Voeg zelf een opdracht of toets toe, of importeer een bestand van je planner via Instellingen → Back-up & synchronisatie.",
+  "schoolwork.empty.body":
+    "Voeg zelf een opdracht of toets toe, of importeer een bestand van je planner via Instellingen → Back-up & synchronisatie.",
   "schoolwork.empty.action": "+ Opdracht of toets toevoegen",
   "schoolwork.tasks": "Opdrachten",
   "schoolwork.exams": "Toetsen",
@@ -437,7 +459,8 @@ export const nl = {
    * en niet "er is ingepland", want tot je op de knop drukt staat er niets.
    */
   "studyPlan.title": "Leertijd inplannen",
-  "studyPlan.summary": "Voorstel: {duration} verdeeld over {count} blokken, in de tijd dat je thuis bent.",
+  "studyPlan.summary":
+    "Voorstel: {duration} verdeeld over {count} blokken, in de tijd dat je thuis bent.",
   "studyPlan.summaryOne": "Voorstel: {duration} in één blok, in de tijd dat je thuis bent.",
   "studyPlan.confirm": "Zet in agenda",
   "studyPlan.leftover": "{duration} past niet meer voor de deadline.",
@@ -501,8 +524,10 @@ export const nl = {
   "form.restoreType": "Standaard herstellen",
   // Weggooien mag, maar niet zonder te zeggen wat er dan met die activiteiten
   // gebeurt: ze blijven staan, alleen zonder type.
-  "form.deleteTypeOne": "Dit type staat nog op 1 activiteit. Die blijft staan, zonder type. Weggooien?",
-  "form.deleteTypeMany": "Dit type staat nog op {count} activiteiten. Die blijven staan, zonder type. Weggooien?",
+  "form.deleteTypeOne":
+    "Dit type staat nog op 1 activiteit. Die blijft staan, zonder type. Weggooien?",
+  "form.deleteTypeMany":
+    "Dit type staat nog op {count} activiteiten. Die blijven staan, zonder type. Weggooien?",
   "form.deleteTypeNone": "Dit type weggooien?",
   "form.startDate": "Startdatum",
   "form.date": "Datum",
@@ -521,7 +546,8 @@ export const nl = {
   "form.location": "Locatie",
   "form.locationHint": "Laat leeg voor activiteiten thuis. Dan toont de app geen reistijd.",
   "form.needHomeFirst": "Stel eerst je thuislocatie in om reistijden te kunnen berekenen.",
-  "form.remember": "Onthouden als vaste locatie voor {category}. Dan staat hij de volgende keer meteen ingevuld.",
+  "form.remember":
+    "Onthouden als vaste locatie voor {category}. Dan staat hij de volgende keer meteen ingevuld.",
   "form.alreadyDefault": "Dit is je vaste locatie voor {category}.",
   "form.howTravel": "Hoe reis je hierheen?",
   "form.deleteWhat": "Wat wil je verwijderen?",
@@ -563,24 +589,29 @@ export const nl = {
   "form.bufferHint":
     "Hoeveel eerder je er wilt zijn. Leeg laten volgt de algemene marge uit Instellingen, dus die past zich aan als je hem daar verandert.",
   "form.bufferUnit": "min",
-  "form.transitHintFull": "Bij OV zoekt de app een echte rit die je op tijd laat aankomen, inclusief overstappen en spoor.",
+  "form.transitHintFull":
+    "Bij OV zoekt de app een echte rit die je op tijd laat aankomen, inclusief overstappen en spoor.",
 
   /* --- Kennismaking en herinneringen ------------------------------------- */
   "intro.label": "Welkom bij Vertrektijd",
   "intro.pitch1": "Je hebt om 09:00 school.",
   "intro.pitch2": "Je moet om 08:23 vertrekken.",
-  "intro.body": "Jij zet erin wat je gaat doen en waar. De app rekent uit hoe laat je de deur uit moet.",
+  "intro.body":
+    "Jij zet erin wat je gaat doen en waar. De app rekent uit hoe laat je de deur uit moet.",
   "intro.exDepart": "de deur uit",
   "intro.exBike": "7 min fietsen naar het station",
   "intro.exTrain": "Sprinter naar Utrecht, spoor 2",
   "intro.exDelay": "+3 min",
   "intro.exArrive": "college begint",
   "intro.point1.title": "Echte ritten, geen schatting",
-  "intro.point1.body": "Welke trein, welk spoor, welke bus. Live, dus vertraging en uitval zie je meteen.",
+  "intro.point1.body":
+    "Welke trein, welk spoor, welke bus. Live, dus vertraging en uitval zie je meteen.",
   "intro.point2.title": "Fietsen naar het station telt mee",
-  "intro.point2.body": "Zoals je echt reist. Op een rit naar Zwolle scheelt dat al snel een halfuur.",
+  "intro.point2.body":
+    "Zoals je echt reist. Op een rit naar Zwolle scheelt dat al snel een halfuur.",
   "intro.point3.title": "Je rooster en je schoolwerk erbij",
-  "intro.point3.body": "Koppel je lesrooster met één link en plan leertijd voor je toetsen en deadlines.",
+  "intro.point3.body":
+    "Koppel je lesrooster met één link en plan leertijd voor je toetsen en deadlines.",
   "intro.twoQuestions": "Nog twee vragen en je kunt beginnen.",
   "intro.whereFrom": "Waar vertrek je vandaan?",
   "intro.whereFromBody": "Meestal je huis. Vanaf dit punt worden al je reistijden berekend.",
@@ -590,21 +621,28 @@ export const nl = {
   "intro.howTravelBody": "Per activiteit kun je hier altijd van afwijken.",
   "intro.buffer": "Hoeveel minuten wil je speling?",
   "intro.bufferUnit": "minuten extra",
-  "intro.bufferBody": "Die tijd wordt van je vertrektijd afgehaald, zodat je niet op het randje aankomt.",
+  "intro.bufferBody":
+    "Die tijd wordt van je vertrektijd afgehaald, zodat je niet op het randje aankomt.",
   "intro.start": "Beginnen",
   "intro.showApp": "Laat de app zien",
   "intro.saveOnly": "Opslaan en zelf rondkijken, zonder rondleiding",
   "intro.pickSuggestion": "Kies een suggestie uit de lijst om verder te gaan.",
   "reminders.title": "Herinneringen",
-  "reminders.body": "Krijg een melding vlak voordat je moet vertrekken, met de tijd van dat moment, inclusief vertraging.",
+  "reminders.body":
+    "Krijg een melding vlak voordat je moet vertrekken, met de tijd van dat moment, inclusief vertraging.",
   "reminders.unsupported": "Deze browser ondersteunt geen meldingen.",
-  "reminders.denied": "Je hebt meldingen geblokkeerd voor deze app. Zet ze weer aan in de instellingen van je browser (bij het slotje in de adresbalk) en kom hier terug.",
+  "reminders.denied":
+    "Je hebt meldingen geblokkeerd voor deze app. Zet ze weer aan in de instellingen van je browser (bij het slotje in de adresbalk) en kom hier terug.",
   "reminders.off": "Herinneringen uitzetten",
-  "reminders.note": "meldingen komen binnen zolang de app open staat, ook op de achtergrond. Sluit je hem helemaal af, dan hoor je niets. Installeer de app op je beginscherm en laat hem draaien voor de beste kans dat je het seintje krijgt.",
+  "reminders.note":
+    "meldingen komen binnen zolang de app open staat, ook op de achtergrond. Sluit je hem helemaal af, dan hoor je niets. Installeer de app op je beginscherm en laat hem draaien voor de beste kans dat je het seintje krijgt.",
   "reminders.background": "Ook als de app dicht is",
-  "reminders.backgroundHint": "Je toestel meldt zich aan bij de server en zet de zinnen kant-en-klaar klaar. De server ziet je agenda niet: hij weet alleen welke tekst hij wanneer moet sturen.",
-  "reminders.backgroundFailed": "Aanmelden voor meldingen is niet gelukt. Op een iPhone werkt dit alleen als je de app op je beginscherm hebt gezet.",
-  "reminders.noteBackground": "je meldingen zijn ingepland tot twee weken vooruit. Open de app minstens eens per week, anders raakt die planning op en houden de meldingen op.",
+  "reminders.backgroundHint":
+    "Je toestel meldt zich aan bij de server en zet de zinnen kant-en-klaar klaar. De server ziet je agenda niet: hij weet alleen welke tekst hij wanneer moet sturen.",
+  "reminders.backgroundFailed":
+    "Aanmelden voor meldingen is niet gelukt. Op een iPhone werkt dit alleen als je de app op je beginscherm hebt gezet.",
+  "reminders.noteBackground":
+    "je meldingen zijn ingepland tot twee weken vooruit. Open de app minstens eens per week, anders raakt die planning op en houden de meldingen op.",
   "reminders.noteLabel": "Let op:",
   "reminders.minutes": "{count} min",
   "reminders.notification.title": "Vertrek om {time}",
@@ -622,20 +660,25 @@ export const nl = {
   "settings.formula": "Vertrektijd = starttijd − reistijd − marge.",
   "settings.defaultMode": "Standaard vervoermiddel",
   "settings.modeHint": "Geldt voor nieuwe activiteiten; per activiteit kun je hiervan afwijken.",
-  "settings.needSuggestion": "Kies een locatie uit de suggesties, zodat de app het adres kan vinden.",
+  "settings.needSuggestion":
+    "Kies een locatie uit de suggesties, zodat de app het adres kan vinden.",
   "settings.bufferRange": "Vul een marge in tussen 0 en {max} minuten.",
   "settings.saved": "Opgeslagen.",
   "settings.recalc": "De reistijden van {count} activiteiten worden opnieuw berekend.",
   "settings.recalcOne": "De reistijd van 1 activiteit wordt opnieuw berekend.",
   "settings.aboutTitle": "Over de reistijden",
-  "settings.aboutBody": "Reistijden worden op de server berekend. Auto en fiets gaan via een routeservice, zonder rekening te houden met actuele drukte. Bij OV komt je vertrektijd uit de echte dienstregeling, inclusief overstappen en vertragingen.",
+  "settings.aboutBody":
+    "Reistijden worden op de server berekend. Auto en fiets gaan via een routeservice, zonder rekening te houden met actuele drukte. Bij OV komt je vertrektijd uit de echte dienstregeling, inclusief overstappen en vertragingen.",
   "settings.intro.title": "Uitleg & rondleiding",
-  "settings.intro.body": "De rondleiding loopt met je langs elk tabblad en legt uit wat je daar ziet. Je blijft gewoon in de app, dus je kijkt naar het echte scherm. De introductie begint bij de instelvragen; je huidige antwoorden staan er al in.",
+  "settings.intro.body":
+    "De rondleiding loopt met je langs elk tabblad en legt uit wat je daar ziet. Je blijft gewoon in de app, dus je kijkt naar het echte scherm. De introductie begint bij de instelvragen; je huidige antwoorden staan er al in.",
   "settings.intro.startTour": "Start de rondleiding",
   "settings.intro.again": "Introductie opnieuw",
   "places.title": "Opgeslagen locaties",
-  "places.body": "Locaties die je bij een activiteit bewaart, verschijnen hier onder de naam van waar je heen gaat, niet onder het adres. Met ✎ geef je ze een eigen naam.",
-  "places.empty": "Nog geen locaties bewaard. Vink bij een activiteit “Onthouden als vaste locatie” aan.",
+  "places.body":
+    "Locaties die je bij een activiteit bewaart, verschijnen hier onder de naam van waar je heen gaat, niet onder het adres. Met ✎ geef je ze een eigen naam.",
+  "places.empty":
+    "Nog geen locaties bewaard. Vink bij een activiteit “Onthouden als vaste locatie” aan.",
   "places.rename": "Naam aanpassen",
   "places.nameLabel": "Naam van deze locatie",
   "places.namePlaceholder": "Bijv. Werk",
@@ -646,18 +689,21 @@ export const nl = {
 
   /* --- Back-up ----------------------------------------------------------- */
   "calendars.title": "Je eigen agenda erbij",
-  "calendars.body": "Google, Apple en Outlook kunnen een ical-link van je agenda geven. Abonneer je erop en je eigen afspraken staan ook in je vertrektijden, automatisch bijgewerkt.",
+  "calendars.body":
+    "Google, Apple en Outlook kunnen een ical-link van je agenda geven. Abonneer je erop en je eigen afspraken staan ook in je vertrektijden, automatisch bijgewerkt.",
   "calendars.addFirst": "Agenda toevoegen",
   "calendars.addAnother": "Nog een agenda toevoegen",
   "calendars.name": "Naam",
   "calendars.namePlaceholder": "Bijv. Mijn Google-agenda",
   "calendars.defaultName": "Mijn agenda",
   "calendars.url": "Ical-link",
-  "calendars.urlHint": "In Google Agenda: instellingen van de agenda, \u201cGeheim adres in ical-indeling\u201d. In Apple: agenda delen, openbare agenda.",
+  "calendars.urlHint":
+    "In Google Agenda: instellingen van de agenda, \u201cGeheim adres in ical-indeling\u201d. In Apple: agenda delen, openbare agenda.",
   "calendars.asType": "Als welk type",
   "calendars.where": "Vaste plek",
   "calendars.wherePlaceholder": "Adres of plaats",
-  "calendars.whereHint": "Laat leeg als deze afspraken geen vaste plek hebben. Zonder plek rekent de app geen reistijd.",
+  "calendars.whereHint":
+    "Laat leeg als deze afspraken geen vaste plek hebben. Zonder plek rekent de app geen reistijd.",
   "calendars.add": "Toevoegen",
   "calendars.added": "{name} toegevoegd, {count} afspraken opgehaald.",
   "calendars.addedOne": "{name} toegevoegd, 1 afspraak opgehaald.",
@@ -668,9 +714,11 @@ export const nl = {
   "calendars.fetchFailed": "Deze agenda kon niet worden opgehaald. Klopt de link?",
   "calendars.none": "Geen afspraken gevonden in de komende {weeks} weken.",
   "calendars.offline": "Geen verbinding met de server.",
-  "calendars.privacy": "De link blijft op dit apparaat staan en gaat alleen naar onze eigen server om je agenda op te halen. Loskoppelen haalt de afspraken er ook weer uit.",
+  "calendars.privacy":
+    "De link blijft op dit apparaat staan en gaat alleen naar onze eigen server om je agenda op te halen. Loskoppelen haalt de afspraken er ook weer uit.",
   "backup.title": "Back-up",
-  "backup.body": "Exporteer je hele agenda (instellingen, activiteiten, taken en toetsen) als één JSON-bestand, of importeer een bestand van je planner. Zo werken app en planner met precies dezelfde gegevens.",
+  "backup.body":
+    "Exporteer je hele agenda (instellingen, activiteiten, taken en toetsen) als één JSON-bestand, of importeer een bestand van je planner. Zo werken app en planner met precies dezelfde gegevens.",
   "backup.mode": "Importmodus",
   "backup.merge": "Samenvoegen",
   "backup.replace": "Vervangen",
@@ -681,7 +729,8 @@ export const nl = {
   "backup.invalidJson": "Dit is geen geldig JSON-bestand.",
   "backup.invalidShape": "Het bestand heeft niet de verwachte structuur.",
   "backup.wrongApp": "Dit bestand hoort niet bij {app} (app: {found}).",
-  "backup.unknownVersion": "Onbekende bestandsversie ({version}). Deze app ondersteunt versie 1 t/m {max}.",
+  "backup.unknownVersion":
+    "Onbekende bestandsversie ({version}). Deze app ondersteunt versie 1 t/m {max}.",
   "backup.readFailed": "Kon het bestand niet lezen.",
   "backup.parseFailed": "Het bestand kon niet worden ingelezen.",
   "backup.doneReplace": "Import gelukt (vervangen).",
@@ -695,11 +744,13 @@ export const nl = {
 
   /* --- Account ----------------------------------------------------------- */
   "account.title": "Account & synchronisatie",
-  "account.notConfigured": "Synchronisatie is nog niet ingesteld. Je gegevens staan lokaal op dit apparaat. Zodra accounts zijn geactiveerd kun je hier inloggen om je agenda tussen apparaten te delen.",
+  "account.notConfigured":
+    "Synchronisatie is nog niet ingesteld. Je gegevens staan lokaal op dit apparaat. Zodra accounts zijn geactiveerd kun je hier inloggen om je agenda tussen apparaten te delen.",
   "account.loggedInAs": "Ingelogd als",
   "account.syncing": "Bezig met synchroniseren…",
   "account.syncFailed": "Synchroniseren mislukt: {error}",
-  "account.syncOk": "Je agenda, schoolwerk en instellingen worden bewaard in je account en gedeeld tussen je apparaten.",
+  "account.syncOk":
+    "Je agenda, schoolwerk en instellingen worden bewaard in je account en gedeeld tussen je apparaten.",
   "settings.version": "Versie {version}",
   "account.syncNow": "Nu synchroniseren",
   "account.syncedAt": "Laatst opgehaald om {when}.",
@@ -707,17 +758,23 @@ export const nl = {
   "account.logout": "Uitloggen",
   "account.delete": "Account verwijderen",
   "account.deleteSure": "Weet je het zeker?",
-  "account.deleteBody": "Je account, je agenda, je schoolwerk en je locaties worden definitief verwijderd. Dit kan niet ongedaan worden gemaakt. Wil je je gegevens bewaren, exporteer ze dan eerst hieronder bij Back-up.",
+  "account.deleteBody":
+    "Je account, je agenda, je schoolwerk en je locaties worden definitief verwijderd. Dit kan niet ongedaan worden gemaakt. Wil je je gegevens bewaren, exporteer ze dan eerst hieronder bij Back-up.",
   "account.deleteConfirm": "Ja, verwijder mijn account",
   "account.deleted": "Je account en alle gegevens erin zijn verwijderd.",
   "account.sessionExpired": "Je sessie is verlopen. Log opnieuw in en probeer het nog eens.",
   "account.deleteFailed": "Het account kon niet worden verwijderd.",
-  "account.deleteOffline": "Het account kon niet worden verwijderd. Controleer je internetverbinding.",
+  "account.deleteOffline":
+    "Het account kon niet worden verwijderd. Controleer je internetverbinding.",
   "account.somethingWrong": "Er ging iets mis.",
-  "account.resetSent": "Als er een account is met dit e-mailadres, staat er een herstelmail in je mailbox. Kijk ook even in je spam.",
-  "account.created": "Account aangemaakt. Bevestig je e-mailadres via de link die we je hebben gestuurd en log daarna in.",
-  "account.resetIntro": "Vul je e-mailadres in. We sturen je een link waarmee je een nieuw wachtwoord kiest.",
-  "account.loginIntro": "Log in om je agenda en schoolwerk te bewaren en op al je apparaten hetzelfde te hebben. Nog geen account? Maak er gratis een aan.",
+  "account.resetSent":
+    "Als er een account is met dit e-mailadres, staat er een herstelmail in je mailbox. Kijk ook even in je spam.",
+  "account.created":
+    "Account aangemaakt. Bevestig je e-mailadres via de link die we je hebben gestuurd en log daarna in.",
+  "account.resetIntro":
+    "Vul je e-mailadres in. We sturen je een link waarmee je een nieuw wachtwoord kiest.",
+  "account.loginIntro":
+    "Log in om je agenda en schoolwerk te bewaren en op al je apparaten hetzelfde te hebben. Nog geen account? Maak er gratis een aan.",
   "account.loginOrRegister": "Inloggen of registreren",
   "account.login": "Inloggen",
   "account.register": "Account aanmaken",
@@ -742,11 +799,13 @@ export const nl = {
   "changes.more": "En nog {count} andere dagen.",
   "changes.dismiss": "Gezien",
   "timetable.title": "Schoolrooster koppelen",
-  "timetable.body": "Haal je rooster op uit Magister, Somtoday, Zermelo, Google Agenda of Outlook, zodat je het niet hoeft over te typen. Je hebt de iCal-link nodig; die vind je in dat systeem onder “agenda exporteren”, “abonneren” of “agenda delen”.",
+  "timetable.body":
+    "Haal je rooster op uit Magister, Somtoday, Zermelo, Google Agenda of Outlook, zodat je het niet hoeft over te typen. Je hebt de iCal-link nodig; die vind je in dat systeem onder “agenda exporteren”, “abonneren” of “agenda delen”.",
   "timetable.urlLabel": "Link naar je rooster",
   "timetable.fetch": "Rooster ophalen",
   "timetable.orFile": "Of kies een .ics-bestand",
-  "timetable.none": "Geen lessen gevonden in de komende {weeks} weken. Klopt de link, en staat je rooster er al in?",
+  "timetable.none":
+    "Geen lessen gevonden in de komende {weeks} weken. Klopt de link, en staat je rooster er al in?",
   "timetable.fetchFailed": "Het rooster kon niet worden opgehaald.",
   "timetable.offline": "Het rooster kon niet worden opgehaald. Controleer je internetverbinding.",
   "timetable.readFailed": "Dit bestand kon niet worden gelezen.",
@@ -756,15 +815,18 @@ export const nl = {
   "timetable.andMore": "en nog {count} andere.",
   "timetable.where": "Waar vinden deze lessen plaats?",
   "timetable.wherePlaceholder": "Adres van je school",
-  "timetable.whereHint": "Het lokaal uit je rooster is geen adres; hiermee kan de app wel je reistijd berekenen.",
+  "timetable.whereHint":
+    "Het lokaal uit je rooster is geen adres; hiermee kan de app wel je reistijd berekenen.",
   "timetable.asType": "Als welk type?",
-  "timetable.replaceNote": "Je hebt al {count} lessen uit een eerder rooster staan. Die worden vervangen, zodat verschoven en uitgevallen uren vanzelf kloppen. Activiteiten die je zelf hebt toegevoegd blijven staan.",
+  "timetable.replaceNote":
+    "Je hebt al {count} lessen uit een eerder rooster staan. Die worden vervangen, zodat verschoven en uitgevallen uren vanzelf kloppen. Activiteiten die je zelf hebt toegevoegd blijven staan.",
   "timetable.doImport": "In mijn agenda zetten",
   "timetable.needPlace": "Kies eerst het adres van je school.",
   "timetable.importedOne": "1 les in je agenda gezet",
   "timetable.imported": "{count} lessen in je agenda gezet",
   "timetable.replaced": ", {count} uit de vorige import vervangen.",
-  "timetable.current": "Er staan nu {count} lessen uit je rooster in de agenda, tot en met {date}. Haal je rooster opnieuw op zodra er iets verandert.",
+  "timetable.current":
+    "Er staan nu {count} lessen uit je rooster in de agenda, tot en met {date}. Haal je rooster opnieuw op zodra er iets verandert.",
   "timetable.horizon": "We halen lessen op tot {weeks} weken vooruit (nu tot {date}).",
   "password.title": "Nieuw wachtwoord",
   "password.subtitle": "Kies een nieuw wachtwoord voor je account.",
@@ -782,40 +844,55 @@ export const nl = {
 
   /* --- Privacyverklaring ------------------------------------------------- */
   "privacy.title": "Privacy",
-  "privacy.subtitle": "Kort en zonder kleine lettertjes: wat we bewaren, waarom, en hoe je het weghaalt.",
+  "privacy.subtitle":
+    "Kort en zonder kleine lettertjes: wat we bewaren, waarom, en hoe je het weghaalt.",
   "privacy.local.title": "Zonder account blijft alles op je eigen apparaat",
-  "privacy.local.body": "Gebruik je de app zonder in te loggen, dan staan je agenda, schoolwerk en instellingen uitsluitend in de opslag van je eigen browser. Ze worden niet verstuurd en wij kunnen er niet bij. Wis je je browsergegevens, dan zijn ze weg.",
+  "privacy.local.body":
+    "Gebruik je de app zonder in te loggen, dan staan je agenda, schoolwerk en instellingen uitsluitend in de opslag van je eigen browser. Ze worden niet verstuurd en wij kunnen er niet bij. Wis je je browsergegevens, dan zijn ze weg.",
   "privacy.account.title": "Met een account",
   "privacy.account.intro": "Log je in, dan bewaren we in je account:",
   "privacy.account.email": "Je e-mailadres en een versleuteld wachtwoord",
   "privacy.account.emailWhy": "om je te kunnen laten inloggen.",
   "privacy.account.data": "Je agenda, schoolwerk en instellingen",
-  "privacy.account.dataWhy": "inclusief je thuislocatie en opgeslagen locaties, want zonder die adressen kan de app geen vertrektijd berekenen.",
-  "privacy.account.where": "Dat staat in een database bij Supabase (servers in de EU), afgeschermd met Row Level Security: technisch kan alleen jouw eigen account bij jouw rij.",
+  "privacy.account.dataWhy":
+    "inclusief je thuislocatie en opgeslagen locaties, want zonder die adressen kan de app geen vertrektijd berekenen.",
+  "privacy.account.where":
+    "Dat staat in een database bij Supabase (servers in de EU), afgeschermd met Row Level Security: technisch kan alleen jouw eigen account bij jouw rij.",
   "privacy.outside.title": "Wat er naar buiten gaat",
-  "privacy.outside.intro": "Om reistijden en ritten te berekenen sturen we alleen coördinaten en tijdstippen naar:",
+  "privacy.outside.intro":
+    "Om reistijden en ritten te berekenen sturen we alleen coördinaten en tijdstippen naar:",
   "privacy.outside.nominatim": "om een adres om te zetten naar coördinaten.",
   "privacy.outside.osrm": "voor de reistijd met de auto.",
   "privacy.outside.motis": "voor OV-ritten, fiets- en looptijden.",
-  "privacy.outside.note": "Die verzoeken lopen via onze eigen server, dus die diensten zien jouw IP-adres niet. Er gaat nooit een naam, e-mailadres of afspraaktitel mee, alleen een punt op de kaart en een tijd.",
+  "privacy.outside.note":
+    "Die verzoeken lopen via onze eigen server, dus die diensten zien jouw IP-adres niet. Er gaat nooit een naam, e-mailadres of afspraaktitel mee, alleen een punt op de kaart en een tijd.",
   "privacy.tracking.title": "Geen tracking, wel tellen",
-  "privacy.tracking.body": "Geen advertenties, geen statistiekenbedrijf, geen cookies van derden, geen doorverkoop van gegevens. Er staat één cookie-achtige waarde in je browser: je eigen inlogsessie.",
-  "privacy.tracking.counters": "Wel tellen we mee hoe vaak de app gebruikt wordt, in onze eigen database. Dat is letterlijk één getal per dag per gebeurtenis, bijvoorbeeld “vandaag is de app 42 keer geopend”. Er gaat geen apparaat-nummer, ip-adres of iets uit je agenda mee, dus die getallen zijn naar niemand te herleiden.",
+  "privacy.tracking.body":
+    "Geen advertenties, geen statistiekenbedrijf, geen cookies van derden, geen doorverkoop van gegevens. Er staat één cookie-achtige waarde in je browser: je eigen inlogsessie.",
+  "privacy.tracking.counters":
+    "Wel tellen we mee hoe vaak de app gebruikt wordt, in onze eigen database. Dat is letterlijk één getal per dag per gebeurtenis, bijvoorbeeld “vandaag is de app 42 keer geopend”. Er gaat geen apparaat-nummer, ip-adres of iets uit je agenda mee, dus die getallen zijn naar niemand te herleiden.",
   "privacy.calendars.title": "Gekoppelde agenda’s",
-  "privacy.calendars.body": "Koppel je je rooster of je eigen agenda, dan bewaren we die link op je apparaat (en in je account als je inlogt). Onze server gebruikt hem alleen om je agenda op te halen; de inhoud gaat rechtstreeks naar je apparaat en wordt daar bewaard, niet bij ons. Loskoppelen haalt de link en de afspraken er weer uit.",
+  "privacy.calendars.body":
+    "Koppel je je rooster of je eigen agenda, dan bewaren we die link op je apparaat (en in je account als je inlogt). Onze server gebruikt hem alleen om je agenda op te halen; de inhoud gaat rechtstreeks naar je apparaat en wordt daar bewaard, niet bij ons. Loskoppelen haalt de link en de afspraken er weer uit.",
   "privacy.push.title": "Meldingen als de app dicht is",
-  "privacy.push.body": "Zet je die aan, dan bewaren we het adres dat je browser daarvoor uitgeeft, en de zinnen die verstuurd moeten worden met het tijdstip erbij. Je telefoon rekent die tijden zelf uit: onze server weet dus “stuur deze tekst om 07:04” en niet waar je heen gaat. Aan een willekeurig apparaat-nummer hangt geen naam of e-mailadres. Zet je ze uit, dan gaat alles meteen weg.",
+  "privacy.push.body":
+    "Zet je die aan, dan bewaren we het adres dat je browser daarvoor uitgeeft, en de zinnen die verstuurd moeten worden met het tijdstip erbij. Je telefoon rekent die tijden zelf uit: onze server weet dus “stuur deze tekst om 07:04” en niet waar je heen gaat. Aan een willekeurig apparaat-nummer hangt geen naam of e-mailadres. Zet je ze uit, dan gaat alles meteen weg.",
   "privacy.retention.title": "Hoe lang",
-  "privacy.retention.body": "Zolang je je account hebt. Verwijder je het, dan gaan je e-mailadres en al je gegevens direct mee. Er blijft geen kopie achter.",
+  "privacy.retention.body":
+    "Zolang je je account hebt. Verwijder je het, dan gaan je e-mailadres en al je gegevens direct mee. Er blijft geen kopie achter.",
   "privacy.rights.title": "Je rechten",
-  "privacy.rights.intro": "Je mag je gegevens inzien, meenemen en laten verwijderen. Dat kun je allebei zelf, direct in de app:",
+  "privacy.rights.intro":
+    "Je mag je gegevens inzien, meenemen en laten verwijderen. Dat kun je allebei zelf, direct in de app:",
   "privacy.rights.export": "Meenemen:",
-  "privacy.rights.exportBody": "Instellingen → Back-up & synchronisatie → Exporteren. Je krijgt alles als één JSON-bestand.",
+  "privacy.rights.exportBody":
+    "Instellingen → Back-up & synchronisatie → Exporteren. Je krijgt alles als één JSON-bestand.",
   "privacy.rights.delete": "Verwijderen:",
   "privacy.rights.deleteBody": "Instellingen → Account & synchronisatie → Account verwijderen.",
-  "privacy.rights.complaint": "Ben je het ergens niet mee eens, dan mag je een klacht indienen bij de Autoriteit Persoonsgegevens.",
+  "privacy.rights.complaint":
+    "Ben je het ergens niet mee eens, dan mag je een klacht indienen bij de Autoriteit Persoonsgegevens.",
   "privacy.age.title": "Leeftijd",
-  "privacy.age.body": "Ben je jonger dan 16, vraag dan even toestemming aan je ouder of verzorger voordat je een account aanmaakt.",
+  "privacy.age.body":
+    "Ben je jonger dan 16, vraag dan even toestemming aan je ouder of verzorger voordat je een account aanmaakt.",
   "privacy.back": "Terug naar Instellingen",
 
   /* --- Serverberichten --------------------------------------------------- */
@@ -835,7 +912,8 @@ export const nl = {
   "api.noWalkRoute": "Er is geen looproute gevonden tussen deze twee locaties.",
   "api.bikeTooFar": "Deze afstand is te ver om te fietsen. Kies auto of OV.",
   "api.walkTooFar": "Deze afstand is te ver om te lopen. Kies de fiets, de auto of het OV.",
-  "api.noTransit": "Geen OV-verbinding gevonden voor dit tijdstip. Probeer een ander vervoermiddel.",
+  "api.noTransit":
+    "Geen OV-verbinding gevonden voor dit tijdstip. Probeer een ander vervoermiddel.",
   "api.noConnection": "Geen verbinding gevonden. Probeer een ander tijdstip of een andere halte.",
   "api.journeyFailed": "De reis kon niet worden gepland.",
   "api.plannerDown": "De reisplanner is niet bereikbaar. Probeer het later opnieuw.",
@@ -849,7 +927,8 @@ export const nl = {
   "api.tooManyShort": "Te veel aanvragen.",
   "api.notLoggedIn": "Je bent niet ingelogd.",
   "api.sessionExpired": "Je sessie is verlopen. Log opnieuw in.",
-  "api.deleteNotConfigured": "Automatisch verwijderen is nog niet ingesteld. Mail ons en we verwijderen je account handmatig.",
+  "api.deleteNotConfigured":
+    "Automatisch verwijderen is nog niet ingesteld. Mail ons en we verwijderen je account handmatig.",
   "api.deleteFailed": "Het account kon niet worden verwijderd. Probeer het later opnieuw.",
   "api.deleteTooMany": "Te veel pogingen. Probeer het later opnieuw.",
   "api.connectorOff": "De Claude-connector is op deze server nog niet ingesteld.",
@@ -864,13 +943,15 @@ export const nl = {
   "api.timetableFailed": "Het rooster kon niet worden opgehaald ({status}).",
   "api.timetableFailedShort": "Het rooster kon niet worden opgehaald.",
   "api.fileTooBig": "Dit bestand is te groot.",
-  "api.notACalendar": "Op dit adres staat geen agenda. Controleer of je de iCal-link hebt gekopieerd.",
+  "api.notACalendar":
+    "Op dit adres staat geen agenda. Controleer of je de iCal-link hebt gekopieerd.",
   "api.timetableTimeout": "Het rooster reageerde niet op tijd.",
   "api.tooManyRoutes": "Te veel routeberekeningen achter elkaar. Probeer het zo nog eens.",
 
   /* --- Themakleur -------------------------------------------------------- */
   "theme.title": "Kleur van de app",
-  "theme.body": "Kies de kleur van knoppen en accenten. De keuze geldt op dit apparaat en werkt in zowel de lichte als de donkere weergave.",
+  "theme.body":
+    "Kies de kleur van knoppen en accenten. De keuze geldt op dit apparaat en werkt in zowel de lichte als de donkere weergave.",
   "theme.blue": "Blauw",
   "theme.indigo": "Indigo",
   "theme.purple": "Paars",
@@ -883,14 +964,16 @@ export const nl = {
 
   /* --- Fiets en OV ------------------------------------------------------- */
   "settings.bike.title": "Fiets en OV",
-  "settings.bike.body": "Zo reist bijna elke student: fietsen naar het station in plaats van lopen. Dat scheelt op een gewone reis al snel twintig minuten, met precies dezelfde trein.",
+  "settings.bike.body":
+    "Zo reist bijna elke student: fietsen naar het station in plaats van lopen. Dat scheelt op een gewone reis al snel twintig minuten, met precies dezelfde trein.",
   "settings.bike.none": "Lopen",
   "settings.bike.noneHint": "Naar de halte en er weer vandaan",
   "settings.bike.start": "Fiets heen",
   "settings.bike.startHint": "Fietsen naar de halte, daarna lopen",
   "settings.bike.both": "Fiets beide",
   "settings.bike.bothHint": "Ook een fiets bij je bestemming",
-  "timetable.linked": "Je rooster is gekoppeld en wordt automatisch bijgehouden. Laatst opgehaald: {when}.",
+  "timetable.linked":
+    "Je rooster is gekoppeld en wordt automatisch bijgehouden. Laatst opgehaald: {when}.",
   "timetable.never": "nog niet",
   "timetable.unlink": "Koppeling verbreken",
   "timetable.refreshNow": "Nu opnieuw ophalen",
@@ -908,7 +991,8 @@ export const nl = {
   "share.copied": "Gekopieerd naar je klembord.",
   "share.failed": "Delen lukte niet. Probeer het nog eens.",
   "theme.tint": "Achtergrond meekleuren",
-  "theme.tintHint": "Aan: de achtergrond krijgt je kleur, de kaarten blijven neutraal. Uit: een neutrale achtergrond met alleen gekleurde knoppen.",
+  "theme.tintHint":
+    "Aan: de achtergrond krijgt je kleur, de kaarten blijven neutraal. Uit: een neutrale achtergrond met alleen gekleurde knoppen.",
 
   /* --- Status van een rit ------------------------------------------------ */
   "status.cancelled": "Uitgevallen",
@@ -978,7 +1062,6 @@ export const nl = {
 
 export type TranslationKey = keyof typeof nl;
 
-
 /**
  * De tabellen die nu geladen zijn.
  *
@@ -988,10 +1071,7 @@ export type TranslationKey = keyof typeof nl;
 const TABLES: Partial<Record<Language, Record<TranslationKey, string>>> = { nl };
 
 /** Meldt een geladen tabel aan. */
-export function registerTable(
-  language: Language,
-  table: Record<TranslationKey, string>,
-): void {
+export function registerTable(language: Language, table: Record<TranslationKey, string>): void {
   TABLES[language] = table;
 }
 

@@ -134,13 +134,14 @@ export function ConnectorSection() {
     }
   }
 
-  const summary = !configured || !user
-    ? t("connector.summaryOff")
-    : tokens === null || tokens.length === 0
-      ? t("connector.summaryNone")
-      : tokens.length === 1
-        ? t("connector.summaryOne")
-        : t("connector.summaryMany", { count: tokens.length });
+  const summary =
+    !configured || !user
+      ? t("connector.summaryOff")
+      : tokens === null || tokens.length === 0
+        ? t("connector.summaryNone")
+        : tokens.length === 1
+          ? t("connector.summaryOne")
+          : t("connector.summaryMany", { count: tokens.length });
 
   // Het adres dat in Claude moet: precies deze app, dus af te lezen van waar we
   // draaien. Op de server is `window` er nog niet; dan laten we het leeg tot de
@@ -180,19 +181,12 @@ export function ConnectorSection() {
           </div>
 
           {fresh && (
-            <div
-              className="mt-3 rounded-xl border p-3"
-              style={{ borderColor: "var(--line)" }}
-            >
+            <div className="mt-3 rounded-xl border p-3" style={{ borderColor: "var(--line)" }}>
               <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
                 {t("connector.once")}
               </p>
               <code className="mt-2 block break-all text-xs">{fresh}</code>
-              <button
-                type="button"
-                className="btn btn-ghost mt-2"
-                onClick={() => void copy(fresh)}
-              >
+              <button type="button" className="btn btn-ghost mt-2" onClick={() => void copy(fresh)}>
                 {copied ? t("connector.copied") : t("connector.copy")}
               </button>
             </div>

@@ -196,117 +196,126 @@ export default function AgendaPage() {
         )
       ) : (
         <>
-      <div
-        className="mb-4 grid grid-cols-4 gap-1 rounded-2xl border p-1"
-        role="tablist"
-        aria-label={t("agenda.view")}
-        style={{ background: "var(--surface-soft)", borderColor: "var(--line)" }}
-      >
-        {VIEWS.map((item) => {
-          const active = item.id === view;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setView(item.id)}
-              className="rounded-xl px-2 py-2 text-sm font-medium transition-colors"
-              style={{
-                background: active ? "var(--surface)" : "transparent",
-                color: active ? "var(--ink)" : "var(--muted)",
-                boxShadow: active ? "var(--shadow-card)" : "none",
-              }}
-            >
-              {t(item.key)}
-            </button>
-          );
-        })}
-      </div>
+          <div
+            className="mb-4 grid grid-cols-4 gap-1 rounded-2xl border p-1"
+            role="tablist"
+            aria-label={t("agenda.view")}
+            style={{ background: "var(--surface-soft)", borderColor: "var(--line)" }}
+          >
+            {VIEWS.map((item) => {
+              const active = item.id === view;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setView(item.id)}
+                  className="rounded-xl px-2 py-2 text-sm font-medium transition-colors"
+                  style={{
+                    background: active ? "var(--surface)" : "transparent",
+                    color: active ? "var(--ink)" : "var(--muted)",
+                    boxShadow: active ? "var(--shadow-card)" : "none",
+                  }}
+                >
+                  {t(item.key)}
+                </button>
+              );
+            })}
+          </div>
 
-      {!hydrated ? (
-        <div className="card px-5 py-10 text-center">
-          <Spinner size={18} label={t("agenda.loading")} />
-        </div>
-      ) : view === "vandaag" || view === "morgen" ? (
-        <DayList dateKey={view === "vandaag" ? today : addDaysToKey(today, 1)} now={now} />
-      ) : view === "week" ? (
-        <div {...swipe}>
-          <PeriodNav
-            label={formatRangeLabel(weekStart, addDaysToKey(weekStart, 6))}
-            note={t("agenda.weekNumber", { number: isoWeekNumber(weekStart) })}
-            onPrevious={() => setWeekStart(addWeeksToKey(weekStart, -1))}
-            onNext={() => setWeekStart(addWeeksToKey(weekStart, 1))}
-            previousLabel={t("agenda.previousWeek")}
-            nextLabel={t("agenda.nextWeek")}
-            onToday={weekStart === startOfWeekKey(today) ? undefined : goToToday}
-            extra={
-              <div
-                className="flex rounded-lg border p-0.5"
-                style={{ borderColor: "var(--line)" }}
-                role="group"
-                aria-label={t("agenda.weekView")}
-              >
-                {(["raster", "lijst"] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    aria-pressed={weekLayout === option}
-                    onClick={() => setWeekLayout(option)}
-                    className="rounded-md px-2 py-1 text-xs font-medium capitalize transition-colors"
-                    style={{
-                      background: weekLayout === option ? "var(--surface-soft)" : "transparent",
-                      color: weekLayout === option ? "var(--ink)" : "var(--muted)",
-                    }}
+          {!hydrated ? (
+            <div className="card px-5 py-10 text-center">
+              <Spinner size={18} label={t("agenda.loading")} />
+            </div>
+          ) : view === "vandaag" || view === "morgen" ? (
+            <DayList dateKey={view === "vandaag" ? today : addDaysToKey(today, 1)} now={now} />
+          ) : view === "week" ? (
+            <div {...swipe}>
+              <PeriodNav
+                label={formatRangeLabel(weekStart, addDaysToKey(weekStart, 6))}
+                note={t("agenda.weekNumber", { number: isoWeekNumber(weekStart) })}
+                onPrevious={() => setWeekStart(addWeeksToKey(weekStart, -1))}
+                onNext={() => setWeekStart(addWeeksToKey(weekStart, 1))}
+                previousLabel={t("agenda.previousWeek")}
+                nextLabel={t("agenda.nextWeek")}
+                onToday={weekStart === startOfWeekKey(today) ? undefined : goToToday}
+                extra={
+                  <div
+                    className="flex rounded-lg border p-0.5"
+                    style={{ borderColor: "var(--line)" }}
+                    role="group"
+                    aria-label={t("agenda.weekView")}
                   >
-                    {t(option === "raster" ? "agenda.layout.grid" : "agenda.layout.list")}
-                  </button>
-                ))}
-              </div>
-            }
-          />
+                    {(["raster", "lijst"] as const).map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        aria-pressed={weekLayout === option}
+                        onClick={() => setWeekLayout(option)}
+                        className="rounded-md px-2 py-1 text-xs font-medium capitalize transition-colors"
+                        style={{
+                          background: weekLayout === option ? "var(--surface-soft)" : "transparent",
+                          color: weekLayout === option ? "var(--ink)" : "var(--muted)",
+                        }}
+                      >
+                        {t(option === "raster" ? "agenda.layout.grid" : "agenda.layout.list")}
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
 
-          {weekLayout === "raster" ? (
-            <>
-              <WeekGrid weekStart={weekStart} now={now} />
-              <p className="mt-3 text-center text-xs" style={{ color: "var(--muted)" }}>
-                {t("agenda.travelHint")}
-              </p>
-              {/* Slepen kan alleen met een muis, dus alleen daar de uitleg.
+              {weekLayout === "raster" ? (
+                <>
+                  <WeekGrid weekStart={weekStart} now={now} />
+                  <p className="mt-3 text-center text-xs" style={{ color: "var(--muted)" }}>
+                    {t("agenda.travelHint")}
+                  </p>
+                  {/* Slepen kan alleen met een muis, dus alleen daar de uitleg.
                   De toetsuitleg staat ernaast: die geldt juist voor wie geen
                   muis gebruikt. */}
-              <p className="mt-1 hidden text-center text-xs lg:block" style={{ color: "var(--muted)" }}>
-                {t("week.dragHint")}
-              </p>
-              <p className="mt-1 hidden text-center text-xs lg:block" style={{ color: "var(--muted)" }}>
-                {t("week.keyHint")}
-              </p>
-            </>
+                  <p
+                    className="mt-1 hidden text-center text-xs lg:block"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {t("week.dragHint")}
+                  </p>
+                  <p
+                    className="mt-1 hidden text-center text-xs lg:block"
+                    style={{ color: "var(--muted)" }}
+                  >
+                    {t("week.keyHint")}
+                  </p>
+                </>
+              ) : (
+                <WeekList weekStart={weekStart} now={now} />
+              )}
+            </div>
           ) : (
-            <WeekList weekStart={weekStart} now={now} />
+            <div {...swipe}>
+              <PeriodNav
+                label={formatMonthLabel(month)}
+                onPrevious={() => setMonth(addMonthsToKey(month, -1))}
+                onNext={() => setMonth(addMonthsToKey(month, 1))}
+                previousLabel={t("agenda.previousMonth")}
+                nextLabel={t("agenda.nextMonth")}
+                onToday={isSameMonth(month, today) ? undefined : goToToday}
+              />
+
+              <MonthGrid month={month} selected={selectedDay} onSelect={setSelectedDay} now={now} />
+
+              <section
+                className="mt-5"
+                aria-label={t("agenda.activitiesOn", { date: formatDateLabel(selectedDay, now) })}
+              >
+                <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+                  {formatDateLabel(selectedDay, now)}
+                </h2>
+                <DayList dateKey={selectedDay} now={now} compactEmpty />
+              </section>
+            </div>
           )}
-        </div>
-      ) : (
-        <div {...swipe}>
-          <PeriodNav
-            label={formatMonthLabel(month)}
-            onPrevious={() => setMonth(addMonthsToKey(month, -1))}
-            onNext={() => setMonth(addMonthsToKey(month, 1))}
-            previousLabel={t("agenda.previousMonth")}
-            nextLabel={t("agenda.nextMonth")}
-            onToday={isSameMonth(month, today) ? undefined : goToToday}
-          />
-
-          <MonthGrid month={month} selected={selectedDay} onSelect={setSelectedDay} now={now} />
-
-          <section className="mt-5" aria-label={t("agenda.activitiesOn", { date: formatDateLabel(selectedDay, now) })}>
-            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {formatDateLabel(selectedDay, now)}
-            </h2>
-            <DayList dateKey={selectedDay} now={now} compactEmpty />
-          </section>
-        </div>
-      )}
         </>
       )}
 
@@ -440,11 +449,7 @@ function DayList({
         {t("agenda.empty.day")}
       </p>
     ) : (
-      <EmptyState
-        icon="📅"
-        title={t("agenda.empty.title")}
-        description={t("agenda.empty.body")}
-      />
+      <EmptyState icon="📅" title={t("agenda.empty.title")} description={t("agenda.empty.body")} />
     );
   }
 

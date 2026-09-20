@@ -114,8 +114,24 @@ describe("toJourney", () => {
     const traag = toJourney(
       rit({
         legs: [
-          { mode: "TRANSIT", startTime: "2026-09-20T08:22:00Z", endTime: "2026-09-20T08:40:00Z", duration: 1080, routeShortName: "A", realTime: true, scheduledStartTime: "2026-09-20T08:20:00Z" },
-          { mode: "TRANSIT", startTime: "2026-09-20T08:44:00Z", endTime: "2026-09-20T08:54:00Z", duration: 600, routeShortName: "B", realTime: true, scheduledStartTime: "2026-09-20T08:37:00Z" },
+          {
+            mode: "TRANSIT",
+            startTime: "2026-09-20T08:22:00Z",
+            endTime: "2026-09-20T08:40:00Z",
+            duration: 1080,
+            routeShortName: "A",
+            realTime: true,
+            scheduledStartTime: "2026-09-20T08:20:00Z",
+          },
+          {
+            mode: "TRANSIT",
+            startTime: "2026-09-20T08:44:00Z",
+            endTime: "2026-09-20T08:54:00Z",
+            duration: 600,
+            routeShortName: "B",
+            realTime: true,
+            scheduledStartTime: "2026-09-20T08:37:00Z",
+          },
         ],
       }),
       "Thuis",
@@ -129,7 +145,14 @@ describe("toJourney", () => {
     const uit = toJourney(
       rit({
         legs: [
-          { mode: "TRANSIT", startTime: "2026-09-20T08:22:00Z", endTime: "2026-09-20T08:54:00Z", duration: 1920, routeShortName: "A", cancelled: true },
+          {
+            mode: "TRANSIT",
+            startTime: "2026-09-20T08:22:00Z",
+            endTime: "2026-09-20T08:54:00Z",
+            duration: 1920,
+            routeShortName: "A",
+            cancelled: true,
+          },
         ],
       }),
       "Thuis",

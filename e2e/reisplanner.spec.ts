@@ -19,9 +19,7 @@ function rit(id: string, vertrek: string, aankomst: string, patch: Record<string
     id,
     departure: vertrek,
     arrival: aankomst,
-    durationMinutes: Math.round(
-      (Date.parse(aankomst) - Date.parse(vertrek)) / 60_000,
-    ),
+    durationMinutes: Math.round((Date.parse(aankomst) - Date.parse(vertrek)) / 60_000),
     transfers: 0,
     legs: [
       {
@@ -119,9 +117,7 @@ async function open(page: Page, arriveBy?: string) {
 
 const opties = (page: Page) => page.getByRole("region", { name: "Reismogelijkheden" });
 
-test("bij 'uiterlijk aankomen om' is de laatste rit die het haalt aangewezen", async ({
-  page,
-}) => {
+test("bij 'uiterlijk aankomen om' is de laatste rit die het haalt aangewezen", async ({ page }) => {
   /*
    * De lijst staat op vertrektijd, zoals een vertrekbord. Bij "ik moet om
    * 14:00 in Zwolle zijn" betekent dat: bovenaan staat de rit die je er twee
@@ -187,9 +183,7 @@ test("het spoor staat er in de taal van de app", async ({ page }) => {
    */
   vangRitten(page, [rit("a", `${DAG}T07:01:00.000Z`, `${DAG}T07:48:00.000Z`)]);
   await zaai(page, { ...AGENDA, settings: { ...AGENDA.settings, home: THUIS } }, NU, "en");
-  await page.goto(
-    `/reizen?toLat=${ZWOLLE.lat}&toLon=${ZWOLLE.lon}&toLabel=Zwolle`,
-  );
+  await page.goto(`/reizen?toLat=${ZWOLLE.lat}&toLon=${ZWOLLE.lon}&toLabel=Zwolle`);
   await page.getByRole("button", { name: "Find journeys" }).click();
 
   const lijst = page.getByRole("region", { name: "Journey options" });
@@ -255,7 +249,10 @@ test("een gevonden rit is vanuit de planner in je agenda te zetten", async ({ pa
   await expect(form.getByLabel("Starttijd")).toHaveValue("08:48");
   await expect(form.getByRole("textbox", { name: /Locatie/ })).toHaveValue("Zwolle");
 
-  await form.getByLabel(/^Naam$/).first().fill("Open dag");
+  await form
+    .getByLabel(/^Naam$/)
+    .first()
+    .fill("Open dag");
   await form.getByRole("button", { name: "Toevoegen" }).click();
   await expect(form).toHaveCount(0);
 

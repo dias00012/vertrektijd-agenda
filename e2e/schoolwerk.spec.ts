@@ -35,7 +35,10 @@ test("een stap afvinken zet de opdracht op bezig", async ({ page }) => {
 
 test("het filter onthoudt je keuze na een herlading", async ({ page }) => {
   await page.goto("/schoolwerk");
-  await page.getByRole("button", { name: /^Te doen/ }).first().click();
+  await page
+    .getByRole("button", { name: /^Te doen/ })
+    .first()
+    .click();
   await expect(page.getByRole("button", { name: /^Te doen/ }).first()).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -177,7 +180,10 @@ test("een verwijderde opdracht is terug te halen", async ({ page }) => {
   // Verwijderen vraagt eerst om een bevestiging.
   const weg = page.getByRole("button", { name: "Verwijderen" });
   await weg.click();
-  await page.getByRole("button", { name: /Zeker weten|Verwijderen/ }).last().click();
+  await page
+    .getByRole("button", { name: /Zeker weten|Verwijderen/ })
+    .last()
+    .click();
 
   await expect(page.locator("article").filter({ hasText: "Excel week 1" })).toHaveCount(0);
 

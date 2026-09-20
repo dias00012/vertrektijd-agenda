@@ -36,9 +36,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
   const [title, setTitle] = useState(task?.title ?? exam?.title ?? "");
   const [description, setDescription] = useState(task?.description ?? "");
   const [date, setDate] = useState(task?.deadline ?? exam?.date ?? todayKey());
-  const [minutes, setMinutes] = useState(
-    String(task?.estimatedMinutes ?? exam?.prepMinutes ?? 60),
-  );
+  const [minutes, setMinutes] = useState(String(task?.estimatedMinutes ?? exam?.prepMinutes ?? 60));
   const [priority, setPriority] = useState<SchoolworkPriority>(
     task?.priority ?? exam?.priority ?? "medium",
   );
@@ -211,7 +209,9 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
             <input
               id="sw-title"
               className="field"
-              placeholder={kind === "task" ? t("swForm.taskPlaceholder") : t("swForm.examPlaceholder")}
+              placeholder={
+                kind === "task" ? t("swForm.taskPlaceholder") : t("swForm.examPlaceholder")
+              }
               value={title}
               aria-invalid={shown.title ? "true" : undefined}
               onChange={(e) => setTitle(e.target.value)}
@@ -400,9 +400,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                     <button
                       type="button"
                       aria-label={t("swForm.removeStep", { number: index + 1 })}
-                      onClick={() =>
-                        setSteps((current) => current.filter((s) => s.id !== step.id))
-                      }
+                      onClick={() => setSteps((current) => current.filter((s) => s.id !== step.id))}
                       className="shrink-0 rounded-lg px-2 py-1 text-sm"
                       style={{ color: "var(--danger)" }}
                     >
@@ -415,10 +413,7 @@ export function SchoolworkForm({ task, exam, onClose }: Props) {
                 type="button"
                 className="btn btn-ghost mt-2 w-full text-xs"
                 onClick={() =>
-                  setSteps((current) => [
-                    ...current,
-                    { id: createId(), title: "", done: false },
-                  ])
+                  setSteps((current) => [...current, { id: createId(), title: "", done: false }])
                 }
               >
                 {t("swForm.addStep")}

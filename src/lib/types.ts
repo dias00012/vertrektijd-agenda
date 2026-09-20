@@ -64,15 +64,7 @@ export interface GeoLocation {
 
 /** Vervoerswijze van één onderdeel van een reis. */
 export type TravelLegMode =
-  | "walk"
-  | "bike"
-  | "car"
-  | "rail"
-  | "bus"
-  | "tram"
-  | "subway"
-  | "ferry"
-  | "other";
+  "walk" | "bike" | "car" | "rail" | "bus" | "tram" | "subway" | "ferry" | "other";
 
 /**
  * Eén onderdeel van een reis, bv. "lopen naar het station" of
@@ -400,7 +392,7 @@ export interface Settings {
    * of een OV-fiets. Lopend duurt dezelfde reis al snel een half uur langer.
    */
   transitBike?: TransitBike;
-    /**
+  /**
    * Je gekoppelde rooster, zodat de app het zelf bij kan houden. Zonder deze
    * gegevens zou je na elke roosterwijziging opnieuw alles moeten invullen.
    */

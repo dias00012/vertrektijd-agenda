@@ -59,8 +59,7 @@ export async function POST(request: Request) {
         signal: controller.signal,
         headers: {
           Accept: "text/calendar, text/plain;q=0.9, */*;q=0.5",
-          "User-Agent":
-            process.env.NOMINATIM_USER_AGENT?.trim() || "Vertrektijd/1.0 (agenda-app)",
+          "User-Agent": process.env.NOMINATIM_USER_AGENT?.trim() || "Vertrektijd/1.0 (agenda-app)",
         },
         cache: "no-store",
       });
@@ -85,10 +84,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: say(request, "api.tooManyRedirects") }, { status: 400 });
     }
     if (response.status === 401 || response.status === 403) {
-      return NextResponse.json(
-        { error: say(request, "api.needsLogin") },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: say(request, "api.needsLogin") }, { status: 400 });
     }
     if (!response.ok) {
       return NextResponse.json(
@@ -109,10 +105,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: say(request, "api.fileTooBig") }, { status: 400 });
     }
     if (!text.includes("BEGIN:VCALENDAR")) {
-      return NextResponse.json(
-        { error: say(request, "api.notACalendar") },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: say(request, "api.notACalendar") }, { status: 400 });
     }
 
     return NextResponse.json({ text });

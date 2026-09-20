@@ -15,22 +15,22 @@ const DSN = (process.env.SENTRY_DSN ?? process.env.NEXT_PUBLIC_SENTRY_DSN)?.trim
 
 type Context = Record<string, string | number | boolean | undefined>;
 
-export function reportServerError(
-  route: string,
-  error: unknown,
-  context: Context = {},
-): void {
+export function reportServerError(route: string, error: unknown, context: Context = {}): void {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[${route}]`, message, context);
 
   const endpoint = DSN ? envelopeUrl(DSN) : null;
   if (!endpoint) return;
 
-  const body = envelopeBody(error, { ...context, route, side: "server" }, {
-    eventId: crypto.randomUUID().replace(/-/g, ""),
-    sentAt: new Date().toISOString(),
-    path: route,
-  });
+  const body = envelopeBody(
+    error,
+    { ...context, route, side: "server" },
+    {
+      eventId: crypto.randomUUID().replace(/-/g, ""),
+      sentAt: new Date().toISOString(),
+      path: route,
+    },
+  );
 
   // Niet wachten: een gebruiker die op een station staat hoeft niet te wachten
   // tot onze foutmelding is afgeleverd. Gaat het versturen mis, dan blijft het

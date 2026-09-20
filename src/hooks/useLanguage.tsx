@@ -9,7 +9,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { detectLanguage, setLanguage as setActive, LANGUAGE_KEY, type Language } from "@/lib/i18n/locale";
+import {
+  detectLanguage,
+  setLanguage as setActive,
+  LANGUAGE_KEY,
+  type Language,
+} from "@/lib/i18n/locale";
 import { loadTable, translate, type TranslationKey, type Values } from "@/lib/i18n/dictionary";
 
 interface LanguageValue {

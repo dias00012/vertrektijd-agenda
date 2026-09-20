@@ -16,10 +16,9 @@ import { ActivityForm } from "./LazyActivityForm";
  * `ssr: false` omdat het alle drie vensters zijn die alleen in een browser iets
  * doen; vooraf renderen levert niets op.
  */
-const Onboarding = dynamic(
-  () => import("./Onboarding").then((m) => ({ default: m.Onboarding })),
-  { ssr: false },
-);
+const Onboarding = dynamic(() => import("./Onboarding").then((m) => ({ default: m.Onboarding })), {
+  ssr: false,
+});
 import { UndoBar } from "./UndoBar";
 const Tour = dynamic(() => import("./Tour").then((m) => ({ default: m.Tour })), {
   ssr: false,
@@ -31,7 +30,6 @@ import { usePushQueue } from "@/hooks/usePushQueue";
 import { track } from "@/lib/stats";
 import { useT } from "@/hooks/useLanguage";
 import { NAV } from "@/lib/nav";
-
 
 /**
  * Applicatieframe.

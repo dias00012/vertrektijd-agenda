@@ -31,7 +31,10 @@ async function requireUser(
     return NextResponse.json({ error: say(request, "api.connectorOff") }, { status: 501 });
   }
 
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const token = request.headers
+    .get("authorization")
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
   if (!token) {
     return NextResponse.json({ error: say(request, "api.notLoggedIn") }, { status: 401 });
   }

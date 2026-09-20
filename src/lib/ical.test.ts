@@ -374,11 +374,7 @@ describe("parseIcs met andere herhalingen dan wekelijks", () => {
       WINDOW,
     );
 
-    expect(events.map((event) => event.date)).toEqual([
-      "2026-09-07",
-      "2026-09-10",
-      "2026-09-13",
-    ]);
+    expect(events.map((event) => event.date)).toEqual(["2026-09-07", "2026-09-10", "2026-09-13"]);
   });
 
   it("klapt een maandelijkse herhaling uit op dezelfde dag van de maand", () => {
@@ -413,7 +409,11 @@ describe("parseIcs met andere herhalingen dan wekelijks", () => {
           "END:VEVENT",
         ].join("\r\n"),
       ),
-      { from: new Date("2026-08-01T00:00:00Z"), to: new Date("2026-11-30T23:59:59Z"), zone: "Europe/Amsterdam" },
+      {
+        from: new Date("2026-08-01T00:00:00Z"),
+        to: new Date("2026-11-30T23:59:59Z"),
+        zone: "Europe/Amsterdam",
+      },
     );
 
     // September heeft geen 31e; die maand valt weg, oktober doet weer mee.
@@ -493,11 +493,7 @@ describe("parseIcs met losse afwijkingen op een reeks", () => {
       WINDOW,
     );
 
-    expect(events.map((event) => event.date)).toEqual([
-      "2026-09-07",
-      "2026-09-21",
-      "2026-09-28",
-    ]);
+    expect(events.map((event) => event.date)).toEqual(["2026-09-07", "2026-09-21", "2026-09-28"]);
   });
 
   it("zet een verplaatste les op de nieuwe dag, en niet dubbel", () => {
@@ -668,18 +664,14 @@ describe("feedActivityId", () => {
     const eerste = parseIcs(rooster, WINDOW);
     const tweede = parseIcs(rooster, WINDOW);
     expect(eerste).toHaveLength(1);
-    expect(feedActivityId("rooster", eerste[0].uid)).toBe(
-      feedActivityId("rooster", tweede[0].uid),
-    );
+    expect(feedActivityId("rooster", eerste[0].uid)).toBe(feedActivityId("rooster", tweede[0].uid));
   });
 
   it("houdt twee agenda's uit elkaar", () => {
     // Dezelfde afspraak uit twee gekoppelde agenda's blijft twee blokken: je
     // hebt ze zelf allebei toegevoegd.
     const [event] = parseIcs(rooster, WINDOW);
-    expect(feedActivityId("rooster", event.uid)).not.toBe(
-      feedActivityId("agenda:abc", event.uid),
-    );
+    expect(feedActivityId("rooster", event.uid)).not.toBe(feedActivityId("agenda:abc", event.uid));
   });
 
   it("houdt twee afspraken uit dezelfde agenda uit elkaar", () => {

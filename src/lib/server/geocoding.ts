@@ -213,9 +213,7 @@ export function nominatimResult(item: NominatimItem): GeocodeResult {
   // "straat" -- waarmee de terugval hieronder onbereikbaar werd in precies het
   // geval waarvoor hij bedoeld was, en er "184, Lelystad" op je scherm bleef
   // staan.
-  const street = address.road
-    ? [address.road, address.house_number].filter(Boolean).join(" ")
-    : "";
+  const street = address.road ? [address.road, address.house_number].filter(Boolean).join(" ") : "";
 
   const rawName = item.name?.trim() ?? "";
   const numberOnly = /^\d+[a-zA-Z]?$/.test(rawName);

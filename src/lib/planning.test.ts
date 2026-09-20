@@ -184,7 +184,9 @@ describe("fitSteps", () => {
   });
 
   it("gebruikt de standaardduur voor een stap zonder schatting", () => {
-    const { blocks } = fitSteps([step()], [dag("2026-09-14", ["18:00", "22:00"])], { defaultMinutes: 25 });
+    const { blocks } = fitSteps([step()], [dag("2026-09-14", ["18:00", "22:00"])], {
+      defaultMinutes: 25,
+    });
     expect(blocks[0].minutes).toBe(25);
   });
 

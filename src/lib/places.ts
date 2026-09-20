@@ -126,7 +126,10 @@ export function placeChoices(settings: Settings, limit = 6): PlaceChoice[] {
  * gelijk zijn — ruim binnen een meter. Het label mag verschillen: dezelfde
  * voordeur heet in de ene zoekopdracht net anders dan in de andere.
  */
-export function samePoint(a: GeoLocation | null | undefined, b: GeoLocation | null | undefined): boolean {
+export function samePoint(
+  a: GeoLocation | null | undefined,
+  b: GeoLocation | null | undefined,
+): boolean {
   if (!a || !b) return false;
   return a.lat.toFixed(5) === b.lat.toFixed(5) && a.lon.toFixed(5) === b.lon.toFixed(5);
 }

@@ -84,8 +84,10 @@ function initialDraft(
       location: activity.location,
       // Geen "standaard"-optie meer: toon meteen de kleur en het vervoermiddel
       // die nu gelden, zodat wat je ziet ook is wat er gebeurt.
-      color: activity.color ?? resolveCategory(activity.category, settings.customCategories, settings.categoryOverrides)
-        .color,
+      color:
+        activity.color ??
+        resolveCategory(activity.category, settings.customCategories, settings.categoryOverrides)
+          .color,
       travelMode: activity.travelMode ?? settings.travelMode,
       // Anders dan kleur en vervoermiddel bewust wél met een "standaard"-stand:
       // een marge is een getal, en een ingevuld veld dat de algemene waarde
@@ -133,9 +135,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     activities,
   } = useAgenda();
   const t = useT();
-  const [draft, setDraft] = useState<ActivityDraft>(() =>
-    initialDraft(settings, activity, preset),
-  );
+  const [draft, setDraft] = useState<ActivityDraft>(() => initialDraft(settings, activity, preset));
   const [submitted, setSubmitted] = useState(false);
   const [deleteMode, setDeleteMode] = useState<"idle" | "choose" | "confirm">("idle");
   /**
@@ -368,7 +368,9 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
 
   function patchRecurrence(update: Partial<Recurrence>) {
     setDraft((current) =>
-      current.recurrence ? { ...current, recurrence: { ...current.recurrence, ...update } } : current,
+      current.recurrence
+        ? { ...current, recurrence: { ...current.recurrence, ...update } }
+        : current,
     );
   }
 
@@ -725,7 +727,11 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
           <div className={multiDay || allDay ? "grid grid-cols-2 gap-3" : undefined}>
             <div>
               <label className="label" htmlFor="activity-date">
-                {repeats ? t("form.startDate") : multiDay || allDay ? t("form.from") : t("form.date")}
+                {repeats
+                  ? t("form.startDate")
+                  : multiDay || allDay
+                    ? t("form.from")
+                    : t("form.date")}
               </label>
               <input
                 id="activity-date"
@@ -758,9 +764,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                   min={draft.date}
                   value={draft.endDate ?? draft.date}
                   aria-invalid={shown.endDate ? "true" : undefined}
-                  onChange={(event) =>
-                    patch({ endDate: event.target.value || null })
-                  }
+                  onChange={(event) => patch({ endDate: event.target.value || null })}
                 />
                 {shown.endDate ? (
                   <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
@@ -783,44 +787,44 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
           ) : null}
 
           {allDay ? null : (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label" htmlFor="activity-start">
-                {t("form.startTime")}
-              </label>
-              <input
-                id="activity-start"
-                type="time"
-                className="field"
-                value={draft.startTime}
-                aria-invalid={shown.startTime ? "true" : undefined}
-                onChange={(event) => patch({ startTime: event.target.value })}
-              />
-              {shown.startTime ? (
-                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
-                  {shown.startTime}
-                </p>
-              ) : null}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label" htmlFor="activity-start">
+                  {t("form.startTime")}
+                </label>
+                <input
+                  id="activity-start"
+                  type="time"
+                  className="field"
+                  value={draft.startTime}
+                  aria-invalid={shown.startTime ? "true" : undefined}
+                  onChange={(event) => patch({ startTime: event.target.value })}
+                />
+                {shown.startTime ? (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
+                    {shown.startTime}
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <label className="label" htmlFor="activity-end">
+                  {t("form.endTime")}
+                </label>
+                <input
+                  id="activity-end"
+                  type="time"
+                  className="field"
+                  value={draft.endTime}
+                  aria-invalid={shown.endTime ? "true" : undefined}
+                  onChange={(event) => patch({ endTime: event.target.value })}
+                />
+                {shown.endTime ? (
+                  <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
+                    {shown.endTime}
+                  </p>
+                ) : null}
+              </div>
             </div>
-            <div>
-              <label className="label" htmlFor="activity-end">
-                {t("form.endTime")}
-              </label>
-              <input
-                id="activity-end"
-                type="time"
-                className="field"
-                value={draft.endTime}
-                aria-invalid={shown.endTime ? "true" : undefined}
-                onChange={(event) => patch({ endTime: event.target.value })}
-              />
-              {shown.endTime ? (
-                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>
-                  {shown.endTime}
-                </p>
-              ) : null}
-            </div>
-          </div>
           )}
 
           <fieldset
@@ -882,38 +886,39 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                     {t("form.monthlyHint", { day: monthDayLabel(draft.date) })}
                   </p>
                 ) : (
-                <div>
-                  <span className="label">{t("form.onDays")}</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {weekdays().map((day) => {
-                      const active = draft.recurrence!.weekdays.includes(day.value);
-                      return (
-                        <button
-                          key={day.value}
-                          type="button"
-                          onClick={() => toggleWeekday(day.value)}
-                          aria-pressed={active}
-                          aria-label={day.long}
-                          className="h-10 w-10 rounded-full border text-xs font-semibold uppercase transition-colors"
-                          style={{
-                            borderColor: active ? accent : "var(--line)",
-                            background: active
-                              ? `color-mix(in srgb, ${accent} 15%, transparent)`
-                              : "transparent",
-                            color: active ? accent : "var(--muted)",
-                          }}
-                        >
-                          {day.short}
-                        </button>
-                      );
-                    })}
+                  <div>
+                    <span className="label">{t("form.onDays")}</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {weekdays().map((day) => {
+                        const active = draft.recurrence!.weekdays.includes(day.value);
+                        return (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => toggleWeekday(day.value)}
+                            aria-pressed={active}
+                            aria-label={day.long}
+                            className="h-10 w-10 rounded-full border text-xs font-semibold uppercase transition-colors"
+                            style={{
+                              borderColor: active ? accent : "var(--line)",
+                              background: active
+                                ? `color-mix(in srgb, ${accent} 15%, transparent)`
+                                : "transparent",
+                              color: active ? accent : "var(--muted)",
+                            }}
+                          >
+                            {day.short}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
                 )}
 
                 <div>
                   <label className="label" htmlFor="activity-until">
-                    {t("form.until")} <span style={{ fontWeight: 400 }}>· {t("common.optional")}</span>
+                    {t("form.until")}{" "}
+                    <span style={{ fontWeight: 400 }}>· {t("common.optional")}</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -958,11 +963,7 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
               }}
               required={false}
               places={savedPlaces}
-              hint={
-                settings.home
-                  ? t("form.locationHint")
-                  : t("form.needHomeFirst")
-              }
+              hint={settings.home ? t("form.locationHint") : t("form.needHomeFirst")}
             />
 
             {draft.location && !alreadyDefault ? (
@@ -974,14 +975,12 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
                   onChange={(event) => setRemember(event.target.checked)}
                 />
                 <span style={{ color: "var(--muted)" }}>
-                  {category.emoji}{" "}
-                  {t("form.remember", { category: category.label })}
+                  {category.emoji} {t("form.remember", { category: category.label })}
                 </span>
               </label>
             ) : alreadyDefault ? (
               <p className="mt-2.5 text-xs" style={{ color: "var(--muted)" }}>
-                &#128278; {category.emoji}{" "}
-                {t("form.alreadyDefault", { category: category.label })}
+                &#128278; {category.emoji} {t("form.alreadyDefault", { category: category.label })}
               </p>
             ) : null}
           </div>

@@ -75,8 +75,7 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
       <p className="mt-2 text-sm">
         {studyToday.length > 0 ? (
           <>
-            &#127919;{" "}
-            {t("schoolworkToday.planned", { duration: formatDuration(studyMinutes) })}
+            &#127919; {t("schoolworkToday.planned", { duration: formatDuration(studyMinutes) })}
             <span style={{ color: "var(--muted)" }}>
               {" ("}
               {t(studyToday.length === 1 ? "schoolworkToday.block" : "schoolworkToday.blocks", {

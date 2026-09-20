@@ -75,9 +75,7 @@ export default function ResetPasswordPage() {
           </div>
         ) : !user ? (
           <div className="space-y-3">
-            <p className="text-sm">
-              {t("password.expired")}
-            </p>
+            <p className="text-sm">{t("password.expired")}</p>
             <Link href="/instellingen" className="btn btn-ghost inline-flex">
               {t("password.toSettings")}
             </Link>

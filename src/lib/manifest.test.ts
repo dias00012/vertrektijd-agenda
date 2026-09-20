@@ -18,7 +18,13 @@ interface Manifest {
   display: string;
   lang?: string;
   icons: { src: string; sizes: string; type: string; purpose?: string }[];
-  screenshots?: { src: string; sizes: string; type: string; form_factor?: string; label?: string }[];
+  screenshots?: {
+    src: string;
+    sizes: string;
+    type: string;
+    form_factor?: string;
+    label?: string;
+  }[];
   shortcuts?: { name: string; url: string; icons?: { src: string }[] }[];
 }
 

@@ -51,11 +51,7 @@ export function JourneyCard({
   const overstappen = transfersOf(journey.legs);
 
   const delayed = journey.delayMinutes > 0;
-  const accent = journey.cancelled
-    ? "var(--danger)"
-    : delayed
-      ? "var(--warn)"
-      : "var(--accent)";
+  const accent = journey.cancelled ? "var(--danger)" : delayed ? "var(--warn)" : "var(--accent)";
 
   // De onderdelen waar je echt iets moet doen: instappen, overstappen, lopen.
   const transitLegs = journey.legs.filter((leg) => leg.line);
@@ -69,9 +65,7 @@ export function JourneyCard({
         className="w-full px-4 py-3.5 text-left"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-xl font-semibold tabular-nums">
-            {legTime(journey.departure)}
-          </span>
+          <span className="text-xl font-semibold tabular-nums">{legTime(journey.departure)}</span>
           <span aria-hidden style={{ color: "var(--muted)" }}>
             →
           </span>
@@ -150,7 +144,9 @@ export function JourneyCard({
           cancelled={journey.cancelled}
           delayMinutes={journey.delayMinutes}
           realTime={journey.realTime}
-          scheduledDeparture={journey.legs.find((leg) => leg.scheduledDeparture)?.scheduledDeparture}
+          scheduledDeparture={
+            journey.legs.find((leg) => leg.scheduledDeparture)?.scheduledDeparture
+          }
         />
 
         {/* Compacte route: welke vervoermiddelen je pakt */}
@@ -193,9 +189,7 @@ export function JourneyCard({
           {journey.legs.map((leg, index) => {
             // Na welk onderdeel begint een overstap? De rit eindigt hier en de
             // volgende vertrekt later; wat ertussen zit is lopen en wachten.
-            const overstap = leg.line
-              ? overstappen.find((item) => item.at === leg.to)
-              : undefined;
+            const overstap = leg.line ? overstappen.find((item) => item.at === leg.to) : undefined;
             return (
               <li key={index}>
                 <LegRow leg={leg} />
@@ -248,7 +242,10 @@ function LegRow({ leg }: { leg: TravelLeg }) {
   return (
     <div className="flex gap-3 text-xs">
       <span className="w-11 shrink-0 tabular-nums">
-        <span className={delayed ? "font-semibold" : ""} style={delayed ? { color: "var(--warn)" } : undefined}>
+        <span
+          className={delayed ? "font-semibold" : ""}
+          style={delayed ? { color: "var(--warn)" } : undefined}
+        >
           {legTime(leg.departure)}
         </span>
         {delayed && leg.scheduledDeparture ? (

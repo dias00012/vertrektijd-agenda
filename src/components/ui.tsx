@@ -21,7 +21,11 @@ export function Spinner({ size = 16, label }: { size?: number; label?: string })
           animation: "spin 700ms linear infinite",
         }}
       />
-      {label ? <span className="text-xs">{label}</span> : <span className="sr-only">{t("ui.busy")}</span>}
+      {label ? (
+        <span className="text-xs">{label}</span>
+      ) : (
+        <span className="sr-only">{t("ui.busy")}</span>
+      )}
     </span>
   );
 }

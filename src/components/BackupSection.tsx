@@ -96,9 +96,7 @@ export function BackupSection() {
           ))}
         </div>
         <p className="mt-1.5 text-xs" style={{ color: "var(--muted)" }}>
-          {mode === "merge"
-            ? t("backup.mergeHint")
-            : t("backup.replaceHint")}
+          {mode === "merge" ? t("backup.mergeHint") : t("backup.replaceHint")}
         </p>
       </div>
 
@@ -106,11 +104,7 @@ export function BackupSection() {
         <button type="button" className="btn btn-primary" onClick={handleExport}>
           &#11015;&#65039; {t("backup.export")}
         </button>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          onClick={() => fileInput.current?.click()}
-        >
+        <button type="button" className="btn btn-ghost" onClick={() => fileInput.current?.click()}>
           &#11014;&#65039; {t("backup.import")}
         </button>
         {/* De knop hierboven is de echte bediening; dit veld wordt daardoor
@@ -135,7 +129,10 @@ export function BackupSection() {
       ) : null}
 
       {summary ? (
-        <div className="mt-3 rounded-xl px-3 py-2.5 text-sm" style={{ background: "var(--surface-soft)" }}>
+        <div
+          className="mt-3 rounded-xl px-3 py-2.5 text-sm"
+          style={{ background: "var(--surface-soft)" }}
+        >
           <p className="font-medium" style={{ color: "var(--accent)" }}>
             &#10003; {t(summary.mode === "replace" ? "backup.doneReplace" : "backup.doneMerge")}
           </p>

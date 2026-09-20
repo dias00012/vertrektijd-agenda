@@ -67,9 +67,10 @@ export async function POST(request: Request) {
   });
 
   // Eén rij per dag per gebeurtenis, opgehoogd. Geen rij per bezoeker.
-  const { error } = await admin
-    .rpc("bump_app_event", { event_name: name })
-    .then((result) => result as { error: unknown }, (reason: unknown) => ({ error: reason }));
+  const { error } = await admin.rpc("bump_app_event", { event_name: name }).then(
+    (result) => result as { error: unknown },
+    (reason: unknown) => ({ error: reason }),
+  );
 
   // Wel loggen: dit is precies het geval waarin de tabel of de functie ontbreekt,
   // en dan wil je in de serverlogboeken zien waarom er niets geteld wordt.

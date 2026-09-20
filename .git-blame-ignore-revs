@@ -1,0 +1,7 @@
+# Commits die alleen opmaak veranderen.
+#
+# Zet dit bestand aan met:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Daarna slaat `git blame` ze over en zie je weer wie een regel écht schreef.
+2076fc1ee29bc869b410a34b6f5f4f35ef49a29d

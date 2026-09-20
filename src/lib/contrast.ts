@@ -51,9 +51,7 @@ export function relativeLuminance(hex: string): number {
  * De volgorde maakt niet uit: welke van de twee de tekst is, verandert niets.
  */
 export function contrastRatio(a: string, b: string): number {
-  const [lichter, donkerder] = [relativeLuminance(a), relativeLuminance(b)].sort(
-    (x, y) => y - x,
-  );
+  const [lichter, donkerder] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
   return (lichter + 0.05) / (donkerder + 0.05);
 }
 

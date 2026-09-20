@@ -482,23 +482,23 @@ export function readAgenda(
           .filter((item) => item.linkedTaskId === task.id)
           .reduce((sum, item) => sum + activityMinutes(item), 0);
         return {
-        id: task.id,
-        subject: task.subject,
-        title: task.title,
-        deadline: task.deadline,
-        estimatedMinutes: task.estimatedMinutes,
-        plannedMinutes,
-        remainingMinutes: Math.max(0, task.estimatedMinutes - plannedMinutes),
-        priority: task.priority,
-        status: task.status,
-        // Met de stappen erbij kan een planning per stap een blok zetten, en
-        // weet de planner welke delen al af zijn.
-        steps: task.steps?.map((step) => ({
-          id: step.id,
-          title: step.title,
-          estimatedMinutes: step.estimatedMinutes,
-          done: step.done,
-        })),
+          id: task.id,
+          subject: task.subject,
+          title: task.title,
+          deadline: task.deadline,
+          estimatedMinutes: task.estimatedMinutes,
+          plannedMinutes,
+          remainingMinutes: Math.max(0, task.estimatedMinutes - plannedMinutes),
+          priority: task.priority,
+          status: task.status,
+          // Met de stappen erbij kan een planning per stap een blok zetten, en
+          // weet de planner welke delen al af zijn.
+          steps: task.steps?.map((step) => ({
+            id: step.id,
+            title: step.title,
+            estimatedMinutes: step.estimatedMinutes,
+            done: step.done,
+          })),
         };
       }),
     exams: data.exams
@@ -551,11 +551,7 @@ function sameBlock(activities: Activity[], date: string, startTime: string, titl
  * Bewust streng op de klok en de datum. Een blok zonder geldige begintijd komt
  * in de app terecht als iets wat je niet kunt lezen en niet kunt weghalen.
  */
-export function saveActivities(
-  data: AgendaData,
-  raw: unknown,
-  now: Date = new Date(),
-): SaveResult {
+export function saveActivities(data: AgendaData, raw: unknown, now: Date = new Date()): SaveResult {
   const at = now.toISOString();
   const skipped: { index: number; reason: string }[] = [];
 

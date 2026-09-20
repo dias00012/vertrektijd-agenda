@@ -17,7 +17,10 @@ function verzoek(url: string, init: RequestInit = {}): Request {
   return new Request(url, {
     // Zonder afzender valt elke aanvraag onder dezelfde teller en tikt de
     // verkeersdrempel al bij de tweede test aan.
-    headers: { "x-forwarded-for": `10.0.0.${Math.floor(Math.random() * 250) + 1}`, ...(init.headers as Record<string, string>) },
+    headers: {
+      "x-forwarded-for": `10.0.0.${Math.floor(Math.random() * 250) + 1}`,
+      ...(init.headers as Record<string, string>),
+    },
     ...init,
   });
 }
@@ -106,7 +109,9 @@ describe("GET /api/geocode", () => {
 
   it("geeft de resultaten van de geocoder door", async () => {
     vi.doMock("@/lib/server/geocoding", () => ({
-      geocode: vi.fn().mockResolvedValue([{ label: "Ergens", name: "Ergens", context: "", lat: 1, lon: 2 }]),
+      geocode: vi
+        .fn()
+        .mockResolvedValue([{ label: "Ergens", name: "Ergens", context: "", lat: 1, lon: 2 }]),
     }));
 
     const { GET } = await import("./geocode/route");
@@ -152,8 +157,12 @@ describe("GET /api/geocode", () => {
     }));
 
     const { GET } = await import("./geocode/route");
-    const nl = await GET(verzoek("https://voorbeeld.test/api/geocode?q=ergens", { headers: { "x-language": "nl" } }));
-    const en = await GET(verzoek("https://voorbeeld.test/api/geocode?q=ergens", { headers: { "x-language": "en" } }));
+    const nl = await GET(
+      verzoek("https://voorbeeld.test/api/geocode?q=ergens", { headers: { "x-language": "nl" } }),
+    );
+    const en = await GET(
+      verzoek("https://voorbeeld.test/api/geocode?q=ergens", { headers: { "x-language": "en" } }),
+    );
 
     expect(((await nl.json()) as { error: string }).error).not.toBe(
       ((await en.json()) as { error: string }).error,

@@ -126,7 +126,8 @@ export function searchActivities(
       const aPast = a.date < today;
       const bPast = b.date < today;
       if (aPast !== bPast) return aPast ? 1 : -1;
-      if (a.date !== b.date) return aPast ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
+      if (a.date !== b.date)
+        return aPast ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
       return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
     });
 }
@@ -230,9 +231,7 @@ export function buildTimeline(
     }
   }
 
-  return entries.sort(
-    (a, b) => a.minutes - b.minutes || KIND_ORDER[a.kind] - KIND_ORDER[b.kind],
-  );
+  return entries.sort((a, b) => a.minutes - b.minutes || KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
 }
 
 /**
@@ -408,7 +407,8 @@ export function clashesOnDate(
       // andere kant. Zonder dat gold de begintijd als vertrek en de eindtijd
       // als thuiskomst, en dan zag deze controle niet dat je om 17:54 thuiskomt
       // terwijl je om 17:50 alweer weg moet naar de sportschool.
-      const heen = own.from - travelMinutesEither(occurrence, "out") - bufferFor(occurrence, settings);
+      const heen =
+        own.from - travelMinutesEither(occurrence, "out") - bufferFor(occurrence, settings);
       const terug = own.to + travelMinutesEither(occurrence, "back");
       const from = departure
         ? departure.previousDay
@@ -439,8 +439,10 @@ export function clashesOnDate(
       const travelB = !together && overlaps(b.busy, a.own);
       if (!together && !travelA && !travelB) continue;
 
-      if (together || travelA) add(a.occurrence.occurrenceId, { other: b.occurrence, travelOnly: !together });
-      if (together || travelB) add(b.occurrence.occurrenceId, { other: a.occurrence, travelOnly: !together });
+      if (together || travelA)
+        add(a.occurrence.occurrenceId, { other: b.occurrence, travelOnly: !together });
+      if (together || travelB)
+        add(b.occurrence.occurrenceId, { other: a.occurrence, travelOnly: !together });
     }
   }
 
@@ -486,19 +488,20 @@ export function layoutDay(
   const items = activitiesOnDate(activities, dateKey)
     .filter((occurrence) => !occurrence.allDay)
     .map((occurrence) => {
-    const departure = computeDeparture(occurrence, settings);
-    const back = computeReturn(occurrence, settings);
-    // Reis je door naar de volgende plek, dan loopt het reisblok tot je
-    // aankomst daar in plaats van tot je thuiskomst.
-    const onward = computeOnward(occurrence, null);
-    return {
-      occurrence,
-      startMinutes: timeToMinutes(occurrence.startTime),
-      endMinutes: timeToMinutes(occurrence.endTime),
-      departureMinutes: departure && !departure.previousDay ? departure.minutes : null,
-      returnMinutes: back && !back.nextDay ? back.minutes : onward ? timeToMinutes(onward.arrival) : null,
-    };
-  });
+      const departure = computeDeparture(occurrence, settings);
+      const back = computeReturn(occurrence, settings);
+      // Reis je door naar de volgende plek, dan loopt het reisblok tot je
+      // aankomst daar in plaats van tot je thuiskomst.
+      const onward = computeOnward(occurrence, null);
+      return {
+        occurrence,
+        startMinutes: timeToMinutes(occurrence.startTime),
+        endMinutes: timeToMinutes(occurrence.endTime),
+        departureMinutes: departure && !departure.previousDay ? departure.minutes : null,
+        returnMinutes:
+          back && !back.nextDay ? back.minutes : onward ? timeToMinutes(onward.arrival) : null,
+      };
+    });
 
   // Sorteren op het moment waarop de activiteit ruimte gaat innemen.
   const sorted = [...items].sort(

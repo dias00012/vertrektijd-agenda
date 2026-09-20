@@ -25,9 +25,12 @@ function browser(opties: { waarden?: Record<string, string>; kapot?: boolean } =
   for (const [k, v] of Object.entries(opties.waarden ?? {})) opslag.set(k, v);
 
   const root = {
-    style: { gezet: {} as Record<string, string>, setProperty(naam: string, waarde: string) {
-      this.gezet[naam] = waarde;
-    } },
+    style: {
+      gezet: {} as Record<string, string>,
+      setProperty(naam: string, waarde: string) {
+        this.gezet[naam] = waarde;
+      },
+    },
     dataset: {} as Record<string, string>,
   };
   vi.stubGlobal("document", { documentElement: root });

@@ -33,7 +33,6 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
  */
 const TRANSIT_CACHE_TTL_MS = 60 * 1000;
 
-
 export type RouteResult = TravelResult;
 
 export interface RouteOptions {
@@ -143,7 +142,6 @@ async function routeCar(from: GeoLocation, to: GeoLocation): Promise<RouteResult
 }
 
 /* --- Fiets en lopen via MOTIS ------------------------------------------- */
-
 
 async function planDirect(
   from: GeoLocation,

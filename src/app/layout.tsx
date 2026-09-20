@@ -9,8 +9,7 @@ import { THEMES, DEFAULT_THEME, THEME_KEY, TINT_KEY } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "Vertrektijd, slimme agenda",
-  description:
-    "Persoonlijke agenda die automatisch berekent hoe laat je van huis moet vertrekken.",
+  description: "Persoonlijke agenda die automatisch berekent hoe laat je van huis moet vertrekken.",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Vertrektijd" },
   icons: {
@@ -34,7 +33,6 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#0d1117" },
   ],
 };
-
 
 /**
  * Zet de gekozen kleur nog vóór React begint. Zonder dit zie je bij het openen

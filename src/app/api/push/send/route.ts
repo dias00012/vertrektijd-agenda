@@ -49,7 +49,10 @@ export async function POST(request: Request) {
   if (limited) return limited;
 
   const secret = process.env.PUSH_CRON_SECRET?.trim();
-  const given = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const given = request.headers
+    .get("authorization")
+    ?.replace(/^Bearer\s+/i, "")
+    .trim();
   // Vergelijken op tijd-veilige manier: dit is het enige geheim in de app dat
   // een aanvaller zelf mag aanleveren én zo vaak mag proberen als hij wil.
   // `!==` stopt bij het eerste teken dat afwijkt, en dat verschil is meetbaar.
@@ -126,8 +129,14 @@ export async function POST(request: Request) {
     await admin.from(QUEUE_TABLE).update({ sent_at: new Date().toISOString() }).in("id", done);
   }
   if (gone.size > 0) {
-    await admin.from(QUEUE_TABLE).delete().in("device_id", [...gone]);
-    await admin.from(DEVICES_TABLE).delete().in("id", [...gone]);
+    await admin
+      .from(QUEUE_TABLE)
+      .delete()
+      .in("device_id", [...gone]);
+    await admin
+      .from(DEVICES_TABLE)
+      .delete()
+      .in("id", [...gone]);
   }
 
   return NextResponse.json({ sent: done.length });

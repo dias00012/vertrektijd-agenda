@@ -68,11 +68,7 @@ export function AccountSection() {
   // beheerder de sleutels heeft toegevoegd. De app werkt lokaal gewoon door.
   if (!configured) {
     return (
-      <SettingsRow
-        icon={"\u{1F464}"}
-        title={t("account.title")}
-        summary={t("account.summaryOff")}
-      >
+      <SettingsRow icon={"\u{1F464}"} title={t("account.title")} summary={t("account.summaryOff")}>
         <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
           {t("account.notConfigured")}
         </p>
@@ -220,9 +216,7 @@ export function AccountSection() {
       ) : (
         <>
           <p className="text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-            {mode === "reset"
-              ? t("account.resetIntro")
-              : t("account.loginIntro")}
+            {mode === "reset" ? t("account.resetIntro") : t("account.loginIntro")}
           </p>
 
           <div

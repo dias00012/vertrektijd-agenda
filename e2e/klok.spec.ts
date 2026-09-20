@@ -54,9 +54,13 @@ test("staat stil zodra het tabblad naar de achtergrond gaat", async ({ page }) =
 
   expect(await lopend(), "zichtbaar: de klok hoort te lopen").toBeGreaterThan(0);
 
-  await page.evaluate(() => (window as unknown as { __verberg: (v: boolean) => void }).__verberg(true));
+  await page.evaluate(() =>
+    (window as unknown as { __verberg: (v: boolean) => void }).__verberg(true),
+  );
   expect(await lopend(), "verborgen: er hoort geen klok meer te lopen").toBe(0);
 
-  await page.evaluate(() => (window as unknown as { __verberg: (v: boolean) => void }).__verberg(false));
+  await page.evaluate(() =>
+    (window as unknown as { __verberg: (v: boolean) => void }).__verberg(false),
+  );
   expect(await lopend(), "weer zichtbaar: de klok hoort weer te lopen").toBeGreaterThan(0);
 });

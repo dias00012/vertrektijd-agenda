@@ -136,11 +136,16 @@ export const en: Record<TranslationKey, string> = {
   "tour.closeLabel": "Close tour",
   "tour.label": "Tour: {title}",
   "tour.finish": "Add your first activity",
-  "tour.today.body": "Your home screen. At the top is your next activity with one big number: when you need to walk out the door. For public transport it also shows which train and buses to take, and whether they are running on time.",
-  "tour.agenda.body": "Your plan by day, week or month. In the week grid, travel time appears as striped blocks before and after each activity, so you can see at a glance how much of your day goes into travelling.",
-  "tour.travel.body": "A journey planner in its own right. Pick from and to: a station, an address, your current location, or one tap on Home, School or Gym. You get real departures with live delays, platforms and changes.",
-  "tour.schoolwork.body": "Your assignments by deadline and your tests by date, coloured by how urgent they are. You can tick off steps per assignment, and see how much study time you have already planned for it.",
-  "tour.settings.body": "Four groups, folded shut: under every title you see what is set right now. Your home location and default way of travelling, reminders before you leave, saved places, a backup of everything in one file, and your account if you want your calendar on both your phone and laptop.",
+  "tour.today.body":
+    "Your home screen. At the top is your next activity with one big number: when you need to walk out the door. For public transport it also shows which train and buses to take, and whether they are running on time.",
+  "tour.agenda.body":
+    "Your plan by day, week or month. In the week grid, travel time appears as striped blocks before and after each activity, so you can see at a glance how much of your day goes into travelling.",
+  "tour.travel.body":
+    "A journey planner in its own right. Pick from and to: a station, an address, your current location, or one tap on Home, School or Gym. You get real departures with live delays, platforms and changes.",
+  "tour.schoolwork.body":
+    "Your assignments by deadline and your tests by date, coloured by how urgent they are. You can tick off steps per assignment, and see how much study time you have already planned for it.",
+  "tour.settings.body":
+    "Four groups, folded shut: under every title you see what is set right now. Your home location and default way of travelling, reminders before you leave, saved places, a backup of everything in one file, and your account if you want your calendar on both your phone and laptop.",
 
   "ui.busy": "Working…",
   "schoolwork.priority.high": "High",
@@ -159,7 +164,8 @@ export const en: Record<TranslationKey, string> = {
   "auth.shortPassword": "Choose a password of at least 6 characters.",
   "auth.invalidEmail": "Enter a valid email address.",
   "auth.tooMany": "Too many attempts. Wait a moment and try again.",
-  "auth.emailDisabled": "Email sign-in is still switched off for this app. The administrator needs to enable email as a login method.",
+  "auth.emailDisabled":
+    "Email sign-in is still switched off for this app. The administrator needs to enable email as a login method.",
   "auth.notConfirmed": "Confirm your email address first, using the link in your inbox.",
   "auth.samePassword": "Choose a different password from your previous one.",
   "auth.syncOff": "Syncing has not been set up.",
@@ -167,14 +173,17 @@ export const en: Record<TranslationKey, string> = {
   "error.geocode": "Searching for the location failed.",
   "error.travel": "The travel time could not be calculated.",
   "error.journey": "The journey could not be planned.",
-  "error.noConnection": "No connection. The app will work this out again as soon as you are back online.",
+  "error.noConnection":
+    "No connection. The app will work this out again as soon as you are back online.",
   "error.cloudSave": "Saving to the cloud failed.",
   "error.title": "Something went wrong",
-  "error.body": "This page could not be loaded. Your calendar is safe on your device and in your account. Nothing is lost.",
+  "error.body":
+    "This page could not be loaded. Your calendar is safe on your device and in your account. Nothing is lost.",
   "error.toToday": "Go to Today",
   "error.code": "Error code: {digest}",
   "offline.title": "No connection right now",
-  "offline.body": "This page is not saved on your device yet. Your calendar itself is. Open Today or Calendar and your plan is right there.",
+  "offline.body":
+    "This page is not saved on your device yet. Your calendar itself is. Open Today or Calendar and your plan is right there.",
   "offline.note": "New travel times and live delays come back as soon as you have a signal again.",
   "offline.toAgenda": "Go to Calendar",
   "notFound.title": "This page does not exist",
@@ -206,12 +215,15 @@ export const en: Record<TranslationKey, string> = {
   "travel.noLater": "Nothing runs later today.",
   "travel.why": "Why these journeys?",
   "place.noStreet": "This address is missing its street name",
-  "places.noStreet.fix": "Pick the address again below; everything stored at the old point moves along with it.",
+  "places.noStreet.fix":
+    "Pick the address again below; everything stored at the old point moves along with it.",
   "places.changeAddress": "Change address",
   "places.newAddress": "New address",
   "places.newAddress.placeholder": "Street, number and town",
-  "places.newAddress.hint": "Pick a suggestion that includes the street. Your activities at this place move along and their travel times are recalculated.",
-  "place.noStreet.body": "A point like that can sit hundreds of metres from the front door you meant, and then your travel time is wrong. Type the address again and pick a suggestion that includes the street.",
+  "places.newAddress.hint":
+    "Pick a suggestion that includes the street. Your activities at this place move along and their travel times are recalculated.",
+  "place.noStreet.body":
+    "A point like that can sit hundreds of metres from the front door you meant, and then your travel time is wrong. Type the address again and pick a suggestion that includes the street.",
   "travel.why.hide": "Hide details",
   "travel.why.intro": "Journey looking wrong? Screenshot this — it shows where things go astray.",
   "travel.why.from": "From",
@@ -223,13 +235,15 @@ export const en: Record<TranslationKey, string> = {
   "travel.why.on": "on",
   "travel.why.off": "off",
   "storage.full.title": "This device can\u2019t save",
-  "storage.full.body": "Your changes only live on screen right now and will be gone after a reload. Your browser\u2019s storage is full or switched off \u2014 free up space, or sign in so your calendar lives in the cloud.",
+  "storage.full.body":
+    "Your changes only live on screen right now and will be gone after a reload. Your browser\u2019s storage is full or switched off \u2014 free up space, or sign in so your calendar lives in the cloud.",
   "travel.noEarlier": "Nothing runs earlier.",
   "journey.outbound": "Outbound",
   "journey.return": "Return",
   "journey.yours": "Your journey",
   "journey.walkTotal": "{duration} of walking in total.",
-  "journey.otherDay": "These times are from another day. Open the app on the day itself for the live departure.",
+  "journey.otherDay":
+    "These times are from another day. Open the app on the day itself for the live departure.",
   "leg.track": "platform {track}",
 
   "agenda.tab.today": "Today",
@@ -245,7 +259,8 @@ export const en: Record<TranslationKey, string> = {
   "agenda.weekView": "Week view",
   "agenda.layout.grid": "grid",
   "agenda.layout.list": "list",
-  "agenda.travelHint": "Striped blocks are your travel time: the icon on them marks the way there, ↩️ marks the way home.",
+  "agenda.travelHint":
+    "Striped blocks are your travel time: the icon on them marks the way there, ↩️ marks the way home.",
   "agenda.activitiesOn": "Activities on {date}",
   "agenda.empty.day": "Nothing planned on this day.",
   "agenda.empty.title": "Nothing planned",
@@ -258,8 +273,10 @@ export const en: Record<TranslationKey, string> = {
   "month.homeHint": "Set your home location to get departure times.",
   "week.blockTitle": "{title} · {from} to {to}",
   "week.resize": "Drag to change the end time",
-  "week.dragHint": "Drag a block to another moment, or grab its bottom edge to change the end time.",
-  "week.keyHint": "With a keyboard: Shift plus the arrow keys moves the selected block \u2014 left and right a day, up and down fifteen minutes.",
+  "week.dragHint":
+    "Drag a block to another moment, or grab its bottom edge to change the end time.",
+  "week.keyHint":
+    "With a keyboard: Shift plus the arrow keys moves the selected block \u2014 left and right a day, up and down fifteen minutes.",
   "week.move.title": "Move this repeat",
   "week.move.body": "“{title}” happens more than once. What should move to {when}?",
   "week.move.one": "Only this day",
@@ -383,7 +400,8 @@ export const en: Record<TranslationKey, string> = {
   "schoolwork.addShort": "+ Add",
   "schoolwork.loading": "Loading your schoolwork…",
   "schoolwork.empty.title": "No schoolwork yet",
-  "schoolwork.empty.body": "Add an assignment or test yourself, or import a file from your planner via Settings → Backup & syncing.",
+  "schoolwork.empty.body":
+    "Add an assignment or test yourself, or import a file from your planner via Settings → Backup & syncing.",
   "schoolwork.empty.action": "+ Add an assignment or test",
   "schoolwork.tasks": "Assignments",
   "schoolwork.exams": "Tests",
@@ -469,7 +487,8 @@ export const en: Record<TranslationKey, string> = {
   "form.deleteType": "Delete",
   "form.restoreType": "Restore default",
   "form.deleteTypeOne": "This type is still on 1 activity. It stays, without a type. Delete?",
-  "form.deleteTypeMany": "This type is still on {count} activities. They stay, without a type. Delete?",
+  "form.deleteTypeMany":
+    "This type is still on {count} activities. They stay, without a type. Delete?",
   "form.deleteTypeNone": "Delete this type?",
   "form.startDate": "Start date",
   "form.date": "Date",
@@ -530,23 +549,28 @@ export const en: Record<TranslationKey, string> = {
   "form.bufferHint":
     "How early you want to arrive. Leave empty to follow the general margin from Settings, so it adapts when you change it there.",
   "form.bufferUnit": "min",
-  "form.transitHintFull": "For public transport the app finds a real service that gets you there on time, including changes and platforms.",
+  "form.transitHintFull":
+    "For public transport the app finds a real service that gets you there on time, including changes and platforms.",
 
   "intro.label": "Welcome to Vertrektijd",
   "intro.pitch1": "You have school at 09:00.",
   "intro.pitch2": "You need to leave at 08:23.",
-  "intro.body": "You put in what you are doing and where. The app works out when you have to walk out the door.",
+  "intro.body":
+    "You put in what you are doing and where. The app works out when you have to walk out the door.",
   "intro.exDepart": "out the door",
   "intro.exBike": "7 min cycling to the station",
   "intro.exTrain": "Sprinter to Utrecht, platform 2",
   "intro.exDelay": "+3 min",
   "intro.exArrive": "class starts",
   "intro.point1.title": "Real journeys, not an estimate",
-  "intro.point1.body": "Which train, which platform, which bus. Live, so you see delays and cancellations right away.",
+  "intro.point1.body":
+    "Which train, which platform, which bus. Live, so you see delays and cancellations right away.",
   "intro.point2.title": "Cycling to the station counts",
-  "intro.point2.body": "The way you actually travel. On a trip to Zwolle that easily saves half an hour.",
+  "intro.point2.body":
+    "The way you actually travel. On a trip to Zwolle that easily saves half an hour.",
   "intro.point3.title": "Your timetable and your schoolwork",
-  "intro.point3.body": "Link your class timetable once and plan study time for your tests and deadlines.",
+  "intro.point3.body":
+    "Link your class timetable once and plan study time for your tests and deadlines.",
   "intro.twoQuestions": "Two quick questions and you are ready to go.",
   "intro.whereFrom": "Where do you set off from?",
   "intro.whereFromBody": "Usually your home. All your travel times are calculated from this point.",
@@ -556,21 +580,28 @@ export const en: Record<TranslationKey, string> = {
   "intro.howTravelBody": "You can always choose differently per activity.",
   "intro.buffer": "How many minutes of slack do you want?",
   "intro.bufferUnit": "extra minutes",
-  "intro.bufferBody": "That time is taken off your departure time, so you do not arrive at the last second.",
+  "intro.bufferBody":
+    "That time is taken off your departure time, so you do not arrive at the last second.",
   "intro.start": "Get started",
   "intro.showApp": "Show me around",
   "intro.saveOnly": "Save and look around on my own, without the tour",
   "intro.pickSuggestion": "Choose a suggestion from the list to continue.",
   "reminders.title": "Reminders",
-  "reminders.body": "Get a notification just before you need to leave, with the time as it stands then, delays included.",
+  "reminders.body":
+    "Get a notification just before you need to leave, with the time as it stands then, delays included.",
   "reminders.unsupported": "This browser does not support notifications.",
-  "reminders.denied": "You have blocked notifications for this app. Turn them back on in your browser settings (the padlock in the address bar) and come back here.",
+  "reminders.denied":
+    "You have blocked notifications for this app. Turn them back on in your browser settings (the padlock in the address bar) and come back here.",
   "reminders.off": "Turn reminders off",
-  "reminders.note": "notifications arrive as long as the app is open, including in the background. Close it completely and you will hear nothing. Install the app on your home screen and leave it running for the best chance of getting the nudge.",
+  "reminders.note":
+    "notifications arrive as long as the app is open, including in the background. Close it completely and you will hear nothing. Install the app on your home screen and leave it running for the best chance of getting the nudge.",
   "reminders.background": "Also when the app is closed",
-  "reminders.backgroundHint": "Your device registers with the server and leaves the sentences ready to send. The server never sees your calendar: it only knows which text to send when.",
-  "reminders.backgroundFailed": "Registering for notifications did not work. On an iPhone this only works once you have added the app to your home screen.",
-  "reminders.noteBackground": "your notifications are scheduled up to two weeks ahead. Open the app at least once a week, otherwise that schedule runs out and the notifications stop.",
+  "reminders.backgroundHint":
+    "Your device registers with the server and leaves the sentences ready to send. The server never sees your calendar: it only knows which text to send when.",
+  "reminders.backgroundFailed":
+    "Registering for notifications did not work. On an iPhone this only works once you have added the app to your home screen.",
+  "reminders.noteBackground":
+    "your notifications are scheduled up to two weeks ahead. Open the app at least once a week, otherwise that schedule runs out and the notifications stop.",
   "reminders.noteLabel": "Note:",
   "reminders.minutes": "{count} min",
   "reminders.notification.title": "Leave at {time}",
@@ -587,20 +618,25 @@ export const en: Record<TranslationKey, string> = {
   "settings.formula": "Departure time = start time − travel time − buffer.",
   "settings.defaultMode": "Default way of travelling",
   "settings.modeHint": "Applies to new activities; you can choose differently per activity.",
-  "settings.needSuggestion": "Choose a location from the suggestions so the app can find the address.",
+  "settings.needSuggestion":
+    "Choose a location from the suggestions so the app can find the address.",
   "settings.bufferRange": "Enter a buffer between 0 and {max} minutes.",
   "settings.saved": "Saved.",
   "settings.recalc": "Travel times for {count} activities are being recalculated.",
   "settings.recalcOne": "The travel time for 1 activity is being recalculated.",
   "settings.aboutTitle": "About the travel times",
-  "settings.aboutBody": "Travel times are calculated on the server. Car and bike go through a routing service, without taking current traffic into account. For public transport your departure time comes from the real timetable, changes and delays included.",
+  "settings.aboutBody":
+    "Travel times are calculated on the server. Car and bike go through a routing service, without taking current traffic into account. For public transport your departure time comes from the real timetable, changes and delays included.",
   "settings.intro.title": "Guide & tour",
-  "settings.intro.body": "The tour walks you through every tab and explains what you are looking at. You stay in the app, so you see the real screen. The introduction starts with the setup questions; your current answers are already filled in.",
+  "settings.intro.body":
+    "The tour walks you through every tab and explains what you are looking at. You stay in the app, so you see the real screen. The introduction starts with the setup questions; your current answers are already filled in.",
   "settings.intro.startTour": "Start the tour",
   "settings.intro.again": "Introduction again",
   "places.title": "Saved places",
-  "places.body": "Places you save with an activity appear here under where you are going, not under the address. Use ✎ to give them your own name.",
-  "places.empty": "No places saved yet. Tick “Remember as the fixed place” when you add an activity.",
+  "places.body":
+    "Places you save with an activity appear here under where you are going, not under the address. Use ✎ to give them your own name.",
+  "places.empty":
+    "No places saved yet. Tick “Remember as the fixed place” when you add an activity.",
   "places.rename": "Rename",
   "places.nameLabel": "Name of this place",
   "places.namePlaceholder": "For example: Work",
@@ -610,18 +646,21 @@ export const en: Record<TranslationKey, string> = {
   "places.home": "Home",
 
   "calendars.title": "Your own calendar too",
-  "calendars.body": "Google, Apple and Outlook can all give you an ical link to your calendar. Subscribe to it and your own appointments count towards your departure times, kept up to date on their own.",
+  "calendars.body":
+    "Google, Apple and Outlook can all give you an ical link to your calendar. Subscribe to it and your own appointments count towards your departure times, kept up to date on their own.",
   "calendars.addFirst": "Add a calendar",
   "calendars.addAnother": "Add another calendar",
   "calendars.name": "Name",
   "calendars.namePlaceholder": "For example, my Google calendar",
   "calendars.defaultName": "My calendar",
   "calendars.url": "Ical link",
-  "calendars.urlHint": "In Google Calendar: the calendar settings, \u201cSecret address in iCal format\u201d. In Apple: share the calendar as a public calendar.",
+  "calendars.urlHint":
+    "In Google Calendar: the calendar settings, \u201cSecret address in iCal format\u201d. In Apple: share the calendar as a public calendar.",
   "calendars.asType": "As which type",
   "calendars.where": "Fixed place",
   "calendars.wherePlaceholder": "Address or town",
-  "calendars.whereHint": "Leave this empty when these appointments have no fixed place. Without a place the app works out no travel time.",
+  "calendars.whereHint":
+    "Leave this empty when these appointments have no fixed place. Without a place the app works out no travel time.",
   "calendars.add": "Add",
   "calendars.added": "{name} added, {count} appointments fetched.",
   "calendars.addedOne": "{name} added, 1 appointment fetched.",
@@ -632,9 +671,11 @@ export const en: Record<TranslationKey, string> = {
   "calendars.fetchFailed": "This calendar could not be fetched. Is the link right?",
   "calendars.none": "No appointments found in the next {weeks} weeks.",
   "calendars.offline": "No connection to the server.",
-  "calendars.privacy": "The link stays on this device and only goes to our own server to fetch your calendar. Disconnecting removes the appointments again.",
+  "calendars.privacy":
+    "The link stays on this device and only goes to our own server to fetch your calendar. Disconnecting removes the appointments again.",
   "backup.title": "Backup",
-  "backup.body": "Export your whole calendar (settings, activities, tasks and tests) as one JSON file, or import a file from your planner. That way the app and the planner work from exactly the same data.",
+  "backup.body":
+    "Export your whole calendar (settings, activities, tasks and tests) as one JSON file, or import a file from your planner. That way the app and the planner work from exactly the same data.",
   "backup.mode": "Import mode",
   "backup.merge": "Merge",
   "backup.replace": "Replace",
@@ -645,7 +686,8 @@ export const en: Record<TranslationKey, string> = {
   "backup.invalidJson": "This is not a valid JSON file.",
   "backup.invalidShape": "The file does not have the structure we expect.",
   "backup.wrongApp": "This file does not belong to {app} (app: {found}).",
-  "backup.unknownVersion": "Unknown file version ({version}). This app supports versions 1 to {max}.",
+  "backup.unknownVersion":
+    "Unknown file version ({version}). This app supports versions 1 to {max}.",
   "backup.readFailed": "Could not read the file.",
   "backup.parseFailed": "The file could not be read.",
   "backup.doneReplace": "Import complete (replaced).",
@@ -658,11 +700,13 @@ export const en: Record<TranslationKey, string> = {
   "backup.settingsUpdated": "Settings updated.",
 
   "account.title": "Account & syncing",
-  "account.notConfigured": "Syncing has not been set up yet. Your data lives on this device. Once accounts are switched on you can log in here to share your calendar between devices.",
+  "account.notConfigured":
+    "Syncing has not been set up yet. Your data lives on this device. Once accounts are switched on you can log in here to share your calendar between devices.",
   "account.loggedInAs": "Logged in as",
   "account.syncing": "Syncing…",
   "account.syncFailed": "Syncing failed: {error}",
-  "account.syncOk": "Your calendar, schoolwork and settings are kept in your account and shared between your devices.",
+  "account.syncOk":
+    "Your calendar, schoolwork and settings are kept in your account and shared between your devices.",
   "settings.version": "Version {version}",
   "account.syncNow": "Sync now",
   "account.syncedAt": "Last fetched at {when}.",
@@ -670,17 +714,22 @@ export const en: Record<TranslationKey, string> = {
   "account.logout": "Log out",
   "account.delete": "Delete account",
   "account.deleteSure": "Are you sure?",
-  "account.deleteBody": "Your account, your calendar, your schoolwork and your places are deleted for good. This cannot be undone. If you want to keep your data, export it first under Backup below.",
+  "account.deleteBody":
+    "Your account, your calendar, your schoolwork and your places are deleted for good. This cannot be undone. If you want to keep your data, export it first under Backup below.",
   "account.deleteConfirm": "Yes, delete my account",
   "account.deleted": "Your account and everything in it have been deleted.",
   "account.sessionExpired": "Your session has expired. Log in again and try once more.",
   "account.deleteFailed": "The account could not be deleted.",
   "account.deleteOffline": "The account could not be deleted. Check your internet connection.",
   "account.somethingWrong": "Something went wrong.",
-  "account.resetSent": "If there is an account with this email address, a recovery message is on its way. Check your spam folder too.",
-  "account.created": "Account created. Confirm your email address using the link we sent you, then log in.",
-  "account.resetIntro": "Enter your email address. We will send you a link to choose a new password.",
-  "account.loginIntro": "Log in to keep your calendar and schoolwork, and have the same thing on every device. No account yet? Create one for free.",
+  "account.resetSent":
+    "If there is an account with this email address, a recovery message is on its way. Check your spam folder too.",
+  "account.created":
+    "Account created. Confirm your email address using the link we sent you, then log in.",
+  "account.resetIntro":
+    "Enter your email address. We will send you a link to choose a new password.",
+  "account.loginIntro":
+    "Log in to keep your calendar and schoolwork, and have the same thing on every device. No account yet? Create one for free.",
   "account.loginOrRegister": "Log in or register",
   "account.login": "Log in",
   "account.register": "Create account",
@@ -704,11 +753,13 @@ export const en: Record<TranslationKey, string> = {
   "changes.more": "And {count} other days.",
   "changes.dismiss": "Got it",
   "timetable.title": "Connect your school timetable",
-  "timetable.body": "Pull your timetable from Magister, Somtoday, Zermelo, Google Calendar or Outlook, so you do not have to type it out. You need the iCal link; you will find it in that system under “export calendar”, “subscribe” or “share calendar”.",
+  "timetable.body":
+    "Pull your timetable from Magister, Somtoday, Zermelo, Google Calendar or Outlook, so you do not have to type it out. You need the iCal link; you will find it in that system under “export calendar”, “subscribe” or “share calendar”.",
   "timetable.urlLabel": "Link to your timetable",
   "timetable.fetch": "Fetch timetable",
   "timetable.orFile": "Or choose an .ics file",
-  "timetable.none": "No lessons found in the next {weeks} weeks. Is the link right, and is your timetable in there yet?",
+  "timetable.none":
+    "No lessons found in the next {weeks} weeks. Is the link right, and is your timetable in there yet?",
   "timetable.fetchFailed": "The timetable could not be fetched.",
   "timetable.offline": "The timetable could not be fetched. Check your internet connection.",
   "timetable.readFailed": "This file could not be read.",
@@ -718,15 +769,18 @@ export const en: Record<TranslationKey, string> = {
   "timetable.andMore": "and {count} more.",
   "timetable.where": "Where do these lessons take place?",
   "timetable.wherePlaceholder": "Address of your school",
-  "timetable.whereHint": "The room from your timetable is not an address; with this the app can work out your travel time.",
+  "timetable.whereHint":
+    "The room from your timetable is not an address; with this the app can work out your travel time.",
   "timetable.asType": "As which type?",
-  "timetable.replaceNote": "You already have {count} lessons from an earlier timetable. Those are replaced, so moved and cancelled hours sort themselves out. Activities you added yourself stay.",
+  "timetable.replaceNote":
+    "You already have {count} lessons from an earlier timetable. Those are replaced, so moved and cancelled hours sort themselves out. Activities you added yourself stay.",
   "timetable.doImport": "Add to my calendar",
   "timetable.needPlace": "Choose the address of your school first.",
   "timetable.importedOne": "1 lesson added to your calendar",
   "timetable.imported": "{count} lessons added to your calendar",
   "timetable.replaced": ", replacing {count} from the previous import.",
-  "timetable.current": "Your calendar now holds {count} lessons from your timetable, up to and including {date}. Fetch it again whenever something changes.",
+  "timetable.current":
+    "Your calendar now holds {count} lessons from your timetable, up to and including {date}. Fetch it again whenever something changes.",
   "timetable.horizon": "We fetch lessons up to {weeks} weeks ahead (currently until {date}).",
   "password.title": "New password",
   "password.subtitle": "Choose a new password for your account.",
@@ -734,7 +788,8 @@ export const en: Record<TranslationKey, string> = {
   "password.wait": "One moment…",
   "password.changed": "Your password has been changed. You are now logged in.",
   "password.toAgenda": "Go to the calendar",
-  "password.expired": "This link has expired or has already been used. Request a new recovery email.",
+  "password.expired":
+    "This link has expired or has already been used. Request a new recovery email.",
   "password.toSettings": "Go to Settings",
   "password.new": "New password",
   "password.repeat": "Repeat password",
@@ -745,38 +800,52 @@ export const en: Record<TranslationKey, string> = {
   "privacy.title": "Privacy",
   "privacy.subtitle": "Short and without small print: what we keep, why, and how you remove it.",
   "privacy.local.title": "Without an account everything stays on your own device",
-  "privacy.local.body": "If you use the app without logging in, your calendar, schoolwork and settings live only in your own browser's storage. Nothing is sent anywhere and we cannot see it. Clear your browser data and it is gone.",
+  "privacy.local.body":
+    "If you use the app without logging in, your calendar, schoolwork and settings live only in your own browser's storage. Nothing is sent anywhere and we cannot see it. Clear your browser data and it is gone.",
   "privacy.account.title": "With an account",
   "privacy.account.intro": "If you log in, we keep the following in your account:",
   "privacy.account.email": "Your email address and an encrypted password",
   "privacy.account.emailWhy": "so you can log in.",
   "privacy.account.data": "Your calendar, schoolwork and settings",
-  "privacy.account.dataWhy": "including your home location and saved places, because without those addresses the app cannot work out a departure time.",
-  "privacy.account.where": "That lives in a database at Supabase (servers in the EU), protected with Row Level Security: technically only your own account can reach your row.",
+  "privacy.account.dataWhy":
+    "including your home location and saved places, because without those addresses the app cannot work out a departure time.",
+  "privacy.account.where":
+    "That lives in a database at Supabase (servers in the EU), protected with Row Level Security: technically only your own account can reach your row.",
   "privacy.outside.title": "What leaves the app",
-  "privacy.outside.intro": "To calculate travel times and journeys we send only coordinates and times to:",
+  "privacy.outside.intro":
+    "To calculate travel times and journeys we send only coordinates and times to:",
   "privacy.outside.nominatim": "to turn an address into coordinates.",
   "privacy.outside.osrm": "for travel time by car.",
   "privacy.outside.motis": "for public transport journeys, cycling and walking times.",
-  "privacy.outside.note": "Those requests go through our own server, so those services never see your IP address. A name, email address or the title of an appointment is never included, only a point on the map and a time.",
+  "privacy.outside.note":
+    "Those requests go through our own server, so those services never see your IP address. A name, email address or the title of an appointment is never included, only a point on the map and a time.",
   "privacy.tracking.title": "No tracking, but we do count",
-  "privacy.tracking.body": "No adverts, no analytics company, no third-party cookies, no selling of data. There is one cookie-like value in your browser: your own login session.",
-  "privacy.tracking.counters": "We do count how often the app is used, in our own database. That is literally one number per day per event, for example “the app was opened 42 times today”. No device number, IP address or anything from your calendar goes with it, so those numbers cannot be traced back to anyone.",
+  "privacy.tracking.body":
+    "No adverts, no analytics company, no third-party cookies, no selling of data. There is one cookie-like value in your browser: your own login session.",
+  "privacy.tracking.counters":
+    "We do count how often the app is used, in our own database. That is literally one number per day per event, for example “the app was opened 42 times today”. No device number, IP address or anything from your calendar goes with it, so those numbers cannot be traced back to anyone.",
   "privacy.calendars.title": "Linked calendars",
-  "privacy.calendars.body": "If you link your timetable or your own calendar, we keep that link on your device (and in your account if you log in). Our server only uses it to fetch your calendar; the contents go straight to your device and are stored there, not with us. Disconnecting removes the link and the appointments again.",
+  "privacy.calendars.body":
+    "If you link your timetable or your own calendar, we keep that link on your device (and in your account if you log in). Our server only uses it to fetch your calendar; the contents go straight to your device and are stored there, not with us. Disconnecting removes the link and the appointments again.",
   "privacy.push.title": "Notifications when the app is closed",
-  "privacy.push.body": "If you turn these on, we store the address your browser issues for it, plus the sentences to be sent and when. Your phone works out those times itself: our server knows “send this text at 07:04” and not where you are going. No name or email address hangs off the random device number. Turn them off and everything is deleted right away.",
+  "privacy.push.body":
+    "If you turn these on, we store the address your browser issues for it, plus the sentences to be sent and when. Your phone works out those times itself: our server knows “send this text at 07:04” and not where you are going. No name or email address hangs off the random device number. Turn them off and everything is deleted right away.",
   "privacy.retention.title": "How long",
-  "privacy.retention.body": "As long as you have your account. Delete it and your email address and all your data go with it straight away. No copy is kept.",
+  "privacy.retention.body":
+    "As long as you have your account. Delete it and your email address and all your data go with it straight away. No copy is kept.",
   "privacy.rights.title": "Your rights",
-  "privacy.rights.intro": "You may see your data, take it with you and have it deleted. You can do both yourself, right in the app:",
+  "privacy.rights.intro":
+    "You may see your data, take it with you and have it deleted. You can do both yourself, right in the app:",
   "privacy.rights.export": "Take it with you:",
-  "privacy.rights.exportBody": "Settings → Backup & syncing → Export. You get everything as one JSON file.",
+  "privacy.rights.exportBody":
+    "Settings → Backup & syncing → Export. You get everything as one JSON file.",
   "privacy.rights.delete": "Delete it:",
   "privacy.rights.deleteBody": "Settings → Account & syncing → Delete account.",
-  "privacy.rights.complaint": "If you disagree with something, you may lodge a complaint with your national data protection authority.",
+  "privacy.rights.complaint":
+    "If you disagree with something, you may lodge a complaint with your national data protection authority.",
   "privacy.age.title": "Age",
-  "privacy.age.body": "If you are under 16, ask your parent or guardian for permission before creating an account.",
+  "privacy.age.body":
+    "If you are under 16, ask your parent or guardian for permission before creating an account.",
   "privacy.back": "Back to Settings",
 
   "api.pushNotConfigured": "Notifications with the app closed are not set up on this server yet.",
@@ -795,7 +864,8 @@ export const en: Record<TranslationKey, string> = {
   "api.noWalkRoute": "No walking route was found between these two places.",
   "api.bikeTooFar": "This distance is too far to cycle. Choose car or public transport.",
   "api.walkTooFar": "This distance is too far to walk. Choose bike, car or public transport.",
-  "api.noTransit": "No public transport connection found for this time. Try another way of travelling.",
+  "api.noTransit":
+    "No public transport connection found for this time. Try another way of travelling.",
   "api.noConnection": "No connection found. Try another time or another stop.",
   "api.journeyFailed": "The journey could not be planned.",
   "api.plannerDown": "The journey planner cannot be reached. Try again later.",
@@ -809,7 +879,8 @@ export const en: Record<TranslationKey, string> = {
   "api.tooManyShort": "Too many requests.",
   "api.notLoggedIn": "You are not logged in.",
   "api.sessionExpired": "Your session has expired. Log in again.",
-  "api.deleteNotConfigured": "Automatic deletion has not been set up yet. Email us and we will delete your account by hand.",
+  "api.deleteNotConfigured":
+    "Automatic deletion has not been set up yet. Email us and we will delete your account by hand.",
   "api.deleteFailed": "The account could not be deleted. Try again later.",
   "api.deleteTooMany": "Too many attempts. Try again later.",
   "api.connectorOff": "The Claude connector has not been set up on this server yet.",
@@ -829,7 +900,8 @@ export const en: Record<TranslationKey, string> = {
   "api.tooManyRoutes": "Too many route calculations in a row. Try again shortly.",
 
   "theme.title": "App colour",
-  "theme.body": "Choose the colour of buttons and accents. Your choice applies on this device and works in both light and dark mode.",
+  "theme.body":
+    "Choose the colour of buttons and accents. Your choice applies on this device and works in both light and dark mode.",
   "theme.blue": "Blue",
   "theme.indigo": "Indigo",
   "theme.purple": "Purple",
@@ -841,14 +913,16 @@ export const en: Record<TranslationKey, string> = {
   "geocode.stop": "Stop or station",
 
   "settings.bike.title": "Bike and transit",
-  "settings.bike.body": "This is how most students travel: cycling to the station instead of walking. On a normal journey that easily saves twenty minutes, with exactly the same train.",
+  "settings.bike.body":
+    "This is how most students travel: cycling to the station instead of walking. On a normal journey that easily saves twenty minutes, with exactly the same train.",
   "settings.bike.none": "Walk",
   "settings.bike.noneHint": "To the stop and away from it",
   "settings.bike.start": "Bike there",
   "settings.bike.startHint": "Cycle to the stop, then walk",
   "settings.bike.both": "Bike both ends",
   "settings.bike.bothHint": "A bike at your destination too",
-  "timetable.linked": "Your timetable is connected and kept up to date automatically. Last fetched: {when}.",
+  "timetable.linked":
+    "Your timetable is connected and kept up to date automatically. Last fetched: {when}.",
   "timetable.never": "not yet",
   "timetable.unlink": "Disconnect",
   "timetable.refreshNow": "Fetch again now",
@@ -865,7 +939,8 @@ export const en: Record<TranslationKey, string> = {
   "share.copied": "Copied to your clipboard.",
   "share.failed": "Sharing did not work. Please try again.",
   "theme.tint": "Tint the background too",
-  "theme.tintHint": "On: the background takes your colour and the cards stay neutral. Off: a neutral background with coloured buttons only.",
+  "theme.tintHint":
+    "On: the background takes your colour and the cards stay neutral. Off: a neutral background with coloured buttons only.",
 
   "status.cancelled": "Cancelled",
   "status.cancelledLong": "This service is cancelled",

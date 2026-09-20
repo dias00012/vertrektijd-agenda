@@ -16,7 +16,8 @@ export type UrlCheck = { ok: true; url: URL } | { ok: false; error: TranslationK
 export function isPrivateHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
 
-  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal")) return true;
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".internal"))
+    return true;
 
   // Een IPv6-adres bevat altijd een dubbele punt, een hostnaam nooit. Zonder
   // dat onderscheid gold elke naam die met "fc" of "fd" begint als privé-adres

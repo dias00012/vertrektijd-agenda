@@ -99,7 +99,10 @@ describe("withRow", () => {
     await withRow(rij.store, (data) => {
       gezien.push(data.activities[0]?.id ?? "(leeg)");
       return {
-        next: { ...data, activities: [...data.activities, { id: "van ons" }] as AgendaData["activities"] },
+        next: {
+          ...data,
+          activities: [...data.activities, { id: "van ons" }] as AgendaData["activities"],
+        },
         outcome: null,
       };
     });

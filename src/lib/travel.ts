@@ -215,8 +215,7 @@ export function travelPlanForDate(
   // terugreis. Een doorreis komt niet langs huis, dus daar staat hij niet.
   // "both" (een tweede fiets of een OV-fiets) geldt overal aan beide kanten.
   const outboundBike: BikeEnds = bike === "both" ? "both" : bike === "start" ? "origin" : "none";
-  const returnBike: BikeEnds =
-    bike === "both" ? "both" : bike === "start" ? "destination" : "none";
+  const returnBike: BikeEnds = bike === "both" ? "both" : bike === "start" ? "destination" : "none";
   const onwardBike: BikeEnds = bike === "both" ? "both" : "none";
 
   const outboundKey = travelKey(settings.home, activity.location, mode, outboundSlot, outboundBike);
@@ -425,10 +424,7 @@ export function computeDeparture(
  * zoveel milliseconden": in de nacht van de tijdswissel duurt een dag 23 of 25
  * uur, en dan zet een aftreksom in milliseconden je vertrek een uur mis.
  */
-export function departureDateTime(
-  activity: ActivityOccurrence,
-  settings: Settings,
-): Date | null {
+export function departureDateTime(activity: ActivityOccurrence, settings: Settings): Date | null {
   const departure = computeDeparture(activity, settings);
   if (!departure) return null;
   const dateKey = departure.previousDay ? addDaysToKey(activity.date, -1) : activity.date;
@@ -510,10 +506,7 @@ const STALE_EARLY = 90;
 
 const STALE_MARGIN = 180;
 
-export function computeReturn(
-  activity: ActivityOccurrence,
-  settings: Settings,
-): ReturnInfo | null {
+export function computeReturn(activity: ActivityOccurrence, settings: Settings): ReturnInfo | null {
   // Alleen na je laatste uur op die plek ga je naar huis.
   if (!activity.travelRole.inbound) return null;
   // Reis je rechtstreeks door naar de volgende plek, dan is er geen thuisreis.
@@ -625,8 +618,7 @@ export function refreshDecision(input: RefreshInput, now: Date): RefreshDecision
   // vanochtend hoeft om acht uur 's avonds niet meer bijgewerkt.
   const startsAt = toDateTime(date, startTime).getTime();
   const endsAt = toDateTime(date, endTime).getTime();
-  const worthRefreshing =
-    offset === 0 && nowMs >= startsAt - REFRESH_WINDOW_MS && nowMs <= endsAt;
+  const worthRefreshing = offset === 0 && nowMs >= startsAt - REFRESH_WINDOW_MS && nowMs <= endsAt;
 
   // Binnen dat venster telt ook de ouderdom van wat we tonen: de sleutel zegt
   // wélke rit je zoekt, niet hoe laat die vandaag echt rijdt.

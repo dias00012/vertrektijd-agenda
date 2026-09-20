@@ -74,10 +74,7 @@ function getinteCanvas(thema: (typeof THEMES)[number], modus: "licht" | "donker"
  * niet. Voor de vaste kleuren (inkt, gedempt, waarschuwing) tellen ze wel
  * allemaal mee, want die staan op elk thema.
  */
-function achtergronden(
-  modus: "licht" | "donker",
-  thema?: (typeof THEMES)[number],
-): string[] {
+function achtergronden(modus: "licht" | "donker", thema?: (typeof THEMES)[number]): string[] {
   const vast = [token("surface", modus), token("surface-soft", modus), token("canvas", modus)];
   const getint = thema
     ? [getinteCanvas(thema, modus)]

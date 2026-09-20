@@ -14,9 +14,16 @@ import {
 import type { Activity, Exam, Task } from "./types";
 
 const task = (patch: Partial<Task> = {}): Task => ({
-  id: "t1", subject: "Wiskunde", title: "Hoofdstuk 4", deadline: "2026-09-11",
-  estimatedMinutes: 90, priority: "medium", status: "todo",
-  createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-01T00:00:00.000Z", ...patch,
+  id: "t1",
+  subject: "Wiskunde",
+  title: "Hoofdstuk 4",
+  deadline: "2026-09-11",
+  estimatedMinutes: 90,
+  priority: "medium",
+  status: "todo",
+  createdAt: "2026-09-01T00:00:00.000Z",
+  updatedAt: "2026-09-01T00:00:00.000Z",
+  ...patch,
 });
 
 const blok = (startTime: string, endTime: string, linkedTaskId = "t1") =>
@@ -39,7 +46,11 @@ describe("activityMinutes", () => {
 
 describe("plannedMinutesForTask", () => {
   it("telt alle gekoppelde blokken op, ook over middernacht", () => {
-    const activiteiten = [blok("19:00", "20:00"), blok("23:00", "00:30"), blok("10:00", "11:00", "t2")];
+    const activiteiten = [
+      blok("19:00", "20:00"),
+      blok("23:00", "00:30"),
+      blok("10:00", "11:00", "t2"),
+    ];
     expect(plannedMinutesForTask(activiteiten, "t1")).toBe(150);
   });
 });
@@ -85,17 +96,23 @@ describe("sortExams", () => {
   it("zet toetsen op datum, afgerond achteraan", () => {
     const exam = (id: string, date: string, status: Exam["status"] = "todo") =>
       ({ id, subject: "Sk", date, priority: "medium", status }) as Exam;
-    const lijst = sortExams([exam("a", "2026-10-01"), exam("b", "2026-09-14", "done"), exam("c", "2026-09-20")]);
+    const lijst = sortExams([
+      exam("a", "2026-10-01"),
+      exam("b", "2026-09-14", "done"),
+      exam("c", "2026-09-20"),
+    ]);
     expect(lijst.map((e) => e.id)).toEqual(["c", "a", "b"]);
   });
 });
 
 describe("taskProgress", () => {
   it("telt afgevinkte stappen", () => {
-    const met = task({ steps: [
-      { id: "1", title: "a", done: true },
-      { id: "2", title: "b", done: false },
-    ] });
+    const met = task({
+      steps: [
+        { id: "1", title: "a", done: true },
+        { id: "2", title: "b", done: false },
+      ],
+    });
     expect(taskProgress(met)).toEqual({ done: 1, total: 2 });
   });
 
@@ -117,32 +134,45 @@ describe("daysUntil", () => {
 
 describe("linkedWorkDone", () => {
   const taken = [task({ id: "t1", status: "done" }), task({ id: "t2", status: "doing" })];
-  const toetsen = [
-    { id: "e1", status: "done" } as Exam,
-    { id: "e2", status: "todo" } as Exam,
-  ];
+  const toetsen = [{ id: "e1", status: "done" } as Exam, { id: "e2", status: "todo" } as Exam];
 
   it("streept een blok door waarvan de taak af is", () => {
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "t1", linkedExamId: null }, taken, toetsen)).toBe(true);
+    expect(
+      linkedWorkDone({ title: "Leerblok", linkedTaskId: "t1", linkedExamId: null }, taken, toetsen),
+    ).toBe(true);
   });
 
   it("laat een blok staan waarvan de taak nog loopt", () => {
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "t2", linkedExamId: null }, taken, toetsen)).toBe(false);
+    expect(
+      linkedWorkDone({ title: "Leerblok", linkedTaskId: "t2", linkedExamId: null }, taken, toetsen),
+    ).toBe(false);
   });
 
   it("doet hetzelfde voor een toets", () => {
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: "e1" }, taken, toetsen)).toBe(true);
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: "e2" }, taken, toetsen)).toBe(false);
+    expect(
+      linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: "e1" }, taken, toetsen),
+    ).toBe(true);
+    expect(
+      linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: "e2" }, taken, toetsen),
+    ).toBe(false);
   });
 
   it("laat een leerblok zonder koppeling met rust", () => {
     // Uit een leerplan: de app weet niet of dat werk gedaan is.
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: null }, taken, toetsen)).toBe(false);
+    expect(
+      linkedWorkDone({ title: "Leerblok", linkedTaskId: null, linkedExamId: null }, taken, toetsen),
+    ).toBe(false);
   });
 
   it("streept niets door als de taak niet meer bestaat", () => {
     // Verwijderd schoolwerk laat een blok achter; dat is geen "af".
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "weg", linkedExamId: null }, taken, toetsen)).toBe(false);
+    expect(
+      linkedWorkDone(
+        { title: "Leerblok", linkedTaskId: "weg", linkedExamId: null },
+        taken,
+        toetsen,
+      ),
+    ).toBe(false);
   });
 });
 
@@ -181,12 +211,18 @@ describe("linkedWorkDone per stap", () => {
 
   it("gebruikt linkedStepId wanneer die er is, en niet de titel", () => {
     // Een expliciete koppeling gaat altijd voor; zo kan een blok heten wat je wilt.
-    expect(linkedWorkDone(leerblok("Blokje leren", { linkedStepId: "s1" }), taken, toetsen)).toBe(true);
-    expect(linkedWorkDone(leerblok("BE - samenvatting H3", { linkedStepId: "s3" }), taken, toetsen)).toBe(false);
+    expect(linkedWorkDone(leerblok("Blokje leren", { linkedStepId: "s1" }), taken, toetsen)).toBe(
+      true,
+    );
+    expect(
+      linkedWorkDone(leerblok("BE - samenvatting H3", { linkedStepId: "s3" }), taken, toetsen),
+    ).toBe(false);
   });
 
   it("negeert een linkedStepId die niet bestaat", () => {
-    expect(linkedWorkDone(leerblok("BE - samenvatting H3", { linkedStepId: "weg" }), taken, toetsen)).toBe(false);
+    expect(
+      linkedWorkDone(leerblok("BE - samenvatting H3", { linkedStepId: "weg" }), taken, toetsen),
+    ).toBe(false);
   });
 
   it("valt terug op de opdracht wanneer geen stap past", () => {
@@ -217,12 +253,20 @@ describe("linkedWorkDone per stap", () => {
         ],
       }),
     ];
-    expect(linkedWorkDone(leerblok("BE - T4.1 Gouda + T4.2 Van Dam"), metDeelstap, toetsen)).toBe(false);
+    expect(linkedWorkDone(leerblok("BE - T4.1 Gouda + T4.2 Van Dam"), metDeelstap, toetsen)).toBe(
+      false,
+    );
     expect(linkedWorkDone(leerblok("BE - T4.1 Gouda"), metDeelstap, toetsen)).toBe(true);
   });
 
   it("valt niet om op een blok zonder titel", () => {
-    expect(linkedWorkDone({ title: "Leerblok", linkedTaskId: "be", linkedExamId: null } as unknown as Activity, taken, toetsen)).toBe(false);
+    expect(
+      linkedWorkDone(
+        { title: "Leerblok", linkedTaskId: "be", linkedExamId: null } as unknown as Activity,
+        taken,
+        toetsen,
+      ),
+    ).toBe(false);
   });
 });
 

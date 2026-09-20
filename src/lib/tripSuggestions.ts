@@ -51,7 +51,8 @@ export function upcomingTrips(
     if (dagen < 0 || dagen > SUGGESTION_HORIZON_DAYS) continue;
 
     // Uiterlijk aankomen: starttijd min je marge, net als in de agenda.
-    const aankomst = toDateTime(date, activity.startTime).getTime() - bufferFor(activity, settings) * 60_000;
+    const aankomst =
+      toDateTime(date, activity.startTime).getTime() - bufferFor(activity, settings) * 60_000;
     // Een rit waarvan het vertrek al voorbij is helpt niet meer.
     if (aankomst <= now.getTime()) continue;
 

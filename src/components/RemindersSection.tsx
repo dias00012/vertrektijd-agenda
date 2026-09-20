@@ -29,8 +29,7 @@ export function RemindersSection() {
   const [backgroundError, setBackgroundError] = useState<string | null>(null);
 
   // Zonder publieke sleutel is er geen server om je bij aan te melden.
-  const supportsBackground =
-    pushSupported() && Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+  const supportsBackground = pushSupported() && Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
 
   useEffect(() => {
     if (typeof Notification === "undefined") return;
@@ -38,7 +37,7 @@ export function RemindersSection() {
     void pushEnabled().then(setBackground);
   }, []);
 
-  const minutes = hydrated ? settings.reminderMinutes ?? null : null;
+  const minutes = hydrated ? (settings.reminderMinutes ?? null) : null;
   const enabled = minutes !== null && permission === "granted";
 
   /** Aan- of afmelden voor meldingen terwijl de app dicht is. */
@@ -76,9 +75,7 @@ export function RemindersSection() {
     setBusy(true);
     try {
       const result =
-        Notification.permission === "granted"
-          ? "granted"
-          : await Notification.requestPermission();
+        Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
       setPermission(result);
       if (result === "granted") {
         updateSettings({ reminderMinutes: value });
@@ -125,8 +122,7 @@ export function RemindersSection() {
                 className="chip rounded-xl text-sm font-medium"
                 style={{
                   borderColor: enabled && minutes === value ? "var(--accent)" : "var(--line)",
-                  background:
-                    enabled && minutes === value ? "var(--surface-soft)" : "transparent",
+                  background: enabled && minutes === value ? "var(--surface-soft)" : "transparent",
                 }}
               >
                 {t("reminders.minutes", { count: value })}
@@ -150,7 +146,10 @@ export function RemindersSection() {
                   />
                   <span className="min-w-0">
                     <span className="block text-sm font-medium">{t("reminders.background")}</span>
-                    <span className="block text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
+                    <span
+                      className="block text-xs leading-relaxed"
+                      style={{ color: "var(--muted)" }}
+                    >
                       {t("reminders.backgroundHint")}
                     </span>
                   </span>

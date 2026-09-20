@@ -24,8 +24,7 @@ export function DayTimeline({ dateKey, now }: { dateKey: string; now?: Date }) {
   const entries = buildTimeline(activities, settings, dateKey);
 
   // Alleen dempen wanneer we naar de dag van 'now' kijken.
-  const nowMinutes =
-    now && dateKey === toKey(now) ? now.getHours() * 60 + now.getMinutes() : null;
+  const nowMinutes = now && dateKey === toKey(now) ? now.getHours() * 60 + now.getMinutes() : null;
 
   return (
     <>
@@ -200,7 +199,9 @@ function TimelineRow({
             <span aria-hidden>{category.emoji}</span>
             <span
               className="truncate text-sm font-semibold"
-              style={workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined}
+              style={
+                workDone ? { textDecoration: "line-through", color: "var(--muted)" } : undefined
+              }
             >
               {entry.activity.title}
             </span>

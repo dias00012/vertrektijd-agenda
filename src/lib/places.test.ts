@@ -104,11 +104,23 @@ describe("relocatePoint", () => {
       ],
       timetable: { url: "https://x/y.ics", location: OUD, category: "school", syncedAt: null },
       calendars: [
-        { id: "c1", name: "Werk", url: "https://x/w.ics", category: "work", location: OUD, syncedAt: null },
+        {
+          id: "c1",
+          name: "Werk",
+          url: "https://x/w.ics",
+          category: "work",
+          location: OUD,
+          syncedAt: null,
+        },
       ],
     });
 
-    const result = relocatePoint(before, [activity(), activity({ id: "a2", location: ELDERS })], OUD, NIEUW);
+    const result = relocatePoint(
+      before,
+      [activity(), activity({ id: "a2", location: ELDERS })],
+      OUD,
+      NIEUW,
+    );
 
     expect(result.settings.savedPlaces[0].location).toEqual(NIEUW);
     // De plek heette naar zijn adres, dus de naam gaat mee.

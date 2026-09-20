@@ -6,11 +6,7 @@ import { pickItinerary, tidyItineraries, type ItineraryLike } from "./itinerarie
  * tests zetten de beste optie daarom bewust níét vooraan, zodat ze aantonen
  * dat de app kiest en niet gewoon de eerste pakt.
  */
-function option(
-  start: string,
-  end: string,
-  patch: Partial<ItineraryLike> = {},
-): ItineraryLike {
+function option(start: string, end: string, patch: Partial<ItineraryLike> = {}): ItineraryLike {
   const startTime = `2026-09-07T${start}:00.000Z`;
   const endTime = `2026-09-07T${end}:00.000Z`;
   return {
@@ -163,10 +159,7 @@ describe("tidyItineraries", () => {
   it("houdt een langere rit die je juist het eerst op je bestemming zet", () => {
     // De bus doet er 22 minuten over maar is er om 08:42; de trein duurt 8
     // minuten en is er pas om 09:00. Op reisduur filteren zou de bus wissen.
-    const list = tidyItineraries([
-      option("08:20", "08:42"),
-      option("08:52", "09:00"),
-    ]);
+    const list = tidyItineraries([option("08:20", "08:42"), option("08:52", "09:00")]);
 
     expect(list).toHaveLength(2);
   });

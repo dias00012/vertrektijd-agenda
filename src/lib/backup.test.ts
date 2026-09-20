@@ -73,7 +73,9 @@ describe("parseBackup", () => {
   it("laat eigen activiteitstypes door de import heen", () => {
     const result = parseBackup(
       file({
-        settings: { customCategories: [{ id: "bijbaan", label: "Bijbaan", emoji: "💶", color: "#f00" }] },
+        settings: {
+          customCategories: [{ id: "bijbaan", label: "Bijbaan", emoji: "💶", color: "#f00" }],
+        },
         activities: [{ id: "a1", category: "bijbaan", title: "Werken" }],
       }),
     );
@@ -105,8 +107,12 @@ describe("parseBackup en de instellingen", () => {
   it("laat een vervoermiddel dat niet bestaat niet door", () => {
     // Anders vraagt de app de server om een rit "per vliegtuig" en mislukt
     // elke reisberekening, zonder dat je ziet waarom.
-    expect(parseBackup(bestand({ travelMode: "vliegtuig" })).data?.settings?.travelMode).toBe("car");
-    expect(parseBackup(bestand({ travelMode: "transit" })).data?.settings?.travelMode).toBe("transit");
+    expect(parseBackup(bestand({ travelMode: "vliegtuig" })).data?.settings?.travelMode).toBe(
+      "car",
+    );
+    expect(parseBackup(bestand({ travelMode: "transit" })).data?.settings?.travelMode).toBe(
+      "transit",
+    );
   });
 
   it("laat een veld dat niet in het bestand staat met rust", () => {
@@ -119,7 +125,11 @@ describe("parseBackup en de instellingen", () => {
 
   it("houdt goede waarden gewoon staan", () => {
     const settings = parseBackup(
-      bestand({ home: { label: "Thuis", lat: 52.3, lon: 5.2 }, bufferMinutes: 20, transitBike: "start" }),
+      bestand({
+        home: { label: "Thuis", lat: 52.3, lon: 5.2 },
+        bufferMinutes: 20,
+        transitBike: "start",
+      }),
     ).data?.settings;
     expect(settings?.home?.label).toBe("Thuis");
     expect(settings?.bufferMinutes).toBe(20);
@@ -173,9 +183,9 @@ describe("normalizeActivity aan de rand", () => {
     // erin, en staat er bij de activiteit dat de reis mislukt is.
     expect(normalizeActivity({ location: { label: "Ergens" } }).location).toBeNull();
     expect(normalizeActivity({ location: { label: "X", lat: "52", lon: 5 } }).location).toBeNull();
-    expect(normalizeActivity({ location: { label: "School", lat: 52.4, lon: 5.5 } }).location).toEqual(
-      { label: "School", lat: 52.4, lon: 5.5 },
-    );
+    expect(
+      normalizeActivity({ location: { label: "School", lat: 52.4, lon: 5.5 } }).location,
+    ).toEqual({ label: "School", lat: 52.4, lon: 5.5 });
   });
 });
 

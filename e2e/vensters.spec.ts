@@ -118,9 +118,7 @@ test("de focus komt terug op de knop waarmee je het opende", async ({ page }) =>
   await page.keyboard.press("Escape");
   await expect(page.locator('[role="dialog"]')).toHaveCount(0);
 
-  const terug = await page.evaluate(
-    () => document.activeElement?.getAttribute("aria-label") ?? "",
-  );
+  const terug = await page.evaluate(() => document.activeElement?.getAttribute("aria-label") ?? "");
   expect(terug).toMatch(/bewerken/);
 });
 

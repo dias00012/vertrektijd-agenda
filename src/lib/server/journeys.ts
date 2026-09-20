@@ -169,10 +169,7 @@ export function toJourney(
     .filter((leg) => leg.durationMinutes > 0 || leg.line);
 
   // De reis is zo vertraagd als het meest vertraagde onderdeel.
-  const delayMinutes = legs.reduce(
-    (worst, leg) => Math.max(worst, leg.delayMinutes ?? 0),
-    0,
-  );
+  const delayMinutes = legs.reduce((worst, leg) => Math.max(worst, leg.delayMinutes ?? 0), 0);
 
   return {
     // De lijn per onderdeel hoort erbij: twee ritten van 8:22 tot 8:54 met

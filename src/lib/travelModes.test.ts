@@ -52,7 +52,9 @@ describe("describeLeg", () => {
 
   it("zegt nog steeds iets als er helemaal niets bekend is", () => {
     // Een lege regel op je scherm is erger dan een vaag woord.
-    expect(describeLeg(leg({ line: undefined, trip: undefined, to: "" })).length).toBeGreaterThan(0);
+    expect(describeLeg(leg({ line: undefined, trip: undefined, to: "" })).length).toBeGreaterThan(
+      0,
+    );
   });
 });
 

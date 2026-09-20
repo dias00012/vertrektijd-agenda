@@ -126,9 +126,7 @@ export function LocationInput({
     <div ref={containerRef} className="relative">
       <label className="label" htmlFor={listId}>
         {label}
-        {!required ? (
-          <span style={{ fontWeight: 400 }}> · {t("common.optional")}</span>
-        ) : null}
+        {!required ? <span style={{ fontWeight: 400 }}> · {t("common.optional")}</span> : null}
       </label>
 
       <div className="relative">
@@ -226,11 +224,7 @@ export function LocationInput({
            zoeker niet kon plaatsen. Dat kan honderden meters verkeerd liggen,
            en dan klopt de hele reistijd niet — zonder dat je iets ziet. Dus
            zeggen we het, precies daar waar het adres staat. */
-        <p
-          className="mt-1.5 text-xs"
-          style={{ color: "var(--danger)" }}
-          role="status"
-        >
+        <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }} role="status">
           &#9888;&#65039; {t("place.noStreet")}
           <span className="mt-0.5 block" style={{ color: "var(--muted)" }}>
             {t("place.noStreet.body")}

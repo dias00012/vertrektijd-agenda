@@ -37,9 +37,7 @@ function fastestJourneyId(journeys: Journey[]): string | null {
   const fastest = journeys.reduce((best, journey) =>
     journey.durationMinutes < best.durationMinutes ? journey : best,
   );
-  const shared = journeys.every(
-    (journey) => journey.durationMinutes === fastest.durationMinutes,
-  );
+  const shared = journeys.every((journey) => journey.durationMinutes === fastest.durationMinutes);
   return shared ? null : fastest.id;
 }
 
@@ -256,51 +254,51 @@ export default function TravelPlannerPage() {
         {/* Op een laptop stonden van, wisselen en naar onder elkaar met een
             lege rechterhelft ernaast. Naast elkaar lees je de rit als één regel. */}
         <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-start lg:gap-3 lg:space-y-0">
-        <LocationInput
-          label={t("travel.from")}
-          value={from}
-          onChange={setFrom}
-          required
-          includeStops
-          places={places}
-          placeholder={t("travel.placeholder")}
-          extraActions={
-            // Thuis, gym en school staan al bij de snelkeuzes hieronder.
+          <LocationInput
+            label={t("travel.from")}
+            value={from}
+            onChange={setFrom}
+            required
+            includeStops
+            places={places}
+            placeholder={t("travel.placeholder")}
+            extraActions={
+              // Thuis, gym en school staan al bij de snelkeuzes hieronder.
+              <button
+                type="button"
+                onClick={useMyLocation}
+                disabled={locating}
+                className="chip"
+                style={{ borderColor: "var(--line)", color: "var(--muted)" }}
+              >
+                {locating ? t("travel.locating") : `📍 ${t("travel.myLocation")}`}
+              </button>
+            }
+          />
+
+          <div className="flex justify-center lg:pt-7">
             <button
               type="button"
-              onClick={useMyLocation}
-              disabled={locating}
-              className="chip"
+              onClick={swap}
+              aria-label={t("travel.swap")}
+              className="icon-btn rounded-full border text-sm"
               style={{ borderColor: "var(--line)", color: "var(--muted)" }}
             >
-              {locating ? t("travel.locating") : `📍 ${t("travel.myLocation")}`}
+              <span aria-hidden className="block lg:rotate-90">
+                &#8645;
+              </span>
             </button>
-          }
-        />
+          </div>
 
-        <div className="flex justify-center lg:pt-7">
-          <button
-            type="button"
-            onClick={swap}
-            aria-label={t("travel.swap")}
-            className="icon-btn rounded-full border text-sm"
-            style={{ borderColor: "var(--line)", color: "var(--muted)" }}
-          >
-            <span aria-hidden className="block lg:rotate-90">
-              &#8645;
-            </span>
-          </button>
-        </div>
-
-        <LocationInput
-          label={t("travel.to")}
-          value={to}
-          onChange={setTo}
-          required
-          includeStops
-          places={places}
-          placeholder={t("travel.placeholder")}
-        />
+          <LocationInput
+            label={t("travel.to")}
+            value={to}
+            onChange={setTo}
+            required
+            includeStops
+            places={places}
+            placeholder={t("travel.placeholder")}
+          />
         </div>
 
         <div>
@@ -504,10 +502,7 @@ export default function TravelPlannerPage() {
                   <p className="mb-2">{t("travel.why.intro")}</p>
                   <Detail label={t("travel.why.from")} value={pointLabel(from)} />
                   <Detail label={t("travel.why.to")} value={pointLabel(to)} />
-                  <Detail
-                    label={t("travel.why.planner")}
-                    value={details.planVersion ?? "?"}
-                  />
+                  <Detail label={t("travel.why.planner")} value={details.planVersion ?? "?"} />
                   <Detail
                     label={t("travel.why.transfers")}
                     value={t(details.routedTransfers ? "travel.why.on" : "travel.why.off")}
@@ -552,9 +547,7 @@ export default function TravelPlannerPage() {
           preset={{
             date: toDateKey(new Date(toAgenda.arrival)),
             startTime: legTime(toAgenda.arrival) ?? "09:00",
-            endTime: minutesToTime(
-              timeToMinutes(legTime(toAgenda.arrival) ?? "09:00") + 60,
-            ),
+            endTime: minutesToTime(timeToMinutes(legTime(toAgenda.arrival) ?? "09:00") + 60),
             location: to,
             title: t("journey.toAgendaTitle"),
             travelMode: "transit",

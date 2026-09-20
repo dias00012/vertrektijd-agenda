@@ -183,27 +183,43 @@ export function normalizeSettings(raw: Record<string, unknown>): Settings {
   };
 
   keep("home", isRecord(raw.home) ? (raw.home as unknown as Settings["home"]) : null);
-  keep("savedPlaces", Array.isArray(raw.savedPlaces) ? (raw.savedPlaces as Settings["savedPlaces"]) : []);
+  keep(
+    "savedPlaces",
+    Array.isArray(raw.savedPlaces) ? (raw.savedPlaces as Settings["savedPlaces"]) : [],
+  );
   keep(
     "categoryPlaces",
     isRecord(raw.categoryPlaces) ? (raw.categoryPlaces as Settings["categoryPlaces"]) : {},
   );
   keep(
     "customCategories",
-    Array.isArray(raw.customCategories) ? (raw.customCategories as Settings["customCategories"]) : [],
+    Array.isArray(raw.customCategories)
+      ? (raw.customCategories as Settings["customCategories"])
+      : [],
   );
   // Een marge van een half etmaal is geen marge meer; de app zelf staat ook
   // niet meer dan twee uur toe.
   keep(
     "bufferMinutes",
-    Math.min(MAX_BUFFER_MINUTES, Math.max(0, Math.round(num(raw.bufferMinutes, DEFAULT_BUFFER_MINUTES)))),
+    Math.min(
+      MAX_BUFFER_MINUTES,
+      Math.max(0, Math.round(num(raw.bufferMinutes, DEFAULT_BUFFER_MINUTES))),
+    ),
   );
-  keep("travelMode", TRAVEL_MODES.includes(raw.travelMode as TravelMode) ? (raw.travelMode as TravelMode) : "car");
+  keep(
+    "travelMode",
+    TRAVEL_MODES.includes(raw.travelMode as TravelMode) ? (raw.travelMode as TravelMode) : "car",
+  );
   keep(
     "transitBike",
-    TRANSIT_BIKES.includes(raw.transitBike as TransitBike) ? (raw.transitBike as TransitBike) : "none",
+    TRANSIT_BIKES.includes(raw.transitBike as TransitBike)
+      ? (raw.transitBike as TransitBike)
+      : "none",
   );
-  keep("timetable", isRecord(raw.timetable) ? (raw.timetable as unknown as Settings["timetable"]) : null);
+  keep(
+    "timetable",
+    isRecord(raw.timetable) ? (raw.timetable as unknown as Settings["timetable"]) : null,
+  );
   keep("calendars", Array.isArray(raw.calendars) ? (raw.calendars as Settings["calendars"]) : []);
   keep(
     "reminderMinutes",

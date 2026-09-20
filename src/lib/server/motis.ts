@@ -119,8 +119,7 @@ async function vraagPlan(url: string, userAgent: string): Promise<Response> {
       }
       return response;
     } catch (error) {
-      const onbereikbaar =
-        error instanceof ProviderError && error.key === "api.mapUnreachable";
+      const onbereikbaar = error instanceof ProviderError && error.key === "api.mapUnreachable";
       if (onbereikbaar && !laatste) {
         await wacht(HERKANSING_MS);
         continue;
