@@ -4,4 +4,6 @@
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 #
 # Daarna slaat `git blame` ze over en zie je weer wie een regel écht schreef.
-2076fc1ee29bc869b410a34b6f5f4f35ef49a29d
+
+# Eén opmaak voor het hele project
+1204fae07ac18e43b08dc80b4b8a1a25344ffb74
