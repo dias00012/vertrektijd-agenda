@@ -58,12 +58,21 @@ export interface JourneyResult {
 const DEFAULT_COUNT = 5;
 const MAX_COUNT = 10;
 
+/**
+ * Hoeveel ritten we opvragen. Minstens een, hoogstens tien: de client mag dit
+ * meesturen, en zonder grens vraagt een verkeerd getal de gratis OV-dienst
+ * honderden ritten tegelijk.
+ */
+export function clampCount(gevraagd: number | undefined): number {
+  return Math.min(Math.max(gevraagd ?? DEFAULT_COUNT, 1), MAX_COUNT);
+}
+
 export async function planJourneys(
   from: GeoLocation,
   to: GeoLocation,
   search: JourneySearch = {},
 ): Promise<JourneyResult> {
-  const count = Math.min(Math.max(search.count ?? DEFAULT_COUNT, 1), MAX_COUNT);
+  const count = clampCount(search.count);
 
   const params = transitParams({
     from,
@@ -139,7 +148,7 @@ export async function planJourneys(
  * die er niet zijn. Gebeurt zodra de planner dezelfde trein teruggeeft met een
  * net ander looppad ernaartoe.
  */
-function dedupe(journeys: Journey[]): Journey[] {
+export function dedupe(journeys: Journey[]): Journey[] {
   const seen = new Set<string>();
   return journeys.filter((journey) => {
     if (seen.has(journey.id)) return false;
@@ -148,7 +157,7 @@ function dedupe(journeys: Journey[]): Journey[] {
   });
 }
 
-function toJourney(
+export function toJourney(
   itinerary: MotisItinerary,
   fromLabel: string,
   toLabel: string,

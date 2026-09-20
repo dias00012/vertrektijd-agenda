@@ -27,7 +27,11 @@ export function loadChanges(): ChangeLog | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ChangeLog;
     if (!Array.isArray(parsed.changes) || parsed.changes.length === 0) return null;
-    if (Date.now() - Date.parse(parsed.foundAt) > MAX_AGE_MS) return null;
+    // Een onleesbare datum geeft NaN, en `Date.now() - NaN > MAX` is false --
+    // dus bleef een stukgelopen melding er eeuwig staan. Apart afvangen.
+    const gevonden = Date.parse(parsed.foundAt);
+    if (!Number.isFinite(gevonden)) return null;
+    if (Date.now() - gevonden > MAX_AGE_MS) return null;
     return parsed;
   } catch {
     return null;

@@ -19,7 +19,7 @@ const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim();
 type Context = Record<string, string | number | boolean | undefined>;
 
 /** Zet een DSN om in het ingest-endpoint van Sentry. */
-function envelopeUrl(dsn: string): string | null {
+export function envelopeUrl(dsn: string): string | null {
   try {
     const url = new URL(dsn);
     const projectId = url.pathname.replace(/^\//, "");
@@ -33,36 +33,57 @@ function envelopeUrl(dsn: string): string | null {
 
 export function reportError(error: unknown, context: Context = {}): void {
   const message = error instanceof Error ? error.message : String(error);
-  const stack = error instanceof Error ? error.stack : undefined;
 
   console.error("[vertrektijd]", message, context);
 
   const endpoint = DSN ? envelopeUrl(DSN) : null;
   if (!endpoint || typeof fetch === "undefined") return;
 
-  const eventId = crypto.randomUUID().replace(/-/g, "");
-  const sentAt = new Date().toISOString();
+  const body = envelopeBody(error, context, {
+    eventId: crypto.randomUUID().replace(/-/g, ""),
+    sentAt: new Date().toISOString(),
+    path: typeof location !== "undefined" ? location.pathname : undefined,
+  });
 
-  const body =
-    JSON.stringify({ event_id: eventId, sent_at: sentAt }) +
+  // keepalive: het verzoek mag doorlopen terwijl de pagina sluit.
+  fetch(endpoint, { method: "POST", body, keepalive: true }).catch(() => undefined);
+}
+
+/**
+ * Het pakketje dat naar Sentry gaat.
+ *
+ * Apart van het versturen, zodat na te rekenen is wát erin zit. De belofte in
+ * de privacyverklaring is dat er geen agenda-inhoud, adres of e-mailadres naar
+ * buiten gaat, en een belofte die je niet kunt nakijken is een hoop tekst:
+ * hier staan alleen de foutmelding, de stack en het pad van de pagina.
+ */
+export function envelopeBody(
+  error: unknown,
+  context: Context,
+  meta: { eventId: string; sentAt: string; path?: string },
+): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const stack = error instanceof Error ? error.stack : undefined;
+
+  return (
+    JSON.stringify({ event_id: meta.eventId, sent_at: meta.sentAt }) +
     "\n" +
     JSON.stringify({ type: "event" }) +
     "\n" +
     JSON.stringify({
-      event_id: eventId,
-      timestamp: sentAt,
+      event_id: meta.eventId,
+      timestamp: meta.sentAt,
       platform: "javascript",
       level: "error",
-      // Bewust geen agenda-inhoud, e-mailadres of locatie: alleen wat er stukging.
       exception: {
         values: [{ type: error instanceof Error ? error.name : "Error", value: message }],
       },
+      // Een stack kan enorm zijn; vierduizend tekens is ruim genoeg om te zien
+      // waar het misging en houdt het pakketje klein.
       extra: { ...context, stack: stack?.slice(0, 4000) },
-      request: { url: typeof location !== "undefined" ? location.pathname : undefined },
-    });
-
-  // keepalive: het verzoek mag doorlopen terwijl de pagina sluit.
-  fetch(endpoint, { method: "POST", body, keepalive: true }).catch(() => undefined);
+      request: { url: meta.path },
+    })
+  );
 }
 
 /** Vangt fouten op die buiten React ontstaan (losse promises, event handlers). */
