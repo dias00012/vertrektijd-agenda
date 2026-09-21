@@ -8,6 +8,44 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.95.0
+
+Alles wat nodig is om de app in de Play Store te kunnen zetten -- op drie dingen
+na die niet in code op te lossen zijn. Die staan in
+[PLAYSTORE.md](PLAYSTORE.md).
+
+- **Eén verkeersdrempel over alle servers.** De rem op aanvragen naar de gratis
+  kaart- en OV-diensten stond in het geheugen, en op Vercel heeft elke instance
+  zijn eigen geheugen: met twintig instances is een grens van dertig per minuut
+  in de praktijk zeshonderd. Zolang jij de enige gebruiker bent maakt dat niets
+  uit; zodra de app publiek is, is dit je enige rem op de rekening.
+
+  De teller staat nu in Postgres (`SUPABASE-SETUP.md` §8c), één opdracht per
+  aanvraag, en telt op de drie routes die externe diensten bellen. Staat de
+  tabel er niet of antwoordt de database niet, dan geldt de geheugenteller weer
+  -- met opzet: een database die piept mag nooit betekenen dat niemand meer kan
+  reizen.
+
+- **`/.well-known/assetlinks.json`.** Hiermee bevestigt de site dat hij bij de
+  Android-app hoort, zodat die zonder browserbalk opent. Zonder vingerafdruk
+  geeft hij een lege lijst, en een vingerafdruk die niet klopt wordt geweigerd:
+  een verzonnen vingerafdruk is erger dan geen, want die lijkt goed te staan
+  terwijl Android hem afwijst.
+
+- **`twa-manifest.json`** met de kleuren, snelkoppelingen en iconen die de
+  Android-verpakking nodig heeft.
+
+- **[PLAYSTORE.md](PLAYSTORE.md)**: wat er klaarstaat, wat jij moet doen, en
+  wanneer een grotere server aan de orde is. Met bovenaan het enige dat echt
+  eerst moet -- uitzoeken of de gratis OV-dienst commercieel gebruik toestaat --
+  inclusief een bericht dat je kunt sturen.
+
+- De ondertekensleutel van de Android-app staat in `.gitignore`. Raak je die
+  kwijt, dan kun je nooit meer een update uitbrengen onder dezelfde app.
+
+994 rekentests, 61 browsertests. Vijf mutaties geprobeerd, vijf gevangen --
+twee daarvan pas nadat de bijbehorende test was aangescherpt.
+
 ## 0.94.0
 
 Een doorlichting van de hele app: vijftig punten, in acht blokken, elk apart

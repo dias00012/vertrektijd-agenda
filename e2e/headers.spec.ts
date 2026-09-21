@@ -103,3 +103,26 @@ test("de privacyverklaring is er ook zonder bereik", async ({ page, context }) =
   await expect(page.getByRole("heading", { name: /Privacy/i }).first()).toBeVisible();
   await context.setOffline(false);
 });
+
+/**
+ * Het bestand waarmee de site bevestigt dat hij bij de Android-app hoort.
+ *
+ * Klopt dit niet, dan opent de app mét browserbalk en ziet hij eruit als een
+ * website in plaats van als een app -- en dat merk je pas na het uploaden naar
+ * Play Console.
+ */
+test("assetlinks geeft geldige JSON, ook zonder vingerafdruk", async ({ request }) => {
+  const antwoord = await request.get("/.well-known/assetlinks.json");
+  expect(antwoord.status()).toBe(200);
+  expect(antwoord.headers()["content-type"]).toContain("application/json");
+
+  const body = (await antwoord.json()) as unknown[];
+  expect(Array.isArray(body)).toBe(true);
+
+  // Zonder ANDROID_SHA256_FINGERPRINT hoort hij leeg te zijn -- een lege lijst
+  // is een geldig antwoord, een verzonnen vingerafdruk niet.
+  for (const regel of body as { relation: string[]; target: { package_name: string } }[]) {
+    expect(regel.relation).toContain("delegate_permission/common.handle_all_urls");
+    expect(regel.target.package_name.length).toBeGreaterThan(0);
+  }
+});

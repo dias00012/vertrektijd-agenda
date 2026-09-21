@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { say } from "./language";
 import { clientKey } from "../clientKey";
+import { checkSharedRateLimit } from "./rateLimitStore";
 
 // Doorgegeven zodat de routes hem via deze module kunnen blijven gebruiken.
 export { clientKey };
@@ -13,10 +14,17 @@ export { clientKey };
  * transitous) die op fair use draaien. Zonder drempel kan één script met onze
  * URL die diensten laten blokkeren — voor iedereen die de app gebruikt.
  *
- * Bewust een simpel schuivend venster in het geheugen. Op een serverless
- * platform telt elke instance apart, dus het is geen waterdichte grens maar
- * wel precies wat het moet zijn: een rem op misbruik, niet op normaal gebruik.
- * Wordt de app groot, dan hoort hier een gedeelde teller (Redis/Upstash).
+ * Twee tellers, in deze volgorde:
+ *
+ *  - Staat er een Supabase-service-sleutel, dan telt de database mee over alle
+ *    instances heen. Dat is de echte grens; zie `rateLimitStore.ts`.
+ *  - Anders (of als de database niet antwoordt) een schuivend venster in het
+ *    geheugen. Elke instance telt dan apart, dus met twintig instances is een
+ *    grens van dertig per minuut in de praktijk zeshonderd -- een rem op
+ *    misbruik, geen harde grens.
+ *
+ * Nooit allebei mislukken betekent dichtgooien: een database die piept mag niet
+ * betekenen dat niemand meer kan reizen.
  */
 
 interface Window {
@@ -95,8 +103,36 @@ export function enforceRateLimit(
   route: keyof typeof LIMITS,
 ): NextResponse | null {
   const result = checkRateLimit(`${route}:${clientKey(request)}`, LIMITS[route]);
-  if (result.ok) return null;
+  return result.ok ? null : tooMany(request, result);
+}
 
+/**
+ * Hetzelfde, maar met de gedeelde teller erbij.
+ *
+ * Apart van `enforceRateLimit` omdat hij moet wachten op de database, en niet
+ * elke route dat wil of kan. Beide tellers doen mee: de geheugenteller vangt
+ * een stortvloed op dezelfde instance meteen af, zonder eerst een rondje langs
+ * Postgres.
+ */
+export async function enforceSharedRateLimit(
+  request: Request,
+  route: keyof typeof LIMITS,
+): Promise<NextResponse | null> {
+  const sleutel = `${route}:${clientKey(request)}`;
+  const rule = LIMITS[route];
+
+  const lokaal = checkRateLimit(sleutel, rule);
+  if (!lokaal.ok) return tooMany(request, lokaal);
+
+  const gedeeld = await checkSharedRateLimit(sleutel, rule);
+  // `null` betekent: geen antwoord uit de database. Dan geldt wat het geheugen
+  // zei, en dat was net al "mag".
+  if (gedeeld && !gedeeld.ok) return tooMany(request, gedeeld);
+
+  return null;
+}
+
+function tooMany(request: Request, result: RateLimitResult): NextResponse {
   return NextResponse.json(
     { error: say(request, "api.tooMany", { seconds: result.retryAfter }) },
     { status: 429, headers: { "Retry-After": String(result.retryAfter) } },

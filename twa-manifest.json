@@ -1,0 +1,50 @@
+{
+  "packageId": "nl.vertrektijd.agenda",
+  "host": "VUL-JE-DOMEIN-IN.nl",
+  "name": "Vertrektijd, slimme agenda",
+  "launcherName": "Vertrektijd",
+  "display": "standalone",
+  "themeColor": "#f6f7f9",
+  "themeColorDark": "#0d1117",
+  "navigationColor": "#f6f7f9",
+  "navigationColorDark": "#0d1117",
+  "navigationDividerColor": "#e4e7ec",
+  "navigationDividerColorDark": "#262c36",
+  "backgroundColor": "#f6f7f9",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://VUL-JE-DOMEIN-IN.nl/icon-512.png",
+  "maskableIconUrl": "https://VUL-JE-DOMEIN-IN.nl/icon-maskable-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "vertrektijd"
+  },
+  "appVersionName": "0.95.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Reisplanner",
+      "short_name": "Reizen",
+      "url": "/reizen",
+      "chosenIconUrl": "https://VUL-JE-DOMEIN-IN.nl/icon-192.png"
+    },
+    {
+      "name": "Schoolwerk",
+      "short_name": "Schoolwerk",
+      "url": "/schoolwerk",
+      "chosenIconUrl": "https://VUL-JE-DOMEIN-IN.nl/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://VUL-JE-DOMEIN-IN.nl/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": { "enabled": false },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://VUL-JE-DOMEIN-IN.nl/",
+  "minSdkVersion": 23,
+  "orientation": "default"
+}

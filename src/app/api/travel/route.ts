@@ -3,7 +3,7 @@ import { reportServerError } from "@/lib/server/report";
 import { say } from "@/lib/server/language";
 import { route } from "@/lib/server/routing";
 import { ProviderError } from "@/lib/server/config";
-import { enforceRateLimit } from "@/lib/server/rateLimit";
+import { enforceSharedRateLimit } from "@/lib/server/rateLimit";
 import { bikeOrNone, isValidPoint, isoOrUndefined } from "@/lib/server/input";
 import type { GeoLocation, TravelMode } from "@/lib/types";
 
@@ -30,7 +30,7 @@ interface TravelRequestBody {
  * HOME_LOCATION -> DESTINATION -> ROUTING API -> TRAVEL TIME
  */
 export async function POST(request: Request) {
-  const limited = enforceRateLimit(request, "travel");
+  const limited = await enforceSharedRateLimit(request, "travel");
   if (limited) return limited;
 
   let body: TravelRequestBody;

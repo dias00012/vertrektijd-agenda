@@ -16,3 +16,10 @@ src/**/__*.test.ts
 /test-results/
 /playwright-report/
 /blob-report/
+
+# De ondertekensleutel van de Android-app. Raak je die kwijt, dan kun je nooit
+# meer een update uitbrengen onder dezelfde app -- en in de repo hoort hij
+# helemaal niet, want wie hem heeft kan een app ondertekenen als jou.
+android.keystore
+*.keystore
+*.jks

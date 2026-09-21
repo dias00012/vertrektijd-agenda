@@ -488,6 +488,9 @@ typefouten kun je wel gerust `npm run typecheck` naast de dev-server gebruiken.
 | `NEXT_PUBLIC_SENTRY_DSN` | foutmonitoring (optioneel) | zonder deze waarde gaat er niets naar buiten |
 | `NOMINATIM_USER_AGENT` | nette identificatie bij de gratis kaartdiensten | bv. `Vertrektijd/1.0 (https://jouw-app.vercel.app)` |
 | `ADMIN_EMAILS` | het beheerdersoverzicht op `/beheer` (optioneel) | komma-lijst; leeg = niemand kan erbij |
+| `NEXT_PUBLIC_SITE_URL` | sitemap en de Play Store-verpakking (optioneel) | zonder deze waarde blijft de sitemap leeg |
+| `ANDROID_PACKAGE_NAME` | de Android-app (optioneel) | standaard `nl.vertrektijd.agenda` |
+| `ANDROID_SHA256_FINGERPRINT` | de Android-app (optioneel) | uit Play Console, niet uit je eigen keystore; zie [PLAYSTORE.md](PLAYSTORE.md) |
 
 Zonder `SUPABASE_SERVICE_ROLE_KEY` blijft de app werken; de verwijderknop meldt dan
 dat het handmatig moet. Zet die sleutel **nooit** in een `NEXT_PUBLIC_`-variabele:
