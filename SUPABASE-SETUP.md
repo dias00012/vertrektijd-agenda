@@ -211,6 +211,94 @@ binnen en het ophalen bij terugkomen doet zijn werk zoals altijd. Dat is met
 opzet; een app die stukgaat omdat een extraatje niet is ingesteld is erger dan
 een app die iets minder snel is.
 
+## 8c. Eén verkeersdrempel over al je servers (aanbevolen zodra de app publiek is)
+
+De app remt aanvragen af naar de gratis kaart- en OV-diensten. Die rem zit in
+het geheugen van de server, en op Vercel heeft elke instance zijn eigen
+geheugen: met twintig instances is een grens van dertig per minuut in de
+praktijk zeshonderd.
+
+Zolang jij de enige gebruiker bent maakt dat niets uit. Zodra de app publiek is
+wel — het is je enige rem op de rekening, en op de gratis diensten waar de app
+op draait. Deze tabel laat alle servers samen tellen.
+
+Plak dit in de **SQL Editor**:
+
+```sql
+create table if not exists public.rate_limits (
+  key text primary key,
+  count integer not null default 0,
+  reset_at timestamptz not null
+);
+
+alter table public.rate_limits enable row level security;
+-- Bewust zonder policies: alleen de service-sleutel komt hierbij, en die staat
+-- uitsluitend op de server.
+
+-- Eén aanvraag tellen en meteen zeggen of hij mag.
+--
+-- In één stap, want twee gelijktijdige aanvragen die eerst lezen en dan
+-- schrijven tellen er samen maar één -- en dan is de drempel lek. De
+-- `on conflict` doet het lezen, ophogen en beslissen in dezelfde opdracht.
+create or replace function public.bump_rate_limit(
+  limit_key text,
+  window_ms integer,
+  max_count integer
+)
+returns table (allowed boolean, remaining integer, retry_after double precision)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  nieuwe_count integer;
+  nieuwe_reset timestamptz;
+begin
+  insert into public.rate_limits (key, count, reset_at)
+  values (limit_key, 1, now() + make_interval(secs => window_ms / 1000.0))
+  on conflict (key) do update
+    set
+      -- Venster voorbij? Dan opnieuw beginnen in plaats van doortellen.
+      count = case
+        when public.rate_limits.reset_at <= now() then 1
+        else public.rate_limits.count + 1
+      end,
+      reset_at = case
+        when public.rate_limits.reset_at <= now()
+        then now() + make_interval(secs => window_ms / 1000.0)
+        else public.rate_limits.reset_at
+      end
+  returning public.rate_limits.count, public.rate_limits.reset_at
+    into nieuwe_count, nieuwe_reset;
+
+  return query select
+    nieuwe_count <= max_count,
+    greatest(0, max_count - nieuwe_count),
+    extract(epoch from (nieuwe_reset - now()));
+end;
+$$;
+
+-- Opgeruimd: vensters die voorbij zijn hebben geen waarde meer.
+create index if not exists rate_limits_reset_idx on public.rate_limits (reset_at);
+```
+
+En een opruimtaak, zodat de tabel niet eindeloos groeit (dezelfde `pg_cron` als
+bij de meldingen; zie 8.4):
+
+```sql
+select cron.schedule(
+  'rate-limits-opruimen',
+  '17 * * * *',
+  $$delete from public.rate_limits where reset_at < now() - interval '1 hour'$$
+);
+```
+
+**Er is geen extra instelling nodig.** Staat `SUPABASE_SERVICE_ROLE_KEY` er al
+(stap 4), dan gebruikt de app deze tabel vanzelf. Staat hij er niet, of
+antwoordt de database niet, dan valt de app terug op de teller in het geheugen.
+Dat is met opzet: een database die piept mag nooit betekenen dat niemand meer
+kan reizen.
+
 ## 9. Weten of iemand de app gebruikt (optioneel)
 
 Zonder cijfers weet je niet of iemand hem opent, of je iets verbeterd of stuk

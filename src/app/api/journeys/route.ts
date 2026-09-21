@@ -3,7 +3,7 @@ import { reportServerError } from "@/lib/server/report";
 import { say } from "@/lib/server/language";
 import { planJourneys } from "@/lib/server/journeys";
 import { ProviderError } from "@/lib/server/config";
-import { enforceRateLimit } from "@/lib/server/rateLimit";
+import { enforceSharedRateLimit } from "@/lib/server/rateLimit";
 import { bikeOrNone, isValidPoint, isoOrUndefined } from "@/lib/server/input";
 import type { GeoLocation } from "@/lib/types";
 
@@ -27,7 +27,7 @@ interface JourneyRequestBody {
  * de server.
  */
 export async function POST(request: Request) {
-  const limited = enforceRateLimit(request, "journeys");
+  const limited = await enforceSharedRateLimit(request, "journeys");
   if (limited) return limited;
 
   let body: JourneyRequestBody;
