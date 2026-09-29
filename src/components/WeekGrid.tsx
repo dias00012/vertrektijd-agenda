@@ -743,11 +743,15 @@ function GridBlock({
         }}
         // Een kort blok toont alleen de emoji, en die is aria-hidden: dan
         // bleef er een knop zonder naam over.
-        aria-label={t("week.blockTitle", {
-          title: item.occurrence.title,
-          from: minutesToTime(item.startMinutes + startOffset),
-          to: minutesToTime(item.endMinutes + endOffset),
-        })}
+        aria-label={
+          // "af" hoort net zo goed bij de naam van de knop: een schermlezer
+          // ziet geen streep en geen vinkje.
+          t("week.blockTitle", {
+            title: item.occurrence.title,
+            from: minutesToTime(item.startMinutes + startOffset),
+            to: minutesToTime(item.endMinutes + endOffset),
+          }) + (workDone ? ` \u2014 ${t("activity.workDone")}` : "")
+        }
         title={t("week.blockTitle", {
           title: item.occurrence.title,
           from: minutesToTime(item.startMinutes + startOffset),
@@ -775,8 +779,23 @@ function GridBlock({
               volle breedte gaat naar de titel; de emoji staat alleen in blokken
               die te kort zijn voor tekst. */}
           {compact ? (
-            <span aria-hidden className="text-[0.65rem] leading-none">
-              {category.emoji}
+            /*
+              Een kort blok heeft geen ruimte voor tekst, dus staat er alleen de
+              emoji van het type -- en dan is er niets om door te strepen. Bij
+              56 pixels per uur is "kort" alles onder ongeveer 36 minuten, en
+              een leerblok van een half uur is de gewoonste zaak van de wereld.
+              Je zag dus bij de helft van je blokken niet dat je klaar was.
+
+              Is het werk af, dan komt er een vinkje in plaats van de emoji. Dat
+              het een leerblok was zie je dan aan de rest van het blok; dat je
+              klaar bent is het nieuws.
+            */
+            <span
+              aria-hidden
+              className="text-[0.65rem] leading-none"
+              style={workDone ? { color: "var(--ok)" } : undefined}
+            >
+              {workDone ? "\u2713" : category.emoji}
             </span>
           ) : (
             <>

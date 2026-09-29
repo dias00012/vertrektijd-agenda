@@ -8,6 +8,24 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.95.1
+
+- **Korte blokken in het weekrooster lieten nooit zien dat het werk af was.**
+  Een blok onder de 34 pixels heeft geen ruimte voor tekst en toont alleen de
+  emoji van zijn type -- en dan is er niets om door te strepen. Bij 56 pixels
+  per uur is dat alles korter dan ongeveer 36 minuten, en een leerblok van een
+  half uur is de gewoonste zaak van de wereld. In de praktijk zag je dus bij de
+  helft van je blokken niet dat je klaar was.
+
+  Is het werk af, dan komt er nu een vinkje in plaats van de emoji. Dat het een
+  leerblok was zie je aan de rest van het blok; dát je klaar bent is het nieuws.
+  Voor een schermlezer staat "af" nu ook in de naam van de knop -- die ziet geen
+  streep en geen vinkje.
+
+  De dagtijdlijn en het maandraster hadden dit niet: die tonen de titel altijd.
+
+994 rekentests, 65 browsertests. Twee mutaties geprobeerd, twee gevangen.
+
 ## 0.95.0
 
 Alles wat nodig is om de app in de Play Store te kunnen zetten -- op drie dingen
