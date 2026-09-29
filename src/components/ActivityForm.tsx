@@ -12,6 +12,8 @@ import { useT } from "@/hooks/useLanguage";
 import { DEFAULT_DURATION_MINUTES, initialDraft } from "@/lib/activityDraft";
 import { useDialog } from "@/hooks/useDialog";
 import { useAgenda } from "@/hooks/useAgenda";
+import { useDoneToggle } from "@/hooks/useDoneToggle";
+import { doneTarget } from "@/lib/schoolwork";
 import { addDaysToKey, minutesToTime, timeToMinutes } from "@/lib/time";
 import { defaultRecurrence, monthDayLabel, sortWeekdays, weekdays } from "@/lib/recurrence";
 import { placeChoices, placeForCategory } from "@/lib/places";
@@ -62,6 +64,8 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     resetCategoryOverride,
     removeCustomCategory,
     activities,
+    tasks,
+    exams,
   } = useAgenda();
   const t = useT();
   const [draft, setDraft] = useState<ActivityDraft>(() => initialDraft(settings, activity, preset));
@@ -72,6 +76,40 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
    * maar slaat straks een nieuwe activiteit op in plaats van deze bij te werken.
    */
   const [duplicating, setDuplicating] = useState(false);
+
+  /*
+   * Afgestreept of niet.
+   *
+   * Het weekraster is te smal voor een vinkje op het blok zelf, en het
+   * maandraster laat op een telefoon alleen stippen zien. Allebei openen ze dit
+   * formulier, dus staat het hier -- één plek die alle vier de weergaven dekt.
+   *
+   * Pas bij "Opslaan", net als de rest van het formulier. Tik je het per
+   * ongeluk aan en sluit je met het kruisje, dan is er niets gebeurd.
+   */
+  const markDone = useDoneToggle();
+  const doneDay = occurrenceDate ?? activity?.date ?? draft.date;
+  const doneNow = activity ? doneTarget(activity, doneDay, tasks, exams) : null;
+  const [doneWanted, setDoneWanted] = useState(doneNow?.done ?? false);
+  /*
+   * Wat er nog meebeweegt. Bij een leerblok gaat het vinkje niet over het blok
+   * maar over het schoolwerk erachter, en dat hoort er te staan voordat je het
+   * aantikt: anders verdwijnt er plots een stap uit je opdracht en weet je niet
+   * waarom.
+   */
+  const doneHint =
+    doneNow?.kind === "step"
+      ? t("form.doneStep", {
+          title:
+            tasks
+              .find((item) => item.id === doneNow.taskId)
+              ?.steps?.find((step) => step.id === doneNow.stepId)?.title ?? "",
+        })
+      : doneNow?.kind === "task"
+        ? t("form.doneTask")
+        : doneNow?.kind === "exam"
+          ? t("form.doneExam")
+          : null;
 
   /*
    * Eigen activiteitstype maken of bijwerken.
@@ -326,6 +364,10 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
     }
     if (activity && !duplicating) updateActivity(activity.id, payload);
     else addActivity({ ...payload, source: null });
+    // Een kopie begint met een schone lei: die is per definitie nog niet af.
+    if (activity && !duplicating && doneNow && doneWanted !== doneNow.done) {
+      markDone(activity, doneDay);
+    }
     onClose();
   }
 
@@ -387,6 +429,29 @@ export function ActivityForm({ activity, occurrenceDate, preset, onClose }: Prop
             >
               &#128257; Dit is een herhalende activiteit. Wijzigingen gelden voor de hele reeks.
             </p>
+          ) : null}
+
+          {doneNow ? (
+            <label
+              className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2"
+              style={{ background: "var(--surface-soft)" }}
+            >
+              <input
+                type="checkbox"
+                checked={doneWanted}
+                onChange={(event) => setDoneWanted(event.target.checked)}
+                className="h-5 w-5 shrink-0"
+                style={{ accentColor: "var(--ok)" }}
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">{t("form.done")}</span>
+                {doneHint ? (
+                  <span className="block text-xs" style={{ color: "var(--muted)" }}>
+                    {doneHint}
+                  </span>
+                ) : null}
+              </span>
+            </label>
           ) : null}
 
           <fieldset>

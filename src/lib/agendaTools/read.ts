@@ -17,7 +17,7 @@ import {
   todayKey,
 } from "../time";
 import { bufferFor, computeDeparture, computeReturn, travelMinutesEither } from "../travel";
-import { activityMinutes } from "../schoolwork";
+import { activityDone, activityMinutes } from "../schoolwork";
 import { DEFAULT_DAYS, MAX_DAYS, WEEKDAYS } from "./types";
 import type { AgendaData, Duplicate, ReadActivity, ReadClash, ReadDay, ReadResult } from "./types";
 
@@ -251,6 +251,10 @@ export function readAgenda(
         if (occurrence.linkedTaskId) entry.linkedTaskId = occurrence.linkedTaskId;
         if (occurrence.linkedStepId) entry.linkedStepId = occurrence.linkedStepId;
         if (occurrence.linkedExamId) entry.linkedExamId = occurrence.linkedExamId;
+        // Afgestreept werk hoort niet opnieuw ingepland te worden. Dat stond
+        // nergens in dit antwoord: een planner zag een blok voor een stap die
+        // al af was en zette er vrolijk nog een naast.
+        if (activityDone(occurrence, occurrence.date, data.tasks, data.exams)) entry.done = true;
         if (occurrence.recurring) entry.recurring = true;
         return entry;
       }),

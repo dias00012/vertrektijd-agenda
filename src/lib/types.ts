@@ -234,6 +234,19 @@ export interface Activity {
   linkedStepId?: string | null;
   /** Optioneel: koppeling naar een toets waar dit blok bij hoort. */
   linkedExamId?: string | null;
+  /**
+   * De dagen (YYYY-MM-DD) waarop je dit blok zelf hebt afgestreept.
+   *
+   * Per dag en niet per activiteit, want een reeks is één activiteit: dat je
+   * boodschappen van vorige week gedaan hebt zegt niets over die van vandaag.
+   * Dezelfde vorm als `exceptions`, en om dezelfde reden.
+   *
+   * Alleen bedoeld voor blokken waar geen schoolwerk aan hangt. Zit er wel een
+   * opdracht, stap of toets aan vast, dan is die de waarheid en kijkt de app
+   * hier niet naar -- anders kon je een stap uitvinken terwijl het blok in je
+   * agenda doorgestreept bleef staan.
+   */
+  doneDates?: string[];
   createdAt: string;
   updatedAt: string;
 }

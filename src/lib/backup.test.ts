@@ -178,6 +178,16 @@ describe("normalizeActivity aan de rand", () => {
     expect(activity.exceptions).toEqual(["2026-09-11"]);
   });
 
+  it("zeeft de afgestreepte dagen net zo", () => {
+    // Een back-up van een ander apparaat of van een oudere versie: wat geen dag
+    // is hoort er niet in te komen, want dan streept de agenda niets door en
+    // begrijp je niet waarom.
+    expect(
+      normalizeActivity({ doneDates: ["2026-09-29", "vandaag", 3, "2026-13-01"] }).doneDates,
+    ).toEqual(["2026-09-29"]);
+    expect(normalizeActivity({}).doneDates).toEqual([]);
+  });
+
   it("laat een locatie zonder coordinaten vallen", () => {
     // Anders gaat er een routeaanvraag de deur uit met "undefined,undefined"
     // erin, en staat er bij de activiteit dat de reis mislukt is.

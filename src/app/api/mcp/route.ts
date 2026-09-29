@@ -72,7 +72,9 @@ const TOOLS: ToolDefinition[] = [
       "en `backHome` (hoe laat je weer thuis bent). Tussen `departure` en " +
       "`backHome` ben je van huis. Per opdracht staat `plannedMinutes` (wat er " +
       "al voor staat) en `remainingMinutes` (wat er nog bij moet) — plan niet " +
-      "opnieuw wat er al staat.\n\n" +
+      "opnieuw wat er al staat. Staat er `done: true` bij een blok, dan is dat " +
+      "werk gedaan: de gebruiker heeft het afgestreept, of de stap erachter " +
+      "staat op af. Plan er niets nieuws voor.\n\n" +
       "Reken zelf nooit een reistijd uit en schat er nooit een. Wat hier staat " +
       "is de enige waarheid; een getal dat je zelf bedenkt klopt niet met wat " +
       "de gebruiker op zijn scherm ziet, ook al klinkt het redelijk. Staat er " +

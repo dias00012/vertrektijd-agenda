@@ -318,6 +318,11 @@ export const en: Record<TranslationKey, string> = {
 
   "activity.past": "✓ done",
   "activity.workDone": "done",
+  "activity.tick": "Tick off {title}",
+  "form.done": "This is done",
+  "form.doneStep": "Also ticks off the step “{title}”",
+  "form.doneTask": "Marks the whole assignment as done",
+  "form.doneExam": "Marks the test as done",
   "activity.clash": "At the same time as {title} ({from} \u2013 {to})",
   "activity.clashTravel": "Your travel time overlaps {title} ({from} \u2013 {to})",
   "activity.freeAgain": "That time is free: the work is finished.",

@@ -101,6 +101,12 @@ export interface ReadActivity {
   /** De stap binnen die taak waar dit blok voor is. */
   linkedStepId?: string;
   linkedExamId?: string;
+  /**
+   * true wanneer dit blok is afgestreept: de stap of opdracht erachter staat op
+   * af, of de gebruiker heeft het blok zelf aangetikt. Plan er niets nieuws
+   * voor; dat werk is gebeurd.
+   */
+  done?: boolean;
   /** true wanneer deze dag uit een herhalende reeks komt. */
   recurring?: boolean;
 }

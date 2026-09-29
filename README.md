@@ -304,6 +304,31 @@ die er al stonden ook meedoen. "BE – samenvatting H3" hoort bij de stap "Samen
 Hele woorden tellen, dus "H3" matcht niet op "H30", en staat er meer dan één stap in de titel dan
 wint de langste.
 
+### Afstrepen in je agenda
+
+Naast elk blok staat een **rondje**: tik het aan en het blok is afgestreept. Dat is de andere kant
+op dan hierboven, en in de praktijk de kant die je gebruikt — je bent klaar met een blok, je kijkt
+naar je dag, en je wilt het aantikken zonder eerst de bijbehorende stap op te zoeken.
+
+Wat het vinkje afstreept hangt van het blok af (`doneTarget` in `src/lib/schoolwork.ts`):
+
+| Het blok hoort bij | Het vinkje zet |
+| --- | --- |
+| een stap van een opdracht | die stap op af (en daarmee de opdracht op bezig of klaar) |
+| een opdracht zonder stappen | de hele opdracht op klaar |
+| een toets | de toets op klaar |
+| niets van dat alles | het blok zelf, op die dag |
+
+Dat laatste geval is de helft van een agenda: boodschappen, de was, een leerblok waar geen opdracht
+achter zit. Die stand staat in `doneDates` op de activiteit — een lijst dagen, net als
+`exceptions`, want een herhalend blok streep je af voor vandaag en niet voor elke dinsdag. Zit er
+wel schoolwerk aan vast, dan is dat de waarheid en kijkt de app niet naar `doneDates`: anders kon
+je een stap uitvinken terwijl het blok doorgestreept bleef staan.
+
+In het week- en maandraster is een blok te smal voor een rondje; daar zit het vinkje in het
+formulier dat opengaat als je het blok aantikt ("Dit is af"). Je planner ziet het ook: blokken die
+af zijn krijgen `done: true` in `read_agenda`, zodat er niets opnieuw ingepland wordt.
+
 ## Back-up & synchronisatie (import/export)
 
 Onder **Instellingen → Back-up** deel je exact dezelfde data met je planner via

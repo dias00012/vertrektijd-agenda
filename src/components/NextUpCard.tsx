@@ -6,7 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { useCatchUpTravel } from "@/hooks/useCatchUpTravel";
 import { clashesFor, minutesUntilDeparture, onwardTarget } from "@/lib/agenda";
-import { linkedWorkDone } from "@/lib/schoolwork";
+import { activityDone } from "@/lib/schoolwork";
 import {
   computeDeparture,
   computeOnward,
@@ -71,7 +71,7 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
     ? exams.find((e) => e.id === activity.linkedExamId)
     : null;
   /** Werk dat al af is: dan hoef je hier niets meer te doen. */
-  const workDone = linkedWorkDone(activity, tasks, exams);
+  const workDone = activityDone(activity, activity.date, tasks, exams);
 
   // Een aftelling is alleen zinvol binnen een halve dag; daarbuiten zegt het
   // datumlabel ("maandag 7 september") al genoeg.

@@ -9,7 +9,7 @@ import {
   PRIORITY_META,
   activityMinutes,
   describeDaysUntil,
-  linkedWorkDone,
+  activityDone,
   sortExams,
   sortTasks,
 } from "@/lib/schoolwork";
@@ -37,7 +37,7 @@ export function SchoolworkTodayCard({ now }: { now: Date }) {
    * bureau, of is die twee uur vrij.
    */
   const doneMinutes = studyToday
-    .filter((activity) => linkedWorkDone(activity, tasks, exams))
+    .filter((activity) => activityDone(activity, today, tasks, exams))
     .reduce((sum, a) => sum + activityMinutes(a), 0);
 
   /*

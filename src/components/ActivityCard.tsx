@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useT } from "@/hooks/useLanguage";
 import { activityColor } from "@/lib/categories";
 import { useAgenda } from "@/hooks/useAgenda";
-import { linkedWorkDone } from "@/lib/schoolwork";
+import { activityDone } from "@/lib/schoolwork";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
 import { clashesFor, onwardTarget, timeStatusFor } from "@/lib/agenda";
@@ -21,6 +21,7 @@ import {
 import { ActivityForm } from "./LazyActivityForm";
 import { JourneyDetails } from "./JourneyDetails";
 import { JourneyStatus } from "./JourneyStatus";
+import { DoneTick } from "./DoneTick";
 import { ErrorNote, Spinner } from "./ui";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -81,7 +82,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
 
   // Is het werk waar dit blok voor staat al af? Dan is die tijd vrij, en dat
   // hoort te zien te zijn zonder dat je de taak erbij zoekt.
-  const workDone = linkedWorkDone(activity, tasks, exams);
+  const workDone = activityDone(activity, activity.date, tasks, exams);
   // Wat er op ditzelfde moment nog meer staat. Je agenda wordt door meer
   // gevuld dan door jou alleen, en in een lijst valt dubbel geboekt niet op.
   const clashes = clashesFor(activity, activities, settings).filter(
@@ -97,7 +98,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
   return (
     <>
       <article
-        className="card overflow-hidden transition-opacity"
+        className="card flex flex-wrap items-start overflow-hidden transition-opacity"
         style={{
           borderLeft: `4px solid ${color}`,
           opacity: isPast ? 0.5 : 1,
@@ -107,7 +108,7 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="w-full px-4 py-3.5 text-left"
+          className="min-w-0 flex-1 px-4 py-3.5 text-left"
           aria-label={t("activity.editLabel", { category: category.label, title: activity.title })}
         >
           <div className="flex items-start gap-3">
@@ -366,9 +367,12 @@ export function ActivityCard({ activity, now }: { activity: ActivityOccurrence; 
           </div>
         </button>
 
+        {/* Afstrepen kan hier, naast de kaart; zie `DoneTick`. */}
+        <DoneTick activity={activity} dateKey={activity.date} dimmed={isPast} />
+
         {/* Buiten de knop: een <details> mag niet in een <button> staan. */}
         {shown.travel?.legs?.length || shown.returnTravel?.legs?.length ? (
-          <div className="px-4 pb-3.5">
+          <div className="w-full px-4 pb-3.5">
             {shown.travel ? (
               <JourneyDetails
                 travel={shown.travel}
