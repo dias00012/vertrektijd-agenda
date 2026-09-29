@@ -201,6 +201,110 @@ export function linkedWorkDone(
 }
 
 /**
+ * Waar het vinkje van dit blok over gaat.
+ *
+ * Doorstrepen kwam tot nu toe van één kant: je vinkte een stap af op de
+ * schoolwerkpagina, en dan streepte de agenda het blok door. Dat is precies de
+ * verkeerde kant op. Je kijkt naar je week, je bent klaar met dat blok, en het
+ * enige wat je wilt is het aantikken -- niet eerst naar een andere pagina om de
+ * bijbehorende stap op te zoeken. En de helft van wat er in een agenda staat is
+ * helemaal geen schoolwerk: boodschappen, de was, een telefoontje. Daar valt
+ * niets af te vinken, want er is geen opdracht om af te vinken.
+ *
+ * Vandaar deze functie: gegeven een blok, wat streept het vinkje dan door, en
+ * staat dat nu aan? Vier antwoorden, en de volgorde is de rangorde:
+ *
+ * - `task`: de hele opdracht staat op af, of er zitten geen stappen in. Dan
+ *   gaat het vinkje over de opdracht zelf.
+ * - `step`: het blok hoort bij één stap. Dat is het gewone geval bij een
+ *   leerplan, en dan hoort het vinkje bij die stap.
+ * - `exam`: het blok is leertijd voor een toets.
+ * - `block`: er is geen schoolwerk om aan te wijzen. Dan houdt het blok zijn
+ *   eigen stand bij, per dag.
+ *
+ * Die laatste is bewust het sluitstuk en niet een extra vlag bovenop de rest.
+ * Twee plekken die allebei "af" kunnen zeggen lopen uit elkaar: je vinkt de
+ * stap uit, en het blok blijft doorgestreept staan omdat het zélf ook nog op
+ * af stond. Eén blok, één waarheid.
+ */
+export type DoneTarget =
+  | { kind: "step"; done: boolean; taskId: string; stepId: string }
+  | { kind: "task"; done: boolean; taskId: string; status: SchoolworkStatus }
+  | { kind: "exam"; done: boolean; examId: string; status: SchoolworkStatus }
+  | { kind: "block"; done: boolean; dateKey: string };
+
+type DoneBlock = Pick<
+  Activity,
+  "title" | "linkedTaskId" | "linkedStepId" | "linkedExamId" | "doneDates"
+>;
+
+export function doneTarget(
+  activity: DoneBlock,
+  dateKey: string,
+  tasks: readonly Pick<Task, "id" | "status" | "steps">[],
+  exams: readonly Pick<Exam, "id" | "status">[],
+): DoneTarget {
+  if (activity.linkedTaskId) {
+    const task = tasks.find((item) => item.id === activity.linkedTaskId);
+    if (task) {
+      // Staat de hele opdracht op af, dan is dát wat dit blok doorstreept, en
+      // dus ook wat er weg moet als je het uitvinkt. Eén stap uitvinken van een
+      // opdracht die af is liet het blok doorgestreept staan: het vinkje deed
+      // dan zichtbaar niets.
+      if (task.status === "done") {
+        return {
+          kind: "task",
+          done: true,
+          taskId: task.id,
+          // Er staan nog stappen aan: dan ben je er kennelijk toch nog mee bezig.
+          status: (task.steps ?? []).some((step) => step.done) ? "doing" : "todo",
+        };
+      }
+      const step = stepForActivity(activity, task);
+      if (step) return { kind: "step", done: step.done, taskId: task.id, stepId: step.id };
+      // Een opdracht zonder stappen: het blok staat voor het geheel.
+      if ((task.steps?.length ?? 0) === 0) {
+        return { kind: "task", done: false, taskId: task.id, status: "done" };
+      }
+      // Wel stappen, maar dit blok noemt er geen. Welke je dan zou afvinken
+      // weet de app niet, en de hele opdracht afvinken zou de andere blokken
+      // meesleuren. Dan alleen dit blok.
+      return blockTarget(activity, dateKey);
+    }
+  }
+
+  if (activity.linkedExamId) {
+    const exam = exams.find((item) => item.id === activity.linkedExamId);
+    if (exam) {
+      const done = exam.status === "done";
+      return { kind: "exam", done, examId: exam.id, status: done ? "todo" : "done" };
+    }
+  }
+
+  return blockTarget(activity, dateKey);
+}
+
+function blockTarget(activity: DoneBlock, dateKey: string): DoneTarget {
+  return { kind: "block", done: (activity.doneDates ?? []).includes(dateKey), dateKey };
+}
+
+/**
+ * Is dit blok afgestreept, op deze dag?
+ *
+ * Dezelfde vraag als waar het vinkje over gaat, dus ook hetzelfde antwoord:
+ * anders zou de agenda iets doorstrepen wat het vinkje niet aan kan zetten, of
+ * omgekeerd.
+ */
+export function activityDone(
+  activity: DoneBlock,
+  dateKey: string,
+  tasks: readonly Pick<Task, "id" | "status" | "steps">[],
+  exams: readonly Pick<Exam, "id" | "status">[],
+): boolean {
+  return doneTarget(activity, dateKey, tasks, exams).done;
+}
+
+/**
  * Tot welke stap van een opdracht hoort dit blok?
  *
  * Bij voorkeur via `linkedStepId`: dan staat het er gewoon. Maar de blokken die

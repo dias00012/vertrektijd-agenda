@@ -7,7 +7,8 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { buildTimeline, type TimelineEntry } from "@/lib/agenda";
 import { formatDuration, MINUTES_PER_DAY, minutesToTime, timeToMinutes } from "@/lib/time";
 import { travelModeMeta } from "@/lib/travelModes";
-import { linkedWorkDone } from "@/lib/schoolwork";
+import { activityDone } from "@/lib/schoolwork";
+import { DoneTick } from "./DoneTick";
 import { ActivityForm } from "./LazyActivityForm";
 import type { ActivityOccurrence } from "@/lib/types";
 
@@ -32,12 +33,16 @@ export function DayTimeline({ dateKey, now }: { dateKey: string; now?: Date }) {
         {entries.map((entry) => {
           const passed = nowMinutes !== null && passedMinutesFor(entry) <= nowMinutes;
           return (
-            <li key={entry.id}>
+            <li key={entry.id} className="flex items-center">
               <TimelineRow
                 entry={entry}
                 passed={passed}
                 onSelect={() => setEditing(entry.activity)}
               />
+              {/* Reisregels krijgen er geen: onderweg zijn valt niet af te strepen. */}
+              {entry.kind === "activity" ? (
+                <DoneTick activity={entry.activity} dateKey={entry.activity.date} dimmed={passed} />
+              ) : null}
             </li>
           );
         })}
@@ -90,7 +95,8 @@ function TimelineRow({
   const t = useT();
   const category = categoryFor(entry.activity.category);
   // Werk dat af is: het blok blijft staan, maar die tijd is vrij.
-  const workDone = entry.kind === "activity" && linkedWorkDone(entry.activity, tasks, exams);
+  const workDone =
+    entry.kind === "activity" && activityDone(entry.activity, entry.activity.date, tasks, exams);
   const color = activityColor(entry.activity, category);
   const isDeparture = entry.kind === "departure";
   const isReturn = entry.kind === "return";
@@ -102,7 +108,7 @@ function TimelineRow({
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full items-stretch gap-3 rounded-2xl px-1 py-1 text-left transition-colors hover:bg-[var(--surface-soft)]"
+      className="flex min-w-0 flex-1 items-stretch gap-3 rounded-2xl px-1 py-1 text-left transition-colors hover:bg-[var(--surface-soft)]"
       style={{ opacity: passed ? 0.45 : 1 }}
     >
       <span

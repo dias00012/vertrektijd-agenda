@@ -95,6 +95,15 @@ interface AgendaContextValue {
    */
   moveOccurrence: (id: string, dateKey: string, draft: ActivityDraft) => void;
   /**
+   * Streept één dag van een blok af, of haalt dat weer weg.
+   *
+   * Per dag, net als het overslaan van een dag uit een reeks: je boodschappen
+   * van vandaag zijn niet die van volgende week. Alleen voor blokken zonder
+   * schoolwerk eraan -- bij een leerblok gaat het vinkje over de stap of de
+   * opdracht, zie `doneTarget`.
+   */
+  toggleActivityDone: (id: string, dateKey: string) => void;
+  /**
    * De laatste verwijdering, zolang je hem nog terug kunt halen. Verwijderen
    * is het enige wat je in deze app echt kwijt kunt raken; een knop van een
    * paar seconden scheelt de schrik.
@@ -765,6 +774,27 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
     [addActivity],
   );
 
+  /**
+   * Een blok afstrepen: de dag gaat in `doneDates`, of eruit.
+   *
+   * Geen tijdstempel op de activiteit als de stand niet verandert, want dan
+   * hoeft de sync er ook niet over te beginnen.
+   */
+  const toggleActivityDone = useCallback((id: string, dateKey: string) => {
+    setActivities((current) =>
+      current.map((item) => {
+        if (item.id !== id) return item;
+        const dagen = item.doneDates ?? [];
+        const af = dagen.includes(dateKey);
+        return {
+          ...item,
+          doneDates: af ? dagen.filter((day) => day !== dateKey) : [...dagen, dateKey],
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    );
+  }, []);
+
   const updateSettings = useCallback(
     (patch: Partial<Settings> | ((current: Settings) => Partial<Settings>)) => {
       // Nieuwe thuislocatie betekent: alle eerdere mislukkingen mogen opnieuw.
@@ -1300,6 +1330,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeActivity,
       removeOccurrence,
       moveOccurrence,
+      toggleActivityDone,
       updateSettings,
       rememberPlace,
       renamePlace,
@@ -1338,6 +1369,7 @@ export function AgendaProvider({ children }: { children: ReactNode }) {
       removeActivity,
       removeOccurrence,
       moveOccurrence,
+      toggleActivityDone,
       updateSettings,
       rememberPlace,
       renamePlace,

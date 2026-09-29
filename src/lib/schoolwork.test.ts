@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  activityDone,
   activityMinutes,
   daysUntil,
+  doneTarget,
   isOverdue,
   linkedWorkDone,
   plannedMinutesForTask,
@@ -267,6 +269,135 @@ describe("linkedWorkDone per stap", () => {
         toetsen,
       ),
     ).toBe(false);
+  });
+});
+
+describe("doneTarget", () => {
+  const DAG = "2026-09-29";
+  const ANDERE_DAG = "2026-09-30";
+
+  const opdracht = task({
+    id: "be",
+    status: "todo",
+    steps: [
+      { id: "s1", title: "Samenvatting H8", done: true },
+      { id: "s2", title: "MC-vragen H8", done: false },
+    ],
+  });
+  const toetsen = [{ id: "e1", status: "done" } as Exam, { id: "e2", status: "todo" } as Exam];
+  const blokje = (patch: Record<string, unknown> = {}) =>
+    ({ title: "Blok", linkedTaskId: null, linkedExamId: null, ...patch }) as unknown as Activity;
+
+  it("laat een blok zonder schoolwerk zijn eigen stand bijhouden", () => {
+    // De helft van wat er in een agenda staat is geen schoolwerk. Dat moest ook
+    // af te strepen zijn, en er is niets anders om het aan op te hangen.
+    expect(doneTarget(blokje(), DAG, [opdracht], toetsen)).toEqual({
+      kind: "block",
+      done: false,
+      dateKey: DAG,
+    });
+    expect(doneTarget(blokje({ doneDates: [DAG] }), DAG, [opdracht], toetsen).done).toBe(true);
+  });
+
+  it("houdt die stand per dag bij en niet per reeks", () => {
+    // Boodschappen doe je elke week; dat die van vorige week gedaan zijn zegt
+    // niets over vandaag.
+    const wekelijks = blokje({ doneDates: [DAG] });
+    expect(activityDone(wekelijks, DAG, [], [])).toBe(true);
+    expect(activityDone(wekelijks, ANDERE_DAG, [], [])).toBe(false);
+  });
+
+  it("wijst de stap aan waar een leerblok bij hoort", () => {
+    expect(
+      doneTarget(blokje({ linkedTaskId: "be", linkedStepId: "s2" }), DAG, [opdracht], []),
+    ).toEqual({ kind: "step", done: false, taskId: "be", stepId: "s2" });
+    expect(
+      doneTarget(blokje({ linkedTaskId: "be", linkedStepId: "s1" }), DAG, [opdracht], []).done,
+    ).toBe(true);
+  });
+
+  it("negeert de eigen stand van een blok dat aan schoolwerk vastzit", () => {
+    // Anders lopen er twee waarheden naast elkaar: je vinkt de stap uit op de
+    // schoolwerkpagina en het blok blijft doorgestreept staan omdat het zichzelf
+    // ook nog op af had staan.
+    const blok = blokje({ linkedTaskId: "be", linkedStepId: "s2", doneDates: [DAG] });
+    expect(activityDone(blok, DAG, [opdracht], [])).toBe(false);
+  });
+
+  it("gaat over de hele opdracht zodra die op af staat", () => {
+    // Dat is wat het blok doorstreept, dus ook wat er weg moet als je het
+    // uitvinkt. Eerst gaf hij hier de stap terug, en dan deed het vinkje
+    // zichtbaar niets: de opdracht bleef af en het blok bleef doorgestreept.
+    const af = task({ ...opdracht, status: "done" });
+    expect(doneTarget(blokje({ linkedTaskId: "be", linkedStepId: "s2" }), DAG, [af], [])).toEqual({
+      kind: "task",
+      done: true,
+      taskId: "be",
+      // Er staat nog een stap af: dan ben je er kennelijk toch nog mee bezig.
+      status: "doing",
+    });
+  });
+
+  it("zet een opdracht zonder afgevinkte stappen terug op te doen", () => {
+    const af = task({
+      id: "be",
+      status: "done",
+      steps: [{ id: "s1", title: "Samenvatting H8", done: false }],
+    });
+    expect(doneTarget(blokje({ linkedTaskId: "be" }), DAG, [af], []).kind).toBe("task");
+    expect(doneTarget(blokje({ linkedTaskId: "be" }), DAG, [af], [])).toMatchObject({
+      status: "todo",
+    });
+  });
+
+  it("vinkt bij een opdracht zonder stappen de opdracht zelf af", () => {
+    const zonderStappen = task({ id: "los", status: "todo", steps: [] });
+    expect(doneTarget(blokje({ linkedTaskId: "los" }), DAG, [zonderStappen], [])).toEqual({
+      kind: "task",
+      done: false,
+      taskId: "los",
+      status: "done",
+    });
+  });
+
+  it("streept alleen het blok door als de opdracht stappen heeft die dit blok niet noemt", () => {
+    // Welke stap je dan zou afvinken weet de app niet, en de hele opdracht
+    // afvinken zou de andere blokken meesleuren.
+    const blok = blokje({ linkedTaskId: "be", title: "Even doorwerken" });
+    expect(doneTarget(blok, DAG, [opdracht], [])).toEqual({
+      kind: "block",
+      done: false,
+      dateKey: DAG,
+    });
+  });
+
+  it("gaat bij een toetsblok over de toets", () => {
+    expect(doneTarget(blokje({ linkedExamId: "e2" }), DAG, [], toetsen)).toEqual({
+      kind: "exam",
+      done: false,
+      examId: "e2",
+      status: "done",
+    });
+    expect(doneTarget(blokje({ linkedExamId: "e1" }), DAG, [], toetsen)).toEqual({
+      kind: "exam",
+      done: true,
+      examId: "e1",
+      status: "todo",
+    });
+  });
+
+  it("valt terug op het blok zelf als het schoolwerk niet meer bestaat", () => {
+    // Een weggegooide opdracht laat blokken achter. Die moet je nog wel kunnen
+    // afstrepen, anders blijft er werk in je week staan dat nergens meer over gaat.
+    expect(doneTarget(blokje({ linkedTaskId: "weg" }), DAG, [opdracht], toetsen).kind).toBe(
+      "block",
+    );
+    expect(doneTarget(blokje({ linkedExamId: "weg" }), DAG, [opdracht], toetsen).kind).toBe(
+      "block",
+    );
+    expect(
+      activityDone(blokje({ linkedTaskId: "weg", doneDates: [DAG] }), DAG, [opdracht], toetsen),
+    ).toBe(true);
   });
 });
 

@@ -335,6 +335,13 @@ export const nl = {
   /* --- Activiteitkaart --------------------------------------------------- */
   "activity.past": "✓ geweest",
   "activity.workDone": "af",
+  // Aria-label van het rondje op de kaart. De stand zelf zegt `aria-pressed`,
+  // dus één tekst voor beide kanten is hier juist goed.
+  "activity.tick": "{title} afstrepen",
+  "form.done": "Dit is af",
+  "form.doneStep": "Streept ook de stap “{title}” af",
+  "form.doneTask": "Zet de hele opdracht op af",
+  "form.doneExam": "Zet de toets op af",
   "activity.clash": "Staat tegelijk met {title} ({from} \u2013 {to})",
   "activity.clashTravel": "Je reistijd valt over {title} ({from} \u2013 {to})",
   "activity.freeAgain": "Die tijd is vrij: het werk is af.",

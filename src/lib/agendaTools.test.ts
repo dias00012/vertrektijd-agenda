@@ -530,6 +530,48 @@ describe("ingeplande tijd per opdracht", () => {
   });
 });
 
+describe("afgestreepte blokken", () => {
+  it("zet `done` op een blok waarvan de stap af is", () => {
+    // Zonder dit ziet een planner een blok voor werk dat al gedaan is en zet hij
+    // er nog een naast.
+    const wereld = data({
+      tasks: [
+        task({
+          id: "be",
+          steps: [
+            { id: "s1", title: "Samenvatting H8", done: true },
+            { id: "s2", title: "MC-vragen H8", done: false },
+          ],
+        }),
+      ],
+      activities: [
+        activity({ id: "b1", date: "2026-09-16", linkedTaskId: "be", linkedStepId: "s1" }),
+        activity({ id: "b2", date: "2026-09-16", linkedTaskId: "be", linkedStepId: "s2" }),
+      ],
+    });
+    const dag = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-16" }, NOW).days[0];
+    expect(dag.activities.find((item) => item.id === "b1")?.done).toBe(true);
+    expect(dag.activities.find((item) => item.id === "b2")?.done).toBeUndefined();
+  });
+
+  it("zet `done` op de dag die de gebruiker zelf heeft aangetikt", () => {
+    // Een herhalend blok: alleen die ene dag is afgestreept.
+    const wereld = data({
+      activities: [
+        activity({
+          id: "b1",
+          date: "2026-09-16",
+          recurrence: { freq: "weekly", weekdays: [3], until: null },
+          doneDates: ["2026-09-16"],
+        }),
+      ],
+    });
+    const weken = readAgenda(wereld, { from: "2026-09-16", to: "2026-09-23" }, NOW).days;
+    expect(weken[0].activities[0].done).toBe(true);
+    expect(weken.at(-1)?.activities[0].done).toBeUndefined();
+  });
+});
+
 describe("dubbel en botsend", () => {
   it("herkent twee keer dezelfde opdracht onder een andere naam", () => {
     // Deze twee stonden echt zo in de agenda, allebei open.

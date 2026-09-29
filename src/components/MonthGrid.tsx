@@ -5,7 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { weekdayHeadings } from "@/lib/recurrence";
 import { useAgenda } from "@/hooks/useAgenda";
 import { activitiesOnDate } from "@/lib/agenda";
-import { linkedWorkDone } from "@/lib/schoolwork";
+import { activityDone } from "@/lib/schoolwork";
 import { isSameMonth, monthGridKeys, parseDateKey, toDateKey } from "@/lib/time";
 
 /** Meer stippen dan dit passen niet in een dagvakje. */
@@ -119,7 +119,7 @@ export function MonthGrid({
                       <span
                         className="truncate"
                         style={
-                          linkedWorkDone(activity, tasks, exams)
+                          activityDone(activity, dateKey, tasks, exams)
                             ? { textDecoration: "line-through", color: "var(--muted)" }
                             : undefined
                         }
