@@ -445,6 +445,14 @@ export const nl = {
   "schoolwork.lateShow": "Bekijk wat er over tijd is",
   "schoolwork.lateDismiss": "Melding sluiten",
   "schoolwork.filterPriority": "Op prioriteit",
+  "schoolwork.searchLabel": "Zoeken in je schoolwerk",
+  "schoolwork.searchPlaceholder": "Zoek op vak, opdracht of stap",
+  "schoolwork.searchClear": "Zoekopdracht wissen",
+  "schoolwork.searchNothing": "Niets gevonden voor \u201c{query}\u201d",
+  "schoolwork.searchNothingBody":
+    "Er is geen opdracht of toets met die woorden erin. Let op: de filters " +
+    "hierboven staan misschien nog aan.",
+  "schoolwork.searchNothingAction": "Zoekopdracht wissen",
   "schoolwork.ofTotal": "{shown} van {total}",
   "schoolwork.noTasks": "Geen opdrachten.",
   "schoolwork.noExams": "Geen toetsen.",
