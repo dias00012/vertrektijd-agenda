@@ -284,6 +284,16 @@ Het tabblad **Schoolwerk** toont je opdrachten en toetsen, zoals aangeleverd doo
 - **Toetsen** staan op datum, met de te leren onderwerpen en "dagen tot toets".
 - De **status** (te doen / bezig / klaar) en losse stappen zet je hier direct om.
 
+Bovenaan staat een **zoekbalk**. Die doorzoekt alles wat er van een opdracht of toets te lezen
+valt: vak, titel, omschrijving, de stappen, de onderwerpen van een toets, de deadline en de
+woorden "bezig", "hoog" enzovoort. Juist die stappen, want daar zit het detail dat je je
+herinnert — "Vergane Glorie" is een stap, geen opdracht. Elk woord dat je typt moet ergens
+voorkomen, maar niet per se in hetzelfde veld: "bedrijfseconomie casus" vindt de opdracht met
+dat vak én dat woord in de titel. Hoofdletters, accenten en leestekens doen niet mee, dus "H8.1"
+vindt ook "H8.1 t/m 8.4". Zoeken werkt samen met de twee filterrijen, en de tellingen op die
+knoppen volgen je zoekopdracht — een knop die "(3)" belooft terwijl er één overblijft, liegt.
+Escape of het kruisje wist het veld; de zoekopdracht wordt bewust niet onthouden.
+
 Leer- en werkblokken uit je planner komen binnen als gewone activiteiten met
 `category: "school"` en `source: "leerplan"`; ze lopen mee in alle agenda-weergaven en krijgen
 daar een subtiel **📚 leerplan**-label.

@@ -28,6 +28,7 @@ import {
   sortTasks,
   taskProgress,
 } from "@/lib/schoolwork";
+import { examFields, matchesSearch, taskFields } from "@/lib/schoolworkSearch";
 import { formatDateLabel, formatDuration } from "@/lib/time";
 import { loadSeen, pruneSeen, saveSeen, unseenOverdue } from "@/lib/overdueNotice";
 import { EmptyState, Spinner } from "@/components/ui";
@@ -75,6 +76,15 @@ export default function SchoolworkPage() {
    */
   const [filter, setFilter] = useState<Keuze>("all");
   const [prio, setPrio] = useState<SchoolworkPriority | "all">("all");
+  /**
+   * Waar je naar zoekt.
+   *
+   * Bewust niet bewaard, anders dan de twee filters hierboven. Een filter is
+   * een stand waarin je werkt; een zoekopdracht is een vraag die je één keer
+   * stelt. Hem morgen terugvinden zou betekenen dat je halve schoolwerk
+   * ontbreekt en je niet meer weet waarom.
+   */
+  const [zoek, setZoek] = useState("");
   useEffect(() => {
     try {
       const bewaard = window.localStorage.getItem(FILTER_KEY);
@@ -138,9 +148,16 @@ export default function SchoolworkPage() {
   );
 
   /** Staat er een filter aan? Dan hoort de kop te zeggen hoeveel je niet ziet. */
-  const gefilterd = filter !== "all" || prio !== "all";
-  const zichtbareTasks = useMemo(() => sortedTasks.filter(past), [sortedTasks, past]);
-  const zichtbareExams = useMemo(() => sortedExams.filter(past), [sortedExams, past]);
+  const zoekterm = zoek.trim();
+  const gefilterd = filter !== "all" || prio !== "all" || zoekterm !== "";
+  const zichtbareTasks = useMemo(
+    () => sortedTasks.filter((task) => past(task) && matchesSearch(taskFields(task), zoek)),
+    [sortedTasks, past, zoek],
+  );
+  const zichtbareExams = useMemo(
+    () => sortedExams.filter((exam) => past(exam) && matchesSearch(examFields(exam), zoek)),
+    [sortedExams, past, zoek],
+  );
 
   /**
    * Wat een knop zou opleveren als je hem indrukt, het andere filter
@@ -150,10 +167,25 @@ export default function SchoolworkPage() {
    */
   const alles = useMemo(
     () => [
-      ...tasks.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.deadline })),
-      ...exams.map((x) => ({ id: x.id, status: x.status, priority: x.priority, dag: x.date })),
+      ...tasks.map((x) => ({
+        id: x.id,
+        status: x.status,
+        priority: x.priority,
+        dag: x.deadline,
+        // Of het ook bij de zoekopdracht past. Hier en niet pas in de telling,
+        // want `overtijd` hieronder gaat over je hele schoolwerk en mag er
+        // júkst niet door versmald worden.
+        past: matchesSearch(taskFields(x), zoek),
+      })),
+      ...exams.map((x) => ({
+        id: x.id,
+        status: x.status,
+        priority: x.priority,
+        dag: x.date,
+        past: matchesSearch(examFields(x), zoek),
+      })),
     ],
-    [tasks, exams],
+    [tasks, exams, zoek],
   );
 
   /*
@@ -161,23 +193,33 @@ export default function SchoolworkPage() {
    * door dezelfde lijst. Ze hangen van dezelfde dingen af, dus één tabel.
    */
   const tellingen = useMemo(() => {
-    const status: Record<string, number> = { late: 0, todo: 0, doing: 0, done: 0 };
-    const prioriteit: Record<string, number> = { high: 0, medium: 0, low: 0, later: 0 };
+    const status: Record<string, number> = { all: 0, late: 0, todo: 0, doing: 0, done: 0 };
+    const prioriteit: Record<string, number> = { all: 0, high: 0, medium: 0, low: 0, later: 0 };
 
     for (const x of alles) {
+      // Een knop die (3) belooft terwijl je zoekopdracht er één overlaat, liegt.
+      if (!x.past) continue;
       const teLaatNu = isOverdue(x.status, x.dag, now);
       if (prio === "all" || x.priority === prio) {
+        // "Alles" telt mee in dezelfde ronde. Het stond hier niet in en werd
+        // apart geteld als "alle opdrachten en toetsen bij elkaar" -- zonder
+        // het andere filter en zonder je zoekopdracht. Dan zegt de knop (23)
+        // en krijg je er twee.
+        status.all += 1;
         if (teLaatNu) status.late += 1;
         status[x.status] = (status[x.status] ?? 0) + 1;
       }
       const opStatus = filter === "all" ? true : filter === "late" ? teLaatNu : x.status === filter;
-      if (opStatus) prioriteit[x.priority] = (prioriteit[x.priority] ?? 0) + 1;
+      if (opStatus) {
+        prioriteit.all += 1;
+        prioriteit[x.priority] = (prioriteit[x.priority] ?? 0) + 1;
+      }
     }
     return { status, prioriteit };
   }, [alles, filter, prio, now]);
 
-  const aantal = (keuze: Exclude<Keuze, "all">) => tellingen.status[keuze] ?? 0;
-  const aantalPrio = (p: SchoolworkPriority) => tellingen.prioriteit[p] ?? 0;
+  const aantal = (keuze: Keuze) => tellingen.status[keuze] ?? 0;
+  const aantalPrio = (p: SchoolworkPriority | "all") => tellingen.prioriteit[p] ?? 0;
 
   /**
    * Hoeveel er over tijd is, ongeacht welk filter er aanstaat.
@@ -268,6 +310,46 @@ export default function SchoolworkPage() {
             van af te halen -- en lag de melding twaalf pixels over de filters.
           */}
           <div className="flex flex-col gap-3">
+            {/*
+              Zoeken staat bovenaan en altijd open, anders dan in de agenda waar
+              een vergrootglas het veld uitklapt. Daar zoek je af en toe; hier
+              zoek je terwijl je kijkt -- het is geen apart scherm maar een
+              derde filter, naast status en prioriteit.
+            */}
+            <div className="relative">
+              <span aria-hidden className="absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                &#128269;
+              </span>
+              <input
+                type="text"
+                className="field"
+                // `.field` zet zijn padding met de shorthand, dus een
+                // pl-klasse verliest het. Inline wint hij wel. Rechts ruimte
+                // voor het kruisje, zodat je tekst er niet onder doorloopt.
+                style={{ paddingLeft: "2.35rem", paddingRight: zoek ? "3rem" : undefined }}
+                placeholder={t("schoolwork.searchPlaceholder")}
+                aria-label={t("schoolwork.searchLabel")}
+                value={zoek}
+                onChange={(event) => setZoek(event.target.value)}
+                onKeyDown={(event) => {
+                  // Escape wist het veld. Dat is sneller dan terugbackspacen en
+                  // het is wat je in elk ander zoekveld ook gewend bent.
+                  if (event.key === "Escape") setZoek("");
+                }}
+              />
+              {zoek ? (
+                <button
+                  type="button"
+                  onClick={() => setZoek("")}
+                  aria-label={t("schoolwork.searchClear")}
+                  className="icon-btn absolute top-1/2 right-0 -translate-y-1/2"
+                  style={{ color: "var(--muted)" }}
+                >
+                  <span aria-hidden>&times;</span>
+                </button>
+              ) : null}
+            </div>
+
             {nietGezien.length > 0 && filter !== "late" ? (
               <div
                 role="status"
@@ -318,7 +400,7 @@ export default function SchoolworkPage() {
             >
               {KEUZES.map((keuze) => {
                 const actief = filter === keuze;
-                const telling = keuze === "all" ? tasks.length + exams.length : aantal(keuze);
+                const telling = aantal(keuze);
                 // "Over tijd" alleen tonen als er iets over tijd is; een lege
                 // knop die altijd (0) zegt is ruis.
                 if (keuze === "late" && telling === 0 && !actief) return null;
@@ -353,10 +435,7 @@ export default function SchoolworkPage() {
             >
               {(["all", "high", "medium", "low", "later"] as const).map((keuze) => {
                 const actief = prio === keuze;
-                const telling =
-                  keuze === "all"
-                    ? alles.filter((x) => filter === "all" || x.status === filter).length
-                    : aantalPrio(keuze);
+                const telling = aantalPrio(keuze);
                 return (
                   <button
                     key={keuze}
@@ -380,65 +459,87 @@ export default function SchoolworkPage() {
             </div>
           </div>
 
-          <section aria-label={t("schoolwork.tasks")}>
-            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {t("schoolwork.tasks")} (
-              {gefilterd
-                ? t("schoolwork.ofTotal", {
-                    shown: zichtbareTasks.length,
-                    total: sortedTasks.length,
-                  })
-                : sortedTasks.length}
-              )
-            </h2>
-            {zichtbareTasks.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                {t("schoolwork.noTasks")}
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {zichtbareTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    now={now}
-                    onEdit={() => setEditTask(task)}
-                    onPlan={() => setPlanning(task)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+          {/*
+            Niets gevonden: één duidelijk bericht in plaats van twee keer "geen
+            opdrachten" onder elkaar. Met de filters erbij genoemd, want dat is
+            de echte valkuil -- je zoekt naar werk dat je vorige week afmaakte
+            terwijl "Te doen" nog aanstaat, en de app zegt dan dat het niet
+            bestaat.
+          */}
+          {zoekterm && zichtbareTasks.length === 0 && zichtbareExams.length === 0 ? (
+            <EmptyState
+              icon="🔍"
+              title={t("schoolwork.searchNothing", { query: zoekterm })}
+              description={t("schoolwork.searchNothingBody")}
+              action={
+                <button type="button" className="btn btn-ghost" onClick={() => setZoek("")}>
+                  {t("schoolwork.searchNothingAction")}
+                </button>
+              }
+            />
+          ) : (
+            <>
+              <section aria-label={t("schoolwork.tasks")}>
+                <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+                  {t("schoolwork.tasks")} (
+                  {gefilterd
+                    ? t("schoolwork.ofTotal", {
+                        shown: zichtbareTasks.length,
+                        total: sortedTasks.length,
+                      })
+                    : sortedTasks.length}
+                  )
+                </h2>
+                {zichtbareTasks.length === 0 ? (
+                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                    {t("schoolwork.noTasks")}
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {zichtbareTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        now={now}
+                        onEdit={() => setEditTask(task)}
+                        onPlan={() => setPlanning(task)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
 
-          <section aria-label={t("schoolwork.exams")}>
-            <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
-              {t("schoolwork.exams")} (
-              {gefilterd
-                ? t("schoolwork.ofTotal", {
-                    shown: zichtbareExams.length,
-                    total: sortedExams.length,
-                  })
-                : sortedExams.length}
-              )
-            </h2>
-            {zichtbareExams.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
-                {t("schoolwork.noExams")}
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {zichtbareExams.map((exam) => (
-                  <ExamCard
-                    key={exam.id}
-                    exam={exam}
-                    now={now}
-                    onEdit={() => setEditExam(exam)}
-                    onPlan={() => setPlanning(exam)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+              <section aria-label={t("schoolwork.exams")}>
+                <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--muted)" }}>
+                  {t("schoolwork.exams")} (
+                  {gefilterd
+                    ? t("schoolwork.ofTotal", {
+                        shown: zichtbareExams.length,
+                        total: sortedExams.length,
+                      })
+                    : sortedExams.length}
+                  )
+                </h2>
+                {zichtbareExams.length === 0 ? (
+                  <p className="text-sm" style={{ color: "var(--muted)" }}>
+                    {t("schoolwork.noExams")}
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {zichtbareExams.map((exam) => (
+                      <ExamCard
+                        key={exam.id}
+                        exam={exam}
+                        now={now}
+                        onEdit={() => setEditExam(exam)}
+                        onPlan={() => setPlanning(exam)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
         </div>
       )}
 

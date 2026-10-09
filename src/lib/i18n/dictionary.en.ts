@@ -418,6 +418,14 @@ export const en: Record<TranslationKey, string> = {
   "schoolwork.lateShow": "Show what is overdue",
   "schoolwork.lateDismiss": "Dismiss notice",
   "schoolwork.filterPriority": "By priority",
+  "schoolwork.searchLabel": "Search your schoolwork",
+  "schoolwork.searchPlaceholder": "Search by subject, assignment or step",
+  "schoolwork.searchClear": "Clear search",
+  "schoolwork.searchNothing": "Nothing found for \u201c{query}\u201d",
+  "schoolwork.searchNothingBody":
+    "No assignment or test contains those words. Mind the filters above: they " +
+    "may still be on.",
+  "schoolwork.searchNothingAction": "Clear search",
   "schoolwork.ofTotal": "{shown} of {total}",
   "schoolwork.noTasks": "No assignments.",
   "schoolwork.noExams": "No tests.",
