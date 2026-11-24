@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { EXTRA_ROUTES, NAV } from "./nav";
 
 /**
  * Het installatiebestand van de app.
@@ -106,7 +107,10 @@ describe("de schermafdrukken", () => {
 
 describe("de snelkoppelingen", () => {
   it("wijzen naar schermen die bestaan", () => {
-    const schermen = ["/", "/agenda", "/reizen", "/schoolwerk", "/instellingen"];
+    // Uit `nav.ts` in plaats van een eigen lijstje: anders moet een nieuw
+    // scherm op drie plekken worden bijgeschreven en valt deze test om bij
+    // het eerste dat buiten het menu staat.
+    const schermen = [...NAV.map((item) => item.href), ...EXTRA_ROUTES];
     for (const kortom of manifest.shortcuts ?? []) {
       expect(schermen, kortom.url).toContain(kortom.url);
     }

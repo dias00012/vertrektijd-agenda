@@ -24,10 +24,13 @@ const Tour = dynamic(() => import("./Tour").then((m) => ({ default: m.Tour })), 
   ssr: false,
 });
 import { useAgenda, useAgendaStatus } from "@/hooks/useAgenda";
+import { useAppBadge } from "@/hooks/useAppBadge";
+import { useNow } from "@/hooks/useNow";
 import { useReminders } from "@/hooks/useReminders";
 import { useTimetableSync } from "@/hooks/useTimetableSync";
 import { usePushQueue } from "@/hooks/usePushQueue";
 import { track } from "@/lib/stats";
+import { findNextActivity, minutesUntilDeparture } from "@/lib/agenda";
 import { useT } from "@/hooks/useLanguage";
 import { NAV } from "@/lib/nav";
 
@@ -45,9 +48,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [introOpen, setIntroOpen] = useState(false);
   /** De rondleiding langs de tabbladen. */
   const [tourOpen, setTourOpen] = useState(false);
-  const { settings, hydrated } = useAgenda();
+  const { activities, settings, hydrated } = useAgenda();
   const { storageFull } = useAgendaStatus();
   const t = useT();
+  const now = useNow();
 
   // Meldingen "over 15 minuten vertrekken" plannen zolang de app open staat.
   useReminders();
@@ -55,6 +59,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   useTimetableSync();
   // En de meldingen die met de app dicht moeten komen klaarzetten.
   usePushQueue();
+
+  // Het aftelcijfer op het app-icoon. Staat de app op je beginscherm, dan zie
+  // je zo zonder hem te openen hoeveel minuten je nog hebt.
+  const next = hydrated ? findNextActivity(activities, settings, now) : null;
+  useAppBadge(next ? minutesUntilDeparture(next, settings, now) : null);
 
   // Eén telling per dag, zodat je kunt zien of iemand de app gebruikt.
   useEffect(() => {
@@ -73,6 +82,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   const showHomeHint = hydrated && !settings.home && pathname !== "/instellingen";
+
+  // Het vertrekscherm is bedoeld om als eigen icoon op een beginscherm te
+  // staan: één getal, geen menu. Een onderbalk met vijf tabbladen zou daar
+  // de helft van het scherm opeten.
+  if (pathname === "/widget") {
+    return <IntroContext.Provider value={introValue}>{children}</IntroContext.Provider>;
+  }
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-6xl">

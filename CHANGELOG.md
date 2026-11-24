@@ -8,6 +8,36 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.99.0
+
+- **Een vertrekscherm voor op je beginscherm** (`/widget`). Één scherm met
+  één antwoord: hoe laat je weg moet. Het getal schaalt mee met het scherm,
+  met de aftelling eronder, de rit in vervoermiddelen, vertraging in oranje en
+  geannuleerd in rood. Geen menu, geen tabbladen — het hele scherm is een knop
+  naar de app.
+
+  Bedoeld om los op je beginscherm te zetten, naast de app zelf. Staat daarom
+  in `EXTRA_ROUTES`: hij wordt voorgeladen voor offline, want juist op een
+  perron met slecht bereik wil je dit scherm kunnen openen.
+
+- **Het aantal minuten tot vertrek op het app-icoon.** Vanaf een uur van
+  tevoren telt het cijfertje af. Het verdwijnt zodra het niets meer zegt: een
+  icoon dat blijft roepen voor een bus die allang weg is, leer je negeren.
+  Werkt alleen waar de telefoon het toestaat, en zwijgt waar niet.
+
+- **De snelkoppelingen onder het app-icoon hebben nu een eigen tekening** —
+  klok, route en boek, uit dezelfde bron als het app-icoon — en het
+  vertrekscherm staat erbij. Drie regels met hetzelfde icoon vallen niet te
+  scannen.
+
+- **Uitleg in Instellingen** ("Op je beginscherm") met de stappen per telefoon,
+  en eerlijk over de grens: een echt widget-blokje tussen je iconen mag alleen
+  een geïnstalleerde app maken, niet een webapp.
+
+- De aftelregels staan nu op één plek (`departureCountdown`), gedeeld door het
+  dashboard en het vertrekscherm, en `manifest.test.ts` leest de bekende
+  schermen uit `nav.ts` in plaats van uit een eigen lijstje.
+
 ## 0.98.0
 
 - **De connector kan nu zelf huiswerk en toetsen aanmaken** (`create_schoolwork`).

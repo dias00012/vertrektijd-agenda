@@ -42,14 +42,27 @@
   "dir": "ltr",
   "shortcuts": [
     {
+      "name": "Vertrektijd nu",
+      "short_name": "Nu",
+      "description": "Hoe laat je weg moet voor je eerstvolgende afspraak.",
+      "url": "/widget",
+      "icons": [
+        {
+          "src": "/shortcut-widget.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Reisplanner",
       "short_name": "Reizen",
       "description": "Zoek een rit met trein, bus, tram of metro.",
       "url": "/reizen",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
+          "src": "/shortcut-reizen.png",
+          "sizes": "96x96",
           "type": "image/png"
         }
       ]
@@ -61,8 +74,8 @@
       "url": "/schoolwerk",
       "icons": [
         {
-          "src": "/icon-192.png",
-          "sizes": "192x192",
+          "src": "/shortcut-schoolwerk.png",
+          "sizes": "96x96",
           "type": "image/png"
         }
       ]

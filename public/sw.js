@@ -20,7 +20,7 @@
 
 // Ophogen zodra de voorgeladen bestanden veranderen; oude caches worden dan
 // opgeruimd bij het activeren.
-const VERSION = "v5";
+const VERSION = "v6";
 const SHELL_CACHE = `vertrektijd-shell-${VERSION}`;
 const PAGE_CACHE = `vertrektijd-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -35,7 +35,7 @@ const ROUTES = ["/", "/agenda", "/reizen", "/schoolwerk", "/instellingen"];
  * offline-pagina, en dat is precies het document waarvan een winkel en een
  * gebruiker verwachten dat het er altijd is.
  */
-const EXTRA_ROUTES = ["/privacy"];
+const EXTRA_ROUTES = ["/privacy", "/widget"];
 
 const SHELL_FILES = [
   OFFLINE_URL,
@@ -46,6 +46,10 @@ const SHELL_FILES = [
   "/icon-192.png",
   "/icon-512.png",
   "/apple-touch-icon.png",
+  // De iconen van de snelkoppelingen onder het app-icoon.
+  "/shortcut-widget.png",
+  "/shortcut-reizen.png",
+  "/shortcut-schoolwerk.png",
 ];
 
 /**
