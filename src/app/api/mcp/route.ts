@@ -13,6 +13,7 @@ import {
   type ToolOutcome,
 } from "@/lib/mcp";
 import {
+  createSchoolwork,
   deleteActivities,
   moveOccurrence,
   readAgenda,
@@ -228,8 +229,8 @@ const TOOLS: ToolDefinition[] = [
       'Vink je de laatste stap af, dan gaat de opdracht vanzelf op "done"; ' +
       'haal je er daarna weer een weg, dan komt hij op "doing". Dat hoef je ' +
       "dus niet apart mee te sturen.\n\n" +
-      "Nieuw huiswerk aanmaken of weggooien kan hier bewust niet: dat doet de " +
-      "gebruiker zelf in de app. Zeg het als er iets bij zou moeten.",
+      "Nieuw huiswerk aanmaken doe je met `create_schoolwork`. Weggooien kan " +
+      "hier bewust niet: dat doet de gebruiker zelf in de app.",
     inputSchema: {
       type: "object",
       properties: {
@@ -253,6 +254,59 @@ const TOOLS: ToolDefinition[] = [
           },
         },
       },
+    },
+  },
+  {
+    name: "create_schoolwork",
+    title: "Huiswerk of toets aanmaken",
+    description:
+      "Zet een nieuwe opdracht (`kind: \"task\"`, standaard) of toets " +
+      "(`kind: \"exam\"`) in het schoolwerk. Lees eerst `read_agenda`: staat " +
+      "het er al, werk het dan bij met `update_schoolwork` in plaats van een " +
+      "tweede aan te maken. Een open opdracht met hetzelfde vak en dezelfde " +
+      "titel, of een toets met hetzelfde vak op dezelfde dag, wordt geweigerd " +
+      "en je krijgt het bestaande id terug.\n\n" +
+      "Verzin nooit een deadline of toetsdatum: zonder datum komt er niets bij. " +
+      "Hak een grote opdracht op in `steps` met elk een `estimatedMinutes`; het " +
+      "antwoord geeft de nieuwe ids van de opdracht en de stappen terug, zodat " +
+      "je de leerblokken meteen met `save_activities` kunt koppelen " +
+      "(`linkedTaskId`, `linkedStepId` of `linkedExamId`).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        kind: { type: "string", description: "task (opdracht) of exam (toets). Standaard task." },
+        subject: { type: "string", description: "Het vak, bijv. Jaarrekening." },
+        title: {
+          type: "string",
+          description: "Wat moet je doen. Verplicht bij een opdracht, optioneel bij een toets.",
+        },
+        description: { type: "string", description: "Extra details, bladzijden, eisen." },
+        deadline: { type: "string", description: "Opdracht: JJJJ-MM-DD." },
+        date: { type: "string", description: "Toets: JJJJ-MM-DD." },
+        estimatedMinutes: {
+          type: "number",
+          description: "Opdracht: geschatte tijd. Leeg = de som van de stappen.",
+        },
+        prepMinutes: { type: "number", description: "Toets: leertijd in minuten." },
+        topics: { type: "array", items: { type: "string" }, description: "Toets: onderwerpen." },
+        priority: {
+          type: "string",
+          description: "high (rood), medium (oranje), low (geel) of later (groen).",
+        },
+        steps: {
+          type: "array",
+          description: "Opdracht: stappen in volgorde.",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              estimatedMinutes: { type: "number" },
+            },
+            required: ["title"],
+          },
+        },
+      },
+      required: ["subject"],
     },
   },
 ];
@@ -460,6 +514,28 @@ export async function POST(request: Request) {
             };
           }
           return { next: result.data, outcome: asText({ ok: true, note: result.note }) };
+        }
+
+        if (name === "create_schoolwork") {
+          const result = createSchoolwork(data, args);
+          if (!result.ok) {
+            return {
+              outcome: {
+                text: JSON.stringify({ reason: result.reason, existingId: result.id }, null, 2),
+                isError: true,
+              },
+            };
+          }
+          return {
+            next: result.data,
+            outcome: asText({
+              ok: true,
+              kind: result.kind,
+              id: result.id,
+              steps: result.steps,
+              note: result.note,
+            }),
+          };
         }
 
         // `handleMessage` controleert de naam al; dit is de vangnetregel.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createSchoolwork,
   deleteActivities,
   moveOccurrence,
   readAgenda,
@@ -1233,5 +1234,91 @@ describe("wat read_agenda over de reistijd zegt", () => {
     // Thuis studeren heeft geen reis; dat is geen ontbrekend gegeven.
     const thuis = activity({ location: null, travel: null, returnTravel: null });
     expect(lees(thuis).travelUnknown).toBeUndefined();
+  });
+});
+
+describe("createSchoolwork", () => {
+  it("maakt een opdracht met stappen aan en geeft de ids terug", () => {
+    const result = createSchoolwork(
+      data({ tasks: [] }),
+      {
+        subject: "Jaarrekening",
+        title: "WO2",
+        deadline: "2026-09-20",
+        priority: "high",
+        steps: [
+          { title: "Lezen", estimatedMinutes: 30 },
+          { title: "Opgaven", estimatedMinutes: 60 },
+        ],
+      },
+      NOW,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.data.tasks).toHaveLength(1);
+    const task = result.data.tasks[0];
+    expect(task.id).toBe(result.id);
+    expect(task.estimatedMinutes).toBe(90);
+    expect(task.priority).toBe("high");
+    expect(task.status).toBe("todo");
+    expect(result.steps?.map((s) => s.id)).toEqual(task.steps?.map((s) => s.id));
+    expect(task.steps?.every((s) => s.done === false)).toBe(true);
+  });
+
+  it("weigert een dubbele open opdracht en geeft het bestaande id", () => {
+    const result = createSchoolwork(
+      data({ tasks: [task()] }),
+      { subject: "wiskunde", title: "Hoofdstuk 4!", deadline: "2026-09-20" },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.id).toBe("t1");
+    expect(result.data.tasks).toHaveLength(1);
+  });
+
+  it("mag dezelfde naam opnieuw als de oude al af is", () => {
+    const result = createSchoolwork(
+      data({ tasks: [task({ status: "done" })] }),
+      { subject: "Wiskunde", title: "Hoofdstuk 4", deadline: "2026-09-20" },
+      NOW,
+    );
+    expect(result.ok).toBe(true);
+    expect(result.data.tasks).toHaveLength(2);
+  });
+
+  it("verzint geen deadline", () => {
+    const result = createSchoolwork(data({ tasks: [] }), { subject: "X", title: "Y" }, NOW);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain("deadline");
+  });
+
+  it("weigert een onbekende prioriteit", () => {
+    const result = createSchoolwork(
+      data({ tasks: [] }),
+      { subject: "X", title: "Y", deadline: "2026-09-20", priority: "urgent" },
+      NOW,
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it("maakt een toets aan en weigert een tweede op dezelfde dag", () => {
+    const eerste = createSchoolwork(
+      data({ exams: [] }),
+      { kind: "exam", subject: "Nederlands", date: "2027-01-08", topics: ["Spelling"] },
+      NOW,
+    );
+    expect(eerste.ok).toBe(true);
+    expect(eerste.data.exams[0].topics).toEqual(["Spelling"]);
+    const tweede = createSchoolwork(
+      eerste.data,
+      { kind: "exam", subject: "nederlands", date: "2027-01-08" },
+      NOW,
+    );
+    expect(tweede.ok).toBe(false);
+    expect(tweede.id).toBe(eerste.id);
+  });
+
+  it("weigert een toets zonder datum", () => {
+    const result = createSchoolwork(data({ exams: [] }), { kind: "exam", subject: "NL" }, NOW);
+    expect(result.ok).toBe(false);
   });
 });

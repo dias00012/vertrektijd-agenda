@@ -16,6 +16,7 @@ export type {
 } from "./agendaTools/types";
 export { readAgenda } from "./agendaTools/read";
 export {
+  createSchoolwork,
   deleteActivities,
   moveOccurrence,
   saveActivities,

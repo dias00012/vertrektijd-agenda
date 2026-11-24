@@ -7,7 +7,7 @@
  */
 
 import { occursOn } from "../recurrence";
-import { normalizeActivity } from "../backup";
+import { normalizeActivity, normalizeExam, normalizeTask } from "../backup";
 import { awaySpans } from "../planning";
 import { isDateKey, timeToMinutes } from "../time";
 import { statusAfterSteps } from "../schoolwork";
@@ -406,9 +406,9 @@ const PRIORITIES = ["high", "medium", "low", "later"];
  * over drie weken staat er even schreeuwerig bij als wat morgen af moet. Dat
  * bijstellen is precies het soort werk dat je liever vertelt dan aanklikt.
  *
- * Alleen afvinken, de stand en de prioriteit; een opdracht aanmaken of
- * weggooien blijft handwerk. Dat is waar de dubbelingen vandaan komen, en een
- * opdracht die je niet kent kun je niet controleren.
+ * Alleen afvinken, de stand en de prioriteit. Aanmaken gaat via
+ * `createSchoolwork` (met een slot tegen dubbelingen); weggooien blijft
+ * handwerk.
  */
 export function updateSchoolwork(
   data: AgendaData,
@@ -515,5 +515,174 @@ export function updateSchoolwork(
       `${task.title}: ${klaar} van ${steps.length} stappen af, stand "${nieuw}"` +
       (nieuw !== gevraagd ? " (alle stappen af, dus vanzelf op af gezet)" : "") +
       (priority ? `, prioriteit "${priority}"` : ""),
+  };
+}
+
+/** Wat `create_schoolwork` heeft aangemaakt. */
+export interface CreateSchoolworkResult {
+  data: AgendaData;
+  ok: boolean;
+  reason?: string;
+  /** Het id van de nieuwe opdracht of toets. */
+  id?: string;
+  kind?: "task" | "exam";
+  /** De stappen met hun nieuwe id, in dezelfde volgorde als gevraagd. */
+  steps?: { id: string; title: string }[];
+  note?: string;
+}
+
+/** Twee namen voor hetzelfde? Hoofdletters, spaties en leestekens tellen niet mee. */
+function sameName(a: string, b: string): boolean {
+  const kaal = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "");
+  return kaal(a) === kaal(b);
+}
+
+/**
+ * Nieuw huiswerk of een nieuwe toets aanmaken vanuit het gesprek.
+ *
+ * Dit was bewust handwerk, en de reden staat hierboven: daar kwamen de
+ * dubbelingen vandaan. Maar een assistent die elke ochtend je planning maakt
+ * en niet zelf een opdracht kan neerzetten, moet je voor elk nieuw stuk
+ * huiswerk naar de app sturen -- of gaat door je browser klikken. Dan liever
+ * de voordeur, met het slot erop dat het probleem was:
+ *
+ * - Staat er al een open opdracht met hetzelfde vak en dezelfde titel (of een
+ *   toets met hetzelfde vak op dezelfde dag), dan komt er niets bij en krijg je
+ *   het bestaande id terug. Een planner die twee keer draait, maakt zo nog
+ *   steeds één opdracht.
+ * - Geen deadline of datum, dan geen opdracht. `normalizeTask` zou er "vandaag"
+ *   van maken, en een verzonnen deadline is erger dan geen.
+ *
+ * Weggooien kan hier nog steeds niet: dat blijft aan de gebruiker.
+ */
+export function createSchoolwork(
+  data: AgendaData,
+  raw: unknown,
+  now: Date = new Date(),
+): CreateSchoolworkResult {
+  if (!raw || typeof raw !== "object") return { data, ok: false, reason: "geen object" };
+  const input = raw as Record<string, unknown>;
+  const at = now.toISOString();
+  const kind = input.kind === "exam" ? "exam" : "task";
+
+  const subject = typeof input.subject === "string" ? input.subject.trim() : "";
+  if (!subject) return { data, ok: false, reason: "`subject` (het vak) ontbreekt" };
+  const title = typeof input.title === "string" ? input.title.trim() : "";
+
+  if (input.priority !== undefined && !PRIORITIES.includes(String(input.priority))) {
+    return { data, ok: false, reason: `prioriteit moet ${PRIORITIES.join(", ")} zijn` };
+  }
+
+  if (kind === "exam") {
+    if (!isDateKey(input.date)) {
+      return { data, ok: false, reason: "`date` van de toets ontbreekt of is niet JJJJ-MM-DD" };
+    }
+    const date = input.date;
+    const bestaand = data.exams.find(
+      (exam) => exam.status !== "done" && exam.date === date && sameName(exam.subject, subject),
+    );
+    if (bestaand) {
+      return {
+        data,
+        ok: false,
+        id: bestaand.id,
+        kind,
+        reason: `er staat al een toets ${bestaand.subject} op ${date} (id ${bestaand.id})`,
+      };
+    }
+    const exam = normalizeExam({
+      subject,
+      title: title || undefined,
+      date,
+      topics: input.topics,
+      prepMinutes: input.prepMinutes,
+      priority: input.priority,
+      status: "todo",
+      createdAt: at,
+      updatedAt: at,
+    });
+    return {
+      data: {
+        ...data,
+        exams: [...data.exams, exam],
+        deletions: (data.deletions ?? []).filter((tombstone) => tombstone.id !== exam.id),
+      },
+      ok: true,
+      id: exam.id,
+      kind,
+      note: `toets ${exam.subject} op ${exam.date} aangemaakt`,
+    };
+  }
+
+  if (!title) return { data, ok: false, reason: "`title` (wat moet je doen) ontbreekt" };
+  if (!isDateKey(input.deadline)) {
+    return { data, ok: false, reason: "`deadline` ontbreekt of is niet JJJJ-MM-DD" };
+  }
+  const bestaand = data.tasks.find(
+    (task) =>
+      task.status !== "done" && sameName(task.subject, subject) && sameName(task.title, title),
+  );
+  if (bestaand) {
+    return {
+      data,
+      ok: false,
+      id: bestaand.id,
+      kind,
+      reason: `deze opdracht staat er al (id ${bestaand.id}); werk hem bij in plaats van een tweede aan te maken`,
+    };
+  }
+
+  const rawSteps = Array.isArray(input.steps) ? input.steps : [];
+  const steps = rawSteps
+    .filter((step): step is Record<string, unknown> => !!step && typeof step === "object")
+    .filter((step) => typeof step.title === "string" && step.title.trim().length > 0)
+    .map((step) => ({
+      title: (step.title as string).trim(),
+      estimatedMinutes:
+        typeof step.estimatedMinutes === "number" && step.estimatedMinutes > 0
+          ? Math.round(step.estimatedMinutes)
+          : undefined,
+      done: false,
+    }));
+  const stepsTotal = steps.reduce((sum, step) => sum + (step.estimatedMinutes ?? 0), 0);
+  const estimated =
+    typeof input.estimatedMinutes === "number" && input.estimatedMinutes > 0
+      ? Math.round(input.estimatedMinutes)
+      : stepsTotal;
+
+  const task = normalizeTask({
+    subject,
+    title,
+    description:
+      typeof input.description === "string" && input.description.trim()
+        ? input.description.trim()
+        : undefined,
+    deadline: input.deadline,
+    estimatedMinutes: estimated,
+    priority: input.priority,
+    status: "todo",
+    steps: steps.length > 0 ? steps : undefined,
+    createdAt: at,
+    updatedAt: at,
+  });
+
+  return {
+    data: {
+      ...data,
+      tasks: [...data.tasks, task],
+      deletions: (data.deletions ?? []).filter((tombstone) => tombstone.id !== task.id),
+    },
+    ok: true,
+    id: task.id,
+    kind,
+    steps: (task.steps ?? []).map((step) => ({ id: step.id, title: step.title })),
+    note:
+      `${task.subject}: "${task.title}" aangemaakt, deadline ${task.deadline}` +
+      (task.steps ? `, ${task.steps.length} stappen` : ""),
   };
 }

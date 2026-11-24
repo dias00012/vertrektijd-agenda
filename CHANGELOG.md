@@ -8,6 +8,22 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.98.0
+
+- **De connector kan nu zelf huiswerk en toetsen aanmaken** (`create_schoolwork`).
+  Tot nu toe kon een planner een opdracht alleen afvinken; aanmaken moest je
+  zelf in de app doen, of hij ging door je browser klikken. Dat werkte niet
+  meer zodra de planning elke ochtend vanzelf draait.
+
+  Het slot tegen dubbelingen, de reden dat dit handwerk was, zit er nu in:
+  een open opdracht met hetzelfde vak en dezelfde titel, of een toets met
+  hetzelfde vak op dezelfde dag, wordt geweigerd en je krijgt het bestaande
+  id terug. Zonder deadline of datum komt er niets bij; een verzonnen
+  deadline is erger dan geen. Het antwoord geeft de ids van de opdracht en de
+  stappen terug, zodat de leerblokken meteen gekoppeld kunnen worden.
+
+  Weggooien kan via de connector nog steeds niet.
+
 ## 0.95.1
 
 - **Korte blokken in het weekrooster lieten nooit zien dat het werk af was.**
