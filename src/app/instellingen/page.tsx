@@ -17,6 +17,7 @@ import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { ConnectorSection } from "@/components/ConnectorSection";
 import { RemindersSection } from "@/components/RemindersSection";
+import { HomeScreenSection } from "@/components/HomeScreenSection";
 /* Het inlezen van een rooster: een scherm dat je zelden opent. */
 const TimetableImport = dynamic(
   () => import("@/components/TimetableImport").then((m) => ({ default: m.TimetableImport })),
@@ -73,6 +74,7 @@ export default function SettingsPage() {
         <TravelSection />
         <SavedPlaces />
         <RemindersSection />
+        <HomeScreenSection />
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.group.agenda")}>

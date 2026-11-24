@@ -78,6 +78,52 @@ await png(drawing({ size: 512, radius: 0, inset: 0.38 }), 512, "icon-maskable-51
 // iOS rondt zelf af; een eigen ronding zou dubbel staan.
 await png(drawing({ size: 512, radius: 0 }), 180, "apple-touch-icon.png");
 
+/**
+ * Snelkoppelingsiconen voor het menu onder het app-icoon (Android toont die
+ * als je het icoon ingedrukt houdt). Zelfde blauw als de app, met een witte
+ * tekening erop, zodat het menu bij de app hoort.
+ *
+ * Bewust geen emoji: die worden hier naar PNG gerenderd zonder lettertype, en
+ * dan staat er niets.
+ */
+function shortcut(glyph, size = 192) {
+  const s = (v) => (size * v).toFixed(1);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${BLUE}"/>
+      <stop offset="1" stop-color="${DEEP}"/>
+    </linearGradient>
+  </defs>
+  <rect width="${size}" height="${size}" rx="${s(0.23)}" fill="url(#bg)"/>
+  <g fill="none" stroke="#fff" stroke-width="${s(0.055)}" stroke-linecap="round" stroke-linejoin="round">
+    ${glyph(s)}
+  </g>
+</svg>`;
+}
+
+/** Een klok op 08:23, net als het app-icoon: het vertrekscherm. */
+const clockGlyph = (s) =>
+  `<circle cx="${s(0.5)}" cy="${s(0.5)}" r="${s(0.28)}"/>` +
+  `<path d="M${s(0.5)} ${s(0.5)} L${s(0.5)} ${s(0.3)}"/>` +
+  `<path d="M${s(0.5)} ${s(0.5)} L${s(0.36)} ${s(0.58)}"/>`;
+
+/** Een opengeslagen boek: je schoolwerk. */
+const bookGlyph = (s) =>
+  `<path d="M${s(0.5)} ${s(0.34)} a${s(0.16)} ${s(0.16)} 0 0 0 -${s(0.28)} 0 V${s(0.68)} a${s(0.16)} ${s(0.16)} 0 0 1 ${s(0.28)} 0"/>` +
+  `<path d="M${s(0.5)} ${s(0.34)} a${s(0.16)} ${s(0.16)} 0 0 1 ${s(0.28)} 0 V${s(0.68)} a${s(0.16)} ${s(0.16)} 0 0 0 -${s(0.28)} 0"/>` +
+  `<path d="M${s(0.5)} ${s(0.34)} V${s(0.68)}"/>`;
+
+/** Van hier naar daar: de reisplanner. */
+const routeGlyph = (s) =>
+  `<circle cx="${s(0.3)}" cy="${s(0.68)}" r="${s(0.07)}"/>` +
+  `<circle cx="${s(0.7)}" cy="${s(0.32)}" r="${s(0.07)}"/>` +
+  `<path d="M${s(0.3)} ${s(0.59)} V${s(0.44)} a${s(0.12)} ${s(0.12)} 0 0 1 ${s(0.12)} -${s(0.12)} H${s(0.61)}"/>`;
+
+await png(shortcut(clockGlyph), 96, "shortcut-widget.png");
+await png(shortcut(routeGlyph), 96, "shortcut-reizen.png");
+await png(shortcut(bookGlyph), 96, "shortcut-schoolwerk.png");
+
 // De SVG blijft voor browsers die hem wél begrijpen; scherp op elk formaat.
 writeFileSync("public/icon.svg", drawing({ size: 192 }));
 console.log("public/icon.svg");

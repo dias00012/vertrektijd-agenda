@@ -33,7 +33,10 @@ export const NAV: readonly NavItem[] = [
  * Schermen buiten het menu die wel voorgeladen horen te worden.
  *
  * De privacyverklaring staat niet in de navigatie -- je opent hem een keer --
- * maar hij hoort ook zonder bereik te openen. Staat hier zodat `nav.test.ts`
- * hem net als het menu naast de service worker kan leggen.
+ * maar hij hoort ook zonder bereik te openen. Het vertrekscherm staat er ook
+ * niet in en hoort er juist het hardst bij: dat staat bij mensen als eigen
+ * icoon op hun beginscherm en wordt dus geopend op het perron, waar het
+ * bereik slecht is. Staan hier zodat `nav.test.ts` ze net als het menu naast
+ * de service worker kan leggen.
  */
-export const EXTRA_ROUTES: readonly string[] = ["/privacy"] as const;
+export const EXTRA_ROUTES: readonly string[] = ["/privacy", "/widget"] as const;

@@ -6,6 +6,7 @@ import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { useCatchUpTravel } from "@/hooks/useCatchUpTravel";
 import { clashesFor, minutesUntilDeparture, onwardTarget } from "@/lib/agenda";
+import { departureCountdown } from "@/lib/countdown";
 import { activityDone } from "@/lib/schoolwork";
 import {
   computeDeparture,
@@ -73,17 +74,16 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
   /** Werk dat al af is: dan hoef je hier niets meer te doen. */
   const workDone = activityDone(activity, activity.date, tasks, exams);
 
-  // Een aftelling is alleen zinvol binnen een halve dag; daarbuiten zegt het
-  // datumlabel ("maandag 7 september") al genoeg.
-  const COUNTDOWN_HORIZON_MINUTES = 12 * 60;
-  const countdown =
-    untilDeparture === null || untilDeparture > COUNTDOWN_HORIZON_MINUTES
-      ? null
-      : untilDeparture > 0
-        ? t("next.leaveIn", { duration: formatDuration(untilDeparture) })
-        : untilDeparture > -5
-          ? t("next.leaveNow")
-          : t("next.leavePassed");
+  // Dezelfde aftelling als op het vertrekscherm; de regels staan in
+  // `departureCountdown`, zodat die twee niet uit elkaar kunnen lopen.
+  const state = departureCountdown(untilDeparture);
+  const countdown = !state
+    ? null
+    : state.state === "soon"
+      ? t("next.leaveIn", { duration: formatDuration(state.minutes) })
+      : state.state === "now"
+        ? t("next.leaveNow")
+        : t("next.leavePassed");
 
   const urgent = untilDeparture !== null && untilDeparture <= 15;
 
