@@ -7,7 +7,11 @@
   "background_color": "#f6f7f9",
   "theme_color": "#f6f7f9",
   "lang": "nl",
-  "categories": ["productivity", "travel", "education"],
+  "categories": [
+    "productivity",
+    "travel",
+    "education"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -32,6 +36,47 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vertrektijd nu",
+      "short_name": "Nu",
+      "description": "Hoe laat je weg moet voor je eerstvolgende afspraak.",
+      "url": "/widget",
+      "icons": [
+        {
+          "src": "/shortcut-widget.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Mijn week",
+      "short_name": "Week",
+      "description": "Je agenda per week.",
+      "url": "/agenda",
+      "icons": [
+        {
+          "src": "/shortcut-agenda.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Reisplanner",
+      "short_name": "Reizen",
+      "description": "Zoek een rit van A naar B.",
+      "url": "/reizen",
+      "icons": [
+        {
+          "src": "/shortcut-reizen.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

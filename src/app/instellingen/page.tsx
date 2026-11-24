@@ -8,6 +8,7 @@ import { LocationInput } from "@/components/LocationInput";
 import { AccountSection } from "@/components/AccountSection";
 import { BackupSection } from "@/components/BackupSection";
 import { RemindersSection } from "@/components/RemindersSection";
+import { HomeScreenSection } from "@/components/HomeScreenSection";
 import { TimetableImport } from "@/components/TimetableImport";
 import { CalendarSubscriptions } from "@/components/CalendarSubscriptions";
 import { LanguageSection } from "@/components/LanguageSection";
@@ -286,6 +287,7 @@ export default function SettingsPage() {
       {hydrated ? <TimetableImport /> : null}
       {hydrated ? <CalendarSubscriptions /> : null}
       {hydrated ? <RemindersSection /> : null}
+      <HomeScreenSection />
       {hydrated ? <SavedPlaces /> : null}
       {hydrated ? <BackupSection /> : null}
       <IntroSection />

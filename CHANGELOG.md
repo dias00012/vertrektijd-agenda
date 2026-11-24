@@ -8,6 +8,34 @@ wordt bewust stabiel gehouden. De veldenlijst en een voorbeeldbestand staan in d
 [README](README.md#back-up--synchronisatie-importexport) en in
 [`examples/planner-voorbeeld.json`](examples/planner-voorbeeld.json).
 
+## 0.34.0
+
+- **Een vertrekscherm voor op je beginscherm.** `/widget` is één scherm met
+  één antwoord: hoe laat je weg moet. Groot genoeg om vanaf een meter te
+  lezen, met de aftelling eronder, de rit in vervoermiddelen, en de vertraging
+  in oranje. Geen menu, geen tabbladen — die zitten een tik verderop, want het
+  hele scherm is een knop naar de app.
+
+  Zet hem los op je beginscherm naast de app zelf, dan is je vertrektijd één
+  tik ver. Hij staat ook in de offline-voorraad van de service worker: juist op
+  een perron met slecht bereik wil je dit scherm kunnen openen.
+
+- **Het aantal minuten tot vertrek op het app-icoon.** Vanaf een uur van
+  tevoren telt het cijfertje op het icoon af. Verdwijnt zodra het niets meer
+  zegt: een icoon dat blijft roepen voor een bus die allang weg is, leer je
+  negeren. Werkt alleen waar de telefoon het toestaat, en zwijgt waar niet.
+
+- **Snelkoppelingen onder het app-icoon** (Android: icoon ingedrukt houden):
+  vertrekscherm, je week en de reisplanner, met eigen iconen.
+
+- **Uitleg in Instellingen** — "Op je beginscherm" — met de stappen per
+  telefoon, en eerlijk over de grens: een echt widget-blokje tussen je iconen
+  mag alleen een geïnstalleerde app maken, niet een webapp. Dit is wat er wél
+  kan.
+
+- De aftelling staat nu op één plek (`departureCountdown`), zodat het
+  vertrekscherm en het dashboard niet uit elkaar kunnen lopen.
+
 ## 0.33.0
 
 - **Stevig doorlopen is nu de standaard.** In 0.32.0 kon je de loopsnelheid

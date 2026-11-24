@@ -5,6 +5,7 @@ import { useT } from "@/hooks/useLanguage";
 import { useAgenda } from "@/hooks/useAgenda";
 import { useOccurrenceTravel } from "@/hooks/useOccurrenceTravel";
 import { minutesUntilDeparture } from "@/lib/agenda";
+import { departureCountdown } from "@/lib/countdown";
 import { computeDeparture, computeOnward, computeReturn } from "@/lib/travel";
 import { formatDateLabel, formatDuration } from "@/lib/time";
 import {
@@ -49,17 +50,16 @@ export function NextUpCard({ activity, now }: { activity: ActivityOccurrence; no
   const linkedTask = activity.linkedTaskId ? tasks.find((t) => t.id === activity.linkedTaskId) : null;
   const linkedExam = activity.linkedExamId ? exams.find((e) => e.id === activity.linkedExamId) : null;
 
-  // Een aftelling is alleen zinvol binnen een halve dag; daarbuiten zegt het
-  // datumlabel ("maandag 7 september") al genoeg.
-  const COUNTDOWN_HORIZON_MINUTES = 12 * 60;
-  const countdown =
-    untilDeparture === null || untilDeparture > COUNTDOWN_HORIZON_MINUTES
-      ? null
-      : untilDeparture > 0
-        ? t("next.leaveIn", { duration: formatDuration(untilDeparture) })
-        : untilDeparture > -5
-          ? t("next.leaveNow")
-          : t("next.leavePassed");
+  // Dezelfde aftelling als op het vertrekscherm; de regels staan in
+  // `departureCountdown`, zodat die twee niet uit elkaar kunnen lopen.
+  const state = departureCountdown(untilDeparture);
+  const countdown = !state
+    ? null
+    : state.state === "soon"
+      ? t("next.leaveIn", { duration: formatDuration(state.minutes) })
+      : state.state === "now"
+        ? t("next.leaveNow")
+        : t("next.leavePassed");
 
   const urgent = untilDeparture !== null && untilDeparture <= 15;
 

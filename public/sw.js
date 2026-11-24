@@ -20,13 +20,17 @@
 
 // Ophogen zodra de voorgeladen bestanden veranderen; oude caches worden dan
 // opgeruimd bij het activeren.
-const VERSION = "v4";
+const VERSION = "v5";
 const SHELL_CACHE = `vertrektijd-shell-${VERSION}`;
 const PAGE_CACHE = `vertrektijd-pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
 
-/** De schermen van de app; gelijk aan het menu in AppShell. */
-const ROUTES = ["/", "/agenda", "/reizen", "/schoolwerk", "/instellingen"];
+/**
+ * De schermen van de app; gelijk aan het menu in AppShell, plus het
+ * vertrekscherm. Dat laatste staat bij mensen op hun beginscherm en wordt dus
+ * juist geopend op het perron, waar het bereik slecht is.
+ */
+const ROUTES = ["/", "/agenda", "/reizen", "/schoolwerk", "/instellingen", "/widget"];
 
 const SHELL_FILES = [
   OFFLINE_URL,
@@ -37,6 +41,10 @@ const SHELL_FILES = [
   "/icon-192.png",
   "/icon-512.png",
   "/apple-touch-icon.png",
+  // De iconen van de snelkoppelingen onder het app-icoon.
+  "/shortcut-widget.png",
+  "/shortcut-agenda.png",
+  "/shortcut-reizen.png",
 ];
 
 /**
